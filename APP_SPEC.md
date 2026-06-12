@@ -29,4 +29,4 @@ Out of scope:
 - Single-base-URL parameter-matrix expansion (the Groot Solutions bulk mode).
 - Destination-URL reachability checks (basic URL format validation only).
 
-Production URL: TBD
+Production URL: https://utm-grid.vercel.app
