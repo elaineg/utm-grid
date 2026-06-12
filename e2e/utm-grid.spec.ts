@@ -1,0 +1,189 @@
+import { expect, test, type Page } from "@playwright/test";
+import fs from "node:fs/promises";
+
+const cell = (page: Page, field: string, rowNum: number) =>
+  page.getByLabel(`${field} row ${rowNum}`, { exact: true });
+
+async function fillRow(
+  page: Page,
+  rowNum: number,
+  values: Record<string, string>
+) {
+  for (const [field, value] of Object.entries(values)) {
+    await cell(page, field, rowNum).fill(value);
+  }
+}
+
+test("generated URL updates live (spec example)", async ({ page }) => {
+  await page.goto("/");
+  await fillRow(page, 1, {
+    "Base URL": "https://example.com/sale",
+    utm_source: "newsletter",
+    utm_medium: "email",
+    utm_campaign: "spring_sale",
+  });
+  await expect(cell(page, "Generated URL", 1)).toHaveText(
+    "https://example.com/sale?utm_source=newsletter&utm_medium=email&utm_campaign=spring_sale"
+  );
+});
+
+test("missing required param warns; warning clears when filled", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await fillRow(page, 1, {
+    "Base URL": "https://example.com/sale",
+    utm_source: "newsletter",
+    utm_campaign: "spring_sale",
+  });
+  const warning = page.getByRole("alert").filter({ hasText: "utm_medium is required" });
+  await expect(warning).toBeVisible();
+  await cell(page, "utm_medium", 1).fill("email");
+  await expect(warning).toHaveCount(0);
+});
+
+test("uppercase and spaces are flagged", async ({ page }) => {
+  await page.goto("/");
+  await cell(page, "utm_campaign", 1).fill("Spring Sale");
+  await expect(
+    page.getByRole("alert").filter({ hasText: "uppercase" })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("alert").filter({ hasText: "spaces" })
+  ).toBeVisible();
+});
+
+test("cross-row inconsistency flags both cells, naming variants, and clears", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await cell(page, "utm_campaign", 1).fill("spring_sale");
+  await page.getByRole("button", { name: "Add row" }).click();
+  await cell(page, "utm_campaign", 2).fill("Spring-Sale");
+
+  const inconsistency = page
+    .getByRole("alert")
+    .filter({ hasText: '"spring_sale" vs "Spring-Sale"' });
+  await expect(inconsistency).toHaveCount(2);
+
+  await cell(page, "utm_campaign", 2).fill("spring_sale");
+  await expect(inconsistency).toHaveCount(0);
+});
+
+test("CSV export -> import round-trips the grid exactly", async ({ page }) => {
+  await page.goto("/");
+  await fillRow(page, 1, {
+    "Base URL": "https://example.com/sale",
+    utm_source: "newsletter",
+    utm_medium: "email",
+    utm_campaign: "spring_sale",
+  });
+  await page.getByRole("button", { name: "Add row" }).click();
+  await fillRow(page, 2, {
+    "Base URL": "https://example.com/a,b",
+    utm_source: 'quo"ted',
+    utm_medium: "paid social",
+  });
+
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Export CSV" }).click();
+  const download = await downloadPromise;
+  const path = await download.path();
+  const csv = await fs.readFile(path, "utf8");
+  expect(csv.split("\n")[0]).toBe(
+    "base_url,utm_source,utm_medium,utm_campaign,utm_term,utm_content,generated_url"
+  );
+
+  // Wipe row values so we can tell the import really restored them.
+  await cell(page, "utm_source", 1).fill("changed");
+
+  await page
+    .getByLabel("CSV file")
+    .setInputFiles({ name: "utm-grid.csv", mimeType: "text/csv", buffer: Buffer.from(csv) });
+  await expect(page.getByText("Map CSV columns")).toBeVisible();
+  // Headers match export names, so everything is pre-mapped.
+  await expect(page.getByLabel("CSV column for Base URL")).toHaveValue("0");
+  await page.getByRole("button", { name: "Import 2 rows" }).click();
+
+  await expect(cell(page, "Base URL", 1)).toHaveValue("https://example.com/sale");
+  await expect(cell(page, "utm_source", 1)).toHaveValue("newsletter");
+  await expect(cell(page, "Base URL", 2)).toHaveValue("https://example.com/a,b");
+  await expect(cell(page, "utm_source", 2)).toHaveValue('quo"ted');
+  await expect(cell(page, "utm_medium", 2)).toHaveValue("paid social");
+});
+
+test("import with short headers url,source,medium,campaign pre-maps and lints", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const csv =
+    "url,source,medium,campaign\n" +
+    "https://example.com/sale,newsletter,email,Spring Sale\n" +
+    "https://example.com/promo,facebook,paid_social,spring_sale\n";
+  await page
+    .getByLabel("CSV file")
+    .setInputFiles({ name: "sheet.csv", mimeType: "text/csv", buffer: Buffer.from(csv) });
+
+  await expect(page.getByText("Map CSV columns")).toBeVisible();
+  await expect(page.getByLabel("CSV column for Base URL")).toHaveValue("0");
+  await expect(page.getByLabel("CSV column for utm_source")).toHaveValue("1");
+  await expect(page.getByLabel("CSV column for utm_medium")).toHaveValue("2");
+  await expect(page.getByLabel("CSV column for utm_campaign")).toHaveValue("3");
+  await page.getByRole("button", { name: "Import 2 rows" }).click();
+
+  await expect(cell(page, "utm_campaign", 1)).toHaveValue("Spring Sale");
+  // Imported rows are linted immediately: uppercase/space + cross-row variants.
+  await expect(
+    page.getByRole("alert").filter({ hasText: "uppercase" })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("alert").filter({ hasText: '"Spring Sale" vs "spring_sale"' })
+  ).toHaveCount(2);
+});
+
+test("presets persist across reload and apply to a row", async ({ page }) => {
+  await page.goto("/");
+  // Put the values on row 1, select it, save as preset.
+  await fillRow(page, 1, { utm_source: "facebook", utm_medium: "paid_social" });
+  await cell(page, "utm_source", 1).click();
+  await page.getByRole("button", { name: "Save preset…" }).click();
+  await page.getByPlaceholder("Paid Social").fill("Paid Social");
+  await expect(page.getByLabel("Preset value for utm_source")).toHaveValue("facebook");
+  await page.getByRole("button", { name: "Save preset", exact: true }).click();
+
+  await page.reload();
+  // Preset chip survives the reload (it also appears in the "new rows" select).
+  await expect(
+    page.getByText("Paid Social", { exact: true }).first()
+  ).toBeVisible();
+
+  // Row 1 is empty after reload; select it and apply the preset.
+  await page.getByRole("button", { name: "Select row 1" }).click();
+  await page.getByRole("button", { name: "Apply" }).click();
+  await expect(cell(page, "utm_source", 1)).toHaveValue("facebook");
+  await expect(cell(page, "utm_medium", 1)).toHaveValue("paid_social");
+});
+
+test("no network requests after page load while editing and exporting", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.waitForLoadState("networkidle");
+
+  const requests: string[] = [];
+  page.on("request", (req) => {
+    if (!req.url().startsWith("blob:")) requests.push(req.url());
+  });
+
+  await fillRow(page, 1, {
+    "Base URL": "https://example.com/sale",
+    utm_source: "newsletter",
+    utm_medium: "email",
+    utm_campaign: "spring_sale",
+  });
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Export CSV" }).click();
+  await downloadPromise;
+
+  expect(requests).toEqual([]);
+});
