@@ -75,6 +75,39 @@ describe("lintRows: invalid base URL", () => {
   });
 });
 
+describe("lintRows: utm params already in the base URL", () => {
+  it("warns on the base URL cell, naming the param, when the row sets that field", () => {
+    const warnings = lintRows(
+      [full("r1", { baseUrl: "https://example.com/p?utm_source=old" })],
+      DEFAULT_LINT_SETTINGS
+    );
+    const baseUtm = warnings.filter((w) => w.rule === "base-utm");
+    expect(baseUtm).toHaveLength(1);
+    expect(baseUtm[0].field).toBe("baseUrl");
+    expect(baseUtm[0].message).toContain("utm_source");
+    expect(baseUtm[0].message).toContain("replaced");
+  });
+
+  it("warns with a move-it message when the row leaves that column empty", () => {
+    const warnings = lintRows(
+      [full("r1", { baseUrl: "https://example.com/p?utm_term=shoes" })],
+      DEFAULT_LINT_SETTINGS
+    );
+    const baseUtm = warnings.filter((w) => w.rule === "base-utm");
+    expect(baseUtm).toHaveLength(1);
+    expect(baseUtm[0].message).toContain("utm_term");
+    expect(baseUtm[0].message).toContain("move it");
+  });
+
+  it("does not warn for non-utm query params", () => {
+    const warnings = lintRows(
+      [full("r1", { baseUrl: "https://example.com/p?ref=1" })],
+      DEFAULT_LINT_SETTINGS
+    );
+    expect(warnings.filter((w) => w.rule === "base-utm")).toEqual([]);
+  });
+});
+
 describe("lintRows: cross-row consistency", () => {
   it("flags every affected cell and names the variants", () => {
     const warnings = lintRows(

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildUtmUrl, isValidBaseUrl } from "./utm";
+import { baseUtmParams, buildUtmUrl, isValidBaseUrl } from "./utm";
 import { emptyRow } from "./types";
 
 function row(overrides: Partial<ReturnType<typeof emptyRow>>) {
@@ -58,6 +58,60 @@ describe("buildUtmUrl", () => {
     expect(
       buildUtmUrl(row({ baseUrl: "https://a.com", utm_campaign: "50% off & more" }))
     ).toBe("https://a.com?utm_campaign=50%25%20off%20%26%20more");
+  });
+
+  it("replaces an existing utm_* param in the base URL instead of duplicating (validator P2 repro)", () => {
+    expect(
+      buildUtmUrl(
+        row({
+          baseUrl: "https://example.com/p?utm_source=old",
+          utm_source: "src",
+          utm_medium: "email",
+          utm_campaign: "camp",
+        })
+      )
+    ).toBe("https://example.com/p?utm_source=src&utm_medium=email&utm_campaign=camp");
+  });
+
+  it("keeps base utm_* params the row leaves empty", () => {
+    expect(
+      buildUtmUrl(
+        row({ baseUrl: "https://a.com/p?utm_source=old&ref=1", utm_campaign: "c" })
+      )
+    ).toBe("https://a.com/p?utm_source=old&ref=1&utm_campaign=c");
+  });
+
+  it("replaces while preserving non-utm params and fragments", () => {
+    expect(
+      buildUtmUrl(
+        row({ baseUrl: "https://a.com/p?ref=1&utm_medium=x#frag", utm_medium: "email" })
+      )
+    ).toBe("https://a.com/p?ref=1&utm_medium=email#frag");
+  });
+
+  it("replaces when the base utm param is the only query param", () => {
+    expect(
+      buildUtmUrl(row({ baseUrl: "https://a.com/p?utm_source=old", utm_source: "new" }))
+    ).toBe("https://a.com/p?utm_source=new");
+  });
+});
+
+describe("baseUtmParams", () => {
+  it("lists utm_* params present in the base URL, in canonical order", () => {
+    expect(baseUtmParams("https://a.com/p?utm_medium=x&utm_source=y&ref=1")).toEqual([
+      "utm_source",
+      "utm_medium",
+    ]);
+  });
+
+  it("returns empty for no query string or only non-utm params", () => {
+    expect(baseUtmParams("https://a.com/p")).toEqual([]);
+    expect(baseUtmParams("https://a.com/p?ref=1&gclid=abc")).toEqual([]);
+    expect(baseUtmParams("")).toEqual([]);
+  });
+
+  it("ignores anything after the fragment", () => {
+    expect(baseUtmParams("https://a.com/p#?utm_source=x")).toEqual([]);
   });
 });
 

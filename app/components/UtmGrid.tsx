@@ -27,13 +27,33 @@ import { PresetsBar } from "./PresetsBar";
 type EditableField = "baseUrl" | UtmField;
 const COLUMNS: EditableField[] = ["baseUrl", ...UTM_FIELDS];
 
-export function UtmGrid() {
-  const idCounter = useRef(1);
-  const newId = () => `row-${++idCounter.current}`;
+// Stable initial value (also the hydration/server snapshot): one empty row.
+const INITIAL_ROWS: UtmRow[] = [emptyRow("row-1")];
 
-  const [rows, setRows] = useState<UtmRow[]>(() => [emptyRow("row-1")]);
+export function UtmGrid() {
+  // Grid rows persist in localStorage (debounced) so a refresh or
+  // back-navigation mid-edit doesn't destroy the batch. First visit (or
+  // empty/corrupt storage) falls back to the single starter row.
+  const [storedRows, setRows] = useLocalStorage<UtmRow[]>("utm-grid:rows", INITIAL_ROWS, {
+    debounceMs: 400,
+  });
+  const rows =
+    Array.isArray(storedRows) && storedRows.length > 0 ? storedRows : INITIAL_ROWS;
+
+  // Restored rows may already use row-N ids — always scan before minting a
+  // new id so ids never collide.
+  const idCounter = useRef(1);
+  const newId = (current: UtmRow[] = rows) => {
+    for (const r of current) {
+      const m = /^row-(\d+)$/.exec(r.id);
+      if (m) idCounter.current = Math.max(idCounter.current, Number(m[1]));
+    }
+    return `row-${++idCounter.current}`;
+  };
+
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [pendingImport, setPendingImport] = useState<PendingImport | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -78,7 +98,7 @@ export function UtmGrid() {
     setRows((prev) => {
       const idx = prev.findIndex((r) => r.id === rowId);
       if (idx === -1) return prev;
-      const copy = { ...prev[idx], id: newId() };
+      const copy = { ...prev[idx], id: newId(prev) };
       return [...prev.slice(0, idx + 1), copy, ...prev.slice(idx + 1)];
     });
   };
@@ -86,7 +106,7 @@ export function UtmGrid() {
   const deleteRow = (rowId: string) => {
     setRows((prev) => {
       const next = prev.filter((r) => r.id !== rowId);
-      return next.length > 0 ? next : [emptyRow(newId())];
+      return next.length > 0 ? next : [emptyRow(newId(prev))];
     });
     if (selectedId === rowId) setSelectedId(null);
   };
@@ -119,9 +139,13 @@ export function UtmGrid() {
     const file = e.target.files?.[0];
     e.target.value = ""; // allow re-importing the same file
     if (!file) return;
+    setImportError(null);
     const text = await file.text();
     const parsed = parseCsv(text);
-    if (parsed.length === 0) return;
+    if (parsed.length === 0) {
+      setImportError(`No rows found in ${file.name} — the file is empty.`);
+      return;
+    }
     const [headers, ...dataRows] = parsed;
     setPendingImport({
       fileName: file.name,
@@ -222,6 +246,12 @@ export function UtmGrid() {
           {toggle("noSpaces", "No spaces")}
         </div>
       </div>
+
+      {importError && (
+        <p role="alert" className="text-sm font-medium text-red-600">
+          ⚠ {importError}
+        </p>
+      )}
 
       <PresetsBar
         presets={presets}
@@ -369,8 +399,8 @@ export function UtmGrid() {
 
       <p className="text-xs text-gray-400">
         Everything runs in your browser — no account, no server, no network
-        requests after page load. Presets and lint toggles are saved in
-        localStorage.
+        requests after page load. Grid rows, presets, and lint toggles are
+        saved in localStorage.
       </p>
 
       {pendingImport && (

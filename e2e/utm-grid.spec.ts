@@ -157,11 +157,85 @@ test("presets persist across reload and apply to a row", async ({ page }) => {
     page.getByText("Paid Social", { exact: true }).first()
   ).toBeVisible();
 
-  // Row 1 is empty after reload; select it and apply the preset.
+  // Rows persist across reload too — clear row 1 so Apply provably fills it.
+  await cell(page, "utm_source", 1).fill("");
+  await cell(page, "utm_medium", 1).fill("");
   await page.getByRole("button", { name: "Select row 1" }).click();
   await page.getByRole("button", { name: "Apply" }).click();
   await expect(cell(page, "utm_source", 1)).toHaveValue("facebook");
   await expect(cell(page, "utm_medium", 1)).toHaveValue("paid_social");
+});
+
+test("grid rows persist across reload; first visit shows one empty row", async ({
+  page,
+}) => {
+  await page.goto("/");
+  // First visit: a single empty starter row.
+  await expect(cell(page, "Base URL", 1)).toHaveValue("");
+  await expect(cell(page, "Base URL", 2)).toHaveCount(0);
+
+  await fillRow(page, 1, {
+    "Base URL": "https://example.com/x",
+    utm_source: "newsletter",
+  });
+  await page.getByRole("button", { name: "Add row" }).click();
+  await cell(page, "Base URL", 2).fill("https://example.com/y");
+
+  await page.reload();
+  await expect(cell(page, "Base URL", 1)).toHaveValue("https://example.com/x");
+  await expect(cell(page, "utm_source", 1)).toHaveValue("newsletter");
+  await expect(cell(page, "Base URL", 2)).toHaveValue("https://example.com/y");
+
+  // New rows added after a restore get non-colliding ids (row count grows).
+  await page.getByRole("button", { name: "Add row" }).click();
+  await cell(page, "Base URL", 3).fill("https://example.com/z");
+  await expect(cell(page, "Base URL", 3)).toHaveValue("https://example.com/z");
+});
+
+test("base URL already containing a utm param warns and is replaced, not duplicated", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await fillRow(page, 1, {
+    "Base URL": "https://example.com/p?utm_source=old",
+    utm_source: "src",
+    utm_medium: "email",
+    utm_campaign: "camp",
+  });
+  await expect(
+    page.getByRole("alert").filter({ hasText: "already contains utm_source" })
+  ).toBeVisible();
+  await expect(cell(page, "Generated URL", 1)).toHaveText(
+    "https://example.com/p?utm_source=src&utm_medium=email&utm_campaign=camp"
+  );
+});
+
+test("empty CSV shows a no-rows message; headers-only CSV disables import", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await cell(page, "Base URL", 1).fill("https://example.com/keep-me");
+
+  await page
+    .getByLabel("CSV file")
+    .setInputFiles({ name: "empty.csv", mimeType: "text/csv", buffer: Buffer.from("") });
+  await expect(
+    page.getByRole("alert").filter({ hasText: "No rows found" })
+  ).toBeVisible();
+
+  await page.getByLabel("CSV file").setInputFiles({
+    name: "headers-only.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from("url,source,medium,campaign\n"),
+  });
+  await expect(page.getByText("Map CSV columns")).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Import 0 rows" })
+  ).toBeDisabled();
+  await page.getByRole("button", { name: "Cancel" }).click();
+
+  // The populated grid was never wiped.
+  await expect(cell(page, "Base URL", 1)).toHaveValue("https://example.com/keep-me");
 });
 
 test("no network requests after page load while editing and exporting", async ({
