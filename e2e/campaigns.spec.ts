@@ -967,3 +967,382 @@ test("Duplicate campaign creates '<name> copy' library card, count increments by
 
   await ctx.close();
 });
+
+// ── RENAME tests (new feature) ────────────────────────────────────────────────
+
+/** Click the Rename action button for a named campaign. */
+async function clickRenameBtn(page: Page, name: string) {
+  const row = campaignRow(page, name);
+  await row.getByRole("button", { name: "Rename" }).click();
+}
+
+test("RENAME: basic rename updates card name in place, preserves link count, persists across reload", async ({
+  browser,
+}) => {
+  const ctx = await browser.newContext();
+  const page = await ctx.newPage();
+  await page.goto("/");
+  await page.waitForLoadState("networkidle");
+
+  // Build and save a 2-row "Black Friday"
+  await cell(page, "Base URL", 1).fill("https://example.com/a");
+  await cell(page, "utm_source", 1).fill("newsletter");
+  await page.getByRole("button", { name: "Add row" }).click();
+  await cell(page, "Base URL", 2).fill("https://example.com/b");
+  await cell(page, "utm_source", 2).fill("twitter");
+  await saveAsCampaign(page, "Black Friday");
+
+  // Confirm 2 links shown
+  await expect(campaignRow(page, "Black Friday")).toContainText("2 links");
+
+  // Click Rename
+  await clickRenameBtn(page, "Black Friday");
+
+  // An inline input should appear pre-filled with "Black Friday"
+  // We get the rename input via data-testid pattern (the id is dynamic)
+  const renameInput = page.locator('[data-testid^="campaign-rename-input-"]');
+  await expect(renameInput).toBeVisible();
+  await expect(renameInput).toHaveValue("Black Friday");
+
+  // Clear and type new name, commit with Enter
+  await renameInput.fill("BF 2026");
+  await renameInput.press("Enter");
+
+  // Card should now show "BF 2026" with 2 links
+  await expect(campaignRow(page, "BF 2026")).toBeVisible();
+  await expect(campaignRow(page, "BF 2026")).toContainText("2 links");
+  // Old name should be gone
+  await expect(campaignRow(page, "Black Friday")).toHaveCount(0);
+
+  // Verify persistence across reload
+  await page.reload();
+  await page.waitForLoadState("networkidle");
+  await expect(campaignRow(page, "BF 2026")).toBeVisible();
+  await expect(campaignRow(page, "BF 2026")).toContainText("2 links");
+  await expect(campaignRow(page, "Black Friday")).toHaveCount(0);
+
+  await ctx.close();
+});
+
+test("RENAME: renaming to own current name is a no-op (no confirm, no change)", async ({
+  browser,
+}) => {
+  const ctx = await browser.newContext();
+  const page = await ctx.newPage();
+  await page.goto("/");
+  await page.waitForLoadState("networkidle");
+
+  await cell(page, "Base URL", 1).fill("https://example.com/a");
+  await cell(page, "utm_source", 1).fill("newsletter");
+  await saveAsCampaign(page, "Black Friday");
+
+  // Track if any dialog fires (must NOT fire for own-name no-op)
+  let dialogFired = false;
+  page.on("dialog", async (dialog) => {
+    dialogFired = true;
+    await dialog.dismiss();
+  });
+
+  // Rename to the same name
+  await clickRenameBtn(page, "Black Friday");
+  const renameInput = page.locator('[data-testid^="campaign-rename-input-"]');
+  await expect(renameInput).toBeVisible();
+  // Name is already "Black Friday" — just press Enter
+  await renameInput.press("Enter");
+
+  // No dialog should have fired
+  expect(dialogFired).toBe(false);
+
+  // Card still shows "Black Friday"
+  await expect(campaignRow(page, "Black Friday")).toBeVisible();
+
+  await ctx.close();
+});
+
+test("RENAME: collision with different campaign prompts confirm-overwrite; cancel keeps both", async ({
+  browser,
+}) => {
+  const ctx = await browser.newContext();
+  // Use viewport wide enough to ensure only desktop sidebar is shown (avoids dual-render)
+  const page = await ctx.newPage();
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto("/");
+  await page.waitForLoadState("networkidle");
+
+  // Save two campaigns
+  await cell(page, "Base URL", 1).fill("https://example.com/a");
+  await cell(page, "utm_source", 1).fill("newsletter");
+  await saveAsCampaign(page, "Black Friday");
+
+  await page.getByRole("button", { name: "Add row" }).click();
+  await cell(page, "Base URL", 2).fill("https://example.com/b");
+  await cell(page, "utm_source", 2).fill("twitter");
+  await page.locator('[data-testid="save-as-campaign-btn"]').click();
+  const nameInput2 = page.locator('[data-testid="campaign-name-input"]').first();
+  await expect(nameInput2).toBeVisible();
+  await nameInput2.fill("Spring Sale");
+  // Accept overwrite dialog if "Black Friday" is currently open (save-as-new path)
+  page.once("dialog", async (d) => { if (d.type() === "confirm") await d.accept(); });
+  await page.locator('[data-testid="campaign-save-confirm"]').first().click();
+  await page.waitForTimeout(500);
+
+  // Now try to rename "Spring Sale" to "Black Friday" (collision)
+  await clickRenameBtn(page, "Spring Sale");
+  // Scope to first visible rename input (desktop sidebar only)
+  const renameInput = page.locator('[data-testid^="campaign-rename-input-"]').first();
+  await expect(renameInput).toBeVisible();
+  await renameInput.fill("Black Friday");
+
+  // Cancel the overwrite dialog
+  page.once("dialog", async (dialog) => {
+    expect(dialog.type()).toBe("confirm");
+    await dialog.dismiss(); // CANCEL
+  });
+  await renameInput.press("Enter");
+  await page.waitForTimeout(300);
+
+  // Both campaigns must still exist unchanged
+  await expect(campaignRow(page, "Black Friday")).toBeVisible();
+  await expect(campaignRow(page, "Spring Sale")).toBeVisible();
+
+  await ctx.close();
+});
+
+test("RENAME: collision confirm-overwrite replaces; confirm merges into one", async ({
+  browser,
+}) => {
+  const ctx = await browser.newContext();
+  const page = await ctx.newPage();
+  // Wide viewport so only the desktop sidebar is rendered (avoids dual-element strict failures)
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto("/");
+  await page.waitForLoadState("networkidle");
+
+  // Save "Black Friday" first (1 row)
+  await cell(page, "Base URL", 1).fill("https://example.com/a");
+  await cell(page, "utm_source", 1).fill("newsletter");
+  await saveAsCampaign(page, "Black Friday");
+
+  // Save "Spring Sale" via Save-as-new (appears since Black Friday is now open)
+  const saveAsNewBtn = page.locator('button[title="Save as new campaign"]');
+  await expect(saveAsNewBtn).toBeVisible({ timeout: 3000 });
+  await saveAsNewBtn.click();
+  const nameInput2 = page.locator('[data-testid="campaign-name-input"]').first();
+  await expect(nameInput2).toBeVisible();
+  await nameInput2.fill("Spring Sale");
+  await page.locator('[data-testid="campaign-save-confirm"]').first().click();
+  // Wait for saved flash to confirm save succeeded
+  await expect(page.locator('[data-testid="campaign-pill"]').first()).toContainText("Saved!", { timeout: 3000 });
+  await page.waitForTimeout(500);
+
+  // Both campaigns exist
+  await expect(campaignRow(page, "Black Friday")).toBeVisible();
+  await expect(campaignRow(page, "Spring Sale")).toBeVisible();
+
+  // Rename "Spring Sale" to "Black Friday" and CONFIRM the overwrite
+  await clickRenameBtn(page, "Spring Sale");
+  // Scope to first visible rename input (desktop sidebar only)
+  const renameInput = page.locator('[data-testid^="campaign-rename-input-"]').first();
+  await expect(renameInput).toBeVisible();
+  await renameInput.fill("Black Friday");
+
+  page.once("dialog", async (dialog) => {
+    expect(dialog.type()).toBe("confirm");
+    await dialog.accept(); // CONFIRM
+  });
+  await renameInput.press("Enter");
+  await page.waitForTimeout(500);
+
+  // Only one "Black Friday" should remain (Spring Sale displaced)
+  // Count li items in first (desktop) campaigns-list
+  const desktopList = page.locator('[data-testid="campaigns-list"]').first();
+  const allRows = desktopList.locator('li');
+  await expect(allRows).toHaveCount(1, { timeout: 3000 });
+  await expect(campaignRow(page, "Black Friday")).toBeVisible();
+  await expect(campaignRow(page, "Spring Sale")).toHaveCount(0);
+
+  await ctx.close();
+});
+
+test("RENAME: if renamed campaign is currently open, 'In: <name>' pill updates", async ({
+  browser,
+}) => {
+  const ctx = await browser.newContext();
+  const page = await ctx.newPage();
+  await page.goto("/");
+  await page.waitForLoadState("networkidle");
+
+  await cell(page, "Base URL", 1).fill("https://example.com/a");
+  await cell(page, "utm_source", 1).fill("newsletter");
+  await saveAsCampaign(page, "Black Friday");
+
+  // Wait for Saved! flash to expire
+  await page.waitForTimeout(2500);
+
+  // The pill should say "In: Black Friday"
+  const pill = page.locator('[data-testid="campaign-pill"]');
+  await expect(pill).toContainText("In: Black Friday");
+
+  // Rename to "BF 2026"
+  await clickRenameBtn(page, "Black Friday");
+  const renameInput = page.locator('[data-testid^="campaign-rename-input-"]');
+  await expect(renameInput).toBeVisible();
+  await renameInput.fill("BF 2026");
+  await renameInput.press("Enter");
+  await page.waitForTimeout(300);
+
+  // Pill must now reflect the new name
+  await expect(pill).toContainText("In: BF 2026");
+
+  await ctx.close();
+});
+
+test("RENAME: rows/contents/link count unchanged after rename", async ({
+  browser,
+}) => {
+  const ctx = await browser.newContext();
+  const page = await ctx.newPage();
+  await page.goto("/");
+  await page.waitForLoadState("networkidle");
+
+  // 2-row grid
+  await cell(page, "Base URL", 1).fill("https://example.com/a");
+  await cell(page, "utm_source", 1).fill("newsletter");
+  await page.getByRole("button", { name: "Add row" }).click();
+  await cell(page, "Base URL", 2).fill("https://example.com/b");
+  await cell(page, "utm_source", 2).fill("twitter");
+  await saveAsCampaign(page, "Black Friday");
+
+  // Open the campaign so the grid is populated
+  page.once("dialog", async (d) => { if (d.type() === "confirm") await d.accept(); });
+  await openCampaign(page, "Black Friday");
+  await page.waitForTimeout(300);
+
+  // Rename
+  await clickRenameBtn(page, "Black Friday");
+  const renameInput = page.locator('[data-testid^="campaign-rename-input-"]');
+  await renameInput.fill("BF 2026");
+  await renameInput.press("Enter");
+  await page.waitForTimeout(300);
+
+  // Grid rows still intact (open the renamed campaign to verify)
+  page.once("dialog", async (d) => { if (d.type() === "confirm") await d.accept(); });
+  await openCampaign(page, "BF 2026");
+  await page.waitForTimeout(300);
+
+  await expect(cell(page, "Base URL", 1)).toHaveValue("https://example.com/a");
+  await expect(cell(page, "utm_source", 1)).toHaveValue("newsletter");
+  await expect(cell(page, "Base URL", 2)).toHaveValue("https://example.com/b");
+  await expect(cell(page, "utm_source", 2)).toHaveValue("twitter");
+
+  // Link count on card still 2
+  await expect(campaignRow(page, "BF 2026")).toContainText("2 links");
+
+  await ctx.close();
+});
+
+// ── FILTER tests (new feature) ────────────────────────────────────────────────
+
+test("FILTER: input filters visible campaign cards by case-insensitive name substring", async ({
+  browser,
+}) => {
+  const ctx = await browser.newContext();
+  const page = await ctx.newPage();
+  await page.goto("/");
+  await page.waitForLoadState("networkidle");
+
+  // Save two campaigns
+  await cell(page, "Base URL", 1).fill("https://example.com/a");
+  await cell(page, "utm_source", 1).fill("newsletter");
+  await saveAsCampaign(page, "Black Friday");
+
+  await page.getByRole("button", { name: "Add row" }).click();
+  await cell(page, "Base URL", 2).fill("https://example.com/b");
+  await cell(page, "utm_source", 2).fill("twitter");
+  // Save as a new campaign with a different name
+  const saveAsNewBtn = page.locator('button[title="Save as new campaign"]');
+  if (await saveAsNewBtn.isVisible()) {
+    await saveAsNewBtn.click();
+  } else {
+    await page.locator('[data-testid="save-as-campaign-btn"]').click();
+  }
+  const nameInput = page.locator('[data-testid="campaign-name-input"]');
+  await expect(nameInput).toBeVisible();
+  await nameInput.fill("Spring Sale");
+  page.once("dialog", async (d) => { if (d.type() === "confirm") await d.accept(); });
+  await page.locator('[data-testid="campaign-save-confirm"]').click();
+  await page.waitForTimeout(500);
+
+  // Filter input must be present (campaigns exist)
+  const filterInput = page.locator('[data-testid="campaigns-filter"]');
+  await expect(filterInput).toBeVisible();
+
+  // Type "black" — only "Black Friday" should be visible
+  await filterInput.fill("black");
+  await expect(campaignRow(page, "Black Friday")).toBeVisible();
+  await expect(campaignRow(page, "Spring Sale")).toHaveCount(0);
+
+  // Type "SALE" (uppercase) — only "Spring Sale"
+  await filterInput.fill("SALE");
+  await expect(campaignRow(page, "Spring Sale")).toBeVisible();
+  await expect(campaignRow(page, "Black Friday")).toHaveCount(0);
+
+  // Clear filter — both visible again
+  await filterInput.fill("");
+  await expect(campaignRow(page, "Black Friday")).toBeVisible();
+  await expect(campaignRow(page, "Spring Sale")).toBeVisible();
+
+  await ctx.close();
+});
+
+test("FILTER: no-match shows 'No campaigns match'", async ({
+  browser,
+}) => {
+  const ctx = await browser.newContext();
+  const page = await ctx.newPage();
+  await page.goto("/");
+  await page.waitForLoadState("networkidle");
+
+  // Save one campaign
+  await cell(page, "Base URL", 1).fill("https://example.com/a");
+  await cell(page, "utm_source", 1).fill("newsletter");
+  await saveAsCampaign(page, "Black Friday");
+
+  const filterInput = page.locator('[data-testid="campaigns-filter"]');
+  await expect(filterInput).toBeVisible();
+
+  // Type something that won't match
+  await filterInput.fill("zzznomatch");
+
+  // "No campaigns match" message must be visible
+  const noMatch = page.locator('[data-testid="campaigns-list"]').locator('p');
+  await expect(noMatch).toBeVisible();
+  await expect(noMatch).toContainText("No campaigns match");
+
+  // No campaign rows visible
+  await expect(page.locator('[data-testid="campaigns-list"] li')).toHaveCount(0);
+
+  await ctx.close();
+});
+
+test("FILTER: absent/no-op with 0 campaigns (empty state shows hint, not filter)", async ({
+  browser,
+}) => {
+  // Fresh context = empty localStorage
+  const ctx = await browser.newContext();
+  const page = await ctx.newPage();
+  await page.goto("/");
+  await page.waitForLoadState("networkidle");
+
+  // Filter input must NOT be present with 0 campaigns
+  const filterInput = page.locator('[data-testid="campaigns-filter"]');
+  await expect(filterInput).toHaveCount(0);
+
+  // Empty state hint visible instead
+  const list = page.locator('[data-testid="campaigns-list"]');
+  const hint = list.locator("p");
+  await expect(hint).toBeVisible();
+  await expect(hint).toContainText("No saved campaigns");
+
+  await ctx.close();
+});
