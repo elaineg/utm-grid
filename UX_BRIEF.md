@@ -91,3 +91,74 @@ earns trust before the user pastes a link into a teammate's chat.
 row / Export, full-label, thumb-reachable. On copy, the same green "Link copied!" fill on the
 button itself (not a corner toast that scrolls off). The loaded-grid banner spans full width above
 the grid container and stays in flow.
+
+## Round 4 delta — Campaigns library (personal-accumulation layer)
+
+A named, client-side library: save the WHOLE current grid (all rows + active lint toggles) under a
+name and return to it weekly. Directly answers Sam's R3 note (c) — the share link was a frozen
+snapshot with "no named 'this batch' to re-share in place"; named campaigns give the re-shareable
+home. Keep the cold-open grid the hero — a visitor with zero saved campaigns must still understand
+the app in 5 seconds. Stay one screen, no new pages. Do NOT touch the grid layout, headline, or
+toolbar order from R1–R3.
+
+**1. Where it lives (accumulation home, not a bolted-on box).** A **right-hand sidebar** on desktop
+(~260px), pinned alongside the grid, NOT above it — the grid keeps its full-width hero position and
+stays above the fold. Sidebar header: **"Campaigns"** with the **"+ Save as campaign"** button as
+its top action. Below it, the saved list. On mobile/narrow (<900px) the sidebar collapses to a
+single **"Campaigns (N)"** disclosure bar directly UNDER the toolbar and ABOVE the grid, collapsed
+by default so it never pushes the grid down on cold open; tapping expands the list inline. The
+existing channel-Presets dropdown stays in the toolbar where it is — campaigns are grid-level
+saves, presets are field-level fills; do not merge them.
+
+**2. Empty state (zero campaigns).** The list area shows one quiet line, no nag, no empty box
+outline: **"No saved campaigns yet — build a grid, then 'Save as campaign' to reuse it next week."**
+The "+ Save as campaign" button stays enabled above it so the invitation is the action itself.
+
+**3. Labels, placement, the naming affordance.**
+- **"+ Save as campaign"** — sidebar header (primary/accent), always visible. Click reveals an
+  **inline name field** in the sidebar (not a modal) with placeholder **"Name this campaign"**,
+  pre-focused, plus **Save** / **Cancel**. Enter saves, Esc cancels. Saving an unnamed grid is the
+  only entry point — there is no separate dialog.
+- Each saved row: clicking the **name** (or an explicit **Open**) loads it. Hover/tap reveals a
+  compact action cluster on the row: **Open**, **Duplicate**, **Delete** (icon + label on desktop;
+  icon row on mobile). Duplicate creates **"<name> copy"**. Keep verbs exactly: Open / Duplicate /
+  Delete.
+
+**4. Saved-row layout (compact).** One line per campaign: **name** (bold, truncates with ellipsis) on
+the left; a small muted right-aligned meta line **"12 links · saved 2d ago"** (relative time:
+"just now", "3h ago", "2d ago", then a date). Currently-open campaign row gets a left accent bar +
+subtle tint so it reads as the active one. No thumbnails, no nesting.
+
+**5. Open-campaign indicator + unsaved-changes signal.** A small status pill in the toolbar (left of
+"Copy share link") shows the working-grid's identity:
+- Saved & clean: **"In: Black Friday"** (neutral).
+- Edited since open/save: **"In: Black Friday · unsaved changes"** with an amber dot, and the
+  sidebar's matching row shows the same amber dot. **"+ Save as campaign"** header button relabels
+  to **"Save changes"** when a clean-or-dirty campaign is open (saving updates it in place); a
+  caret/secondary **"Save as new…"** stays available.
+- Scratch grid (nothing open): pill reads **"Unsaved grid"** (neutral) — never alarming; the cold
+  visitor sees this and it implies "you can save this."
+
+**6. The two confirm moments — both native `confirm()` (reliable, unmissable, no custom-modal
+focus traps), exact copy:**
+- **Replace unsaved working grid** (firing on Open-a-campaign OR opening a share link, only when the
+  working grid has unsaved edits): `"Open \"Black Friday\"? Your current unsaved grid (8 links) will be replaced. This can't be undone."` — OK loads, Cancel leaves the grid untouched. Names the
+  target AND the count being lost so a hurried marketer knows exactly what they're trading.
+- **Overwrite existing name** (Save-as-campaign under a name that already exists): `"A campaign named \"Black Friday\" already exists. Replace it with the current grid (8 links)?"` — OK updates in
+  place (single entry, new count + time), Cancel returns to the name field.
+- Delete keeps its own: `"Delete campaign \"Black Friday\"? This can't be undone."`
+
+**7. Save/update confirmation — peripherally unmissable (heed copy-confirmation friction).** On a
+successful Save/Save-changes, do NOT rely on a 1-second toast: the new/updated row **flashes green
+and the open-indicator pill flips to "In: Black Friday" (green for ~2s, ref-stable timer that
+survives re-render), with `aria-live="polite"`**. The amber "unsaved changes" dot clearing IS the
+durable confirmation — it persists, so a user who looked away still sees the saved state on return.
+
+**8. Privacy / no-cloud consistency.** Nothing here implies sync. One quiet line under the sidebar
+header: **"Saved on this device."** Do not say "synced", "account", or "cloud". A campaign is local
+to this browser, same prop as the rest of the app.
+
+## 5-second check (still unchanged above the fold)
+Cold visitor sees the same hero: headline, subtitle, the pre-filled example grid row with a live
+generated URL + Copy. The Campaigns sidebar is present but quiet (empty-state one-liner on desktop,
+collapsed bar on mobile) — it never displaces the grid or competes for the first read.

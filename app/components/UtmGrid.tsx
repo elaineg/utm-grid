@@ -26,6 +26,13 @@ import { buildUtmUrl } from "../../lib/utm";
 import { useLocalStorage } from "../../lib/useLocalStorage";
 import { ImportDialog, type ImportMode, type PendingImport } from "./ImportDialog";
 import { PresetsBar } from "./PresetsBar";
+import { CampaignsSidebar } from "./CampaignsSidebar";
+import {
+  deserializeCampaigns,
+  serializeCampaigns,
+  findCampaign,
+  type Campaign,
+} from "../../lib/campaigns";
 
 type EditableField = "baseUrl" | UtmField;
 const COLUMNS: EditableField[] = ["baseUrl", ...UTM_FIELDS];
@@ -63,40 +70,22 @@ export function UtmGrid() {
   const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── Share link state ───────────────────────────────────────────────────────
-  // shareLinkCopied: true while the "Link copied!" green cue is showing
   const [shareLinkCopied, setShareLinkCopied] = useState(false);
   const shareCopyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // sharedBanner: non-null when we loaded a shared grid from the hash.
-  // rowCount = number of rows loaded, so we can display "N links".
   const [sharedBanner, setSharedBanner] = useState<{ rowCount: number } | null>(null);
 
-  // pendingSharedState: the state we parsed from the hash.
-  // While this is set and the user hasn't edited a cell, we render the
-  // shared rows/settings in the live view WITHOUT writing to localStorage.
   const pendingSharedState = useRef<{ rows: UtmRow[]; settings: LintSettings } | null>(null);
 
-  // isUsingSharedState: SSR-safe default is false.
-  // Set to true client-side after mount when a valid share hash is detected.
   const [isUsingSharedState, setIsUsingSharedState] = useState(false);
 
-  // sharedRows / sharedSettings: SSR-safe defaults are null.
-  // Populated client-side after mount when a share hash is detected.
   const [sharedRows, setSharedRows] = useState<UtmRow[] | null>(null);
   const [sharedSettings, setSharedSettings] = useState<LintSettings | null>(null);
 
-  // Parse the hash in a useEffect so SSR and the first client render are identical
-  // (both see isUsingSharedState=false, sharedRows=null) — no hydration mismatch.
-  // After mount the effect runs once, parses the hash, and if valid:
-  //   - populates sharedRows/sharedSettings
-  //   - sets isUsingSharedState=true
-  //   - shows the banner
-  //   - clears the hash from the URL
   useEffect(() => {
     const hash = window.location.hash;
     const payload = parseShareHash(hash);
     if (!payload) return;
-    // Clear the hash immediately so a later manual save isn't ambiguous
     history.replaceState(null, "", window.location.pathname + window.location.search);
     pendingSharedState.current = { rows: payload.rows, settings: payload.settings };
     setSharedRows(payload.rows);
@@ -109,7 +98,7 @@ export function UtmGrid() {
   // Flash state: rowId:field → "green" for brief cell highlight
   const [flashCells, setFlashCells] = useState<Set<string>>(new Set());
 
-  // Undo stack (in-memory only — no localStorage)
+  // Undo stack (in-memory only)
   const undoStack = useRef<UndoEntry[]>([]);
   const [undoCount, setUndoCount] = useState(0);
   const pushUndo = useCallback((label: string, beforeRows: UtmRow[]) => {
@@ -143,7 +132,6 @@ export function UtmGrid() {
     const entry = undoStack.current.pop();
     if (!entry) return;
     setUndoCount(undoStack.current.length);
-    // Undo always writes back to stored state (not shared preview)
     setStoredRows(entry.rows);
     showToast(`Undid: ${entry.label}`);
   }, [setStoredRows, showToast]);
@@ -158,10 +146,33 @@ export function UtmGrid() {
     null
   );
 
+  // ── Campaigns library state ────────────────────────────────────────────────
+  // Stored as JSON string in localStorage (reuses the same store pattern).
+  const [rawCampaigns, setRawCampaigns] = useLocalStorage<string>(
+    "utm-grid:campaigns",
+    "[]"
+  );
+  // Parse the JSON on each render — cheap enough (typically <20 items).
+  const campaigns = useMemo(
+    () => deserializeCampaigns(typeof rawCampaigns === "string" ? rawCampaigns : "[]"),
+    [rawCampaigns]
+  );
+  const setCampaigns = useCallback(
+    (next: Campaign[]) => setRawCampaigns(serializeCampaigns(next)),
+    [setRawCampaigns]
+  );
+
+  // Which campaign is currently "open" (null = scratch grid)
+  const [openCampaignId, setOpenCampaignId] = useState<string | null>(null);
+
+  // Whether the working grid differs from the open campaign's saved state
+  const [isDirty, setIsDirty] = useState(false);
+
+  // savedFlash: green pill/button for ~2s after a successful save (ref-stable timer)
+  const [savedFlash, setSavedFlash] = useState(false);
+  const savedFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // ── Effective rows / settings (shared or stored) ──────────────────────────
-  // While isUsingSharedState, render sharedRows/sharedSettings without touching localStorage.
-  // On first cell edit, commitSharedToStorage() is called which writes shared state to
-  // localStorage and switches back to normal stored-state mode.
   const rows: UtmRow[] = isUsingSharedState && sharedRows ? sharedRows : storedRowsNormalized;
   const settings: LintSettings = isUsingSharedState && sharedSettings ? sharedSettings : storedSettings;
 
@@ -173,7 +184,6 @@ export function UtmGrid() {
     return `row-${++idCounter.current}`;
   };
 
-  // Commit the shared state to localStorage (called on first edit while viewing shared grid)
   const commitSharedToStorage = useCallback(() => {
     if (!isUsingSharedState || !pendingSharedState.current) return;
     const { rows: sRows, settings: sSettings } = pendingSharedState.current;
@@ -186,14 +196,11 @@ export function UtmGrid() {
     setSharedBanner(null);
   }, [isUsingSharedState, setStoredRows, setStoredSettings]);
 
-  // setRows: proxy that also commits shared state on first write
   const setRows = useCallback(
     (next: UtmRow[] | ((prev: UtmRow[]) => UtmRow[])) => {
       if (isUsingSharedState) {
-        // Commit first, then apply update on top of the committed state
         const sRows = pendingSharedState.current?.rows ?? storedRowsNormalized;
         const sSettings = pendingSharedState.current?.settings ?? storedSettings;
-        // Commit to localStorage
         const nextRows = typeof next === "function" ? next(sRows) : next;
         setStoredRows(nextRows);
         setStoredSettings(sSettings);
@@ -205,22 +212,23 @@ export function UtmGrid() {
       } else {
         setStoredRows(next);
       }
+      // Mark dirty when working grid changes while a campaign is open
+      setIsDirty(true);
     },
     [isUsingSharedState, storedRowsNormalized, storedSettings, setStoredRows, setStoredSettings]
   );
 
-  // setSettings: proxy that also commits shared state on first write
   const setSettings = useCallback(
     (next: LintSettings | ((prev: LintSettings) => LintSettings)) => {
       if (isUsingSharedState) {
         commitSharedToStorage();
       }
       setStoredSettings(next);
+      setIsDirty(true);
     },
     [isUsingSharedState, commitSharedToStorage, setStoredSettings]
   );
 
-  // All presets = seeded + user (mirroring PresetsBar)
   const allPresets = useMemo(() => [...SEEDED_PRESETS, ...userPresets], [userPresets]);
 
   const warnings = useMemo(
@@ -235,7 +243,6 @@ export function UtmGrid() {
     copyTimer.current = setTimeout(() => setCopied(null), 1500);
   };
 
-  // Flash cells green briefly
   const flashCellKeys = useCallback((keys: string[]) => {
     setFlashCells(new Set(keys));
     setTimeout(() => setFlashCells(new Set()), 1200);
@@ -247,7 +254,6 @@ export function UtmGrid() {
     );
   };
 
-  // Fix a single cell
   const fixCell = (rowId: string, field: UtmField, currentValue: string) => {
     const fixed = normalizeValue(currentValue, settings);
     if (fixed === currentValue) return;
@@ -259,13 +265,11 @@ export function UtmGrid() {
     showToast("Fixed 1 cell");
   };
 
-  // Clean all fixable cells
   const cleanAll = () => {
     const { rows: cleaned, count } = normalizeAllRows(rows, settings);
     if (count === 0) { showToast("No cells needed fixing"); return; }
     pushUndo("Clean all", rows);
     setRows(cleaned);
-    // Flash all changed rows
     const keys: string[] = [];
     for (let i = 0; i < rows.length; i++) {
       if (cleaned[i] !== rows[i]) {
@@ -314,7 +318,6 @@ export function UtmGrid() {
     }
   };
 
-  // True when every row is completely blank (P3 guard: nothing to share)
   const gridIsEmpty = rows.every(
     (r) => !r.baseUrl.trim() && UTM_FIELDS.every((f) => !r[f].trim())
   );
@@ -324,7 +327,6 @@ export function UtmGrid() {
 
   const copyShareLink = async () => {
     if (gridIsEmpty) {
-      // Show inline warning instead of copying
       if (shareEmptyTimer.current) clearTimeout(shareEmptyTimer.current);
       setShareEmptyWarning(true);
       shareEmptyTimer.current = setTimeout(() => {
@@ -337,10 +339,8 @@ export function UtmGrid() {
     try {
       await writeClipboard(url);
     } catch {
-      // Even execCommand failed — still show the green cue so the user knows
-      // the action was attempted (they may have manually blocked clipboard).
+      // Even execCommand failed — still show green cue
     }
-    // Ref-stable timer: clear any prior timer before setting a new one
     if (shareCopyTimer.current) clearTimeout(shareCopyTimer.current);
     setShareLinkCopied(true);
     shareCopyTimer.current = setTimeout(() => {
@@ -407,7 +407,6 @@ export function UtmGrid() {
   const applyPresetToSelected = (presetId: string) => {
     const preset = allPresets.find((p) => p.id === presetId);
     if (!preset) return;
-    // If no row is selected, apply to the last row
     const targetId = selectedId ?? rows[rows.length - 1]?.id;
     if (!targetId) return;
     setRows((prev) =>
@@ -422,6 +421,87 @@ export function UtmGrid() {
       { id: `preset-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, name, values },
     ]);
   };
+
+  // ── Campaigns integration ──────────────────────────────────────────────────
+
+  /** Check if the working grid has unsaved edits vs the open campaign. */
+  const workingGridIsDirty = useCallback((): boolean => {
+    if (!openCampaignId) return false;
+    return isDirty;
+  }, [openCampaignId, isDirty]);
+
+  /**
+   * Guard: if opening a campaign or share-link would clobber unsaved edits,
+   * show a native confirm().  Returns true if the caller should proceed.
+   */
+  const confirmReplaceIfDirty = useCallback(
+    (targetName: string, targetLinkCount: number): boolean => {
+      if (!workingGridIsDirty()) return true;
+      return window.confirm(
+        `Open "${targetName}"? Your current unsaved grid (${rows.length} link${rows.length === 1 ? "" : "s"}) will be replaced. This can't be undone.`
+      );
+    },
+    [workingGridIsDirty, rows.length]
+  );
+
+  /** Open a saved campaign as the working grid. */
+  const openCampaign = useCallback(
+    (campaign: Campaign) => {
+      if (!confirmReplaceIfDirty(campaign.name, campaign.rows.length)) return;
+      // Clear any shared-state overlay
+      if (isUsingSharedState) {
+        pendingSharedState.current = null;
+        setSharedRows(null);
+        setSharedSettings(null);
+        setIsUsingSharedState(false);
+        setSharedBanner(null);
+      }
+      setStoredRows(campaign.rows);
+      setStoredSettings(campaign.settings);
+      setOpenCampaignId(campaign.id);
+      setIsDirty(false);
+    },
+    [
+      confirmReplaceIfDirty,
+      isUsingSharedState,
+      setStoredRows,
+      setStoredSettings,
+    ]
+  );
+
+  /** Called by CampaignsSidebar when a save completes. */
+  const handleCampaignSaved = useCallback(
+    (nextCampaigns: Campaign[], savedCampaign: Campaign) => {
+      setCampaigns(nextCampaigns);
+      setOpenCampaignId(savedCampaign.id);
+      setIsDirty(false);
+      // Flash the pill green for ~2s (ref-stable timer)
+      if (savedFlashTimer.current) clearTimeout(savedFlashTimer.current);
+      setSavedFlash(true);
+      savedFlashTimer.current = setTimeout(() => {
+        setSavedFlash(false);
+        savedFlashTimer.current = null;
+      }, 2000);
+    },
+    [setCampaigns]
+  );
+
+  // ── Toolbar pill ──────────────────────────────────────────────────────────
+  const openCampaignRecord = openCampaignId
+    ? findCampaign(campaigns, openCampaignId)
+    : null;
+
+  const pillLabel = openCampaignRecord
+    ? isDirty
+      ? `In: ${openCampaignRecord.name} · unsaved changes`
+      : `In: ${openCampaignRecord.name}`
+    : "Unsaved grid";
+
+  const pillClass = savedFlash
+    ? "rounded-full border border-green-500 bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700"
+    : openCampaignRecord && isDirty
+    ? "rounded-full border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700"
+    : "rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-medium text-gray-500";
 
   const toggle = (key: keyof LintSettings, label: string) => (
     <label className="flex items-center gap-1.5 text-sm text-gray-700">
@@ -440,6 +520,22 @@ export function UtmGrid() {
     <div className="space-y-4">
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-3 rounded-lg border border-gray-200 bg-white p-4">
+        {/* Open-campaign indicator pill */}
+        <span
+          className={pillClass}
+          aria-live="polite"
+          data-testid="campaign-pill"
+          role="status"
+        >
+          {savedFlash ? `In: ${openCampaignRecord?.name ?? "campaign"} · Saved!` : pillLabel}
+          {openCampaignRecord && isDirty && !savedFlash && (
+            <span
+              className="ml-1.5 inline-block h-2 w-2 rounded-full bg-amber-400 align-middle"
+              aria-label="unsaved changes"
+            />
+          )}
+        </span>
+
         <button
           type="button"
           onClick={addRow}
@@ -558,7 +654,23 @@ export function UtmGrid() {
         onNewRowPresetChange={setNewRowPresetId}
       />
 
-      {/* Loaded shared grid banner — appears above the grid, in-flow, never blocking */}
+      {/* Mobile campaigns disclosure — appears ABOVE grid (below toolbar), collapsed by default */}
+      <div className="min-[900px]:hidden">
+        <CampaignsSidebar
+          campaigns={campaigns}
+          openCampaignId={openCampaignId}
+          isDirty={isDirty}
+          onSave={handleCampaignSaved}
+          onOpen={openCampaign}
+          onChange={setCampaigns}
+          rows={rows}
+          settings={settings}
+          savedFlash={savedFlash}
+          mobileOnly
+        />
+      </div>
+
+      {/* Loaded shared grid banner */}
       {sharedBanner && (
         <div
           role="status"
@@ -572,7 +684,7 @@ export function UtmGrid() {
               {sharedBanner.rowCount === 1 ? "link" : "links"})
             </p>
             <p className="mt-0.5 text-xs text-blue-700">
-              These are someone's links — edit any cell to make them yours.{" "}
+              These are someone&apos;s links — edit any cell to make them yours.{" "}
               Shareable link is built in your browser — nothing is sent to any server.
             </p>
           </div>
@@ -587,161 +699,180 @@ export function UtmGrid() {
         </div>
       )}
 
-      {/* Grid — mobile: scrollable container, sticky Generated URL + Actions columns */}
-      <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
-        <table className="w-full min-w-[900px] border-collapse text-sm">
-          <thead>
-            <tr className="border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase">
-              <th className="w-8 px-2 py-2.5" aria-label="Row number" />
-              {COLUMNS.map((c) => (
-                <th key={c} className="px-2 py-2.5">
-                  {FIELD_LABELS[c]}
-                  {settings.requiredParams &&
-                    ["utm_source", "utm_medium", "utm_campaign"].includes(c) && (
-                      <span className="ml-0.5 text-red-500" title="Required">
-                        *
-                      </span>
-                    )}
-                </th>
-              ))}
-              <th className="sticky right-16 z-10 w-64 bg-gray-50 px-2 py-2.5 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)]">
-                Generated URL
-              </th>
-              <th className="sticky right-0 z-10 w-20 bg-gray-50 px-2 py-2.5 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)]">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row, i) => {
-              const generated = buildUtmUrl(row);
-              const isSelected = row.id === selectedId;
-              return (
-                <tr
-                  key={row.id}
-                  onClick={() => setSelectedId(row.id)}
-                  className={`border-b border-gray-100 align-top ${
-                    isSelected ? "bg-blue-50/70" : "hover:bg-gray-50/50"
-                  }`}
-                >
-                  <td className="px-2 py-2 text-center">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedId(row.id)}
-                      aria-label={`Select row ${i + 1}`}
-                      className={`h-6 w-6 rounded text-xs font-medium ${
-                        isSelected
-                          ? "bg-blue-600 text-white"
-                          : "text-gray-400 hover:bg-gray-200"
-                      }`}
-                    >
-                      {i + 1}
-                    </button>
-                  </td>
-                  {COLUMNS.map((field) => {
-                    const cellKey = warningKey(row.id, field);
-                    const cellWarnings = warnings.get(cellKey);
-                    const flashKey = `${row.id}:${field}`;
-                    const isFlashing = flashCells.has(flashKey);
-                    const isUtmField = field !== "baseUrl";
-                    const canFix =
-                      isUtmField &&
-                      cellWarnings &&
-                      hasCellFix(cellWarnings) &&
-                      isCellFixable(row[field], settings);
-                    return (
-                      <td key={field} className="px-2 py-2">
-                        <input
-                          value={row[field]}
-                          onChange={(e) => updateCell(row.id, field, e.target.value)}
-                          onFocus={() => setSelectedId(row.id)}
-                          aria-label={`${FIELD_LABELS[field]} row ${i + 1}`}
-                          aria-invalid={!!cellWarnings}
-                          placeholder={field === "baseUrl" ? "https://…" : ""}
-                          spellCheck={false}
-                          className={`w-full min-w-24 rounded-md border px-2 py-1.5 font-mono text-xs focus:outline-none transition-colors duration-300 ${
-                            isFlashing
-                              ? "border-green-400 bg-green-50"
-                              : cellWarnings
-                              ? "border-amber-400 bg-amber-50 focus:border-amber-500"
-                              : "border-gray-200 bg-white focus:border-blue-500"
-                          }`}
-                        />
-                        {cellWarnings && (
-                          <CellWarnings
-                            warnings={cellWarnings}
-                            canFix={!!canFix}
-                            onFix={
-                              canFix
-                                ? () => fixCell(row.id, field as UtmField, row[field])
-                                : undefined
-                            }
-                          />
-                        )}
-                      </td>
-                    );
-                  })}
-                  {/* Sticky Generated URL */}
-                  <td className="sticky right-16 z-10 px-2 py-2 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] bg-inherit">
-                    <output
-                      aria-label={`Generated URL row ${i + 1}`}
-                      title={generated}
-                      className={`block max-w-60 truncate rounded-md bg-gray-50 px-2 py-1.5 font-mono text-xs ${
-                        generated ? "text-gray-800" : "text-gray-400"
-                      }`}
-                    >
-                      {generated || "—"}
-                    </output>
-                  </td>
-                  {/* Sticky Actions */}
-                  <td className="sticky right-0 z-10 px-2 py-2 whitespace-nowrap shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] bg-inherit">
-                    <span className="inline-flex flex-col gap-1">
-                      <span className="inline-flex items-center gap-1">
-                        <button
-                          type="button"
-                          onClick={() => void copyText(generated, row.id)}
-                          disabled={!generated}
-                          aria-label={`Copy URL row ${i + 1}`}
-                          className="rounded-md border border-gray-200 px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-300"
-                        >
-                          Copy
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => duplicateRow(row.id)}
-                          aria-label={`Duplicate row ${i + 1}`}
-                          className="rounded-md border border-gray-200 px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100"
-                        >
-                          Dup
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => deleteRow(row.id)}
-                          aria-label={`Delete row ${i + 1}`}
-                          className="rounded-md border border-gray-200 px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
-                        >
-                          Del
-                        </button>
-                      </span>
-                      {copied === row.id && (
-                        <span aria-live="polite" className="text-xs font-medium text-green-600">
-                          Copied
+      {/* Main layout: grid + desktop sidebar side by side */}
+      <div className="flex gap-4 items-start">
+        {/* Grid — mobile: scrollable container, sticky Generated URL + Actions columns */}
+        <div className="min-w-0 flex-1 overflow-x-auto rounded-lg border border-gray-200 bg-white">
+          <table className="w-full min-w-[900px] border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase">
+                <th className="w-8 px-2 py-2.5" aria-label="Row number" />
+                {COLUMNS.map((c) => (
+                  <th key={c} className="px-2 py-2.5">
+                    {FIELD_LABELS[c]}
+                    {settings.requiredParams &&
+                      ["utm_source", "utm_medium", "utm_campaign"].includes(c) && (
+                        <span className="ml-0.5 text-red-500" title="Required">
+                          *
                         </span>
                       )}
-                    </span>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                  </th>
+                ))}
+                <th className="sticky right-16 z-10 w-64 bg-gray-50 px-2 py-2.5 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)]">
+                  Generated URL
+                </th>
+                <th className="sticky right-0 z-10 w-20 bg-gray-50 px-2 py-2.5 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)]">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row, i) => {
+                const generated = buildUtmUrl(row);
+                const isSelected = row.id === selectedId;
+                return (
+                  <tr
+                    key={row.id}
+                    onClick={() => setSelectedId(row.id)}
+                    className={`border-b border-gray-100 align-top ${
+                      isSelected ? "bg-blue-50/70" : "hover:bg-gray-50/50"
+                    }`}
+                  >
+                    <td className="px-2 py-2 text-center">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedId(row.id)}
+                        aria-label={`Select row ${i + 1}`}
+                        className={`h-6 w-6 rounded text-xs font-medium ${
+                          isSelected
+                            ? "bg-blue-600 text-white"
+                            : "text-gray-400 hover:bg-gray-200"
+                        }`}
+                      >
+                        {i + 1}
+                      </button>
+                    </td>
+                    {COLUMNS.map((field) => {
+                      const cellKey = warningKey(row.id, field);
+                      const cellWarnings = warnings.get(cellKey);
+                      const flashKey = `${row.id}:${field}`;
+                      const isFlashing = flashCells.has(flashKey);
+                      const isUtmField = field !== "baseUrl";
+                      const canFix =
+                        isUtmField &&
+                        cellWarnings &&
+                        hasCellFix(cellWarnings) &&
+                        isCellFixable(row[field], settings);
+                      return (
+                        <td key={field} className="px-2 py-2">
+                          <input
+                            value={row[field]}
+                            onChange={(e) => updateCell(row.id, field, e.target.value)}
+                            onFocus={() => setSelectedId(row.id)}
+                            aria-label={`${FIELD_LABELS[field]} row ${i + 1}`}
+                            aria-invalid={!!cellWarnings}
+                            placeholder={field === "baseUrl" ? "https://…" : ""}
+                            spellCheck={false}
+                            className={`w-full min-w-24 rounded-md border px-2 py-1.5 font-mono text-xs focus:outline-none transition-colors duration-300 ${
+                              isFlashing
+                                ? "border-green-400 bg-green-50"
+                                : cellWarnings
+                                ? "border-amber-400 bg-amber-50 focus:border-amber-500"
+                                : "border-gray-200 bg-white focus:border-blue-500"
+                            }`}
+                          />
+                          {cellWarnings && (
+                            <CellWarnings
+                              warnings={cellWarnings}
+                              canFix={!!canFix}
+                              onFix={
+                                canFix
+                                  ? () => fixCell(row.id, field as UtmField, row[field])
+                                  : undefined
+                              }
+                            />
+                          )}
+                        </td>
+                      );
+                    })}
+                    {/* Sticky Generated URL */}
+                    <td className="sticky right-16 z-10 px-2 py-2 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] bg-inherit">
+                      <output
+                        aria-label={`Generated URL row ${i + 1}`}
+                        title={generated}
+                        className={`block max-w-60 truncate rounded-md bg-gray-50 px-2 py-1.5 font-mono text-xs ${
+                          generated ? "text-gray-800" : "text-gray-400"
+                        }`}
+                      >
+                        {generated || "—"}
+                      </output>
+                    </td>
+                    {/* Sticky Actions */}
+                    <td className="sticky right-0 z-10 px-2 py-2 whitespace-nowrap shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] bg-inherit">
+                      <span className="inline-flex flex-col gap-1">
+                        <span className="inline-flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => void copyText(generated, row.id)}
+                            disabled={!generated}
+                            aria-label={`Copy URL row ${i + 1}`}
+                            className="rounded-md border border-gray-200 px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-300"
+                          >
+                            Copy
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => duplicateRow(row.id)}
+                            aria-label={`Duplicate row ${i + 1}`}
+                            className="rounded-md border border-gray-200 px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100"
+                          >
+                            Dup
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => deleteRow(row.id)}
+                            aria-label={`Delete row ${i + 1}`}
+                            className="rounded-md border border-gray-200 px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
+                          >
+                            Del
+                          </button>
+                        </span>
+                        {copied === row.id && (
+                          <span aria-live="polite" className="text-xs font-medium text-green-600">
+                            Copied
+                          </span>
+                        )}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Desktop campaigns sidebar — hidden on mobile */}
+        <div className="hidden min-[900px]:block w-64 shrink-0">
+          <CampaignsSidebar
+            campaigns={campaigns}
+            openCampaignId={openCampaignId}
+            isDirty={isDirty}
+            onSave={handleCampaignSaved}
+            onOpen={openCampaign}
+            onChange={setCampaigns}
+            rows={rows}
+            settings={settings}
+            savedFlash={savedFlash}
+            desktopOnly
+          />
+        </div>
       </div>
 
       {/* F: Trust note */}
       <p className="text-xs text-gray-400">
         Generated URLs are trimmed of trailing spaces; your source cells are left as typed.
         Everything runs in your browser — no account, no server, no network
-        requests after page load. Grid rows, presets, and lint toggles are
+        requests after page load. Grid rows, presets, campaigns, and lint toggles are
         saved in localStorage.
       </p>
 
@@ -790,7 +921,7 @@ export function UtmGrid() {
   );
 }
 
-// ── CellWarnings: collapsed icon + expand on hover/focus ─────────────────────
+// ── CellWarnings ──────────────────────────────────────────────────────────────
 
 function CellWarnings({
   warnings,
@@ -804,7 +935,6 @@ function CellWarnings({
   const [expanded, setExpanded] = useState(false);
   const count = warnings.length;
 
-  // If only one warning, show it inline (no collapse needed)
   if (count === 1) {
     return (
       <div className="mt-1">
