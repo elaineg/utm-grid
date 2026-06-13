@@ -167,3 +167,20 @@ test("duplicate and delete row work", async ({ page }) => {
   await expect(cell(page, "Base URL", 1)).toHaveValue("https://example.com/a");
   await expect(cell(page, "Base URL", 2)).toHaveCount(0);
 });
+
+test("AUTOFIX spot-check: Facebook -> Clean all -> utm_source=facebook in generated URL", async ({ page }) => {
+  await page.goto("/");
+  await cell(page, "Base URL", 1).fill("https://example.com");
+  await cell(page, "utm_source", 1).fill("Facebook");
+  await cell(page, "utm_medium", 1).fill("paid_social");
+  await cell(page, "utm_campaign", 1).fill("spring");
+
+  await page.getByRole("button", { name: "Clean all" }).click();
+
+  // utm_source should be lowercased to "facebook"
+  await expect(cell(page, "utm_source", 1)).toHaveValue("facebook");
+  // Generated URL must contain utm_source=facebook (not Facebook)
+  await expect(cell(page, "Generated URL", 1)).toHaveText(
+    "https://example.com?utm_source=facebook&utm_medium=paid_social&utm_campaign=spring"
+  );
+});

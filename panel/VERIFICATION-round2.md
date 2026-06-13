@@ -2,82 +2,52 @@ FAIL
 
 ## Summary
 
-`npm run build`: PASS  
-`npm test` (vitest, 68 unit tests): PASS  
-`npm run test:e2e` (Playwright, 20 tests, against preview): **FAIL — 9 tests fail**
+- `npm run build`: PASS
+- `npm test` (unit, vitest): PASS — 68 tests across 5 files
+- `npm run test:e2e` (playwright, preview URL https://utm-grid-8jwe7rfoh-elainegao.vercel.app): FAIL — 3 of 21 tests fail (18 pass)
 
-All 9 e2e failures share the same root cause: the tests look for lint warnings using
-`getByRole('alert')`, but the deployed app renders warnings as `<p>` elements with no
-`role="alert"` attribute. The Next.js route announcer (`role="alert"` hidden) is the only
-element with that role — so all checks like `page.getByRole('alert').filter({ hasText: 'uppercase' })` find nothing.
+## Failing Tests
 
-All actual _behaviors_ were verified passing via manual playwright probes.
+All 3 failures are in `e2e/utm-grid.spec.ts`. They are **real app behavior issues**, not stale selectors.
 
----
+### Root cause: collapsed multi-warning UI hides `role="alert"` elements
 
-## Per-check results
+When a cell has 2+ lint warnings, `CellWarnings` (UtmGrid.tsx ~line 629) renders a collapsed
+button showing "N warnings". The `role="alert"` `<p>` elements are only rendered inside
+`{expanded && ...}` — hidden until the user clicks the collapse button. `getByRole('alert')`
+finds 0 visible alerts for any cell with 2+ warnings.
 
-### 1. Core URL generation
-PASS — filling Base URL `https://example.com/sale`, utm_source `newsletter`, utm_medium `email`, utm_campaign `spring_sale` produces `https://example.com/sale?utm_source=newsletter&utm_medium=email&utm_campaign=spring_sale` in the Generated URL column.
+**Test 1** — `utm-grid.spec.ts:45` — "uppercase and spaces are flagged"
+- Fills utm_campaign="Spring Sale" → 2 warnings: uppercase + spaces
+- Asserts `getByRole('alert').filter({ hasText: 'uppercase' })` visible
+- Received: element not found (collapsed, no alert in DOM)
 
-### 2. Lint warnings (required param + uppercase/spaces)
-PASS (behavior) / FAIL (e2e test)  
-Behavior confirmed: clearing utm_medium shows `⚠ utm_medium is required.` inline under the cell (amber border, `aria-invalid="true"`). Typing `Spring Sale` shows `2 warnings` indicator with a `Fix` sub-button and the inline warning text. The e2e test fails because it uses `getByRole('alert')` which does not match the app's `<p>` elements.
+**Test 2** — `utm-grid.spec.ts:56` — "cross-row inconsistency flags both cells"
+- Row 1: `spring_sale` → 1 warning (inconsistent only) → shown inline as alert: FOUND
+- Row 2: `Spring-Sale` → 2 warnings (inconsistent + uppercase) → collapsed button: NOT FOUND
+- Asserts count=2 alerts with that text, receives count=1
 
-### 3. AUTOFIX — per-cell Fix and global Clean all (headline fix)
-PASS  
-- Per-cell `Fix` button: `Spring Sale` → `spring_sale`; Generated URL immediately shows `utm_campaign=spring_sale`.  
-- Global `Clean all`: `Summer Sale` → `summer_sale`, `Facebook` → `facebook`; Generated URL reflects cleaned values.  
-Both affordances work. CSV export would carry cleaned values (confirmed by round-trip test).
+**Test 3** — `utm-grid.spec.ts:117` — "import with short headers pre-maps and lints"
+- After import, `Spring Sale` cell has 3 warnings (inconsistent + uppercase + spaces) → collapsed
+- Asserts `getByRole('alert').filter({ hasText: 'uppercase' })` visible → element not found
 
-### 4. Cross-row consistency
-PASS  
-`spring_sale` in row 1 and `Spring-Sale` in row 2 both show: `⚠ Inconsistent utm_campaign across rows: "spring_sale" vs "Spring-Sale" — these will split campaign data in GA4.` on both cells. Warning cleared when both values are made identical (e2e test fails due to `getByRole('alert')` locator).
+## Fix Required (builder task)
 
-### 5. Seeded presets
-PASS — four presets present: Email (`utm_source=newsletter, utm_medium=email`), Paid Social – LinkedIn, Google / CPC, Organic Social. All visible with Apply buttons.
+In `CellWarnings` (app/components/UtmGrid.tsx), always render all warning `<p role="alert">`
+elements in the DOM regardless of expanded state. Use `hidden` or `sr-only` to hide them
+visually when collapsed, but keep them in the DOM so `getByRole('alert')` finds them.
 
-### 6. CSV round-trip with Append/Replace
-PASS  
-- Export produces correct CSV (header row + data rows with all 7 columns including generated_url).  
-- Import modal shows column-mapping step with pre-mapped headers.  
-- Modal offers `Append` and `Replace` radio options (confirmed via 2 radio buttons).  
-- Round-trip with Replace: re-imports exact values. Append option present and does not silently wipe.  
-E2e test for round-trip fails due to `getByRole('alert')` locator, not round-trip behavior.
+## AUTOFIX Spot-check (PASS)
 
-### 7. Undo
-PASS  
-After `Clean all` converts `Summer Sale` → `summer_sale`, clicking the `Undo` button restores `Summer Sale`. Button appears in toolbar after a mutating action.
+Manual verification: utm_source="Facebook", utm_medium="paid_social", utm_campaign="spring",
+Base URL="https://example.com" → click "Clean all" → utm_source becomes "facebook",
+Generated URL = `https://example.com?utm_source=facebook&utm_medium=paid_social&utm_campaign=spring`.
 
-### 8. Mobile (~375px viewport)
-PASS  
-At 375×812px viewport, the Generated URL column and Copy button are reachable via horizontal scroll of the table. Both report `isVisible: true` after `scrollIntoViewIfNeeded()`. The table has `overflow-x-auto` so the path is accessible.
+Test added at `e2e/verification.spec.ts:171` — PASSED against preview URL.
 
-### 9. Client-side only (no network requests)
-PASS  
-Zero network requests captured during cell edits after initial page load. No login/signup elements found. App is fully client-side.
+## Evidence
 
----
-
-## Failing items (builder must fix)
-
-**The single blocking issue: lint warning elements do not carry `role="alert"`.**
-
-The app renders warnings as `<p>` elements inside cell containers (no ARIA role). All 9
-failing e2e tests use `page.getByRole('alert')` to locate warning messages and fail
-because no such element exists. Fix: add `role="alert"` (or `aria-live="polite"`) to the
-warning `<p>` elements in the cell warning markup.
-
-Affected warning patterns that need `role="alert"`:
-- Required-param warnings (`⚠ utm_medium is required.`)
-- Uppercase/space warnings  
-- Cross-row inconsistency warnings
-- Base URL contains utm_* param warning
-
-Secondary failures (dependent on the alert role fix):
-- `lint-rule toggles persist in localStorage` — also checks `role="alert"` for spaces warning after toggle
-- `no network during CSV import` — test expects import with Replace semantics but hits Append (test uses `Import 1 row` click without selecting Replace first)
-- `presets persist across reload and apply to a row` — `getByRole('button', { name: 'Select row 1' })` and `getByRole('button', { name: 'Apply' })` locators need investigation (Apply button is disabled until row selected)
-
-All _spec behaviors_ are working. This is a missing ARIA role on warning elements that
-breaks the automated test suite.
+- Build output: /Users/elaine/app-factory/logs/runs/20260612-202546-daily/utmgrid-build3.txt (exit 0)
+- Unit output: /Users/elaine/app-factory/logs/runs/20260612-202546-daily/utmgrid-unit2.txt (68/68 pass)
+- E2E output: /Users/elaine/app-factory/logs/runs/20260612-202546-daily/utmgrid-verify2.txt (18/21 pass, 3 fail)
+- Preview URL live: HTTP 200 at https://utm-grid-8jwe7rfoh-elainegao.vercel.app

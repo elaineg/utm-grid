@@ -648,15 +648,13 @@ function CellWarnings({
           </button>
         )}
       </button>
-      {expanded && (
-        <div className="absolute left-0 top-5 z-20 w-64 rounded-md border border-amber-200 bg-amber-50 p-2 shadow-lg">
-          {warnings.map((w, j) => (
-            <p key={j} role="alert" className="text-[11px] leading-tight text-amber-800 mb-1 last:mb-0">
-              ⚠ {w.message}
-            </p>
-          ))}
-        </div>
-      )}
+      <div className={expanded ? "absolute left-0 top-5 z-20 w-64 rounded-md border border-amber-200 bg-amber-50 p-2 shadow-lg" : "sr-only"}>
+        {warnings.map((w, j) => (
+          <p key={j} role="alert" className="text-[11px] leading-tight text-amber-800 mb-1 last:mb-0">
+            ⚠ {w.message}
+          </p>
+        ))}
+      </div>
     </div>
   );
 }
