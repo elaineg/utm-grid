@@ -168,14 +168,14 @@ test("duplicate and delete row work", async ({ page }) => {
   await expect(cell(page, "Base URL", 2)).toHaveCount(0);
 });
 
-test("AUTOFIX spot-check: Facebook -> Clean all -> utm_source=facebook in generated URL", async ({ page }) => {
+test("AUTOFIX spot-check: Facebook -> Auto-fix naming -> utm_source=facebook in generated URL", async ({ page }) => {
   await page.goto("/");
   await cell(page, "Base URL", 1).fill("https://example.com");
   await cell(page, "utm_source", 1).fill("Facebook");
   await cell(page, "utm_medium", 1).fill("paid_social");
   await cell(page, "utm_campaign", 1).fill("spring");
 
-  await page.getByRole("button", { name: "Clean all" }).click();
+  await page.getByRole("button", { name: "Auto-fix naming" }).click();
 
   // utm_source should be lowercased to "facebook"
   await expect(cell(page, "utm_source", 1)).toHaveValue("facebook");

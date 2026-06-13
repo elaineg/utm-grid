@@ -194,14 +194,43 @@ export function UtmGrid() {
     null
   );
   // One-time rehydration on mount (client-only, SSR-safe).
+  // Read directly from window.localStorage inside the effect — the useSyncExternalStore
+  // client snapshot from useLocalStorage is still null at mount time (React #418 pattern),
+  // so the closure value `storedOpenId` would always be null here. Same fix applied
+  // previously to the share-link rehydration.
   const didRehydrateOpenId = useRef(false);
   useEffect(() => {
     if (didRehydrateOpenId.current) return;
     didRehydrateOpenId.current = true;
-    if (storedOpenId) {
-      setOpenCampaignId(storedOpenId);
+    if (typeof window === "undefined") return;
+    const rawId = window.localStorage.getItem("utm-grid:open-campaign-id");
+    if (!rawId) return;
+    let parsedId: string | null = null;
+    try {
+      parsedId = JSON.parse(rawId);
+    } catch {
+      return;
     }
-  // storedOpenId from useSyncExternalStore is stable at the client-snapshot value after hydration.
+    if (!parsedId) return;
+    // Validate against existing saved campaigns (read directly too, for the same reason).
+    const rawCampaignsStored = window.localStorage.getItem("utm-grid:campaigns");
+    let existingIds: Set<string> = new Set();
+    if (rawCampaignsStored) {
+      try {
+        const parsed = JSON.parse(rawCampaignsStored);
+        if (Array.isArray(parsed)) {
+          existingIds = new Set(parsed.map((c: { id?: string }) => c.id).filter((id): id is string => Boolean(id)));
+        }
+      } catch {
+        // ignore malformed data
+      }
+    }
+    if (existingIds.has(parsedId)) {
+      setOpenCampaignId(parsedId);
+    } else {
+      // Campaign was deleted — clear the stale persisted id.
+      window.localStorage.removeItem("utm-grid:open-campaign-id");
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

@@ -1,35 +1,51 @@
-PASS
+FAIL
 
-Run: 20260613-095144-daily | Preview: https://utm-grid-ckmuzau2j-elainegao.vercel.app
+Run: 20260613-095144-daily | Preview: https://utm-grid-1139b4uzj-elainegao.vercel.app
 
 ## Checklist
 
 | Check | Result | Evidence |
 |---|---|---|
-| `npm run build` passes | PASS | Compiled successfully in 930ms, static export OK |
-| `npm test` (vitest) | PASS | 7 test files, 135 tests passed (171ms) |
-| `npm run test:e2e` (playwright, preview URL) | PASS | 43/43 passed (10.8s) |
-| FIX1: dirty grid + share URL prompts confirm; cancel keeps original | PASS | campaigns.spec.ts:533 ✓ |
-| FIX1: dirty grid + share URL; accept rehydrates + shows banner | PASS | campaigns.spec.ts:572 ✓ |
-| FIX1: EMPTY grid loads share link with NO prompt | PASS | campaigns.spec.ts:613 ✓ |
-| FIX1: rawStoredHasContent unit tests (9 cases) | PASS | share.test.ts, part of 135 unit tests |
-| No SSR hydration errors (React #418) on share-link load | PASS | Console errors: [] via playwright probe on preview URL |
-| Banner visible in fresh context on share URL | PASS | `Banner visible (fresh/empty context): true` |
-| Campaigns: save/open/dup/delete/overwrite flows | PASS | 9 campaigns.spec.ts tests ✓ |
-| UTM grid: lint, CSV round-trip, presets, persistence | PASS | 8 utm-grid.spec.ts tests ✓ |
-| Share: 3-row reproduce, Copied! cue, no network, blocked clipboard | PASS | 9 share.spec.ts tests ✓ |
+| `npm run build` passes | PASS | Compiled successfully in 992ms, static export OK |
+| `npm test` (vitest) | PASS | 7 test files, 139 tests passed (176ms) |
+| `npm run test:e2e` (playwright, preview URL) | FAIL | 47 passed, 1 FAILED |
+| FIX1: Save-as-new collision confirm (accept → update in place, count=1) | PASS | campaigns.spec.ts:215 + HARD:761 ✓ |
+| FIX1: Save-as-new collision cancel (no dup, no overwrite) | PASS | FIX2 test campaigns.spec.ts:657 ✓ |
+| FIX2: Duplicate campaign creates "<name> copy" card, count +1 | PASS | campaigns.spec.ts:930 ✓ |
+| FIX3: openCampaignId persists across reload ("In: <name>" pill) | **FAIL** | LIVE REGRESSION — see below |
+| FIX3: deleting open campaign clears the pill | NOT REACHED (preceding assert failed) |
+| FIX4: Auto-fix naming (not "Clean all") normalizes flagged cells, shows toast, non-destructive | PASS | campaigns.spec.ts:855 ✓ |
+| FIX5: Campaign-card action buttons always visible (no hover-gating) | PASS | campaigns.spec.ts:895 ✓ |
+| FIX5: Button names are "Duplicate campaign" / "Delete campaign" | PASS | locators confirmed against DOM |
+| Grid live URL, lint per-cell + cross-row | PASS | utm-grid.spec.ts ✓ |
+| CSV round-trip + column mapping | PASS | utm-grid.spec.ts ✓ |
+| Presets apply, localStorage persistence | PASS | utm-grid.spec.ts ✓ |
+| Share-link rehydrate + no-clobber-dirty + no network | PASS | share.spec.ts 9 tests ✓ |
+| No login/signup | PASS | verification.spec.ts ✓ |
+| React #418 hydration errors in console | PASS | none detected |
 
-## Test fix notes
+## FAIL: Fix 3 — openCampaignId NOT persisting across reload on live preview
 
-Three pre-FIX1 tests (`campaigns.spec.ts:454`, `share.spec.ts:169`, `share.spec.ts:262`)
-had pre-seeded localStorage and opened share URLs without handling the new dirty-guard
-confirm dialog — causing it to auto-dismiss (cancel), which blocked the banner. Fixed by
-adding `page.once("dialog", accept)` and correcting the "no-clobber" assertion: after
-accepting the confirm, shared state is held in-memory only (localStorage is NOT overwritten
-until a cell is edited), so the check page correctly shows the original own-grid rows.
+Spec requirement: "open a saved campaign, reload, and the 'In: <name>' pill is still shown (not reverted to 'Unsaved grid')".
 
-## Unit test count
-7 files · 135 tests (share.test.ts includes 12 rawStoredHasContent cases)
+Observed on live preview https://utm-grid-1139b4uzj-elainegao.vercel.app:
+- After saving and opening campaign "PersistTest", the pill shows "In: PersistTest".
+- After `page.reload()`, the pill shows **"Unsaved grid"** — the `openCampaignId` was NOT restored.
+- Expected: "In: PersistTest".
 
-## E2E count
-43 tests · 0 failures · preview URL: https://utm-grid-ckmuzau2j-elainegao.vercel.app
+The source code has `useLocalStorage("utm-grid:open-campaign-id")` + a `useEffect` rehydration with `didRehydrateOpenId` ref guard, but this does not work on the deployed build. Likely cause: the `useEffect(() => { if (storedOpenId) setOpenCampaignId(storedOpenId) }, [])` runs with `storedOpenId` already null (SSR initial value) before `useLocalStorage` hydrates from the client snapshot, so the one-time rehydration fires too early and reads null.
+
+Exact failure output:
+```
+Error: expect(locator).toContainText(expected) failed
+Locator: locator('[data-testid="campaign-pill"]')
+Expected substring: "In: PersistTest"
+Received string:    "Unsaved grid"
+```
+
+## Unit test counts
+7 files · 139 tests passed (176ms)
+
+## E2E counts
+48 tests total · 47 passed · 1 FAILED
+Preview URL: https://utm-grid-1139b4uzj-elainegao.vercel.app

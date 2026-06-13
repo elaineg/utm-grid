@@ -49,18 +49,19 @@ async function openCampaign(page: Page, name: string) {
   await row.getByRole("button", { name: "Open" }).click();
 }
 
-/** Click the "Duplicate" action button for a named campaign. */
+/** Click the "Duplicate campaign" action button for a named campaign. */
 async function duplicateCampaign(page: Page, name: string) {
   const row = campaignRow(page, name);
+  // Actions are always visible (no hover-gating), but hover is harmless
   await row.hover();
-  await row.getByRole("button", { name: "Duplicate" }).click();
+  await row.getByRole("button", { name: "Duplicate campaign" }).click();
 }
 
-/** Click the "Delete" action button for a named campaign. */
+/** Click the "Delete campaign" action button for a named campaign. */
 async function deleteCampaignBtn(page: Page, name: string) {
   const row = campaignRow(page, name);
   await row.hover();
-  await row.getByRole("button", { name: "Delete" }).click();
+  await row.getByRole("button", { name: "Delete campaign" }).click();
 }
 
 // ── Test 1: empty state on first visit ──────────────────────────────────────
@@ -744,6 +745,220 @@ test("FIX3: editing while in a campaign shows amber unsaved-changes pill, not gr
     .locator('[data-testid="campaign-pill"] [aria-label="unsaved changes"]')
     .isVisible();
   expect(hasUnsavedText || hasAmberDot).toBe(true);
+
+  await ctx.close();
+});
+
+// ── NEW FIX TESTS (round 3): ordered by fix number ───────────────────────────
+
+// ── FIX 1b (HARD): Save-as-new name collision confirm — explicit cancel path ──
+// Spec: "Saving the current grid under the name 'Black Friday' a second time prompts a
+// confirm-overwrite ... updates the existing campaign in place rather than creating a
+// duplicate; the Campaigns panel still shows a single 'Black Friday' entry."
+// This test exercises cancel explicitly (FIX2 already tests cancel, but this one
+// verifies the confirm (accept) path and the exact count constraint).
+
+test("HARD: collision-confirm ACCEPT updates in place, count stays 1, link count updates", async ({
+  browser,
+}) => {
+  const ctx = await browser.newContext();
+  const page = await ctx.newPage();
+  await page.goto("/");
+  await page.waitForLoadState("networkidle");
+
+  // Build and save a 1-row "Black Friday"
+  await cell(page, "Base URL", 1).fill("https://example.com/a");
+  await cell(page, "utm_source", 1).fill("newsletter");
+  await saveAsCampaign(page, "Black Friday");
+  await expect(campaignRow(page, "Black Friday")).toContainText("1 link");
+
+  // Add a second row to make the working grid differ
+  await page.getByRole("button", { name: "Add row" }).click();
+  await cell(page, "Base URL", 2).fill("https://example.com/b");
+  await cell(page, "utm_source", 2).fill("google");
+  await page.waitForTimeout(300);
+
+  // Click "Save as new…" (appears because a campaign is open)
+  const saveAsNewBtn = page.locator('button[title="Save as new campaign"]');
+  await expect(saveAsNewBtn).toBeVisible();
+  await saveAsNewBtn.click();
+
+  const nameInput = page.locator('[data-testid="campaign-name-input"]');
+  await expect(nameInput).toBeVisible();
+  await nameInput.fill("Black Friday");
+
+  // Accept the overwrite confirm
+  page.once("dialog", async (dialog) => {
+    expect(dialog.type()).toBe("confirm");
+    expect(dialog.message()).toContain("already exists");
+    await dialog.accept();
+  });
+
+  await page.locator('[data-testid="campaign-save-confirm"]').click();
+  await page.waitForTimeout(500);
+
+  // Exactly ONE "Black Friday" entry must remain
+  const bfRows = page.locator('[data-testid="campaigns-list"] li').filter({ hasText: "Black Friday" });
+  await expect(bfRows).toHaveCount(1);
+  // It should now show "2 links" (updated in place)
+  await expect(bfRows).toContainText("2 links");
+
+  await ctx.close();
+});
+
+// ── FIX: openCampaignId persists across reload ────────────────────────────────
+// Spec: opening a saved campaign, reload, "In: <name>" pill is still shown.
+// Fix E in the codebase uses useLocalStorage("utm-grid:open-campaign-id").
+// After delete, the pill must revert to "Unsaved grid".
+
+test("openCampaignId persists across reload; deleting open campaign clears it", async ({
+  browser,
+}) => {
+  const ctx = await browser.newContext();
+  const page = await ctx.newPage();
+  await page.goto("/");
+  await page.waitForLoadState("networkidle");
+
+  // Save and open a campaign
+  await cell(page, "Base URL", 1).fill("https://example.com/a");
+  await cell(page, "utm_source", 1).fill("newsletter");
+  await saveAsCampaign(page, "PersistTest");
+
+  // The pill should say "In: PersistTest" (after Saved! flash expires)
+  await page.waitForTimeout(2500);
+  const pill = page.locator('[data-testid="campaign-pill"]');
+  await expect(pill).toContainText("In: PersistTest");
+
+  // Reload
+  await page.reload();
+  await page.waitForLoadState("networkidle");
+
+  // The "In: <name>" pill must still be visible after reload (Fix E)
+  const reloadedPill = page.locator('[data-testid="campaign-pill"]');
+  await expect(reloadedPill).toContainText("In: PersistTest");
+
+  // Now delete the open campaign
+  page.once("dialog", async (dialog) => { await dialog.accept(); });
+  await deleteCampaignBtn(page, "PersistTest");
+  await page.waitForTimeout(300);
+
+  // The pill must revert to "Unsaved grid" (no longer in a named campaign)
+  await expect(reloadedPill).toContainText("Unsaved grid");
+
+  await ctx.close();
+});
+
+// ── FIX: Auto-fix naming is non-destructive (no grid clear) + shows toast ─────
+// Spec: "auto-fix naming" only normalizes flagged cells (non-destructive).
+// The button is "Auto-fix naming" (renamed from "Clean all").
+
+test("Auto-fix naming normalizes flagged cells, does not clear grid, shows toast", async ({
+  browser,
+}) => {
+  const ctx = await browser.newContext();
+  const page = await ctx.newPage();
+  await page.goto("/");
+  await page.waitForLoadState("networkidle");
+
+  // Fill a row with values that need normalization (uppercase source)
+  await cell(page, "Base URL", 1).fill("https://example.com");
+  await cell(page, "utm_source", 1).fill("Facebook");
+  await cell(page, "utm_medium", 1).fill("paid_social");
+  await cell(page, "utm_campaign", 1).fill("spring");
+
+  // The Auto-fix naming button must be present (not "Clean all")
+  const autoFixBtn = page.getByRole("button", { name: "Auto-fix naming" });
+  await expect(autoFixBtn).toBeVisible();
+
+  // Click it
+  await autoFixBtn.click();
+
+  // utm_source should be normalized to "facebook"
+  await expect(cell(page, "utm_source", 1)).toHaveValue("facebook");
+
+  // The grid is NOT cleared — base URL, medium, campaign remain
+  await expect(cell(page, "Base URL", 1)).toHaveValue("https://example.com");
+  await expect(cell(page, "utm_medium", 1)).toHaveValue("paid_social");
+  await expect(cell(page, "utm_campaign", 1)).toHaveValue("spring");
+
+  // A toast must appear (message contains "Auto-fixed")
+  const toast = page.locator("text=Auto-fixed");
+  await expect(toast).toBeVisible({ timeout: 3000 });
+
+  await ctx.close();
+});
+
+// ── FIX: Campaign-card action buttons are always visible (no hover-gating) ────
+// Spec: "campaign-card actions are always visible — at least confirm the action
+// buttons are present in the DOM without a hover interaction."
+
+test("campaign-card action buttons are present in DOM without hover", async ({
+  browser,
+}) => {
+  const ctx = await browser.newContext();
+  const page = await ctx.newPage();
+  await page.goto("/");
+  await page.waitForLoadState("networkidle");
+
+  // Save a campaign to get at least one row in the list
+  await cell(page, "Base URL", 1).fill("https://example.com/a");
+  await cell(page, "utm_source", 1).fill("newsletter");
+  await saveAsCampaign(page, "VisibilityTest");
+
+  // Without any hover: the action buttons must be in the DOM (not hover-gated)
+  const row = campaignRow(page, "VisibilityTest");
+
+  // "Open" button
+  const openBtn = row.getByRole("button", { name: "Open" });
+  await expect(openBtn).toBeVisible();
+
+  // "Duplicate campaign" button
+  const dupBtn = row.getByRole("button", { name: "Duplicate campaign" });
+  await expect(dupBtn).toBeVisible();
+
+  // "Delete campaign" button
+  const delBtn = row.getByRole("button", { name: "Delete campaign" });
+  await expect(delBtn).toBeVisible();
+
+  await ctx.close();
+});
+
+// ── FIX: Duplicate campaign creates "<name> copy" card, not a grid-row ────────
+// Spec: "Duplicate campaign creates a library entry named '<name> copy' and the
+// Campaigns count goes up by 1."
+
+test("Duplicate campaign creates '<name> copy' library card, count increments by 1", async ({
+  browser,
+}) => {
+  const ctx = await browser.newContext();
+  const page = await ctx.newPage();
+  await page.goto("/");
+  await page.waitForLoadState("networkidle");
+
+  // Save a 1-row campaign
+  await cell(page, "Base URL", 1).fill("https://example.com/a");
+  await cell(page, "utm_source", 1).fill("newsletter");
+  await saveAsCampaign(page, "MyDupCampaign");
+
+  // Count library entries before
+  const listBefore = page.locator('[data-testid="campaigns-list"] li');
+  const countBefore = await listBefore.count();
+
+  // Click Duplicate campaign (no hover required)
+  const row = campaignRow(page, "MyDupCampaign");
+  await row.getByRole("button", { name: "Duplicate campaign" }).click();
+  await page.waitForTimeout(300);
+
+  // "MyDupCampaign copy" must appear in the library
+  await expect(campaignRow(page, "MyDupCampaign copy")).toBeVisible();
+
+  // Count must have increased by exactly 1
+  const countAfter = await listBefore.count();
+  expect(countAfter).toBe(countBefore + 1);
+
+  // The grid must NOT have a new row from the duplicate action
+  // (grid-row count should still be 1)
+  await expect(cell(page, "Base URL", 2)).toHaveCount(0);
 
   await ctx.close();
 });
