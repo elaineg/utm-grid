@@ -114,6 +114,12 @@ test("Link copied! cue shows on button after click (transient but visible)", asy
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await page.goto("/");
 
+  // Fill at least one row so the P3 empty-grid guard does not fire
+  await cell(page, "Base URL", 1).fill("https://example.com/test");
+  await cell(page, "utm_source", 1).fill("newsletter");
+  await cell(page, "utm_medium", 1).fill("email");
+  await cell(page, "utm_campaign", 1).fill("spring_sale");
+
   // Click using the stable testid
   await shareBtn(page).click();
 

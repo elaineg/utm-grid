@@ -76,38 +76,33 @@ export function UtmGrid() {
   // shared rows/settings in the live view WITHOUT writing to localStorage.
   const pendingSharedState = useRef<{ rows: UtmRow[]; settings: LintSettings } | null>(null);
 
-  // Parse the hash synchronously on first render so the shared state wins
-  // over stored localStorage from the very first render — no useEffect delay.
-  // This is safe to call in a lazy-init position because it only runs once on
-  // the client (the server snapshot renders the initial/SSR state).
-  const [initialShared] = useState<{ rows: UtmRow[]; settings: LintSettings } | null>(() => {
-    if (typeof window === "undefined") return null;
+  // isUsingSharedState: SSR-safe default is false.
+  // Set to true client-side after mount when a valid share hash is detected.
+  const [isUsingSharedState, setIsUsingSharedState] = useState(false);
+
+  // sharedRows / sharedSettings: SSR-safe defaults are null.
+  // Populated client-side after mount when a share hash is detected.
+  const [sharedRows, setSharedRows] = useState<UtmRow[] | null>(null);
+  const [sharedSettings, setSharedSettings] = useState<LintSettings | null>(null);
+
+  // Parse the hash in a useEffect so SSR and the first client render are identical
+  // (both see isUsingSharedState=false, sharedRows=null) — no hydration mismatch.
+  // After mount the effect runs once, parses the hash, and if valid:
+  //   - populates sharedRows/sharedSettings
+  //   - sets isUsingSharedState=true
+  //   - shows the banner
+  //   - clears the hash from the URL
+  useEffect(() => {
     const hash = window.location.hash;
     const payload = parseShareHash(hash);
-    if (!payload) return null;
+    if (!payload) return;
     // Clear the hash immediately so a later manual save isn't ambiguous
     history.replaceState(null, "", window.location.pathname + window.location.search);
-    return { rows: payload.rows, settings: payload.settings };
-  });
-
-  // isUsingSharedState: true while we are showing shared rows (not yet edited)
-  const [isUsingSharedState, setIsUsingSharedState] = useState(() => initialShared !== null);
-
-  // The live rows and settings to render — either shared (before edit) or stored
-  const [sharedRows, setSharedRows] = useState<UtmRow[] | null>(() => initialShared?.rows ?? null);
-  const [sharedSettings, setSharedSettings] = useState<LintSettings | null>(() => initialShared?.settings ?? null);
-
-  // Seed pendingSharedState ref on first render so the commit path can read it
-  if (pendingSharedState.current === null && initialShared !== null) {
-    pendingSharedState.current = initialShared;
-  }
-
-  // Seed sharedBanner on first render (must be in a useEffect to avoid SSR mismatch,
-  // but since sharedRows is already set, the banner appears in the same render pass).
-  useEffect(() => {
-    if (initialShared !== null) {
-      setSharedBanner({ rowCount: initialShared.rows.length });
-    }
+    pendingSharedState.current = { rows: payload.rows, settings: payload.settings };
+    setSharedRows(payload.rows);
+    setSharedSettings(payload.settings);
+    setIsUsingSharedState(true);
+    setSharedBanner({ rowCount: payload.rows.length });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
