@@ -87,7 +87,21 @@ export function UtmGrid() {
     const payload = parseShareHash(hash);
     if (!payload) return;
     history.replaceState(null, "", window.location.pathname + window.location.search);
+
+    // Guard: if the stored grid already has content, confirm before clobbering it.
+    const storedHasContent = storedRowsNormalized.some(
+      (r) => r.baseUrl.trim() || UTM_FIELDS.some((f) => r[f].trim())
+    );
+    if (storedHasContent) {
+      const linkCount = storedRowsNormalized.length;
+      const confirmed = window.confirm(
+        `Open shared grid (${payload.rows.length} link${payload.rows.length === 1 ? "" : "s"})? Your current unsaved grid (${linkCount} link${linkCount === 1 ? "" : "s"}) will be replaced. This can't be undone.`
+      );
+      if (!confirmed) return;
+    }
+
     pendingSharedState.current = { rows: payload.rows, settings: payload.settings };
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSharedRows(payload.rows);
     setSharedSettings(payload.settings);
     setIsUsingSharedState(true);
@@ -172,6 +186,16 @@ export function UtmGrid() {
   const [savedFlash, setSavedFlash] = useState(false);
   const savedFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // FIX 3: Helper — clear the "Saved!" flash immediately (called when grid becomes dirty).
+  // Using a ref+callback avoids a useEffect dependency loop.
+  const clearSavedFlash = useCallback(() => {
+    if (savedFlashTimer.current) {
+      clearTimeout(savedFlashTimer.current);
+      savedFlashTimer.current = null;
+    }
+    setSavedFlash(false);
+  }, []);
+
   // ── Effective rows / settings (shared or stored) ──────────────────────────
   const rows: UtmRow[] = isUsingSharedState && sharedRows ? sharedRows : storedRowsNormalized;
   const settings: LintSettings = isUsingSharedState && sharedSettings ? sharedSettings : storedSettings;
@@ -212,10 +236,12 @@ export function UtmGrid() {
       } else {
         setStoredRows(next);
       }
-      // Mark dirty when working grid changes while a campaign is open
+      // Mark dirty when working grid changes while a campaign is open.
+      // FIX 3: also clear any "Saved!" flash so the pill shows amber "unsaved changes".
       setIsDirty(true);
+      clearSavedFlash();
     },
-    [isUsingSharedState, storedRowsNormalized, storedSettings, setStoredRows, setStoredSettings]
+    [isUsingSharedState, storedRowsNormalized, storedSettings, setStoredRows, setStoredSettings, clearSavedFlash]
   );
 
   const setSettings = useCallback(
@@ -224,9 +250,11 @@ export function UtmGrid() {
         commitSharedToStorage();
       }
       setStoredSettings(next);
+      // FIX 3: also clear any "Saved!" flash so the pill shows amber "unsaved changes".
       setIsDirty(true);
+      clearSavedFlash();
     },
-    [isUsingSharedState, commitSharedToStorage, setStoredSettings]
+    [isUsingSharedState, commitSharedToStorage, setStoredSettings, clearSavedFlash]
   );
 
   const allPresets = useMemo(() => [...SEEDED_PRESETS, ...userPresets], [userPresets]);

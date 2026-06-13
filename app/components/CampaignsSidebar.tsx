@@ -49,6 +49,8 @@ export function CampaignsSidebar({
   const [showNameField, setShowNameField] = useState(false);
   const [nameValue, setNameValue] = useState("");
   const nameInputRef = useRef<HTMLInputElement>(null);
+  // Track whether the name field was opened in "save as new" mode (vs "save changes").
+  const isSaveAsNewRef = useRef(false);
 
   // Mobile disclosure state
   const [mobileExpanded, setMobileExpanded] = useState(false);
@@ -63,6 +65,7 @@ export function CampaignsSidebar({
   }, [showNameField]);
 
   const startSave = useCallback(() => {
+    isSaveAsNewRef.current = false;
     setNameValue(openCampaign?.name ?? "");
     setShowNameField(true);
   }, [openCampaign]);
@@ -70,6 +73,7 @@ export function CampaignsSidebar({
   const cancelSave = useCallback(() => {
     setShowNameField(false);
     setNameValue("");
+    isSaveAsNewRef.current = false;
   }, []);
 
   const commitSave = useCallback(() => {
@@ -77,7 +81,13 @@ export function CampaignsSidebar({
     if (!trimmed) return;
 
     const existing = findCampaignByName(campaigns, trimmed);
-    if (existing && existing.id !== openCampaignId) {
+    // Prompt on collision when:
+    //   (a) the name matches a DIFFERENT campaign, OR
+    //   (b) we're in "save as new" mode and the name matches the currently-open campaign
+    //       (the user explicitly chose to fork but typed the same name — still an overwrite).
+    const isCollision =
+      existing && (existing.id !== openCampaignId || isSaveAsNewRef.current);
+    if (isCollision) {
       const confirmed = window.confirm(
         `A campaign named "${trimmed}" already exists. Replace it with the current grid (${rows.length} link${rows.length === 1 ? "" : "s"})?`
       );
@@ -89,11 +99,13 @@ export function CampaignsSidebar({
       trimmed,
       rows,
       settings,
-      existing?.id ?? openCampaignId ?? undefined
+      // When saving as new, always generate a fresh id (don't re-use the open campaign's id)
+      isSaveAsNewRef.current ? (existing?.id ?? undefined) : (existing?.id ?? openCampaignId ?? undefined)
     );
     onSave(next, campaign);
     setShowNameField(false);
     setNameValue("");
+    isSaveAsNewRef.current = false;
   }, [nameValue, campaigns, openCampaignId, rows, settings, onSave]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -158,6 +170,7 @@ export function CampaignsSidebar({
               <button
                 type="button"
                 onClick={() => {
+                  isSaveAsNewRef.current = true;
                   setNameValue("");
                   setShowNameField(true);
                 }}

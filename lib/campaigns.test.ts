@@ -184,6 +184,53 @@ describe("saveCampaign", () => {
     expect(campaign.savedAt).toBeGreaterThanOrEqual(before);
     expect(campaign.savedAt).toBeLessThanOrEqual(after);
   });
+
+  // ── Save-as-new collision path (FIX 2) ────────────────────────────────────
+  // When "Save as new…" is confirmed with a colliding name, the caller passes
+  // existing.id (not openCampaignId) so saveCampaign updates in-place with a
+  // refreshed savedAt — the library stays at the same length.
+  it("save-as-new collision: passing existing.id updates in-place (no duplicate)", () => {
+    const initial = [CAMP_BLACK_FRIDAY];
+    // User is "in" Black Friday (openCampaignId = CAMP_BLACK_FRIDAY.id) but clicked
+    // "Save as new…" and typed "Black Friday" again — UI confirmed, passes existing.id.
+    const { campaigns, campaign } = saveCampaign(
+      initial,
+      "Black Friday",
+      [ROW_B], // different rows
+      DEFAULT_LINT_SETTINGS,
+      CAMP_BLACK_FRIDAY.id
+    );
+    expect(campaigns).toHaveLength(1); // still one entry, not two
+    expect(campaign.id).toBe(CAMP_BLACK_FRIDAY.id); // id preserved
+    expect(campaign.rows).toHaveLength(1); // new rows applied
+  });
+
+  it("save-as-new with truly new name creates a second entry alongside the open campaign", () => {
+    const initial = [CAMP_BLACK_FRIDAY];
+    // User is "in" Black Friday but saves as new name "Cyber Monday" — no existingId passed.
+    const { campaigns } = saveCampaign(
+      initial,
+      "Cyber Monday",
+      [ROW_B],
+      DEFAULT_LINT_SETTINGS
+      // no existingId
+    );
+    expect(campaigns).toHaveLength(2);
+    expect(campaigns[0].name).toBe("Black Friday");
+    expect(campaigns[1].name).toBe("Cyber Monday");
+  });
+
+  it("findCampaignByName detects collision for save-as-new guard (same-campaign name)", () => {
+    // The UI uses findCampaignByName to detect collisions before calling saveCampaign.
+    // When the user types the same name as the open campaign in "Save as new…" mode,
+    // findCampaignByName must return the existing campaign so the UI can prompt.
+    const existing = findCampaignByName([CAMP_BLACK_FRIDAY, CAMP_SPRING], "Black Friday");
+    expect(existing).toBeDefined();
+    expect(existing!.id).toBe(CAMP_BLACK_FRIDAY.id);
+    // Confirm that the id DOES equal openCampaignId in the same-campaign scenario
+    // (this is exactly the case isSaveAsNewRef is used to force the confirm).
+    expect(existing!.id).toBe("camp-1");
+  });
 });
 
 // ── duplicateCampaign ─────────────────────────────────────────────────────────
