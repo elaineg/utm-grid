@@ -1,0 +1,191 @@
+/**
+ * Unit tests for lib/share.ts — encode/decode round-trip and error handling.
+ * Vitest runs these in Node; window.location is not available, so we test
+ * encodeSharePayload / decodeSharePayload / parseShareHash directly.
+ */
+import LZString from "lz-string";
+import { describe, expect, it } from "vitest";
+import {
+  decodeSharePayload,
+  encodeSharePayload,
+  parseShareHash,
+  type SharePayload,
+} from "./share";
+import { DEFAULT_LINT_SETTINGS, emptyRow } from "./types";
+
+function makeRow(id: string, overrides: Partial<ReturnType<typeof emptyRow>> = {}) {
+  return { ...emptyRow(id), ...overrides };
+}
+
+const ROWS = [
+  makeRow("r1", {
+    baseUrl: "https://example.com/sale",
+    utm_source: "newsletter",
+    utm_medium: "email",
+    utm_campaign: "spring_sale",
+  }),
+  makeRow("r2", {
+    baseUrl: "https://example.com/promo",
+    utm_source: "facebook",
+    utm_medium: "paid_social",
+    utm_campaign: "Spring-Sale", // intentional lint trigger
+  }),
+  makeRow("r3", {
+    baseUrl: "https://example.com/lp",
+    utm_source: "google",
+    utm_medium: "cpc",
+    utm_campaign: "spring_sale",
+    utm_term: "shoes",
+    utm_content: "ad_variant_a",
+  }),
+];
+
+const MODIFIED_SETTINGS = {
+  ...DEFAULT_LINT_SETTINGS,
+  lowercaseOnly: false,
+};
+
+const FULL_PAYLOAD: SharePayload = {
+  rows: ROWS,
+  settings: MODIFIED_SETTINGS,
+};
+
+describe("encodeSharePayload / decodeSharePayload round-trip", () => {
+  it("reproduces all rows with identical field values", () => {
+    const encoded = encodeSharePayload(FULL_PAYLOAD);
+    const decoded = decodeSharePayload(encoded);
+    expect(decoded).not.toBeNull();
+    expect(decoded!.rows).toHaveLength(ROWS.length);
+    for (let i = 0; i < ROWS.length; i++) {
+      expect(decoded!.rows[i]).toEqual(ROWS[i]);
+    }
+  });
+
+  it("reproduces lint-rule toggles exactly", () => {
+    const encoded = encodeSharePayload(FULL_PAYLOAD);
+    const decoded = decodeSharePayload(encoded);
+    expect(decoded!.settings).toEqual(MODIFIED_SETTINGS);
+    expect(decoded!.settings.lowercaseOnly).toBe(false);
+    expect(decoded!.settings.requiredParams).toBe(true);
+    expect(decoded!.settings.noSpaces).toBe(true);
+  });
+
+  it("round-trips default settings too", () => {
+    const payload: SharePayload = { rows: ROWS, settings: DEFAULT_LINT_SETTINGS };
+    const encoded = encodeSharePayload(payload);
+    const decoded = decodeSharePayload(encoded);
+    expect(decoded!.settings).toEqual(DEFAULT_LINT_SETTINGS);
+  });
+
+  it("round-trips a single-row payload", () => {
+    const payload: SharePayload = { rows: [ROWS[0]], settings: DEFAULT_LINT_SETTINGS };
+    const encoded = encodeSharePayload(payload);
+    const decoded = decodeSharePayload(encoded);
+    expect(decoded!.rows).toHaveLength(1);
+    expect(decoded!.rows[0]).toEqual(ROWS[0]);
+  });
+
+  it("round-trips a zero-row payload (empty grid)", () => {
+    const payload: SharePayload = { rows: [], settings: DEFAULT_LINT_SETTINGS };
+    const encoded = encodeSharePayload(payload);
+    const decoded = decodeSharePayload(encoded);
+    expect(decoded).not.toBeNull();
+    expect(decoded!.rows).toHaveLength(0);
+  });
+
+  it("preserves utm_term and utm_content fields", () => {
+    const encoded = encodeSharePayload(FULL_PAYLOAD);
+    const decoded = decodeSharePayload(encoded);
+    const r3 = decoded!.rows[2];
+    expect(r3.utm_term).toBe("shoes");
+    expect(r3.utm_content).toBe("ad_variant_a");
+  });
+
+  it("produces a non-empty string", () => {
+    const encoded = encodeSharePayload(FULL_PAYLOAD);
+    expect(typeof encoded).toBe("string");
+    expect(encoded.length).toBeGreaterThan(0);
+  });
+});
+
+describe("decodeSharePayload: malformed / hostile inputs", () => {
+  it("returns null for an empty string", () => {
+    expect(decodeSharePayload("")).toBeNull();
+  });
+
+  it("returns null for random garbage", () => {
+    expect(decodeSharePayload("NOT_VALID_COMPRESSED_DATA!!!")).toBeNull();
+  });
+
+  it("returns null when the JSON is valid but missing the rows array", () => {
+    const encoded = LZString.compressToEncodedURIComponent(
+      JSON.stringify({ settings: DEFAULT_LINT_SETTINGS })
+    );
+    expect(decodeSharePayload(encoded)).toBeNull();
+  });
+
+  it("returns null when the JSON is valid but missing the settings object", () => {
+    const encoded = LZString.compressToEncodedURIComponent(
+      JSON.stringify({ rows: ROWS })
+    );
+    expect(decodeSharePayload(encoded)).toBeNull();
+  });
+
+  it("returns null when settings lacks required boolean fields", () => {
+    const encoded = LZString.compressToEncodedURIComponent(
+      JSON.stringify({ rows: ROWS, settings: { requiredParams: true } })
+    );
+    expect(decodeSharePayload(encoded)).toBeNull();
+  });
+
+  it("returns null when rows[0] lacks id or baseUrl", () => {
+    const encoded = LZString.compressToEncodedURIComponent(
+      JSON.stringify({
+        rows: [{ utm_source: "x" }],
+        settings: DEFAULT_LINT_SETTINGS,
+      })
+    );
+    expect(decodeSharePayload(encoded)).toBeNull();
+  });
+
+  it("returns null for a plain base64url string (not lz-string compressed)", () => {
+    const base64 = Buffer.from(JSON.stringify(FULL_PAYLOAD)).toString("base64url");
+    expect(decodeSharePayload(base64)).toBeNull();
+  });
+});
+
+describe("parseShareHash", () => {
+  it("returns null when the hash is empty", () => {
+    expect(parseShareHash("")).toBeNull();
+  });
+
+  it("returns null when the hash has no #g= prefix", () => {
+    expect(parseShareHash("#other=value")).toBeNull();
+  });
+
+  it("returns null for #g= with garbage after it", () => {
+    expect(parseShareHash("#g=GARBAGE!!!")).toBeNull();
+  });
+
+  it("correctly parses a well-formed #g=<compressed> hash", () => {
+    const encoded = encodeSharePayload(FULL_PAYLOAD);
+    const hash = `#g=${encoded}`;
+    const result = parseShareHash(hash);
+    expect(result).not.toBeNull();
+    expect(result!.rows).toHaveLength(ROWS.length);
+    expect(result!.rows[0].utm_source).toBe("newsletter");
+    expect(result!.settings.lowercaseOnly).toBe(false);
+  });
+
+  it("round-trip: encode → build hash → parseShareHash → identical payload", () => {
+    const payload: SharePayload = {
+      rows: ROWS,
+      settings: { requiredParams: false, lowercaseOnly: true, noSpaces: false },
+    };
+    const hash = `#g=${encodeSharePayload(payload)}`;
+    const decoded = parseShareHash(hash);
+    expect(decoded).not.toBeNull();
+    expect(decoded!.rows).toEqual(payload.rows);
+    expect(decoded!.settings).toEqual(payload.settings);
+  });
+});

@@ -76,29 +76,39 @@ export function UtmGrid() {
   // shared rows/settings in the live view WITHOUT writing to localStorage.
   const pendingSharedState = useRef<{ rows: UtmRow[]; settings: LintSettings } | null>(null);
 
-  // isUsingSharedState: true while we are showing shared rows (not yet edited)
-  const [isUsingSharedState, setIsUsingSharedState] = useState(false);
-
-  // The live rows and settings to render — either shared (before edit) or stored
-  const [sharedRows, setSharedRows] = useState<UtmRow[] | null>(null);
-  const [sharedSettings, setSharedSettings] = useState<LintSettings | null>(null);
-
-  // On mount: check the URL hash for a share payload
-  useEffect(() => {
-    if (typeof window === "undefined") return;
+  // Parse the hash synchronously on first render so the shared state wins
+  // over stored localStorage from the very first render — no useEffect delay.
+  // This is safe to call in a lazy-init position because it only runs once on
+  // the client (the server snapshot renders the initial/SSR state).
+  const [initialShared] = useState<{ rows: UtmRow[]; settings: LintSettings } | null>(() => {
+    if (typeof window === "undefined") return null;
     const hash = window.location.hash;
     const payload = parseShareHash(hash);
-    if (!payload) return;
-
-    // Clear the hash from the URL bar so a later manual save isn't ambiguous
+    if (!payload) return null;
+    // Clear the hash immediately so a later manual save isn't ambiguous
     history.replaceState(null, "", window.location.pathname + window.location.search);
+    return { rows: payload.rows, settings: payload.settings };
+  });
 
-    // Store shared state without writing to localStorage
-    pendingSharedState.current = { rows: payload.rows, settings: payload.settings };
-    setSharedRows(payload.rows);
-    setSharedSettings(payload.settings);
-    setIsUsingSharedState(true);
-    setSharedBanner({ rowCount: payload.rows.length });
+  // isUsingSharedState: true while we are showing shared rows (not yet edited)
+  const [isUsingSharedState, setIsUsingSharedState] = useState(() => initialShared !== null);
+
+  // The live rows and settings to render — either shared (before edit) or stored
+  const [sharedRows, setSharedRows] = useState<UtmRow[] | null>(() => initialShared?.rows ?? null);
+  const [sharedSettings, setSharedSettings] = useState<LintSettings | null>(() => initialShared?.settings ?? null);
+
+  // Seed pendingSharedState ref on first render so the commit path can read it
+  if (pendingSharedState.current === null && initialShared !== null) {
+    pendingSharedState.current = initialShared;
+  }
+
+  // Seed sharedBanner on first render (must be in a useEffect to avoid SSR mismatch,
+  // but since sharedRows is already set, the banner appears in the same render pass).
+  useEffect(() => {
+    if (initialShared !== null) {
+      setSharedBanner({ rowCount: initialShared.rows.length });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Flash state: rowId:field → "green" for brief cell highlight
@@ -309,7 +319,25 @@ export function UtmGrid() {
     }
   };
 
+  // True when every row is completely blank (P3 guard: nothing to share)
+  const gridIsEmpty = rows.every(
+    (r) => !r.baseUrl.trim() && UTM_FIELDS.every((f) => !r[f].trim())
+  );
+
+  const [shareEmptyWarning, setShareEmptyWarning] = useState(false);
+  const shareEmptyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const copyShareLink = async () => {
+    if (gridIsEmpty) {
+      // Show inline warning instead of copying
+      if (shareEmptyTimer.current) clearTimeout(shareEmptyTimer.current);
+      setShareEmptyWarning(true);
+      shareEmptyTimer.current = setTimeout(() => {
+        setShareEmptyWarning(false);
+        shareEmptyTimer.current = null;
+      }, 2500);
+      return;
+    }
     const url = buildShareUrl({ rows, settings });
     try {
       await writeClipboard(url);
@@ -462,26 +490,33 @@ export function UtmGrid() {
         >
           Export CSV
         </button>
-        <button
-          type="button"
-          data-testid="copy-share-link"
-          onClick={() => void copyShareLink()}
-          aria-live="polite"
-          className={`rounded-md border px-4 py-2 text-sm font-medium transition-colors duration-200 ${
-            shareLinkCopied
-              ? "border-green-500 bg-green-500 text-white"
-              : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
-          }`}
-        >
-          {shareLinkCopied ? (
-            <span className="inline-flex items-center gap-1">
-              <span>✓</span>{" "}
-              <span>Link copied!</span>
+        <span className="inline-flex flex-col items-start gap-0.5">
+          <button
+            type="button"
+            data-testid="copy-share-link"
+            onClick={() => void copyShareLink()}
+            aria-live="polite"
+            className={`rounded-md border px-4 py-2 text-sm font-medium transition-colors duration-200 ${
+              shareLinkCopied
+                ? "border-green-500 bg-green-500 text-white"
+                : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+            }`}
+          >
+            {shareLinkCopied ? (
+              <span className="inline-flex items-center gap-1">
+                <span>✓</span>{" "}
+                <span>Link copied!</span>
+              </span>
+            ) : (
+              "Copy share link"
+            )}
+          </button>
+          {shareEmptyWarning && (
+            <span role="status" className="text-xs text-amber-700">
+              Nothing to share yet
             </span>
-          ) : (
-            "Copy share link"
           )}
-        </button>
+        </span>
         <span className="inline-flex items-center gap-2">
           <button
             type="button"
