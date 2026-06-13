@@ -51,7 +51,7 @@ async function fillRows(
 
 /** Pick a UTM column in the bulk column select (desktop layout). */
 async function pickColumn(page: Page, field: string) {
-  await page.getByLabel("UTM column for bulk edit").first().selectOption(field);
+  await page.getByLabel("Column for bulk edit").first().selectOption(field);
 }
 
 /** Click Set column button for the currently selected column (desktop). */
@@ -291,6 +291,152 @@ test("Bulk Set column and Find & replace trigger NO network requests", async ({
 
   // No network requests should have been made
   expect(requests).toEqual([]);
+
+  await ctx.close();
+});
+
+// ── Round-2 fix spot-checks ───────────────────────────────────────────────────
+
+test("Round-2: Find & replace shows 'Replaced in N rows' on success", async ({
+  browser,
+}) => {
+  const ctx = await browser.newContext();
+  const page = await ctx.newPage();
+  await gotoWide(page);
+
+  await cell(page, "Base URL", 1).fill("https://example.com/a");
+  await cell(page, "utm_campaign", 1).fill("spring-sale");
+  await page.getByRole("button", { name: "Add row" }).click();
+  await cell(page, "Base URL", 2).fill("https://example.com/b");
+  await cell(page, "utm_campaign", 2).fill("spring-sale");
+
+  await pickColumn(page, "utm_campaign");
+  await page.getByLabel("Find text").first().fill("spring-sale");
+  await page.getByLabel("Replace with text").first().fill("summer_sale");
+  await clickFindReplace(page, "utm_campaign");
+
+  // Should show "Replaced in 2 rows — Undo"
+  await expect(page.getByRole("status").filter({ hasText: /Replaced in 2 rows/ }).first()).toBeVisible();
+
+  await ctx.close();
+});
+
+test("Round-2: Find & replace shows 'No matches in <column>' when nothing matches", async ({
+  browser,
+}) => {
+  const ctx = await browser.newContext();
+  const page = await ctx.newPage();
+  await gotoWide(page);
+
+  await cell(page, "Base URL", 1).fill("https://example.com/a");
+  await cell(page, "utm_campaign", 1).fill("spring_sale");
+
+  await pickColumn(page, "utm_campaign");
+  await page.getByLabel("Find text").first().fill("autumn");
+  await page.getByLabel("Replace with text").first().fill("fall");
+  await clickFindReplace(page, "utm_campaign");
+
+  // Should show "No matches in utm_campaign."
+  await expect(page.getByRole("alert").filter({ hasText: /No matches in utm_campaign/ }).first()).toBeVisible();
+
+  await ctx.close();
+});
+
+test("Round-2: Find & replace shows 'Enter a value to find' when find is empty", async ({
+  browser,
+}) => {
+  const ctx = await browser.newContext();
+  const page = await ctx.newPage();
+  await gotoWide(page);
+
+  await cell(page, "Base URL", 1).fill("https://example.com/a");
+  await cell(page, "utm_campaign", 1).fill("spring_sale");
+
+  await pickColumn(page, "utm_campaign");
+  // Leave find input empty
+  await page.getByLabel("Replace with text").first().fill("anything");
+  await clickFindReplace(page, "utm_campaign");
+
+  // Should show "Enter a value to find." — never silent
+  await expect(page.getByRole("alert").filter({ hasText: /Enter a value to find/ }).first()).toBeVisible();
+
+  await ctx.close();
+});
+
+test("Round-2: Match case OFF — case-insensitive find matches Spring-Sale with find='spring-sale'", async ({
+  browser,
+}) => {
+  const ctx = await browser.newContext();
+  const page = await ctx.newPage();
+  await gotoWide(page);
+
+  await cell(page, "Base URL", 1).fill("https://example.com/a");
+  await cell(page, "utm_campaign", 1).fill("Spring-Sale");
+
+  // Match case should default to OFF (unchecked)
+  const matchCaseCheckbox = page.getByLabel("Match case (off = case-insensitive)").first();
+  await expect(matchCaseCheckbox).not.toBeChecked();
+
+  await pickColumn(page, "utm_campaign");
+  await page.getByLabel("Find text").first().fill("spring-sale");
+  await page.getByLabel("Replace with text").first().fill("spring_sale");
+  await clickFindReplace(page, "utm_campaign");
+
+  // Case-insensitive → should have matched and replaced
+  await expect(cell(page, "utm_campaign", 1)).toHaveValue("spring_sale");
+  await expect(page.getByRole("status").filter({ hasText: /Replaced in 1 row/ }).first()).toBeVisible();
+
+  await ctx.close();
+});
+
+test("Round-2: Empty Set column shows 'Cleared <column> on N rows' message", async ({
+  browser,
+}) => {
+  const ctx = await browser.newContext();
+  const page = await ctx.newPage();
+  await gotoWide(page);
+
+  await cell(page, "Base URL", 1).fill("https://example.com/a");
+  await cell(page, "utm_campaign", 1).fill("spring_sale");
+  await page.getByRole("button", { name: "Add row" }).click();
+  await cell(page, "Base URL", 2).fill("https://example.com/b");
+  await cell(page, "utm_campaign", 2).fill("summer_sale");
+
+  // Set column to empty (clears)
+  await pickColumn(page, "utm_campaign");
+  await page.getByLabel("Value to set").first().fill("");
+  await clickSetColumn(page, "utm_campaign");
+
+  // Should say "Cleared utm_campaign on 2 rows — Undo" (not "Set")
+  await expect(page.getByRole("status").filter({ hasText: /Cleared utm_campaign on 2 rows/ }).first()).toBeVisible();
+
+  await ctx.close();
+});
+
+test("Round-2: Base URL selectable in bulk column picker; Set column works on it", async ({
+  browser,
+}) => {
+  const ctx = await browser.newContext();
+  const page = await ctx.newPage();
+  await gotoWide(page);
+
+  await cell(page, "Base URL", 1).fill("https://old-domain.com/a");
+  await page.getByRole("button", { name: "Add row" }).click();
+  await cell(page, "Base URL", 2).fill("https://old-domain.com/b");
+
+  // Select "Base URL" in bulk column picker
+  await page.getByLabel("Column for bulk edit").first().selectOption("baseUrl");
+
+  // Set Base URL on all rows
+  await page.getByLabel("Value to set").first().fill("https://new-domain.com");
+  await page.getByLabel("Set column baseUrl").first().click();
+
+  // Both base URL cells should now be updated
+  await expect(cell(page, "Base URL", 1)).toHaveValue("https://new-domain.com");
+  await expect(cell(page, "Base URL", 2)).toHaveValue("https://new-domain.com");
+
+  // Result message should say "Set Base URL on 2 rows"
+  await expect(page.getByRole("status").filter({ hasText: /Set Base URL on 2 rows/ }).first()).toBeVisible();
 
   await ctx.close();
 });

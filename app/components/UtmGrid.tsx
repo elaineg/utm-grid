@@ -8,9 +8,9 @@ import {
   rowsToCsv,
   type MappableField,
 } from "../../lib/csv";
-import { groupWarnings, hasCellFix, lintRows, warningKey } from "../../lib/lint";
+import { groupWarnings, hasCellFix, lintRows, warningKey, type LintWarning } from "../../lib/lint";
 import { isCellFixable, normalizeAllRows, normalizeValue } from "../../lib/normalize";
-import { buildShareUrl, parseShareHash, storedGridHasContent, writeClipboard } from "../../lib/share";
+import { buildShareUrl, extractSpecFromPayload, parseShareHash, storedGridHasContent, writeClipboard } from "../../lib/share";
 import {
   DEFAULT_LINT_SETTINGS,
   SEEDED_PRESETS,
@@ -22,14 +22,17 @@ import {
   type UtmField,
   type UtmRow,
 } from "../../lib/types";
+import { DEFAULT_SPEC, nearestAllowedValue, type UtmSpec } from "../../lib/spec";
 import { buildUtmUrl } from "../../lib/utm";
 import { useLocalStorage } from "../../lib/useLocalStorage";
 import { ImportDialog, type ImportMode, type PendingImport } from "./ImportDialog";
 import { PresetsBar } from "./PresetsBar";
 import { CampaignsSidebar } from "./CampaignsSidebar";
 import { BulkEditBar, type BulkColumn } from "./BulkEditBar";
+import { UtmSpecPanel } from "./UtmSpecPanel";
 import {
   deserializeCampaigns,
+  extractSpecFromCampaign,
   serializeCampaigns,
   findCampaign,
   type Campaign,
@@ -74,7 +77,7 @@ export function UtmGrid() {
   const [shareLinkCopied, setShareLinkCopied] = useState(false);
   const shareCopyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const [sharedBanner, setSharedBanner] = useState<{ rowCount: number } | null>(null);
+  const [sharedBanner, setSharedBanner] = useState<{ rowCount: number; hasSpec?: boolean } | null>(null);
 
   const pendingSharedState = useRef<{ rows: UtmRow[]; settings: LintSettings } | null>(null);
 
@@ -82,6 +85,9 @@ export function UtmGrid() {
 
   const [sharedRows, setSharedRows] = useState<UtmRow[] | null>(null);
   const [sharedSettings, setSharedSettings] = useState<LintSettings | null>(null);
+  // Shared-state overlay for spec (analogous to sharedRows / sharedSettings)
+  // Declared here (before the useEffect below) to avoid "accessed before declared" lint error.
+  const [sharedSpec, setSharedSpec] = useState<UtmSpec | null>(null);
 
   useEffect(() => {
     const hash = window.location.hash;
@@ -109,12 +115,14 @@ export function UtmGrid() {
       if (!confirmed) return;
     }
 
+    const payloadSpec = extractSpecFromPayload(payload);
     pendingSharedState.current = { rows: payload.rows, settings: payload.settings };
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setSharedRows(payload.rows);
     setSharedSettings(payload.settings);
+    setSharedSpec(payloadSpec);
     setIsUsingSharedState(true);
-    setSharedBanner({ rowCount: payload.rows.length });
+    setSharedBanner({ rowCount: payload.rows.length, hasSpec: Object.values(payloadSpec.allowedValues).some((arr) => arr.length > 0) });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -163,6 +171,13 @@ export function UtmGrid() {
     "utm-grid:lint-settings",
     DEFAULT_LINT_SETTINGS
   );
+
+  // ── UTM Spec state ─────────────────────────────────────────────────────────
+  const [storedSpec, setStoredSpec] = useLocalStorage<UtmSpec>(
+    "utm-grid:utm-spec",
+    DEFAULT_SPEC
+  );
+
   const [userPresets, setPresets] = useLocalStorage<Preset[]>("utm-grid:presets", []);
   const [newRowPresetId, setNewRowPresetId] = useLocalStorage<string | null>(
     "utm-grid:new-row-preset",
@@ -263,9 +278,10 @@ export function UtmGrid() {
     setSavedFlash(false);
   }, []);
 
-  // ── Effective rows / settings (shared or stored) ──────────────────────────
+  // ── Effective rows / settings / spec (shared or stored) ──────────────────
   const rows: UtmRow[] = isUsingSharedState && sharedRows ? sharedRows : storedRowsNormalized;
   const settings: LintSettings = isUsingSharedState && sharedSettings ? sharedSettings : storedSettings;
+  const spec: UtmSpec = isUsingSharedState && sharedSpec ? sharedSpec : storedSpec;
 
   const newId = (current: UtmRow[] = rows) => {
     for (const r of current) {
@@ -280,12 +296,14 @@ export function UtmGrid() {
     const { rows: sRows, settings: sSettings } = pendingSharedState.current;
     setStoredRows(sRows);
     setStoredSettings(sSettings);
+    if (sharedSpec) setStoredSpec(sharedSpec);
     pendingSharedState.current = null;
     setSharedRows(null);
     setSharedSettings(null);
+    setSharedSpec(null);
     setIsUsingSharedState(false);
     setSharedBanner(null);
-  }, [isUsingSharedState, setStoredRows, setStoredSettings]);
+  }, [isUsingSharedState, setStoredRows, setStoredSettings, sharedSpec, setStoredSpec]);
 
   const setRows = useCallback(
     (next: UtmRow[] | ((prev: UtmRow[]) => UtmRow[])) => {
@@ -295,9 +313,11 @@ export function UtmGrid() {
         const nextRows = typeof next === "function" ? next(sRows) : next;
         setStoredRows(nextRows);
         setStoredSettings(sSettings);
+        if (sharedSpec) setStoredSpec(sharedSpec);
         pendingSharedState.current = null;
         setSharedRows(null);
         setSharedSettings(null);
+        setSharedSpec(null);
         setIsUsingSharedState(false);
         setSharedBanner(null);
       } else {
@@ -308,7 +328,7 @@ export function UtmGrid() {
       setIsDirty(true);
       clearSavedFlash();
     },
-    [isUsingSharedState, storedRowsNormalized, storedSettings, setStoredRows, setStoredSettings, clearSavedFlash]
+    [isUsingSharedState, storedRowsNormalized, storedSettings, sharedSpec, setStoredSpec, setStoredRows, setStoredSettings, clearSavedFlash]
   );
 
   const setSettings = useCallback(
@@ -327,8 +347,8 @@ export function UtmGrid() {
   const allPresets = useMemo(() => [...SEEDED_PRESETS, ...userPresets], [userPresets]);
 
   const warnings = useMemo(
-    () => groupWarnings(lintRows(rows, settings)),
-    [rows, settings]
+    () => groupWarnings(lintRows(rows, settings, spec)),
+    [rows, settings, spec]
   );
   const selectedRow = rows.find((r) => r.id === selectedId) ?? null;
 
@@ -546,7 +566,7 @@ export function UtmGrid() {
       }, 2500);
       return;
     }
-    const url = buildShareUrl({ rows, settings });
+    const url = buildShareUrl({ rows, settings, spec });
     try {
       await writeClipboard(url);
     } catch {
@@ -674,11 +694,14 @@ export function UtmGrid() {
         pendingSharedState.current = null;
         setSharedRows(null);
         setSharedSettings(null);
+        setSharedSpec(null);
         setIsUsingSharedState(false);
         setSharedBanner(null);
       }
       setStoredRows(campaign.rows);
       setStoredSettings(campaign.settings);
+      // Restore the campaign's UTM Spec (backward compat: absent → empty/unenforced)
+      setStoredSpec(extractSpecFromCampaign(campaign));
       setOpenCampaignId(campaign.id);
       setStoredOpenId(campaign.id); // Fix E: persist across reload
       setIsDirty(false);
@@ -688,8 +711,22 @@ export function UtmGrid() {
       isUsingSharedState,
       setStoredRows,
       setStoredSettings,
+      setStoredSpec,
       setStoredOpenId,
     ]
+  );
+
+  /** Setter for the UTM Spec (marks working grid dirty). */
+  const setSpec = useCallback(
+    (next: UtmSpec) => {
+      if (isUsingSharedState) {
+        commitSharedToStorage();
+      }
+      setStoredSpec(next);
+      setIsDirty(true);
+      clearSavedFlash();
+    },
+    [isUsingSharedState, commitSharedToStorage, setStoredSpec, clearSavedFlash]
   );
 
   /** Called by CampaignsSidebar when a save completes. */
@@ -826,7 +863,6 @@ export function UtmGrid() {
             type="button"
             data-testid="copy-share-link"
             onClick={() => void copyShareLink()}
-            aria-live="polite"
             className={`rounded-md border px-4 py-2 text-sm font-medium transition-colors duration-200 ${
               shareLinkCopied
                 ? "border-green-500 bg-green-500 text-white"
@@ -842,8 +878,13 @@ export function UtmGrid() {
               "Copy share link"
             )}
           </button>
+          {/* Fix B (bundled): aria-live region ensures "Link copied!" is announced on mobile
+              even when the button text swap itself might not be detected by screen readers */}
+          <span role="status" aria-live="polite" className="text-xs font-medium text-green-600 min-h-[1em]">
+            {shareLinkCopied ? "Link copied!" : ""}
+          </span>
           {shareEmptyWarning && (
-            <span role="status" className="text-xs text-amber-700">
+            <span role="alert" className="text-xs text-amber-700">
               Nothing to share yet
             </span>
           )}
@@ -864,12 +905,56 @@ export function UtmGrid() {
         </span>
 
         <div className="ml-auto flex flex-wrap items-center gap-4 border-l border-gray-200 pl-4">
-          <span className="text-xs font-semibold tracking-wide text-gray-400 uppercase">
-            Lint rules
+          <span className="flex flex-col gap-0.5">
+            <span className="text-xs font-semibold tracking-wide text-gray-400 uppercase">Lint rules</span>
+            {/* Fix C: "Enforce your team's UTM taxonomy" label for 5-second discoverability */}
+            <span className="text-[10px] text-violet-500">Enforce your team&apos;s UTM taxonomy</span>
           </span>
           {toggle("requiredParams", "Require source/medium/campaign")}
           {toggle("lowercaseOnly", "Lowercase only")}
           {toggle("noSpaces", "No spaces")}
+          {/* Fix D: canonical Enforce UTM Spec toggle lives HERE only — panel shows status, not a second switch */}
+          <label className="flex items-center gap-1.5 text-sm text-violet-700">
+            <input
+              type="checkbox"
+              data-testid="enforce-spec-toggle"
+              checked={!!spec.enforceSpec}
+              onChange={(e) => setSpec({ ...spec, enforceSpec: e.target.checked })}
+            />
+            Enforce UTM Spec
+          </label>
+          {/* Fix C: "N cells off-spec" indicator */}
+          {spec.enforceSpec && (() => {
+            const offSpecCount = Array.from(warnings.values()).flat().filter((w) => w.rule === "off-spec").length;
+            return offSpecCount > 0 ? (
+              <button
+                type="button"
+                data-testid="off-spec-indicator"
+                aria-label={`${offSpecCount} cell${offSpecCount === 1 ? "" : "s"} off-spec — click to open UTM Spec panel`}
+                onClick={() => {
+                  const panel = document.querySelector("[data-testid='utm-spec-panel']");
+                  if (panel) {
+                    panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                    const openEvent = new CustomEvent("utm-spec-open");
+                    panel.dispatchEvent(openEvent);
+                  }
+                }}
+                className="rounded-full border border-violet-300 bg-violet-50 px-2.5 py-0.5 text-xs font-semibold text-violet-700 hover:bg-violet-100"
+              >
+                {offSpecCount} cell{offSpecCount === 1 ? "" : "s"} off-spec
+              </button>
+            ) : null;
+          })()}
+          {/* Fix A: enforcing legend so green→violet chip jump reads as intentional */}
+          {spec.enforceSpec && (
+            <span className="text-[10px] text-gray-400">
+              <span className="inline-block w-2 h-2 rounded-sm bg-violet-300 align-middle mr-0.5" aria-hidden="true" />{" "}
+              violet = off-spec
+              <span className="mx-1.5 text-gray-300">|</span>
+              <span className="inline-block w-2 h-2 rounded-sm bg-amber-300 align-middle mr-0.5" aria-hidden="true" />{" "}
+              amber = case/space
+            </span>
+          )}
         </div>
       </div>
 
@@ -894,8 +979,8 @@ export function UtmGrid() {
         onNewRowPresetChange={setNewRowPresetId}
       />
 
-      {/* Mobile campaigns disclosure — appears ABOVE grid (below toolbar), collapsed by default */}
-      <div className="min-[900px]:hidden">
+      {/* Mobile campaigns + UTM Spec disclosures — above grid, below toolbar */}
+      <div className="min-[900px]:hidden flex flex-col gap-1">
         <CampaignsSidebar
           campaigns={campaigns}
           openCampaignId={openCampaignId}
@@ -905,7 +990,14 @@ export function UtmGrid() {
           onChange={handleCampaignsChanged}
           rows={rows}
           settings={settings}
+          spec={spec}
           savedFlash={savedFlash}
+          mobileOnly
+        />
+        {/* UTM Spec mobile disclosure — collapsed by default */}
+        <UtmSpecPanel
+          spec={spec}
+          onChange={setSpec}
           mobileOnly
         />
       </div>
@@ -934,6 +1026,11 @@ export function UtmGrid() {
             <p className="text-sm font-medium text-blue-900">
               Loaded shared grid ({sharedBanner.rowCount}{" "}
               {sharedBanner.rowCount === 1 ? "link" : "links"})
+              {sharedBanner.hasSpec && (
+                <span className="ml-1 text-xs font-normal text-violet-700">
+                  including this team&apos;s UTM Spec
+                </span>
+              )}
             </p>
             <p className="mt-0.5 text-xs text-blue-700">
               These are someone&apos;s links — edit any cell to make them yours.{" "}
@@ -955,6 +1052,16 @@ export function UtmGrid() {
       <div className="flex gap-4 items-start">
         {/* Grid — mobile: scrollable container, sticky Generated URL + Actions columns */}
         <div className="min-w-0 flex-1 overflow-x-auto rounded-lg border border-gray-200 bg-white">
+          {/* Native datalists for UTM Spec autocomplete — one per field, reused by every cell in that column */}
+          {spec.enforceSpec && UTM_FIELDS.map((field) =>
+            spec.allowedValues[field].length > 0 ? (
+              <datalist key={field} id={`datalist-${field}`}>
+                {spec.allowedValues[field].map((v) => (
+                  <option key={v} value={v} />
+                ))}
+              </datalist>
+            ) : null
+          )}
           <table className="w-full min-w-[900px] border-collapse text-sm">
             <thead>
               <tr className="border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase">
@@ -1042,8 +1149,24 @@ export function UtmGrid() {
                         cellWarnings &&
                         hasCellFix(cellWarnings) &&
                         isCellFixable(row[field], settings);
+                      // Datalist: native autocomplete for allowed values when enforce is on
+                      const datalistId =
+                        isUtmField && spec.enforceSpec && spec.allowedValues[field as UtmField].length > 0
+                          ? `datalist-${field}`
+                          : undefined;
+                      // Off-spec warning for "Fix to <nearest>"
+                      const offSpecWarning = cellWarnings?.find((w) => w.rule === "off-spec");
+                      const offSpecNearest = offSpecWarning
+                        ? nearestAllowedValue(row[field as UtmField] ?? "", spec.allowedValues[field as UtmField])
+                        : null;
+                      // Fix A: violet border/bg whenever ANY warning is off-spec (not just when it's the only one)
+                      const hasOffSpec = !!offSpecWarning;
                       return (
-                        <td key={field} className="px-2 py-2">
+                        /* relative z-[11]: creates stacking context above sticky right
+                           columns (z-10) so warning popovers and "Fix to" chips are
+                           tappable on mobile at every horizontal scroll position. */
+                        <td key={field} className="relative z-[11] px-2 py-2">
+                          {/* Fix F: pr-6 ensures datalist caret doesn't clip the last char */}
                           <input
                             value={row[field]}
                             onChange={(e) => updateCell(row.id, field, e.target.value)}
@@ -1052,14 +1175,40 @@ export function UtmGrid() {
                             aria-invalid={!!cellWarnings}
                             placeholder={field === "baseUrl" ? "https://…" : ""}
                             spellCheck={false}
-                            className={`w-full min-w-24 rounded-md border px-2 py-1.5 font-mono text-xs focus:outline-none transition-colors duration-300 ${
+                            list={datalistId}
+                            className={`w-full min-w-24 rounded-md border pl-2 pr-6 py-1.5 font-mono text-xs focus:outline-none transition-colors duration-300 ${
                               isFlashing
                                 ? "border-green-400 bg-green-50"
+                                : cellWarnings && hasOffSpec
+                                ? "border-violet-400 bg-violet-50 focus:border-violet-500"
                                 : cellWarnings
                                 ? "border-amber-400 bg-amber-50 focus:border-amber-500"
                                 : "border-gray-200 bg-white focus:border-blue-500"
                             }`}
                           />
+                          {/* Fix B: inline "Fix to <value>" chip — auto-revealed, ≥44px tap target,
+                              NOT gated behind the warnings pill, rendered above sticky columns (z-[11] from td).
+                              Named to target value so it never reads as Dup/Delete/Set column. */}
+                          {offSpecNearest && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                pushUndo("Fix to allowed value", rows);
+                                setRows((prev) =>
+                                  prev.map((r) =>
+                                    r.id === row.id ? { ...r, [field]: offSpecNearest } : r
+                                  )
+                                );
+                                flashCellKeys([`${row.id}:${field}`]);
+                              }}
+                              aria-label={`Fix to ${offSpecNearest}`}
+                              data-testid={`fix-to-${offSpecNearest}`}
+                              className="mt-0.5 inline-flex min-h-[44px] items-center rounded-full border border-violet-300 bg-violet-100 px-2.5 py-1 text-[11px] font-medium text-violet-800 hover:bg-violet-200 active:bg-violet-300"
+                            >
+                              Fix to {offSpecNearest}
+                            </button>
+                          )}
                           {cellWarnings && (
                             <CellWarnings
                               warnings={cellWarnings}
@@ -1067,6 +1216,20 @@ export function UtmGrid() {
                               onFix={
                                 canFix
                                   ? () => fixCell(row.id, field as UtmField, row[field])
+                                  : undefined
+                              }
+                              offSpecNearest={offSpecNearest ?? undefined}
+                              onFixOffSpec={
+                                offSpecNearest
+                                  ? () => {
+                                      pushUndo("Fix to allowed value", rows);
+                                      setRows((prev) =>
+                                        prev.map((r) =>
+                                          r.id === row.id ? { ...r, [field]: offSpecNearest } : r
+                                        )
+                                      );
+                                      flashCellKeys([`${row.id}:${field}`]);
+                                    }
                                   : undefined
                               }
                             />
@@ -1133,8 +1296,8 @@ export function UtmGrid() {
           </table>
         </div>
 
-        {/* Desktop campaigns sidebar — hidden on mobile */}
-        <div className="hidden min-[900px]:block w-64 shrink-0">
+        {/* Desktop campaigns + UTM Spec sidebar — hidden on mobile */}
+        <div className="hidden min-[900px]:flex flex-col w-64 shrink-0 gap-0">
           <CampaignsSidebar
             campaigns={campaigns}
             openCampaignId={openCampaignId}
@@ -1144,7 +1307,14 @@ export function UtmGrid() {
             onChange={handleCampaignsChanged}
             rows={rows}
             settings={settings}
+            spec={spec}
             savedFlash={savedFlash}
+            desktopOnly
+          />
+          {/* UTM Spec panel — disclosure, collapsed by default, under Campaigns */}
+          <UtmSpecPanel
+            spec={spec}
+            onChange={setSpec}
             desktopOnly
           />
         </div>
@@ -1241,20 +1411,46 @@ function CellWarnings({
   warnings,
   canFix,
   onFix,
+  offSpecNearest,
+  onFixOffSpec,
 }: {
-  warnings: { message: string; rule: string }[];
+  warnings: LintWarning[];
   canFix: boolean;
   onFix?: () => void;
+  /** Nearest allowed value for off-spec fix — shown inside popover only. */
+  offSpecNearest?: string;
+  onFixOffSpec?: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const count = warnings.length;
+  const hasOffSpec = warnings.some((w) => w.rule === "off-spec");
+
+  // Fix A: violet when ANY warning is off-spec (not just when it's the only warning)
+  const badgeColor = hasOffSpec
+    ? "bg-violet-200 text-violet-800"
+    : "bg-amber-200 text-amber-800";
+  const textColor = hasOffSpec ? "text-violet-700" : "text-amber-700";
+  const hoverTextColor = hasOffSpec ? "hover:text-violet-900" : "hover:text-amber-900";
+
+  const renderMessage = (w: LintWarning, j: number) => {
+    const isOffSpec = w.rule === "off-spec";
+    const msgColor = isOffSpec ? "text-violet-800" : "text-amber-800";
+    return (
+      <p key={j} role="alert" className={`text-[11px] leading-tight ${msgColor} mb-1 last:mb-0`}>
+        {isOffSpec ? "◆" : "⚠"}{" "}{w.message}
+        {/* Fix B: "Fix to" chip is inline on the cell; in the popover just show the message text */}
+      </p>
+    );
+  };
 
   if (count === 1) {
     return (
       <div className="mt-1">
-        <p role="alert" className="max-w-52 text-[11px] leading-tight text-amber-700">
-          ⚠ {warnings[0].message}
-          {canFix && onFix && (
+        <p role="alert" className={`max-w-52 text-[11px] leading-tight ${textColor}`}>
+          {hasOffSpec ? "◆" : "⚠"}{" "}{warnings[0].message}
+          {/* Fix B: "Fix to" chip is rendered directly on the cell (inline, auto-revealed),
+              so we don't render it again here to avoid duplication */}
+          {!hasOffSpec && canFix && onFix && (
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); onFix(); }}
@@ -1273,14 +1469,14 @@ function CellWarnings({
       <button
         type="button"
         onClick={(e) => { e.stopPropagation(); setExpanded((v) => !v); }}
-        className="flex items-center gap-1 text-[11px] text-amber-700 hover:text-amber-900"
+        className={`flex items-center gap-1 text-[11px] ${textColor} ${hoverTextColor}`}
         aria-expanded={expanded}
       >
-        <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-amber-200 text-[10px] font-bold">
+        <span className={`inline-flex h-4 w-4 items-center justify-center rounded-full ${badgeColor} text-[10px] font-bold`}>
           {count}
         </span>
         <span>warning{count === 1 ? "" : "s"}</span>
-        {canFix && onFix && (
+        {!hasOffSpec && canFix && onFix && (
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); onFix?.(); }}
@@ -1290,12 +1486,20 @@ function CellWarnings({
           </button>
         )}
       </button>
-      <div className={expanded ? "absolute left-0 top-5 z-20 w-64 rounded-md border border-amber-200 bg-amber-50 p-2 shadow-lg" : "sr-only"}>
-        {warnings.map((w, j) => (
-          <p key={j} role="alert" className="text-[11px] leading-tight text-amber-800 mb-1 last:mb-0">
-            ⚠ {w.message}
-          </p>
-        ))}
+      {/* Popover: z-30 so it renders above sticky columns (z-10/z-20) on mobile */}
+      <div className={expanded ? "absolute left-0 top-5 z-30 w-64 rounded-md border border-gray-200 bg-white p-2 shadow-lg" : "sr-only"}>
+        {warnings.map((w, j) => renderMessage(w, j))}
+        {hasOffSpec && canFix && onFix && (
+          <div className="mt-1 pt-1 border-t border-gray-100">
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onFix?.(); }}
+              className="text-[11px] text-blue-600 hover:underline font-medium"
+            >
+              Auto-fix naming
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

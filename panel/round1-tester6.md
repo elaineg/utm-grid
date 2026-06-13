@@ -1,27 +1,51 @@
-{"name":"Jules","clarity":"Yes","value":"Yes","advocacy":8}
+# Round 1 — Tester 6 (Jules, content & community marketer, 50/50 mobile)
 
-# Jules — Content & community marketer (50/50 desktop/mobile) — re-test, focus: BULK EDIT
+I juggle links across X, LinkedIn, Mastodon and I'm allergic to logins for a small job.
+Tested mostly on a 375px mobile viewport, between-posts style.
 
-## Prior concerns re-checked first
-- (1) "Lint only warns, no auto-fix" → FIXED. The "Auto-fix naming" button turned "Spring Launch" into "spring_launch" (lowercase + underscore) in one click. This was my #1 gripe; it's gone.
-- (2) "Mobile is one wide horizontal-scroll table" → PARTLY addressed. The new BULK EDIT panel collapses behind an "Expand" button and opens as a clean vertical card on mobile (great), but the row grid itself is still a side-scroll table. Better, not solved.
-- (3) "Presets don't store base URL / enforce no-spaces" → not directly re-tested this round; Auto-fix now covers the spaces problem globally, which softens it.
+## Clarity — Yes
+Cold open, the headline ("Tag all your campaign links with clean, consistent UTM tags at
+once — so one stray capital letter never splits your data in Google Analytics") plus the
+subhead "Edit links in a grid... export clean CSV — no account" told me exactly what it is
+and that there's NO login. That last bit is the reason I'd even bother. I'd tell a friend:
+"bulk UTM builder in a grid, fixes your tag casing/typos, no signup."
 
-## 1. CLARITY — Yes
-"BULK EDIT" + the column dropdown + literal labels ("Set column", "Find & replace in column") read in ~3 seconds. The "Apply to: all 3 rows" text that flips to "Apply to: 2 selected rows" when I tick boxes is the clearest scope cue I've seen in a tool like this. "New value (empty clears)" + "Empty value clears the column." removed all doubt.
+## Value — Yes
+Today I keep a messy Notion table of UTM conventions and hand-type ?utm_source=... per post,
+and I constantly fat-finger "Linkedln"/"LinkedIn" and split my analytics. This is faster:
+I defined my allowed source values (x, linkedin, mastodon) as chips in the UTM Spec panel,
+flipped Enforce on, and off-spec typos get caught + auto-corrected. The LinkedIn/Organic
+Social presets match my channels out of the box. The "spec rides in the share link" idea is
+the killer feature for me — I'd send my team one link with our taxonomy baked in, no account.
 
-## 2. VALUE — Yes
-Today I hand-edit source/medium per link in Notion or fiddle in Buffer one platform at a time. Here I set utm_campaign across all rows, selected just two and set them differently, and ran Find & replace twitter→x — all correct, each with an "Undo" confirmation ("Set utm_campaign on 4 rows — Undo"). That genuinely beats my per-link habit for cross-platform link sets.
+## Mobile reality (the thing I was asked to stress)
+- Reaching UTM Spec on mobile: EASY. It's a disclosure bar under Campaigns; tapped it, it
+  expanded inline with per-field "+ add value" inputs and its own Enforce toggle. Good.
+- Defining allowed values: worked great — values become removable green chips.
+- Enforce + off-spec: typed "Linkedln" into the source cell, it went violet/flagged.
+- Tapping "Fix to linkedin": IT WORKS, but it's NOT obvious. The Fix button is collapsed
+  behind a "2 warnings" pill under the cell. I had to TAP "warnings" first to expand the
+  warning before "Fix to linkedin" appeared; THEN the tap fixed it (cell turned green
+  "linkedin"). Before I figured that out, taps were landing on the warnings pill, not Fix.
+  A real mobile user will think "Fix" is missing. Make Fix one tap, or surface it without
+  the extra expand step.
+- The grid scrolls horizontally and the off-spec cell + its Fix button and the row's
+  action buttons can't fit on screen together at 375px — it's cramped but usable.
 
-## 3. ADVOCACY — 8
-Desktop is a clean 9: every bulk flow (set-all, subset, select-all, clear-with-empty, find&replace) worked, zero console errors, Undo is thoughtful. It drops to 8 because of mobile, and I post from my phone half the time. The expanded toolbar card is readable, and "Set column" works — but the lower "Find & replace in column" button gets covered by the table's sticky right-pinned "Generated URL / Actions" column. Trying to scroll it into view and tap it failed repeatedly because that floating column sits on top of the button. Find & replace is the bulk feature I'd use MOST (swap a source across platforms), so having it be the one that's hard to tap on mobile is exactly the wrong control to lose.
+## Friction worth flagging
+- "Copy share link" gave me NO visible confirmation on mobile — label never changed to
+  "Copied", nothing flashed. (Clipboard read was blocked in my test env, so I'm not calling
+  the copy itself broken — copy verified by click firing; clipboard read blocked in test env
+  — but the MISSING success feedback is real: I can't tell if my tap worked. That alone
+  would make me tap it 3x and distrust it.)
 
-## What felt broken
-- Mobile only: sticky Generated URL/Actions column floats over the bottom of the expanded BULK EDIT toolbar, blocking taps on "Find & replace in column". Desktop unaffected.
-
-## ONE change to raise advocacy
-On mobile, keep the expanded BULK EDIT panel fully clear of the table's sticky pinned column (raise its z-index or reserve space below it) so every button — especially "Find & replace in column" — is reliably tappable. Fix that and this is a 9 I'd drop in our marketing Discord unprompted.
+## Advocacy — 6
+The product nails my actual pain and the no-login + spec-in-link combo is genuinely share-
+worthy. Holding it back: (1) "Fix to" hidden behind a "2 warnings" expand on mobile made me
+think the headline feature was missing until I poked at it; (2) zero feedback on Copy share
+link, the one action I'd use to spread it. Fix those two and this jumps to an 8-9 and I'd
+post about it.
 
 ```json
-{"tester": 6, "round": 1, "clarity": "Yes", "value": "Yes", "advocacy": 8, "topComplaints": ["Mobile: sticky Generated URL/Actions column floats over the lower bulk-edit buttons, blocking taps on 'Find & replace in column'", "Row grid is still a horizontal-scroll table on a 375px phone (prior concern only partly addressed)"], "priorConcernsAddressed": "some"}
+{"tester": 6, "round": 1, "clarity": "Yes", "value": "Yes", "advocacy": 6, "topComplaints": ["'Fix to' button is collapsed behind a '2 warnings' pill on mobile — looks missing until you tap to expand; should be one tap", "'Copy share link' shows no 'Copied' confirmation on mobile, so I can't tell the tap worked — and the share link is my main way to spread it"], "priorConcernsAddressed": "n/a"}
 ```

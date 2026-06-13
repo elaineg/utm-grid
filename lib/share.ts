@@ -5,10 +5,13 @@
  */
 import LZString from "lz-string";
 import { UTM_FIELDS, type LintSettings, type UtmRow } from "./types";
+import { deserializeSpec, type UtmSpec } from "./spec";
 
 export interface SharePayload {
   rows: UtmRow[];
   settings: LintSettings;
+  /** Optional UTM Spec — absent in old share links (backward compat: treated as empty/unenforced). */
+  spec?: UtmSpec;
 }
 
 /**
@@ -143,5 +146,14 @@ function isSharePayload(v: unknown): v is SharePayload {
   ) {
     return false;
   }
+  // spec is optional — old share links without it are valid (backward compat).
   return true;
+}
+
+/**
+ * Parse a SharePayload's spec field (may be absent in old links).
+ * Returns deserializeSpec(payload.spec) — defaults to empty/unenforced on absence.
+ */
+export function extractSpecFromPayload(payload: SharePayload): UtmSpec {
+  return deserializeSpec(payload.spec);
 }

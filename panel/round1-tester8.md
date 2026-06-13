@@ -1,51 +1,43 @@
-{"name":"Rob","clarity":"Yes","value":"Yes","advocacy":8}
+{"name":"Rob","clarity":"Yes","value":"Yes","advocacy":6}
 
-# Rob — freelance brand/visual designer (bulk edit round)
+# Rob — freelance brand/visual designer (UTM Spec + autocomplete round)
 
-I tag client campaign links ~weekly and benchmark everything against "I could just type the
-query string / find-replace it myself in 4 minutes." Went straight at the new BULK EDIT bar.
-
-## Prior concerns re-checked (from my last round)
-- "Lint only WARNS, doesn't fix" → ADDRESSED. There's now an "Auto-fix naming" button, plus
-  LINT RULES toggles (Require source/medium/campaign, Lowercase only, No spaces). That was my
-  #1 gripe and it's gone.
-- "No auto-lowercase/encode toggle" → ADDRESSED by the same toggles.
+I tag client campaign links occasionally and hate re-typing the same source/medium per client.
+Today I keep the last link in a scratch text file and copy-paste/hand-edit. Benchmark is always
+"I could just type the query string myself in 4 minutes." Went straight at the new UTM Spec panel.
 
 ## 1. CLARITY — Yes
-The bar reads left-to-right the way I'd want: pick a column (utm_campaign), it tells me
-"Apply to: all 1 row" and that flips to "Apply to: 2 selected rows" / "5 selected rows" the
-second I tick checkboxes — no guessing what's about to get clobbered. Type a value, hit "Set
-column." Separate Find / Replace with / "Find & replace in column" group. Understood the whole
-thing in ~5 seconds, no tooltip. The "(empty …)" hint even warned me empties clear the column.
+Headline "Tag all your campaign links... so one stray capital letter never splits your data in
+Google Analytics" + the subline "fix naming automatically, export clean CSV — no account" told me
+instantly what it is and that it's free with no login. As a price-sensitive freelancer, "no
+account" is the line that made me keep clicking instead of bouncing. The UTM Spec panel subtitle
+"Your team's allowed values — enforced on every cell" was clear once I expanded it.
 
-## 2. VALUE — Yes
-First version where bulk edit actually beats me by hand for a batch. Everything I tried did
-exactly what it claimed:
-- Set utm_campaign across all 5 links — one click.
-- Selected only rows 1 & 3, set utm_source on just those — other rows untouched.
-- Header "select all" — works, label confirms 5 rows.
-- Empty value clears a column — works.
-- Find & replace "Summer"→"winter" in utm_campaign — applied across all rows.
-- "Undo last bulk edit" correctly reverted my column set.
-Generated URLs were clean: ...?utm_source=newsletter&utm_medium=email&utm_campaign=summer_launch_2026.
-For a 5–20 link batch where source/medium are identical and only campaign changes, this saves
-me from re-typing the same string 15 times and from fat-fingering a capital letter. Real win.
-(Copy buttons fired fine — clipboard read is blocked in my test env, verified visually.)
+## 2. VALUE — Yes (with caveats)
+The new UTM Spec is the thing I'd actually want. I added a client's canonical values as chips
+(linkedin/newsletter/google for source, cpc/email/social for medium), flipped "Enforce UTM Spec",
+and each cell turned into a dropdown of those allowed values — so I pick instead of re-typing.
+Typos are caught: I typed "emial" and it flagged "Off-spec — nearest allowed email" with a "Fix to
+email" button that one-click corrected the cell to green and gave me an Undo. I saved it as a
+campaign "Acme — Spring"; it survived a full reload, so next week I just reopen that client and the
+spec is already loaded. That genuinely beats my copy-paste — copy-paste never catches "emial" or a
+stray capital, which is exactly the GA-splitting pain the headline promises to kill.
 
-## 3. ADVOCACY — 8
-I'd recommend it to the two freelancers in my Slack, but wouldn't bring it up unprompted yet.
-What holds it back from a 9:
-- Find & replace is case-SENSITIVE and silent: my "Summer_Launch" needed exact "Summer";
-  someone typing "summer" will think the button's broken. No "replaced in 3 rows" count either,
-  so you can't tell it did anything.
-- I can bulk-edit the UTM columns but NOT the BASE URL — for a campaign where every link points
-  at the same landing page I still pasted the URL into 5 rows by hand. That's the other half of
-  the grunt work.
+## 3. ADVOCACY — 6 (honest, not a polite 7)
+The core loop works and I'd use it for repeat clients, but a 6 because:
+- The cell autocomplete is a plain native browser dropdown (datalist) with NO visible "pick from
+  list" cue — my first instinct was to type "lin" and I immediately ate an off-spec warning before
+  I noticed there was a caret to pick "linkedin". A peer will think it's nagging them, not helping.
+- Defining allowed values is one-at-a-time + Enter. For a client with 8 source values I want to
+  paste a comma/line list, not add them one by one.
+- First-session setup (expand panel, add 6 values, toggle enforce) is genuinely SLOWER than my
+  4-minute copy-paste. The payoff is only on reuse — and nothing on screen sells that. There's no
+  "set up a client spec once, reuse it every week" nudge, so I had to discover the value myself.
 
-ONE change that would most raise my advocacy: make Find & replace case-insensitive by default
-(or show a match count after running). Right now it can silently do nothing and look broken —
-the one thing that would burn a peer I'd just recommended it to.
+ONE change that raises this to an 8: make the per-cell dropdown obviously pickable (a real
+"choose allowed value" affordance, not bare datalist), allow paste/bulk-add of allowed values, and
+add a one-line "set up once per client, reuse weekly" hint by the UTM Spec panel.
 
 ```json
-{"tester": 8, "round": 1, "clarity": "Yes", "value": "Yes", "advocacy": 8, "topComplaints": ["Find & replace is case-sensitive and silent (no match count) — looks broken to a peer", "Can't bulk-edit/fill the Base URL column, only UTM columns"], "priorConcernsAddressed": "all"}
+{"tester": 8, "round": 1, "clarity": "Yes", "value": "Yes", "advocacy": 6, "topComplaints": ["cell autocomplete is a bare native datalist with no visible 'pick from list' cue — I typed and hit an off-spec warning before noticing the dropdown", "defining allowed values is one-at-a-time + Enter; no paste/bulk-add for a client's full list", "first-session setup is slower than my copy-paste and nothing sells the 'set up once per client, reuse weekly' payoff"], "priorConcernsAddressed": "n/a"}
 ```

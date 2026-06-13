@@ -1,15 +1,46 @@
-# Priya — Round 2
-CLARITY: Yes — New H1 ("one stray capital letter never splits your data in Google Analytics") plus "fix naming automatically, export clean CSV — no account" nails the what/who/no-signup in one read.
-VALUE: Yes — Now strictly beats hand-editing query strings: lint catches my casing/space mistakes AND one click fixes them, cleaned value flows into the generated URL and Copy. No more re-typing in a spreadsheet.
-ADVOCACY: 9/10 — My round-1 blocker is gone; I'd now send this unprompted to the teammate emailing me spreadsheets. Held off 10 only by minor polish (truncated generated-URL cell, no keyboard-add-row).
-PRIOR_CONCERN_ADDRESSED: Yes — Per-cell "Fix" links under every linted cell, a row-level "2 warnings Fix", and a global "Clean all" button; cleaned values verified in both the copied URL and CSV.
-LIKES:
-- "Clean all" + per-cell "Fix" both present; Clean all turned Twitter/"social media"/"Launch Day" into twitter/social_media/launch_day in one click.
-- Cleaned value propagates correctly: copied URL = ...utm_source=twitter&utm_medium=social_media&utm_campaign=launch_day.
-- Fix stays non-destructive until I click — flags WITH actionable one-click remedy, my exact round-1 ask.
-- Still zero console errors, no network after load, localStorage only — trust intact for a skeptic.
-COMPLAINTS (ranked):
-- CSV export of a still-dirty cell (I re-typed "UPPER" without clicking Fix) carries UPPER through. Defensible as non-destructive, but I'd like an optional "block export while warnings exist" or auto-clean-on-export toggle.
-- Generated-URL cell still truncates with "…" and no in-cell expand; I still trust Copy rather than eyeball it.
-- No keyboard-first ergonomics: no shortcut to add a row or Tab/Enter paste a list of URLs — still a mouse click per row.
-VERDICT_BLOCK: {"id":1,"name":"Priya","clarity":"Yes","value":"Yes","advocacy":9,"prior_addressed":"Yes"}
+{"name":"Priya","clarity":"Yes","value":"Yes","advocacy":9}
+
+# Priya — Senior backend engineer, keyboard-first, hates signups (Round 2)
+
+## Prior concerns — re-checked first
+Last round (advocacy 8) I asked for two things:
+1. **One-pass collapse of case/separator variants.** Mostly addressed. "Match case" now
+   exists and defaults OFF (aria: "Match case (off = case-insensitive)"). I set 4 rows to
+   `Spring-Sale / spring_sale / SPRING-SALE / spring-sale`, ran one F&R of
+   `spring-sale → spring-sale`, and it hit 3 rows in ONE pass ("Replaced in 3 rows — Undo")
+   — every casing variant collapsed. That's the move I wanted; last round casing was its own
+   pass. Caveat: the SEPARATOR variant `spring_sale` still needed a second pass, since
+   case-insensitivity doesn't equate `-` and `_`. So the changelog's "Spring-Sale and
+   spring_sale collapse in ONE pass" is only true via two find strings — casing is one-pass,
+   separators aren't. Honest, but minor.
+2. **Keyboard reachability of the bulk toolbar.** FIXED, cleanly. From "Value to set", one
+   Tab lands on "Set column" and Enter applied to all rows. Tab order is sane: Value → Set
+   column → Find → Replace → Find & replace → Match case → row checkboxes. I ran a full F&R
+   (Find→Tab→Replace→Tab→button→Enter) without the mouse — 3 rows replaced. For a home-row
+   person this is the difference between "I'll use it" and "I won't."
+
+## 1. CLARITY — Yes
+Headline + "Edit links in a grid, fix naming automatically, export clean CSV — no account"
+still nails what/who/no-signup in under 5s. Bulk toolbar reads left-to-right as before.
+
+## 2. VALUE — Yes
+Still beats hand-editing query strings in neovim or a throwaway sheet; the case-insensitive
+default removes the most error-prone part of consistency cleanup. Suspicion checks held:
+0 network requests after page load, 0 console errors — all local, as advertised.
+
+## 3. ADVOCACY — 9
+Both asks landed and keyboard-drivability pushes it over my bar — I'd bring it up unprompted
+to anyone doing a launch post. Not a 10 only because separator+casing collapse still isn't
+a single canonical-normalize action (I'd still reach for the per-row "Fix" on mixed `-`/`_`),
+and there's no shortcut to jump focus from the grid into the toolbar (I Tab a while or click).
+
+## ONE change to raise advocacy to 10
+A single "Normalize column" action that collapses BOTH casing AND separator variants to one
+canonical value in one click (treat `-`/`_`/space as equivalent). That kills my last manual pass.
+
+Evidence: /Users/elaine/app-factory/validator-workspace/round2-tester1/ (r2-01-variants,
+r2-02-pass1, r2-03-pass2 .png + step3/step4.mjs logs)
+
+```json
+{"tester": 1, "round": 2, "clarity": "Yes", "value": "Yes", "advocacy": 9, "topComplaints": ["separator variants (spring_sale vs spring-sale) still need a second F&R pass — no single canonical-normalize action", "no keyboard shortcut to jump focus from grid into the bulk toolbar"], "priorConcernsAddressed": "all"}
+```

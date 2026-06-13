@@ -5,6 +5,7 @@
  * SharePayload so we can reuse the same JSON structure.
  */
 import type { LintSettings, UtmRow } from "./types";
+import { deserializeSpec, type UtmSpec } from "./spec";
 
 export interface Campaign {
   /** Stable nanoid-style key (not the display name). */
@@ -13,6 +14,12 @@ export interface Campaign {
   rows: UtmRow[];
   settings: LintSettings;
   savedAt: number; // Unix ms timestamp
+  /**
+   * UTM Spec (allowed-value lists + enforceSpec toggle) captured at save time.
+   * Absent in campaigns saved before this feature — treated as empty/unenforced
+   * (backward compat).
+   */
+  spec?: UtmSpec;
 }
 
 // ── Serialization ──────────────────────────────────────────────────────────────
@@ -56,7 +63,8 @@ export function saveCampaign(
   name: string,
   rows: UtmRow[],
   settings: LintSettings,
-  existingId?: string
+  existingId?: string,
+  spec?: UtmSpec
 ): { campaigns: Campaign[]; campaign: Campaign } {
   const trimmed = name.trim();
   const idx = campaigns.findIndex((c) => c.name === trimmed);
@@ -66,6 +74,7 @@ export function saveCampaign(
     rows,
     settings,
     savedAt: Date.now(),
+    ...(spec !== undefined ? { spec } : {}),
   };
   if (idx >= 0) {
     // Update in-place at the same position
@@ -170,6 +179,13 @@ export function relativeTime(ms: number): string {
   const days = Math.floor(hours / 24);
   if (days < 30) return `${days}d ago`;
   return new Date(ms).toLocaleDateString();
+}
+
+/**
+ * Extract the UTM Spec from a campaign (backward compat: absent → DEFAULT_SPEC).
+ */
+export function extractSpecFromCampaign(campaign: Campaign): UtmSpec {
+  return deserializeSpec(campaign.spec);
 }
 
 // ── Type guard ─────────────────────────────────────────────────────────────────

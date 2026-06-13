@@ -11,6 +11,7 @@ import {
   type Campaign,
 } from "../../lib/campaigns";
 import type { LintSettings, UtmRow } from "../../lib/types";
+import type { UtmSpec } from "../../lib/spec";
 
 interface CampaignsSidebarProps {
   campaigns: Campaign[];
@@ -26,6 +27,8 @@ interface CampaignsSidebarProps {
   rows: UtmRow[];
   /** Current lint settings (needed for Save). */
   settings: LintSettings;
+  /** Current UTM Spec (needed for Save — persisted inside campaign). */
+  spec?: UtmSpec;
   /** Flash state: true for ~2s after a successful save. */
   savedFlash: boolean;
   /** Render only the mobile disclosure variant (used in UtmGrid mobile slot). */
@@ -43,6 +46,7 @@ export function CampaignsSidebar({
   onChange,
   rows,
   settings,
+  spec,
   savedFlash,
   mobileOnly,
   desktopOnly,
@@ -116,7 +120,8 @@ export function CampaignsSidebar({
       rows,
       settings,
       // When saving as new, always generate a fresh id (don't re-use the open campaign's id)
-      isSaveAsNewRef.current ? (existing?.id ?? undefined) : (existing?.id ?? openCampaignId ?? undefined)
+      isSaveAsNewRef.current ? (existing?.id ?? undefined) : (existing?.id ?? openCampaignId ?? undefined),
+      spec
     );
     onSave(next, campaign);
     setShowNameField(false);

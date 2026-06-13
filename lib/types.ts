@@ -31,6 +31,12 @@ export interface LintSettings {
   lowercaseOnly: boolean;
   /** UTM values must not contain spaces. */
   noSpaces: boolean;
+  /**
+   * When true: cells not in the UTM Spec's allowed list are flagged off-spec.
+   * Stored alongside requiredParams/lowercaseOnly/noSpaces in lint-settings.
+   * Default false (no enforcement when the spec is empty or toggle is off).
+   */
+  enforceSpec?: boolean;
 }
 
 export const DEFAULT_LINT_SETTINGS: LintSettings = {

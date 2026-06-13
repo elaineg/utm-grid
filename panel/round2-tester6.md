@@ -1,15 +1,42 @@
-# Jules — Round 2
-CLARITY: Yes — New h1 "one stray capital letter never splits your data in GA" + subtitle "fix naming automatically, export clean CSV — no account" nails the why in 3 seconds.
-VALUE: Yes — "Clean all" turns it from a linter into an actual fixer; one click and my Buffer-ready URLs come out clean. That was the whole gap.
-ADVOCACY: 9/10 — I'd post this unprompted in our marketing Discord now; the one thing left is the row still side-scrolls on my phone.
-PRIOR_CONCERN_ADDRESSED: Partly — Autofix fully fixed; mobile improved (no page-level h-scroll, toolbar/presets stack) but the grid row itself is still a 963px table I must side-scroll at 375px.
-LIKES:
-- "Clean all" works: typed LinkedIn / Social / "Spring Launch" → cells became linkedin / social / spring_launch, and clipboard came out clean (utm_campaign=spring_launch). Zero console errors.
-- "Copy all URLs" lives in the top toolbar, reachable on mobile with no scroll — fast for my one-tap paste-into-Buffer habit.
-- Per-row Copy returns the clean URL on mobile too (verified: ...?utm_source=mastodon&utm_medium=social&utm_campaign=june_drop).
-- Lint toggles (Lowercase only / No spaces) now drive the fix, not just warnings — so the rules I set actually do something.
-COMPLAINTS (ranked):
-- Mobile grid still horizontal-scrolls: table is 963px wide inside a 325px wrapper at 375px, so UTM_CAMPAIGN, GENERATED URL and per-row Copy are off-screen until I drag sideways. A stacked card-per-row view would seal the 10.
-- Minor: "Clean all" is one global button — no per-row or per-cell preview of what changed; I trust it but a quick "cleaned 1 row" toast would reassure me before I copy.
-- Presets still store field values only; saving a per-platform base URL would let me go zero-typing for my recurring X/LinkedIn/Mastodon posts.
-VERDICT_BLOCK: {"id":6,"name":"Jules","clarity":"Yes","value":"Yes","advocacy":9,"prior_addressed":"Partly"}
+{"name":"Jules","clarity":"Yes","value":"Yes","advocacy":9}
+
+# Jules — Content & community marketer (50/50 desktop/mobile) — round 2, focus: MOBILE bulk-edit blocking
+
+## Prior concern re-checked first (the thing I docked a point for)
+- Round 1 #1: "On mobile the sticky Generated URL/Actions column floats over the lower bulk-edit
+  buttons, blocking taps on 'Find & replace in column'." → **FIXED.** On a 375px viewport I expanded
+  BULK EDIT, scrolled to the bottom button and tapped it: elementFromPoint at the button's center now
+  returns the BUTTON itself ("Find & replace in column"), not the floating column, and the tap fired
+  cleanly. The expanded card now sits in its own block fully ABOVE the table — Find/Replace inputs and
+  "Match case" are all unobstructed (confirmed visually). The control that was the wrong one to lose is
+  now reliably tappable.
+- Checkboxes: the row-select and the header select-all checkboxes (the small h-3.5 ones) both register
+  as clean tap targets and toggle on tap — nothing covers them. The lint-rule checkboxes up top tap
+  fine too. Zero console errors throughout.
+
+## 1. CLARITY — Yes
+Same 3-second read: H1 "Tag all your campaign links with clean, consistent UTM tags at once" + the
+subtitle "fix naming automatically, export clean CSV — no account." tells me what it is and that I won't
+be asked to log in. "no account" is the phrase that wins me.
+
+## 2. VALUE — Yes
+My today-tool is hand-editing source/medium per link in Notion or one platform at a time in Buffer. A
+no-login grid where I set utm_campaign across rows and swap twitter→x in one Find & replace beats that
+for the cross-platform link sets I push daily. "Copy share link" + Campaigns lets me hand a grid to a
+teammate without a SaaS seat. This is genuinely a bookmark.
+
+## 3. ADVOCACY — 9
+The one issue holding me at 8 last round — mobile Find & replace being un-tappable — is gone, and I post
+from my phone half the time, so it mattered. Desktop was already a 9; mobile now matches. I'd drop this
+in our marketing Discord unprompted. Not a 10 only because the row grid still horizontal-scrolls on a
+phone, so single-cell edits on mobile are a side-scroll chore — but the bulk-edit card lifts most of
+that pain since I rarely touch individual cells anymore.
+
+## What still holds me back / ONE change to reach 10
+The row grid itself still side-scrolls at 375px. The ONE change: a stacked/card row layout on narrow
+viewports (label: value per field) so on-phone single-cell edits don't need horizontal scrolling. The
+bulk panel already feels native to mobile; make the grid feel that way too and it's a 10.
+
+```json
+{"tester": 6, "round": 2, "clarity": "Yes", "value": "Yes", "advocacy": 9, "topComplaints": ["Row grid still horizontal-scrolls on a 375px phone for single-cell edits (bulk panel mitigates but doesn't remove it)"], "priorConcernsAddressed": "all"}
+```
