@@ -43,7 +43,37 @@ export interface Preset {
   id: string;
   name: string;
   values: Partial<Record<UtmField, string>>;
+  /** True for built-in seeded presets (never stored in localStorage, never deleteable). */
+  seeded?: boolean;
 }
+
+/** Four built-in channel presets shipped with the app. */
+export const SEEDED_PRESETS: Preset[] = [
+  {
+    id: "seeded-email",
+    name: "Email",
+    values: { utm_source: "newsletter", utm_medium: "email" },
+    seeded: true,
+  },
+  {
+    id: "seeded-linkedin",
+    name: "Paid Social – LinkedIn",
+    values: { utm_source: "linkedin", utm_medium: "paid_social" },
+    seeded: true,
+  },
+  {
+    id: "seeded-google-cpc",
+    name: "Google / CPC",
+    values: { utm_source: "google", utm_medium: "cpc" },
+    seeded: true,
+  },
+  {
+    id: "seeded-organic-social",
+    name: "Organic Social",
+    values: { utm_source: "organic_social", utm_medium: "social" },
+    seeded: true,
+  },
+];
 
 export function emptyRow(id: string): UtmRow {
   return {

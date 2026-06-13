@@ -98,7 +98,7 @@ function normalizeHeader(header: string): string {
 }
 
 const HEADER_ALIASES: Record<MappableField, string[]> = {
-  baseUrl: ["baseurl", "url", "link", "destination", "destinationurl", "landingpage", "page"],
+  baseUrl: ["baseurl", "url", "link", "destination", "destinationurl", "landingurl", "landingpage", "page", "baseurl"],
   utm_source: ["utmsource", "source"],
   utm_medium: ["utmmedium", "medium"],
   utm_campaign: ["utmcampaign", "campaign", "campaignname"],

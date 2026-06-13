@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
+  SEEDED_PRESETS,
   UTM_FIELDS,
   type Preset,
   type UtmField,
@@ -22,11 +23,13 @@ export function PresetsBar({
   newRowPresetId: string | null;
   onSave: (name: string, values: Partial<Record<UtmField, string>>) => void;
   onDelete: (id: string) => void;
-  onApplyToSelected: (id: string) => void;
+  onApplyToSelected: (presetId: string) => void;
   onNewRowPresetChange: (id: string | null) => void;
 }) {
   const [formOpen, setFormOpen] = useState(false);
   const [name, setName] = useState("");
+  const [saveToast, setSaveToast] = useState<string | null>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [included, setIncluded] = useState<Record<UtmField, boolean>>({
     utm_source: true,
     utm_medium: true,
@@ -42,8 +45,10 @@ export function PresetsBar({
     utm_content: "",
   });
 
+  // All presets visible: seeded first (never clobbered by user presets), then user's.
+  const allPresets: Preset[] = [...SEEDED_PRESETS, ...presets];
+
   const openForm = () => {
-    // Prefill from the selected row so "save current values" is one click.
     if (selectedRow) {
       setValues({
         utm_source: selectedRow.utm_source,
@@ -63,6 +68,14 @@ export function PresetsBar({
     setFormOpen(true);
   };
 
+  const showSaveToast = (presetName: string) => {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    setSaveToast(presetName);
+    toastTimer.current = setTimeout(() => setSaveToast(null), 3000);
+  };
+
+  useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current); }, []);
+
   const save = () => {
     const trimmedName = name.trim();
     if (!trimmedName) return;
@@ -71,23 +84,29 @@ export function PresetsBar({
       if (included[f]) presetValues[f] = values[f];
     }
     onSave(trimmedName, presetValues);
+    showSaveToast(trimmedName);
     setName("");
     setFormOpen(false);
+  };
+
+  // Apply preset — works for both seeded and user presets.
+  // The button is already disabled when !selectedRow; UtmGrid falls back to last row.
+  const applyPreset = (presetId: string) => {
+    onApplyToSelected(presetId);
   };
 
   return (
     <section className="rounded-lg border border-gray-200 bg-white p-4">
       <div className="flex flex-wrap items-center gap-3">
         <h2 className="text-sm font-semibold text-gray-900">Presets</h2>
-        {presets.length === 0 && (
-          <span className="text-sm text-gray-400">
-            none yet — save channel defaults like utm_source=facebook
-          </span>
-        )}
-        {presets.map((p) => (
+        {allPresets.map((p) => (
           <span
             key={p.id}
-            className="inline-flex items-center gap-1 rounded-full border border-gray-300 bg-gray-50 py-1 pr-1 pl-3 text-sm"
+            className={`inline-flex items-center gap-1 rounded-full border py-1 pr-1 pl-3 text-sm ${
+              p.seeded
+                ? "border-blue-200 bg-blue-50"
+                : "border-gray-300 bg-gray-50"
+            }`}
             title={Object.entries(p.values)
               .map(([k, v]) => `${k}=${v}`)
               .join(", ")}
@@ -95,7 +114,7 @@ export function PresetsBar({
             <span className="font-medium text-gray-800">{p.name}</span>
             <button
               type="button"
-              onClick={() => onApplyToSelected(p.id)}
+              onClick={() => applyPreset(p.id)}
               disabled={!selectedRow}
               title={
                 selectedRow
@@ -106,14 +125,16 @@ export function PresetsBar({
             >
               Apply
             </button>
-            <button
-              type="button"
-              onClick={() => onDelete(p.id)}
-              aria-label={`Delete preset ${p.name}`}
-              className="rounded-full px-1.5 py-0.5 text-xs text-gray-400 hover:bg-red-100 hover:text-red-700"
-            >
-              ✕
-            </button>
+            {!p.seeded && (
+              <button
+                type="button"
+                onClick={() => onDelete(p.id)}
+                aria-label={`Delete preset ${p.name}`}
+                className="rounded-full px-1.5 py-0.5 text-xs text-gray-400 hover:bg-red-100 hover:text-red-700"
+              >
+                ✕
+              </button>
+            )}
           </span>
         ))}
         <button
@@ -124,6 +145,12 @@ export function PresetsBar({
           {formOpen ? "Close" : "Save preset…"}
         </button>
 
+        {saveToast && (
+          <span aria-live="polite" className="text-sm font-medium text-green-600">
+            Saved preset &lsquo;{saveToast}&rsquo;
+          </span>
+        )}
+
         <label className="ml-auto flex items-center gap-2 text-sm text-gray-600">
           New rows use
           <select
@@ -133,7 +160,7 @@ export function PresetsBar({
             onChange={(e) => onNewRowPresetChange(e.target.value || null)}
           >
             <option value="">no preset</option>
-            {presets.map((p) => (
+            {allPresets.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
               </option>

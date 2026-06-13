@@ -14,16 +14,19 @@ export interface PendingImport {
   initialMapping: Record<MappableField, number | null>;
 }
 
+export type ImportMode = "append" | "replace";
+
 export function ImportDialog({
   pending,
   onConfirm,
   onCancel,
 }: {
   pending: PendingImport;
-  onConfirm: (mapping: Record<MappableField, number | null>) => void;
+  onConfirm: (mapping: Record<MappableField, number | null>, mode: ImportMode) => void;
   onCancel: () => void;
 }) {
   const [mapping, setMapping] = useState(pending.initialMapping);
+  const [mode, setMode] = useState<ImportMode>("append");
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
@@ -32,7 +35,7 @@ export function ImportDialog({
         <p className="mt-1 text-sm text-gray-500">
           {pending.fileName} — {pending.dataRows.length} data row
           {pending.dataRows.length === 1 ? "" : "s"}. Matching headers were
-          pre-mapped; adjust below. Importing replaces the current grid.
+          pre-mapped; adjust below.
         </p>
 
         <div className="mt-4 space-y-2">
@@ -66,6 +69,40 @@ export function ImportDialog({
           ))}
         </div>
 
+        {/* Append / Replace */}
+        <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2.5">
+          <p className="mb-2 text-xs font-semibold text-amber-800 uppercase tracking-wide">
+            Add to grid
+          </p>
+          <div className="flex items-center gap-4 text-sm">
+            <label className="flex items-center gap-1.5 cursor-pointer">
+              <input
+                type="radio"
+                name="import-mode"
+                value="append"
+                checked={mode === "append"}
+                onChange={() => setMode("append")}
+                className="accent-blue-600"
+              />
+              <span className="font-medium text-gray-800">Append</span>
+              <span className="text-gray-500">— add rows to current grid</span>
+            </label>
+            <label className="flex items-center gap-1.5 cursor-pointer">
+              <input
+                type="radio"
+                name="import-mode"
+                value="replace"
+                checked={mode === "replace"}
+                onChange={() => setMode("replace")}
+                className="accent-blue-600"
+              />
+              <span className="font-medium text-gray-800">Replace</span>
+              <span className="text-gray-500">— wipe current grid</span>
+            </label>
+          </div>
+          <p className="mt-1 text-xs text-amber-700">Either way you can Undo immediately after importing.</p>
+        </div>
+
         <div className="mt-6 flex justify-end gap-3">
           <button
             type="button"
@@ -76,7 +113,7 @@ export function ImportDialog({
           </button>
           <button
             type="button"
-            onClick={() => onConfirm(mapping)}
+            onClick={() => onConfirm(mapping, mode)}
             disabled={pending.dataRows.length === 0}
             title={
               pending.dataRows.length === 0
