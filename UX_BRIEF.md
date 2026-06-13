@@ -221,3 +221,63 @@ no-op. If a row is selected, apply to it (flash green, per R2 §B). If NO row is
 the focused/last row, or if the grid is empty create a new row and apply — a click always produces
 a visible fill. Show a one-line hint beside the Presets control: **"Applies to the selected row
 (or adds a new one)."** so the behavior is legible before the first click.
+
+## Round 6 delta — Bulk edit (row/column power-tool)
+
+ONE new capability: set or find-and-replace a UTM column across many rows in one move, so a
+weekly 20–50 link batch sharing utm_campaign/source/medium is tagged once, not per-row. Fully
+client-side, instant, persisted to localStorage, lint re-runs immediately. Additive only — do NOT
+touch the headline, toolbar order, grid layout, Presets, Campaigns sidebar, or share button. Keep
+the cold-open grid the hero; the bulk surface is a quiet power-tool, never a mode.
+
+**1. Row selection.** Add a narrow leftmost **checkbox column** to the grid (left of the row data,
+not overlapping the right-side row-actions column from Fix F). Each row gets a checkbox; the grid
+**header row gets a "select all" checkbox** that selects/clears every row (indeterminate state when
+some are selected). Selection is purely transient (drives bulk scope) — it is NOT persisted and has
+no per-row action of its own, so it never reads as another row control.
+
+**2. Bulk-edit bar — one labeled surface, distinct verbs (VERB-COLLISION guard — biggest lever).**
+A single horizontal **"Bulk edit"** bar sits directly **above the grid header, below the top
+toolbar** (in flow, full width, cool-neutral tinted strip so it reads as part of the grid, not the
+toolbar). It is collapsed/quiet but always present — labeled **"Bulk edit"** on the left so its
+purpose is legible in 5 seconds. The bar's verbs MUST be distinct from every existing control:
+- Per-row controls are icon-only **"Duplicate row" / "Delete row"** + per-cell **Copy** (Fix A/F).
+- Bulk controls use the verbs **"Set column"** and **"Find & replace in column"** — never "Dup",
+  "Del", "Copy", "Clean", or a bare "Replace". The word **"column"** in both labels makes the scope
+  (a whole field across rows) unmistakable and stops a hurried tester reading them as row actions.
+The bar contains, left to right: the **"Bulk edit"** label · a **column picker** (dropdown:
+utm_source / utm_medium / utm_campaign / utm_term / utm_content, default utm_campaign) · for **Set
+column**: one value input + a **"Set column"** button · for **Find & replace in column**: a
+**Find** input + a **Replace** input + a **"Find & replace in column"** button. Group the two
+operations visually (a thin divider between them) so each button clearly owns its inputs.
+
+**3. Targeting model — state the scope, never let it surprise (unambiguous-at-a-glance guard).**
+The bar shows a live **"Apply to:"** indicator that updates with selection:
+- No rows selected → **"Apply to: all 5 rows"** (neutral).
+- Some selected → **"Apply to: 2 selected rows"** (accent-tinted to match the row checkboxes).
+The two action buttons' tooltips echo the same scope. This makes "selected → only those; none
+selected → all rows" obvious before the click — the user is never surprised about what changed.
+
+**4. What the actions do (instant, visible, lint-aware).**
+- **Set column** writes the entered value into the chosen column on every targeted row. An **empty
+  value clears** that field across them (state the affordance inline: a quiet hint "Empty value
+  clears the column."). Changed cells **flash green** (same cue as Auto-fix/preset apply).
+- **Find & replace in column** replaces the find string (substring match) with the replace string in
+  the chosen column on every targeted row; changed cells flash green. A no-match run shows a quiet
+  inline **"No matches in utm_campaign."** (never a silent no-op).
+- Both run **synchronously, persist to localStorage** like every grid edit, **trigger zero network
+  requests**, and **re-run lint immediately** so cross-row consistency + case/space warnings update
+  on the affected cells in the same tick. Both fold into the existing **Undo** (shared with
+  row-delete / Auto-fix) — a single Undo reverts the whole bulk change. Result copy mirrors Auto-fix:
+  **"Set utm_campaign on 5 rows — Undo"** / **"Replaced in 2 rows — Undo"** (persistent ~5s).
+
+**5. Don't crowd the existing UI.** On desktop the Bulk-edit bar is one slim row; inputs are compact.
+On mobile/narrow (<900px) it collapses into a **"Bulk edit"** disclosure directly under the top
+action bar (collapsed by default so it never pushes the grid down on cold open); expanded, the
+picker + inputs + two buttons stack full-width and thumb-reachable. It must not regress the grid,
+lint, CSV, Campaigns sidebar, or share button.
+
+## 5-second check (still unchanged above the fold)
+Cold visitor still sees the hero: headline, subtitle, the pre-filled example grid row with a live
+generated URL + Copy. The **Bulk edit** bar is present and labeled (so its power-tool purpose is
+instantly legible) but quiet — it never displaces the grid or competes for the first read.

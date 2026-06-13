@@ -27,6 +27,7 @@ import { useLocalStorage } from "../../lib/useLocalStorage";
 import { ImportDialog, type ImportMode, type PendingImport } from "./ImportDialog";
 import { PresetsBar } from "./PresetsBar";
 import { CampaignsSidebar } from "./CampaignsSidebar";
+import { BulkEditBar } from "./BulkEditBar";
 import {
   deserializeCampaigns,
   serializeCampaigns,
@@ -416,6 +417,100 @@ export function UtmGrid() {
     (r) => !r.baseUrl.trim() && UTM_FIELDS.every((f) => !r[f].trim())
   );
 
+  // ── Bulk edit state ────────────────────────────────────────────────────────
+  // Selection is purely transient — not persisted to localStorage.
+  const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(new Set());
+  const [bulkResultMessage, setBulkResultMessage] = useState<string | null>(null);
+  const [bulkNoMatchMessage, setBulkNoMatchMessage] = useState<string | null>(null);
+  const bulkResultTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const bulkNoMatchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showBulkResult = useCallback((message: string) => {
+    if (bulkResultTimer.current) clearTimeout(bulkResultTimer.current);
+    setBulkResultMessage(message);
+    bulkResultTimer.current = setTimeout(() => {
+      setBulkResultMessage(null);
+      bulkResultTimer.current = null;
+    }, 5000);
+  }, []);
+
+  const showBulkNoMatch = useCallback((message: string) => {
+    if (bulkNoMatchTimer.current) clearTimeout(bulkNoMatchTimer.current);
+    setBulkNoMatchMessage(message);
+    bulkNoMatchTimer.current = setTimeout(() => {
+      setBulkNoMatchMessage(null);
+      bulkNoMatchTimer.current = null;
+    }, 4000);
+  }, []);
+
+  /** Toggle a single row checkbox. */
+  const toggleRowSelection = useCallback((rowId: string) => {
+    setSelectedRowIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(rowId)) next.delete(rowId);
+      else next.add(rowId);
+      return next;
+    });
+  }, []);
+
+  /** Select-all / clear-all header checkbox. */
+  const toggleSelectAll = useCallback((allRowIds: string[], allSelected: boolean) => {
+    setSelectedRowIds(allSelected ? new Set() : new Set(allRowIds));
+  }, []);
+
+  /** Bulk: set a UTM column to a value on targeted rows. Empty value clears. */
+  const handleBulkSetColumn = useCallback(
+    (field: UtmField, value: string) => {
+      const targetIds =
+        selectedRowIds.size > 0 ? selectedRowIds : new Set(rows.map((r) => r.id));
+      const targetCount = targetIds.size;
+      // Pre-compute flash keys from the current rows snapshot before calling setRows.
+      const flashKeys = rows
+        .filter((r) => targetIds.has(r.id))
+        .map((r) => `${r.id}:${field}`);
+      pushUndo(`Set column ${field}`, rows);
+      setRows(rows.map((r) => (targetIds.has(r.id) ? { ...r, [field]: value } : r)));
+      flashCellKeys(flashKeys);
+      showBulkResult(
+        `Set ${field} on ${targetCount} row${targetCount === 1 ? "" : "s"} — Undo`
+      );
+      setBulkNoMatchMessage(null);
+    },
+    [selectedRowIds, rows, pushUndo, setRows, flashCellKeys, showBulkResult]
+  );
+
+  /** Bulk: find & replace a substring in a UTM column across targeted rows. */
+  const handleBulkFindReplace = useCallback(
+    (field: UtmField, find: string, replace: string) => {
+      if (!find) return; // no-op if find is empty — nothing to match
+      const targetIds =
+        selectedRowIds.size > 0 ? selectedRowIds : new Set(rows.map((r) => r.id));
+      let matchCount = 0;
+      const flashKeys: string[] = [];
+      const nextRows = rows.map((r) => {
+        if (!targetIds.has(r.id)) return r;
+        const current = r[field];
+        if (!current.includes(find)) return r;
+        matchCount++;
+        flashKeys.push(`${r.id}:${field}`);
+        return { ...r, [field]: current.split(find).join(replace) };
+      });
+      if (matchCount === 0) {
+        showBulkNoMatch(`No matches in ${field}.`);
+        setBulkResultMessage(null);
+        return;
+      }
+      pushUndo(`Find & replace in ${field}`, rows);
+      setRows(nextRows);
+      flashCellKeys(flashKeys);
+      showBulkResult(
+        `Replaced in ${matchCount} row${matchCount === 1 ? "" : "s"} — Undo`
+      );
+      setBulkNoMatchMessage(null);
+    },
+    [selectedRowIds, rows, pushUndo, setRows, flashCellKeys, showBulkResult, showBulkNoMatch]
+  );
+
   const [shareEmptyWarning, setShareEmptyWarning] = useState(false);
   const shareEmptyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -502,7 +597,7 @@ export function UtmGrid() {
     const preset = allPresets.find((p) => p.id === presetId);
     if (!preset) return;
     // Fix G: never a no-op. Use: selected row → last row → new row (if empty grid).
-    let targetId = selectedId ?? rows[rows.length - 1]?.id;
+    const targetId = selectedId ?? rows[rows.length - 1]?.id;
     if (!targetId) {
       // Grid is empty: create a new row and apply to it.
       const newRow = emptyRow(newId());
@@ -793,6 +888,16 @@ export function UtmGrid() {
         />
       </div>
 
+      {/* Bulk edit bar — directly above grid header, below toolbar (per UX brief §Round 6 §2) */}
+      <BulkEditBar
+        rows={rows}
+        selectedRowIds={selectedRowIds}
+        onSetColumn={handleBulkSetColumn}
+        onFindReplace={handleBulkFindReplace}
+        resultMessage={bulkResultMessage}
+        noMatchMessage={bulkNoMatchMessage}
+      />
+
       {/* Loaded shared grid banner */}
       {sharedBanner && (
         <div
@@ -829,6 +934,14 @@ export function UtmGrid() {
           <table className="w-full min-w-[900px] border-collapse text-sm">
             <thead>
               <tr className="border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase">
+                {/* Bulk-selection checkbox header */}
+                <th className="w-8 px-2 py-2.5 text-center">
+                  <SelectAllCheckbox
+                    rows={rows}
+                    selectedRowIds={selectedRowIds}
+                    onToggleAll={toggleSelectAll}
+                  />
+                </th>
                 <th className="w-8 px-2 py-2.5" aria-label="Row number" />
                 {COLUMNS.map((c) => (
                   <th key={c} className="px-2 py-2.5">
@@ -853,14 +966,29 @@ export function UtmGrid() {
               {rows.map((row, i) => {
                 const generated = buildUtmUrl(row);
                 const isSelected = row.id === selectedId;
+                const isBulkChecked = selectedRowIds.has(row.id);
                 return (
                   <tr
                     key={row.id}
                     onClick={() => setSelectedId(row.id)}
                     className={`border-b border-gray-100 align-top ${
-                      isSelected ? "bg-blue-50/70" : "hover:bg-gray-50/50"
+                      isBulkChecked
+                        ? "bg-blue-50/40"
+                        : isSelected
+                        ? "bg-blue-50/70"
+                        : "hover:bg-gray-50/50"
                     }`}
                   >
+                    {/* Per-row bulk-selection checkbox */}
+                    <td className="px-2 py-2 text-center" onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        checked={isBulkChecked}
+                        onChange={() => toggleRowSelection(row.id)}
+                        aria-label={`Select row ${i + 1} for bulk edit`}
+                        className="h-3.5 w-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-400 cursor-pointer"
+                      />
+                    </td>
                     <td className="px-2 py-2 text-center">
                       <button
                         type="button"
@@ -1044,6 +1172,38 @@ export function UtmGrid() {
         />
       )}
     </div>
+  );
+}
+
+// ── SelectAllCheckbox ─────────────────────────────────────────────────────────
+
+function SelectAllCheckbox({
+  rows,
+  selectedRowIds,
+  onToggleAll,
+}: {
+  rows: UtmRow[];
+  selectedRowIds: Set<string>;
+  onToggleAll: (allRowIds: string[], allSelected: boolean) => void;
+}) {
+  const allRowIds = rows.map((r) => r.id);
+  const allSelected = allRowIds.length > 0 && allRowIds.every((id) => selectedRowIds.has(id));
+  const someSelected = allRowIds.some((id) => selectedRowIds.has(id));
+  const indeterminate = someSelected && !allSelected;
+
+  const ref = (el: HTMLInputElement | null) => {
+    if (el) el.indeterminate = indeterminate;
+  };
+
+  return (
+    <input
+      ref={ref}
+      type="checkbox"
+      checked={allSelected}
+      onChange={() => onToggleAll(allRowIds, allSelected)}
+      aria-label="Select all rows for bulk edit"
+      className="h-3.5 w-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-400 cursor-pointer"
+    />
   );
 }
 
