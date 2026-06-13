@@ -10,7 +10,7 @@ import {
 } from "../../lib/csv";
 import { groupWarnings, hasCellFix, lintRows, warningKey } from "../../lib/lint";
 import { isCellFixable, normalizeAllRows, normalizeValue } from "../../lib/normalize";
-import { buildShareUrl, parseShareHash, writeClipboard } from "../../lib/share";
+import { buildShareUrl, parseShareHash, storedGridHasContent, writeClipboard } from "../../lib/share";
 import {
   DEFAULT_LINT_SETTINGS,
   SEEDED_PRESETS,
@@ -89,13 +89,21 @@ export function UtmGrid() {
     history.replaceState(null, "", window.location.pathname + window.location.search);
 
     // Guard: if the stored grid already has content, confirm before clobbering it.
-    const storedHasContent = storedRowsNormalized.some(
-      (r) => r.baseUrl.trim() || UTM_FIELDS.some((f) => r[f].trim())
-    );
-    if (storedHasContent) {
-      const linkCount = storedRowsNormalized.length;
+    // Read localStorage DIRECTLY (not from the React-state closure) because
+    // useSyncExternalStore returns the SSR-safe initial value on the first
+    // client render — the closure value is stale until after hydration.
+    if (storedGridHasContent()) {
+      // Parse the stored rows to get the current link count for the prompt.
+      let storedLinkCount = 1;
+      try {
+        const raw = window.localStorage.getItem("utm-grid:rows");
+        if (raw) {
+          const parsed = JSON.parse(raw) as unknown;
+          if (Array.isArray(parsed) && parsed.length > 0) storedLinkCount = parsed.length;
+        }
+      } catch { /* keep default */ }
       const confirmed = window.confirm(
-        `Open shared grid (${payload.rows.length} link${payload.rows.length === 1 ? "" : "s"})? Your current unsaved grid (${linkCount} link${linkCount === 1 ? "" : "s"}) will be replaced. This can't be undone.`
+        `Open shared grid (${payload.rows.length} link${payload.rows.length === 1 ? "" : "s"})? Your current unsaved grid (${storedLinkCount} link${storedLinkCount === 1 ? "" : "s"}) will be replaced. This can't be undone.`
       );
       if (!confirmed) return;
     }

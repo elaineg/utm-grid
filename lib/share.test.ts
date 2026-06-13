@@ -9,6 +9,7 @@ import {
   decodeSharePayload,
   encodeSharePayload,
   parseShareHash,
+  rawStoredHasContent,
   type SharePayload,
 } from "./share";
 import { DEFAULT_LINT_SETTINGS, emptyRow } from "./types";
@@ -151,6 +152,57 @@ describe("decodeSharePayload: malformed / hostile inputs", () => {
   it("returns null for a plain base64url string (not lz-string compressed)", () => {
     const base64 = Buffer.from(JSON.stringify(FULL_PAYLOAD)).toString("base64url");
     expect(decodeSharePayload(base64)).toBeNull();
+  });
+});
+
+describe("rawStoredHasContent", () => {
+  it("returns false for null (key not in storage)", () => {
+    expect(rawStoredHasContent(null)).toBe(false);
+  });
+
+  it("returns false for empty string", () => {
+    expect(rawStoredHasContent("")).toBe(false);
+  });
+
+  it("returns false for corrupt JSON", () => {
+    expect(rawStoredHasContent("NOT_JSON!!!")).toBe(false);
+  });
+
+  it("returns false for a valid JSON empty array", () => {
+    expect(rawStoredHasContent("[]")).toBe(false);
+  });
+
+  it("returns false for an array of fully-empty rows", () => {
+    const rows = [{ id: "row-1", baseUrl: "", utm_source: "", utm_medium: "", utm_campaign: "", utm_term: "", utm_content: "" }];
+    expect(rawStoredHasContent(JSON.stringify(rows))).toBe(false);
+  });
+
+  it("returns false for rows with only whitespace values", () => {
+    const rows = [{ id: "row-1", baseUrl: "   ", utm_source: "  ", utm_medium: "", utm_campaign: "", utm_term: "", utm_content: "" }];
+    expect(rawStoredHasContent(JSON.stringify(rows))).toBe(false);
+  });
+
+  it("returns true when any row has a non-empty baseUrl", () => {
+    const rows = [{ id: "row-1", baseUrl: "https://example.com", utm_source: "", utm_medium: "", utm_campaign: "", utm_term: "", utm_content: "" }];
+    expect(rawStoredHasContent(JSON.stringify(rows))).toBe(true);
+  });
+
+  it("returns true when any row has a non-empty utm_source", () => {
+    const rows = [{ id: "row-1", baseUrl: "", utm_source: "newsletter", utm_medium: "", utm_campaign: "", utm_term: "", utm_content: "" }];
+    expect(rawStoredHasContent(JSON.stringify(rows))).toBe(true);
+  });
+
+  it("returns true when a later row in a multi-row grid has content", () => {
+    const rows = [
+      { id: "row-1", baseUrl: "", utm_source: "", utm_medium: "", utm_campaign: "", utm_term: "", utm_content: "" },
+      { id: "row-2", baseUrl: "", utm_source: "", utm_medium: "email", utm_campaign: "", utm_term: "", utm_content: "" },
+    ];
+    expect(rawStoredHasContent(JSON.stringify(rows))).toBe(true);
+  });
+
+  it("returns true when utm_term or utm_content is non-empty", () => {
+    const rows = [{ id: "row-1", baseUrl: "", utm_source: "", utm_medium: "", utm_campaign: "", utm_term: "shoes", utm_content: "" }];
+    expect(rawStoredHasContent(JSON.stringify(rows))).toBe(true);
   });
 });
 

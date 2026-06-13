@@ -8,9 +8,18 @@
  * - First visit (empty localStorage) shows empty-state hint, no saved campaigns
  * - No network request on save / open / dup / delete
  *
+ * Three fixed behaviors (round 2 fixes):
+ * - FIX 1: Share-link dirty guard — content grid prompts before replacing; cancel keeps grid;
+ *          confirm rehydrates + shows banner. EMPTY grid loads without any prompt.
+ * - FIX 2: Save-as-new collision cancel — cancelling the confirm-overwrite dialog on a
+ *          colliding name creates nothing and leaves the existing campaign unchanged.
+ * - FIX 3: Dirty indicator — after editing while a campaign is open, pill shows amber
+ *          "unsaved changes", not green "Saved!".
+ *
  * All tests run against the deployed preview URL (BASE_URL env var).
  * Uses window.confirm override: Playwright's page.on('dialog') handles confirm() calls.
  */
+import LZString from "lz-string";
 import { expect, test, type Page } from "@playwright/test";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -482,6 +491,251 @@ test("spec check: opening share link does not overwrite pre-existing localStorag
   await checkPage.goto("/");
   await checkPage.waitForLoadState("networkidle");
   await expect(cell(checkPage, "Base URL", 1)).toHaveValue("https://my-own-site.com");
+
+  await ctx.close();
+});
+
+// ── FIX 1: Share-link dirty guard ─────────────────────────────────────────────
+// Regression added after fix pass: when the working grid already HAS content,
+// opening a share-fragment URL must prompt (confirm) before replacing.
+// On cancel the grid is untouched; on confirm it rehydrates and shows the banner.
+// A FRESH/EMPTY grid must still load the share with NO prompt.
+
+function buildSharePayload(baseURL: string | undefined): { url: string } {
+  const payload = {
+    rows: [
+      {
+        id: "s1",
+        baseUrl: "https://shared.example.com/page",
+        utm_source: "fix1_src",
+        utm_medium: "email",
+        utm_campaign: "fix1_camp",
+        utm_term: "",
+        utm_content: "",
+      },
+      {
+        id: "s2",
+        baseUrl: "https://shared.example.com/lp",
+        utm_source: "fix1_src2",
+        utm_medium: "cpc",
+        utm_campaign: "fix1_camp",
+        utm_term: "",
+        utm_content: "",
+      },
+    ],
+    settings: { requiredParams: true, lowercaseOnly: true, noSpaces: true },
+  };
+  const compressed = LZString.compressToEncodedURIComponent(JSON.stringify(payload));
+  const origin = (baseURL ?? "http://localhost:3811").replace(/\/$/, "");
+  return { url: `${origin}/#g=${compressed}` };
+}
+
+test("FIX1: dirty grid + share URL prompts confirm; cancel keeps original grid", async ({
+  browser,
+  baseURL,
+}) => {
+  const { url: shareUrl } = buildSharePayload(baseURL);
+
+  const ctx = await browser.newContext();
+  // Seed the grid with content
+  const seedPage = await ctx.newPage();
+  await seedPage.goto("/");
+  await cell(seedPage, "Base URL", 1).fill("https://my-original-site.com");
+  await cell(seedPage, "utm_source", 1).fill("original_src");
+  await cell(seedPage, "utm_medium", 1).fill("email");
+  await cell(seedPage, "utm_campaign", 1).fill("orig_camp");
+  await seedPage.waitForTimeout(700); // debounce flush
+  await seedPage.close();
+
+  // Open the share URL in a new page (same context = same localStorage)
+  const page = await ctx.newPage();
+
+  // Register cancel handler BEFORE navigating
+  page.once("dialog", async (dialog) => {
+    expect(dialog.type()).toBe("confirm");
+    await dialog.dismiss(); // CANCEL
+  });
+
+  await page.goto(shareUrl);
+  await page.waitForLoadState("networkidle");
+
+  // The shared banner must NOT be visible (user cancelled)
+  await expect(page.locator('[data-testid="shared-grid-banner"]')).toHaveCount(0);
+
+  // The grid must still show the original content (not the shared rows)
+  await expect(cell(page, "Base URL", 1)).toHaveValue("https://my-original-site.com");
+  await expect(cell(page, "utm_source", 1)).toHaveValue("original_src");
+
+  await ctx.close();
+});
+
+test("FIX1: dirty grid + share URL prompts confirm; accept rehydrates + shows banner", async ({
+  browser,
+  baseURL,
+}) => {
+  const { url: shareUrl } = buildSharePayload(baseURL);
+
+  const ctx = await browser.newContext();
+  // Seed the grid with content
+  const seedPage = await ctx.newPage();
+  await seedPage.goto("/");
+  await cell(seedPage, "Base URL", 1).fill("https://my-original-site.com");
+  await cell(seedPage, "utm_source", 1).fill("original_src");
+  await cell(seedPage, "utm_medium", 1).fill("email");
+  await cell(seedPage, "utm_campaign", 1).fill("orig_camp");
+  await seedPage.waitForTimeout(700);
+  await seedPage.close();
+
+  const page = await ctx.newPage();
+
+  // Accept the confirm dialog
+  page.once("dialog", async (dialog) => {
+    expect(dialog.type()).toBe("confirm");
+    await dialog.accept();
+  });
+
+  await page.goto(shareUrl);
+  await page.waitForLoadState("networkidle");
+
+  // Banner must be visible with correct row count
+  await expect(page.locator('[data-testid="shared-grid-banner"]')).toBeVisible();
+  await expect(page.locator('[data-testid="shared-grid-banner"]')).toContainText(
+    "Loaded shared grid (2 links)"
+  );
+
+  // The shared rows must be shown
+  await expect(cell(page, "Base URL", 1)).toHaveValue("https://shared.example.com/page");
+  await expect(cell(page, "utm_source", 1)).toHaveValue("fix1_src");
+
+  await ctx.close();
+});
+
+test("FIX1: EMPTY working grid loads share link with NO prompt (clean-recipient path)", async ({
+  browser,
+  baseURL,
+}) => {
+  const { url: shareUrl } = buildSharePayload(baseURL);
+
+  // Fresh context = empty localStorage (no content in the grid)
+  const ctx = await browser.newContext();
+  const page = await ctx.newPage();
+
+  // Fail if any dialog appears (should NOT prompt for an empty grid)
+  page.on("dialog", async (dialog) => {
+    throw new Error(`Unexpected dialog on empty grid: ${dialog.message()}`);
+  });
+
+  await page.goto(shareUrl);
+  await page.waitForLoadState("networkidle");
+
+  // Banner must show without any prompt
+  await expect(page.locator('[data-testid="shared-grid-banner"]')).toBeVisible();
+  await expect(page.locator('[data-testid="shared-grid-banner"]')).toContainText(
+    "Loaded shared grid (2 links)"
+  );
+
+  // Rows are populated
+  await expect(cell(page, "Base URL", 1)).toHaveValue("https://shared.example.com/page");
+  await expect(cell(page, "utm_source", 1)).toHaveValue("fix1_src");
+
+  await ctx.close();
+});
+
+// ── FIX 2: Save-as-new collision CANCEL ───────────────────────────────────────
+// When "Save as new…" is clicked with a name that already exists and the user
+// cancels the overwrite confirm, nothing must be created or changed.
+
+test("FIX2: save-as-new collision cancel leaves campaigns unchanged (no dup, no overwrite)", async ({
+  browser,
+}) => {
+  const ctx = await browser.newContext();
+  const page = await ctx.newPage();
+  await page.goto("/");
+  await page.waitForLoadState("networkidle");
+
+  // Build and save original 1-row "Black Friday"
+  await cell(page, "Base URL", 1).fill("https://example.com/a");
+  await cell(page, "utm_source", 1).fill("newsletter");
+  await saveAsCampaign(page, "Black Friday");
+
+  // Record the current link count for "Black Friday" (1 link)
+  await expect(campaignRow(page, "Black Friday")).toContainText("1 link");
+
+  // Add a row to make the grid different, then click "Save as new..."
+  await page.getByRole("button", { name: "Add row" }).click();
+  await cell(page, "Base URL", 2).fill("https://example.com/b");
+  await cell(page, "utm_source", 2).fill("google");
+  await page.waitForTimeout(300);
+
+  // "Save as new..." button appears when a campaign is open
+  const saveAsNewBtn = page.locator('button[title="Save as new campaign"]');
+  await expect(saveAsNewBtn).toBeVisible();
+  await saveAsNewBtn.click();
+
+  const nameInput = page.locator('[data-testid="campaign-name-input"]');
+  await expect(nameInput).toBeVisible();
+  // Type the same colliding name
+  await nameInput.fill("Black Friday");
+
+  // CANCEL the overwrite confirm
+  page.once("dialog", async (dialog) => {
+    expect(dialog.type()).toBe("confirm");
+    expect(dialog.message()).toContain("already exists");
+    await dialog.dismiss(); // CANCEL
+  });
+
+  await page.locator('[data-testid="campaign-save-confirm"]').click();
+  await page.waitForTimeout(300);
+
+  // Still only 1 "Black Friday" entry
+  const bfRows = page.locator('[data-testid="campaigns-list"] li').filter({ hasText: "Black Friday" });
+  await expect(bfRows).toHaveCount(1);
+  // Still shows "1 link" (NOT updated to 2 links, since we cancelled)
+  await expect(bfRows).toContainText("1 link");
+
+  await ctx.close();
+});
+
+// ── FIX 3: Dirty indicator after editing while in a campaign ──────────────────
+// After editing the grid while a campaign is open, the toolbar pill must show
+// amber "unsaved changes" instead of green "Saved!".
+
+test("FIX3: editing while in a campaign shows amber unsaved-changes pill, not green Saved!", async ({
+  browser,
+}) => {
+  const ctx = await browser.newContext();
+  const page = await ctx.newPage();
+  await page.goto("/");
+  await page.waitForLoadState("networkidle");
+
+  // Save a campaign to get into "open campaign" state
+  await cell(page, "Base URL", 1).fill("https://example.com/a");
+  await cell(page, "utm_source", 1).fill("newsletter");
+  await saveAsCampaign(page, "Black Friday");
+
+  // Wait for the green "Saved!" flash to appear
+  await expect(page.locator('[data-testid="campaign-pill"]')).toContainText("Saved!", { timeout: 3000 });
+  // Wait for the flash to expire (~2s)
+  await page.waitForTimeout(2500);
+  // After expiry the pill should show "In: Black Friday" (green gone)
+  await expect(page.locator('[data-testid="campaign-pill"]')).not.toContainText("Saved!");
+
+  // Now edit the grid — this should make it dirty
+  await cell(page, "utm_campaign", 1).fill("changed_value");
+  await page.waitForTimeout(300);
+
+  // The pill must NOT say "Saved!" anymore
+  const pill = page.locator('[data-testid="campaign-pill"]');
+  await expect(pill).not.toContainText("Saved!");
+
+  // The pill must show the unsaved-changes indicator:
+  // either via the amber dot (aria-label="unsaved changes") or "unsaved changes" text
+  const pillText = await pill.textContent();
+  const hasUnsavedText = pillText?.toLowerCase().includes("unsaved") ?? false;
+  const hasAmberDot = await page
+    .locator('[data-testid="campaign-pill"] [aria-label="unsaved changes"]')
+    .isVisible();
+  expect(hasUnsavedText || hasAmberDot).toBe(true);
 
   await ctx.close();
 });
