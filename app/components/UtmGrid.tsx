@@ -610,7 +610,7 @@ function CellWarnings({
   if (count === 1) {
     return (
       <div className="mt-1">
-        <p className="max-w-52 text-[11px] leading-tight text-amber-700">
+        <p role="alert" className="max-w-52 text-[11px] leading-tight text-amber-700">
           ⚠ {warnings[0].message}
           {canFix && onFix && (
             <button

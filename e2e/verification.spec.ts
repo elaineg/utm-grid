@@ -80,6 +80,7 @@ test("no network requests during editing, CSV import, and export", async ({
     .getByLabel("CSV file")
     .setInputFiles({ name: "in.csv", mimeType: "text/csv", buffer: Buffer.from(csv) });
   await expect(page.getByText("Map CSV columns")).toBeVisible();
+  await page.getByRole("radio", { name: "Replace" }).click();
   await page.getByRole("button", { name: "Import 1 row", exact: true }).click();
   await expect(cell(page, "utm_source", 1)).toHaveValue("facebook");
 

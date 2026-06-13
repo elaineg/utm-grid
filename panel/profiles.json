@@ -1,0 +1,102 @@
+[
+ {
+  "id": 1,
+  "name": "Priya",
+  "role": "Senior backend software engineer",
+  "tech": "high",
+  "device": "desktop, large monitor, keyboard-first",
+  "stack": "terminal + neovim, GitHub, Kubernetes dashboards, Datadog, Linear, Slack",
+  "temperament": "skeptical of new tools; hates signups; will inspect network tab if suspicious; abandons anything slower than a CLI",
+  "motivation": "Priya rarely tags marketing links, but a side project's launch post needs UTMs and a teammate sent her this instead of a spreadsheet \u2014 she'll judge whether it's faster than hand-editing query strings."
+ },
+ {
+  "id": 2,
+  "name": "Marcus",
+  "role": "Frontend engineer, 2 years in",
+  "tech": "high",
+  "device": "desktop, Chrome with devtools open",
+  "stack": "VS Code, GitHub, Vercel, Figma dev mode, Storybook, Discord/Slack",
+  "temperament": "enthusiastic early adopter; shares tools in team Slack when impressed; notices janky CSS instantly",
+  "motivation": "Marcus is shipping a product launch and needs to tag the announcement links across email, Twitter, and the blog; he found utm-grid on Vercel and wants to see if it beats fiddling with query params by hand."
+ },
+ {
+  "id": 3,
+  "name": "Wen",
+  "role": "Marketing data analyst",
+  "tech": "high-medium",
+  "device": "desktop, two monitors",
+  "stack": "BigQuery/SQL, Google Sheets, Looker Studio, dbt, GA4, Slack",
+  "temperament": "lives in data hygiene; distrusts tools that transform data invisibly; wants CSV in/out everywhere",
+  "motivation": "Wen owns campaign reporting in GA4 and is sick of dirty UTM data splitting campaigns; she wants a tool with strict CSV in/out and lint that catches the casing inconsistencies that wreck her dashboards."
+ },
+ {
+  "id": 4,
+  "name": "Tom\u00e1s",
+  "role": "Operations analyst at a mid-size company",
+  "tech": "medium",
+  "device": "corporate Windows laptop, Edge",
+  "stack": "Excel (power user), Tableau, Jira, Teams, SharePoint",
+  "temperament": "pragmatic; IT blocks installs so browser tools appeal; wary of pasting company data into random sites",
+  "motivation": "Tom\u00e1s builds tagged links for ops campaigns in Excel and IT blocks installs, so a browser tool that round-trips CSV with his existing sheet is appealing \u2014 if it won't mangle his data."
+ },
+ {
+  "id": 5,
+  "name": "Dana",
+  "role": "Demand-gen marketer",
+  "tech": "medium",
+  "device": "MacBook in cafes; phone between meetings",
+  "stack": "HubSpot, GA4, Notion, Canva, LinkedIn Campaign Manager, Google Ads",
+  "temperament": "ruthless about time; if value isn't obvious in one scroll she's gone; screenshots tools she likes for the team channel",
+  "motivation": "Dana launches a campaign every week and must tag 30+ links across channels before Thursday; she lands here hoping to cut the 15-minute UTM grind and will bounce if value isn't obvious in one scroll."
+ },
+ {
+  "id": 6,
+  "name": "Jules",
+  "role": "Content & community marketer",
+  "tech": "medium",
+  "device": "50/50 desktop and mobile",
+  "stack": "Notion, Buffer, Mailchimp, Figma (consuming), X/LinkedIn/Mastodon, Discord",
+  "temperament": "posts constantly, juggles platform quirks daily; allergic to anything requiring a login for a small job",
+  "motivation": "Jules juggles links across X, LinkedIn, Mastodon and Buffer daily and hates logging in for a small job; a no-account bulk UTM builder with presets per platform is exactly the kind of tool she'd bookmark."
+ },
+ {
+  "id": 7,
+  "name": "Aisha",
+  "role": "Product designer",
+  "tech": "medium-high",
+  "device": "desktop, big display, trackpad",
+  "stack": "Figma, FigJam, Notion, Loom, Maze, Slack",
+  "temperament": "judges craft hard \u2014 spacing, copy tone, empty states; a clumsy UI loses her regardless of utility; advocates loudly for tools that feel considered",
+  "motivation": "Aisha doesn't build UTMs often but a teammate shared it; she'll judge whether the grid feels considered \u2014 empty states, copy tone, lint affordances \u2014 and advocate loudly only if the craft holds up."
+ },
+ {
+  "id": 8,
+  "name": "Rob",
+  "role": "Brand/visual designer, freelance",
+  "tech": "medium",
+  "device": "desktop, color-calibrated monitor",
+  "stack": "Figma, Illustrator, Photoshop, Google Drive, client Slacks/emails",
+  "temperament": "does repetitive asset-prep grunt work weekly; price-sensitive; compares everything to 'I could do this in Photoshop in 4 minutes'",
+  "motivation": "Rob occasionally tags client campaign links and compares everything to doing it by hand; he wants to know if the grid plus CSV export actually saves him time over typing query strings."
+ },
+ {
+  "id": 9,
+  "name": "Elena",
+  "role": "Engineering manager (8 reports)",
+  "tech": "medium-high but no time",
+  "device": "laptop + phone, half the day in meetings",
+  "stack": "Google Calendar (wall-to-wall), Slack, Linear, Google Docs, Zoom, dashboards she skims",
+  "temperament": "30-second patience budget; uses tools between meetings on her phone; anything requiring setup is dead to her; recommends tools that save her reports time",
+  "motivation": "Elena has a 30-second patience budget between meetings; one of her reports asked if this tool is worth standardizing on, so she'll skim it on the fly and recommend it only if it's instantly obvious and setup-free."
+ },
+ {
+  "id": 10,
+  "name": "Sam",
+  "role": "Product manager",
+  "tech": "medium",
+  "device": "mobile-heavy between meetings, laptop otherwise",
+  "stack": "Notion, Sheets, Slack, Zoom, Asana, Amplitude (skims), endless browser tabs",
+  "temperament": "synthesizes and shares constantly \u2014 exports, links, screenshots; values anything that makes him look organized; mild tech confidence, won't debug anything",
+  "motivation": "Sam coordinates launches and needs the team's UTMs consistent and shareable; he wants to build a batch, export a clean CSV, and look organized \u2014 without debugging anything."
+ }
+]

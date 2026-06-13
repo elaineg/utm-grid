@@ -103,6 +103,8 @@ test("CSV export -> import round-trips the grid exactly", async ({ page }) => {
   await expect(page.getByText("Map CSV columns")).toBeVisible();
   // Headers match export names, so everything is pre-mapped.
   await expect(page.getByLabel("CSV column for Base URL")).toHaveValue("0");
+  // Select Replace so the import overwrites the modified row 1 (default is Append).
+  await page.getByRole("radio", { name: "Replace" }).click();
   await page.getByRole("button", { name: "Import 2 rows" }).click();
 
   await expect(cell(page, "Base URL", 1)).toHaveValue("https://example.com/sale");
@@ -160,8 +162,10 @@ test("presets persist across reload and apply to a row", async ({ page }) => {
   // Rows persist across reload too — clear row 1 so Apply provably fills it.
   await cell(page, "utm_source", 1).fill("");
   await cell(page, "utm_medium", 1).fill("");
-  await page.getByRole("button", { name: "Select row 1" }).click();
-  await page.getByRole("button", { name: "Apply" }).click();
+  // Select row 1 via the row-number button in the grid (aria-label "Select row 1").
+  await page.getByLabel("Select row 1", { exact: true }).click();
+  // Apply the "Paid Social" preset — scope to its chip to avoid ambiguity with other Apply buttons.
+  await page.getByText("Paid Social", { exact: true }).first().locator("..").getByRole("button", { name: "Apply" }).click();
   await expect(cell(page, "utm_source", 1)).toHaveValue("facebook");
   await expect(cell(page, "utm_medium", 1)).toHaveValue("paid_social");
 });
