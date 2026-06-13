@@ -6,6 +6,7 @@ import {
   duplicateCampaign,
   findCampaignByName,
   relativeTime,
+  renameCampaign,
   saveCampaign,
   type Campaign,
 } from "../../lib/campaigns";
@@ -19,7 +20,7 @@ interface CampaignsSidebarProps {
   onSave: (campaigns: Campaign[], savedCampaign: Campaign) => void;
   /** Called when the user opens a campaign (after any confirm). */
   onOpen: (campaign: Campaign) => void;
-  /** Called when the library changes (duplicate/delete). */
+  /** Called when the library changes (duplicate/delete/rename). */
   onChange: (campaigns: Campaign[]) => void;
   /** Current working grid rows (needed for Save). */
   rows: UtmRow[];
@@ -52,6 +53,14 @@ export function CampaignsSidebar({
   // Track whether the name field was opened in "save as new" mode (vs "save changes").
   const isSaveAsNewRef = useRef(false);
 
+  // ── Rename state ───────────────────────────────────────────────────────────
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const renameInputRef = useRef<HTMLInputElement>(null);
+
+  // ── Filter state ───────────────────────────────────────────────────────────
+  const [filterText, setFilterText] = useState("");
+
   // Mobile disclosure state
   const [mobileExpanded, setMobileExpanded] = useState(false);
 
@@ -63,6 +72,13 @@ export function CampaignsSidebar({
       nameInputRef.current?.focus();
     }
   }, [showNameField]);
+
+  // Auto-focus rename field when revealed
+  useEffect(() => {
+    if (renamingId) {
+      renameInputRef.current?.focus();
+    }
+  }, [renamingId]);
 
   const startSave = useCallback(() => {
     isSaveAsNewRef.current = false;
@@ -113,6 +129,44 @@ export function CampaignsSidebar({
     if (e.key === "Escape") { e.preventDefault(); cancelSave(); }
   };
 
+  // ── Rename handlers ────────────────────────────────────────────────────────
+  const startRename = useCallback((campaign: Campaign) => {
+    setRenamingId(campaign.id);
+    setRenameValue(campaign.name);
+  }, []);
+
+  const cancelRename = useCallback(() => {
+    setRenamingId(null);
+    setRenameValue("");
+  }, []);
+
+  const commitRename = useCallback(
+    (id: string) => {
+      const trimmed = renameValue.trim();
+      if (!trimmed) { cancelRename(); return; }
+
+      const { campaigns: next, collision } = renameCampaign(campaigns, id, trimmed);
+      if (collision) {
+        const confirmed = window.confirm(
+          `A campaign named "${trimmed}" already exists. Rename and replace it?`
+        );
+        if (!confirmed) return; // keep rename open
+        const { campaigns: forced } = renameCampaign(campaigns, id, trimmed, true);
+        onChange(forced);
+      } else {
+        onChange(next);
+      }
+      setRenamingId(null);
+      setRenameValue("");
+    },
+    [renameValue, campaigns, onChange, cancelRename]
+  );
+
+  const handleRenameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, id: string) => {
+    if (e.key === "Enter") { e.preventDefault(); commitRename(id); }
+    if (e.key === "Escape") { e.preventDefault(); cancelRename(); }
+  };
+
   const handleOpen = useCallback(
     (campaign: Campaign) => {
       onOpen(campaign);
@@ -142,6 +196,15 @@ export function CampaignsSidebar({
     openCampaign && !showNameField
       ? "Save changes"
       : "+ Save as campaign";
+
+  // Filter campaigns by name substring (case-insensitive), applied only when there are campaigns
+  const filteredCampaigns = campaigns.length === 0
+    ? campaigns
+    : filterText.trim()
+      ? campaigns.filter((c) =>
+          c.name.toLowerCase().includes(filterText.toLowerCase())
+        )
+      : campaigns;
 
   const innerContent = (
     <div className="flex flex-col h-full">
@@ -216,6 +279,21 @@ export function CampaignsSidebar({
         )}
       </div>
 
+      {/* Filter input — only shown when campaigns exist */}
+      {campaigns.length > 0 && (
+        <div className="mb-2">
+          <input
+            type="search"
+            value={filterText}
+            onChange={(e) => setFilterText(e.target.value)}
+            placeholder="Filter campaigns…"
+            aria-label="Filter campaigns by name"
+            data-testid="campaigns-filter"
+            className="w-full rounded-md border border-gray-200 px-2 py-1 text-xs text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-400"
+          />
+        </div>
+      )}
+
       {/* Campaign list */}
       <div
         className="flex-1 overflow-y-auto"
@@ -226,17 +304,29 @@ export function CampaignsSidebar({
           <p className="text-xs text-gray-400 leading-relaxed">
             No saved campaigns yet — build a grid, then &lsquo;Save as campaign&rsquo; to reuse it next week.
           </p>
+        ) : filteredCampaigns.length === 0 ? (
+          <p className="text-xs text-gray-400 leading-relaxed" role="status">
+            No campaigns match.
+          </p>
         ) : (
           <ul className="space-y-1">
-            {campaigns.map((c) => (
+            {filteredCampaigns.map((c) => (
               <CampaignRow
                 key={c.id}
                 campaign={c}
                 isOpen={c.id === openCampaignId}
                 isDirty={c.id === openCampaignId && isDirty}
+                isRenaming={renamingId === c.id}
+                renameValue={renamingId === c.id ? renameValue : ""}
+                renameInputRef={renamingId === c.id ? renameInputRef : undefined}
                 onOpen={handleOpen}
                 onDuplicate={handleDuplicate}
                 onDelete={handleDelete}
+                onRename={startRename}
+                onRenameChange={setRenameValue}
+                onRenameKeyDown={handleRenameKeyDown}
+                onRenameCommit={commitRename}
+                onRenameCancel={cancelRename}
               />
             ))}
           </ul>
@@ -325,16 +415,32 @@ function CampaignRow({
   campaign,
   isOpen,
   isDirty,
+  isRenaming,
+  renameValue,
+  renameInputRef,
   onOpen,
   onDuplicate,
   onDelete,
+  onRename,
+  onRenameChange,
+  onRenameKeyDown,
+  onRenameCommit,
+  onRenameCancel,
 }: {
   campaign: Campaign;
   isOpen: boolean;
   isDirty: boolean;
+  isRenaming: boolean;
+  renameValue: string;
+  renameInputRef?: React.RefObject<HTMLInputElement | null>;
   onOpen: (c: Campaign) => void;
   onDuplicate: (id: string) => void;
   onDelete: (c: Campaign) => void;
+  onRename: (c: Campaign) => void;
+  onRenameChange: (v: string) => void;
+  onRenameKeyDown: (e: React.KeyboardEvent<HTMLInputElement>, id: string) => void;
+  onRenameCommit: (id: string) => void;
+  onRenameCancel: () => void;
 }) {
   // Fix C & A: actions are ALWAYS visible — no hover-gating.
   // Full verbs that name the object ("Duplicate campaign", "Delete campaign")
@@ -348,57 +454,102 @@ function CampaignRow({
       }`}
       data-testid={`campaign-row-${campaign.id}`}
     >
-      <div className="flex items-start justify-between gap-1 min-w-0">
-        <button
-          type="button"
-          onClick={() => onOpen(campaign)}
-          className="min-w-0 flex-1 text-left font-semibold text-gray-800 truncate hover:text-blue-700"
-          data-testid={`campaign-open-${campaign.id}`}
-          title={campaign.name}
-        >
-          {campaign.name}
-          {isDirty && (
-            <span
-              className="ml-1.5 inline-block h-2 w-2 rounded-full bg-amber-400 align-middle"
-              aria-label="unsaved changes"
-              title="Unsaved changes"
-            />
-          )}
-        </button>
-      </div>
-      <p className="text-[11px] text-gray-400 mt-0.5">
-        {campaign.rows.length}{" "}
-        {campaign.rows.length === 1 ? "link" : "links"}{" "}
-        · saved {relativeTime(campaign.savedAt)}
-      </p>
+      {isRenaming ? (
+        /* Inline rename field — same pattern as "Save as campaign" name input */
+        <div className="flex flex-col gap-1.5">
+          <input
+            ref={renameInputRef}
+            type="text"
+            value={renameValue}
+            onChange={(e) => onRenameChange(e.target.value)}
+            onKeyDown={(e) => onRenameKeyDown(e, campaign.id)}
+            placeholder="Campaign name"
+            data-testid={`campaign-rename-input-${campaign.id}`}
+            className="w-full rounded-md border border-blue-400 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+          />
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => onRenameCommit(campaign.id)}
+              disabled={!renameValue.trim()}
+              data-testid={`campaign-rename-confirm-${campaign.id}`}
+              className="flex-1 rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-40"
+            >
+              Rename
+            </button>
+            <button
+              type="button"
+              onClick={onRenameCancel}
+              data-testid={`campaign-rename-cancel-${campaign.id}`}
+              className="rounded-md border border-gray-300 px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="flex items-start justify-between gap-1 min-w-0">
+            <button
+              type="button"
+              onClick={() => onOpen(campaign)}
+              className="min-w-0 flex-1 text-left font-semibold text-gray-800 truncate hover:text-blue-700"
+              data-testid={`campaign-open-${campaign.id}`}
+              title={campaign.name}
+            >
+              {campaign.name}
+              {isDirty && (
+                <span
+                  className="ml-1.5 inline-block h-2 w-2 rounded-full bg-amber-400 align-middle"
+                  aria-label="unsaved changes"
+                  title="Unsaved changes"
+                />
+              )}
+            </button>
+          </div>
+          <p className="text-[11px] text-gray-400 mt-0.5">
+            {campaign.rows.length}{" "}
+            {campaign.rows.length === 1 ? "link" : "links"}{" "}
+            · saved {relativeTime(campaign.savedAt)}
+          </p>
 
-      {/* Action cluster — always visible (Fix C); full object-scoped verbs (Fix A) */}
-      <div className="mt-1.5 flex flex-wrap items-center gap-1">
-        <button
-          type="button"
-          onClick={() => onOpen(campaign)}
-          className="rounded border border-gray-200 px-1.5 py-0.5 text-[11px] text-gray-600 hover:bg-gray-100"
-          data-testid={`campaign-action-open-${campaign.id}`}
-        >
-          Open
-        </button>
-        <button
-          type="button"
-          onClick={() => onDuplicate(campaign.id)}
-          className="rounded border border-gray-200 px-1.5 py-0.5 text-[11px] text-gray-600 hover:bg-gray-100"
-          data-testid={`campaign-action-duplicate-${campaign.id}`}
-        >
-          Duplicate campaign
-        </button>
-        <button
-          type="button"
-          onClick={() => onDelete(campaign)}
-          className="rounded border border-gray-200 px-1.5 py-0.5 text-[11px] text-red-600 hover:bg-red-50"
-          data-testid={`campaign-action-delete-${campaign.id}`}
-        >
-          Delete campaign
-        </button>
-      </div>
+          {/* Action cluster — always visible (Fix C); full object-scoped verbs (Fix A) */}
+          <div className="mt-1.5 flex flex-wrap items-center gap-1">
+            <button
+              type="button"
+              onClick={() => onOpen(campaign)}
+              className="rounded border border-gray-200 px-1.5 py-0.5 text-[11px] text-gray-600 hover:bg-gray-100"
+              data-testid={`campaign-action-open-${campaign.id}`}
+            >
+              Open
+            </button>
+            <button
+              type="button"
+              onClick={() => onRename(campaign)}
+              className="rounded border border-gray-200 px-1.5 py-0.5 text-[11px] text-gray-600 hover:bg-gray-100"
+              data-testid={`campaign-action-rename-${campaign.id}`}
+            >
+              Rename
+            </button>
+            <button
+              type="button"
+              onClick={() => onDuplicate(campaign.id)}
+              className="rounded border border-gray-200 px-1.5 py-0.5 text-[11px] text-gray-600 hover:bg-gray-100"
+              data-testid={`campaign-action-duplicate-${campaign.id}`}
+            >
+              Duplicate campaign
+            </button>
+            <button
+              type="button"
+              onClick={() => onDelete(campaign)}
+              className="rounded border border-gray-200 px-1.5 py-0.5 text-[11px] text-red-600 hover:bg-red-50"
+              data-testid={`campaign-action-delete-${campaign.id}`}
+            >
+              Delete campaign
+            </button>
+          </div>
+        </>
+      )}
     </li>
   );
 }

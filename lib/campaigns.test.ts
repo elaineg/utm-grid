@@ -10,6 +10,7 @@ import {
   findCampaign,
   findCampaignByName,
   relativeTime,
+  renameCampaign,
   roundTripCampaigns,
   saveCampaign,
   serializeCampaigns,
@@ -374,6 +375,94 @@ describe("findCampaignByName", () => {
 
   it("returns undefined for an unknown name", () => {
     expect(findCampaignByName([CAMP_BLACK_FRIDAY], "Nope")).toBeUndefined();
+  });
+});
+
+// ── renameCampaign ────────────────────────────────────────────────────────────
+
+describe("renameCampaign", () => {
+  it("renames a campaign in place, preserving id, rows, settings, and savedAt", () => {
+    const { campaigns, collision } = renameCampaign(
+      [CAMP_BLACK_FRIDAY, CAMP_SPRING],
+      CAMP_BLACK_FRIDAY.id,
+      "BF 2026"
+    );
+    expect(collision).toBeNull();
+    expect(campaigns).toHaveLength(2);
+    const renamed = campaigns.find((c) => c.id === CAMP_BLACK_FRIDAY.id)!;
+    expect(renamed.name).toBe("BF 2026");
+    expect(renamed.id).toBe(CAMP_BLACK_FRIDAY.id);
+    expect(renamed.rows).toEqual(CAMP_BLACK_FRIDAY.rows);
+    expect(renamed.settings).toEqual(CAMP_BLACK_FRIDAY.settings);
+    expect(renamed.savedAt).toBe(CAMP_BLACK_FRIDAY.savedAt);
+  });
+
+  it("own-name no-op: renaming to the same name returns the original array unchanged", () => {
+    const { campaigns, collision } = renameCampaign(
+      [CAMP_BLACK_FRIDAY],
+      CAMP_BLACK_FRIDAY.id,
+      "Black Friday"
+    );
+    expect(collision).toBeNull();
+    expect(campaigns).toBe(campaigns); // same ref is fine; primarily check no mutation
+    expect(campaigns[0].name).toBe("Black Friday");
+    expect(campaigns).toHaveLength(1);
+  });
+
+  it("own-name no-op with leading/trailing whitespace", () => {
+    const { campaigns, collision } = renameCampaign(
+      [CAMP_BLACK_FRIDAY],
+      CAMP_BLACK_FRIDAY.id,
+      "  Black Friday  "
+    );
+    expect(collision).toBeNull();
+    expect(campaigns[0].name).toBe("Black Friday");
+  });
+
+  it("collision with another campaign: returns collision, does not rename", () => {
+    const initial = [CAMP_BLACK_FRIDAY, CAMP_SPRING];
+    const { campaigns, collision } = renameCampaign(
+      initial,
+      CAMP_BLACK_FRIDAY.id,
+      "Spring Sale"
+    );
+    expect(collision).not.toBeNull();
+    expect(collision!.id).toBe(CAMP_SPRING.id);
+    // Array unchanged — no side-effects before user confirms
+    expect(campaigns).toHaveLength(2);
+    expect(campaigns[0].name).toBe("Black Friday");
+  });
+
+  it("collision with forceOverwrite: renames and removes the displaced campaign", () => {
+    const initial = [CAMP_BLACK_FRIDAY, CAMP_SPRING];
+    const { campaigns, collision } = renameCampaign(
+      initial,
+      CAMP_BLACK_FRIDAY.id,
+      "Spring Sale",
+      true
+    );
+    expect(collision).toBeNull();
+    // The displaced Spring Sale is removed; only one entry remains
+    expect(campaigns).toHaveLength(1);
+    expect(campaigns[0].id).toBe(CAMP_BLACK_FRIDAY.id);
+    expect(campaigns[0].name).toBe("Spring Sale");
+    expect(campaigns[0].rows).toEqual(CAMP_BLACK_FRIDAY.rows);
+  });
+
+  it("link count (rows.length) is preserved after rename", () => {
+    const { campaigns } = renameCampaign(
+      [CAMP_BLACK_FRIDAY],
+      CAMP_BLACK_FRIDAY.id,
+      "BF 2026"
+    );
+    expect(campaigns[0].rows).toHaveLength(2);
+  });
+
+  it("returns unchanged campaigns for an unknown id", () => {
+    const initial = [CAMP_BLACK_FRIDAY];
+    const { campaigns, collision } = renameCampaign(initial, "nonexistent", "New Name");
+    expect(campaigns).toHaveLength(1);
+    expect(collision).toBeNull();
   });
 });
 

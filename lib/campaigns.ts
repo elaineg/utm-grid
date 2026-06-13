@@ -97,6 +97,49 @@ export function deleteCampaign(campaigns: Campaign[], id: string): Campaign[] {
   return campaigns.filter((c) => c.id !== id);
 }
 
+/**
+ * Rename a campaign by id.
+ * - If the new name is the same as the current name (after trim), returns the
+ *   original array unchanged (own-name no-op).
+ * - If the new name collides with a DIFFERENT campaign's name, returns
+ *   `{ campaigns: <array-with-target-replaced>, collision: <that-campaign> }`
+ *   so the caller can surface a confirm-overwrite dialog before committing.
+ *   The caller must call renameCampaign again with `forceOverwrite: true` on confirm.
+ * - Otherwise renames in place: same id, same rows, same settings, same savedAt.
+ */
+export function renameCampaign(
+  campaigns: Campaign[],
+  id: string,
+  newName: string,
+  forceOverwrite?: boolean
+): { campaigns: Campaign[]; collision: Campaign | null } {
+  const trimmed = newName.trim();
+  const idx = campaigns.findIndex((c) => c.id === id);
+  if (idx < 0) return { campaigns, collision: null };
+
+  const current = campaigns[idx];
+  // Own-name no-op
+  if (current.name === trimmed) return { campaigns, collision: null };
+
+  // Collision with a different campaign
+  const collisionIdx = campaigns.findIndex(
+    (c) => c.id !== id && c.name === trimmed
+  );
+  if (collisionIdx >= 0 && !forceOverwrite) {
+    return { campaigns, collision: campaigns[collisionIdx] };
+  }
+
+  // Apply rename: keep everything except name, remove collision target if overwriting
+  const renamed: Campaign = { ...current, name: trimmed };
+  let next = [...campaigns];
+  next[idx] = renamed;
+  if (collisionIdx >= 0) {
+    // Remove the displaced campaign (overwrite confirmed)
+    next = next.filter((_, i) => i !== collisionIdx);
+  }
+  return { campaigns: next, collision: null };
+}
+
 /** Find a campaign by id. */
 export function findCampaign(
   campaigns: Campaign[],

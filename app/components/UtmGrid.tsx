@@ -931,9 +931,9 @@ export function UtmGrid() {
                       </output>
                     </td>
                     {/* Sticky Actions — fixed-width column (Fix A, Fix F) */}
-                    <td className="sticky right-0 z-10 w-[108px] px-2 py-2 whitespace-nowrap shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] bg-inherit">
+                    <td className="sticky right-0 z-10 w-[116px] px-3 py-2 whitespace-nowrap shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] bg-inherit">
                       <span className="inline-flex flex-col gap-1">
-                        <span className="inline-flex items-center gap-1">
+                        <span className="inline-flex items-center gap-1.5">
                           <button
                             type="button"
                             onClick={() => void copyText(generated, row.id)}
@@ -949,7 +949,7 @@ export function UtmGrid() {
                             onClick={() => duplicateRow(row.id)}
                             aria-label={`Duplicate row ${i + 1}`}
                             title="Duplicate row"
-                            className="rounded-md border border-gray-200 px-1.5 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100"
+                            className="rounded-md border border-gray-200 px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100"
                           >
                             ⧉
                           </button>
@@ -958,7 +958,7 @@ export function UtmGrid() {
                             onClick={() => deleteRow(row.id)}
                             aria-label={`Delete row ${i + 1}`}
                             title="Delete row"
-                            className="rounded-md border border-gray-200 px-1.5 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
+                            className="rounded-md border border-gray-200 px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
                           >
                             🗑
                           </button>
