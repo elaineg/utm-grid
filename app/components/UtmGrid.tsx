@@ -203,26 +203,37 @@ export function UtmGrid() {
     if (didRehydrateOpenId.current) return;
     didRehydrateOpenId.current = true;
     if (typeof window === "undefined") return;
+
+    // useLocalStorage persists via JSON.stringify(value). When value is already a
+    // string (e.g. the campaign id or the serialized campaigns array), the stored
+    // representation is double-encoded: JSON.stringify(JSON.stringify(x)). A single
+    // JSON.parse yields a string, not the desired typed value. This helper decodes
+    // once, and if the result is still a JSON-looking string, decodes again.
+    function robustParse<T>(raw: string | null): T | null {
+      if (raw === null) return null;
+      try {
+        const once = JSON.parse(raw) as unknown;
+        if (typeof once === "string") {
+          try { return JSON.parse(once) as T; } catch { return once as unknown as T; }
+        }
+        return once as T;
+      } catch {
+        return null;
+      }
+    }
+
     const rawId = window.localStorage.getItem("utm-grid:open-campaign-id");
     if (!rawId) return;
-    let parsedId: string | null = null;
-    try {
-      parsedId = JSON.parse(rawId);
-    } catch {
-      return;
-    }
-    if (!parsedId) return;
+    const parsedId = robustParse<string>(rawId);
+    if (!parsedId || typeof parsedId !== "string") return;
+
     // Validate against existing saved campaigns (read directly too, for the same reason).
     const rawCampaignsStored = window.localStorage.getItem("utm-grid:campaigns");
     let existingIds: Set<string> = new Set();
     if (rawCampaignsStored) {
-      try {
-        const parsed = JSON.parse(rawCampaignsStored);
-        if (Array.isArray(parsed)) {
-          existingIds = new Set(parsed.map((c: { id?: string }) => c.id).filter((id): id is string => Boolean(id)));
-        }
-      } catch {
-        // ignore malformed data
+      const parsedCampaigns = robustParse<unknown>(rawCampaignsStored);
+      if (Array.isArray(parsedCampaigns)) {
+        existingIds = new Set(parsedCampaigns.map((c: { id?: string }) => c.id).filter((id): id is string => Boolean(id)));
       }
     }
     if (existingIds.has(parsedId)) {
