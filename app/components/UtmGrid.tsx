@@ -184,8 +184,26 @@ export function UtmGrid() {
     [setRawCampaigns]
   );
 
-  // Which campaign is currently "open" (null = scratch grid)
+  // Which campaign is currently "open" (null = scratch grid).
+  // SSR-safe: initialize to null; rehydrate from localStorage in a useEffect.
   const [openCampaignId, setOpenCampaignId] = useState<string | null>(null);
+
+  // Fix E: persist openCampaignId across reload — rehydrate AFTER mount (client-only).
+  const [storedOpenId, setStoredOpenId] = useLocalStorage<string | null>(
+    "utm-grid:open-campaign-id",
+    null
+  );
+  // One-time rehydration on mount (client-only, SSR-safe).
+  const didRehydrateOpenId = useRef(false);
+  useEffect(() => {
+    if (didRehydrateOpenId.current) return;
+    didRehydrateOpenId.current = true;
+    if (storedOpenId) {
+      setOpenCampaignId(storedOpenId);
+    }
+  // storedOpenId from useSyncExternalStore is stable at the client-snapshot value after hydration.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Whether the working grid differs from the open campaign's saved state
   const [isDirty, setIsDirty] = useState(false);
@@ -303,8 +321,8 @@ export function UtmGrid() {
 
   const cleanAll = () => {
     const { rows: cleaned, count } = normalizeAllRows(rows, settings);
-    if (count === 0) { showToast("No cells needed fixing"); return; }
-    pushUndo("Clean all", rows);
+    if (count === 0) { showToast("Nothing to fix — all cells are clean."); return; }
+    pushUndo("Auto-fix naming", rows);
     setRows(cleaned);
     const keys: string[] = [];
     for (let i = 0; i < rows.length; i++) {
@@ -315,7 +333,7 @@ export function UtmGrid() {
       }
     }
     flashCellKeys(keys);
-    showToast(`Cleaned ${count} cell${count === 1 ? "" : "s"}`);
+    showToast(`Auto-fixed ${count} cell${count === 1 ? "" : "s"} — Undo`, { undoLabel: "Undo", durationMs: 5000 });
   };
 
   const addRow = () => {
@@ -443,8 +461,18 @@ export function UtmGrid() {
   const applyPresetToSelected = (presetId: string) => {
     const preset = allPresets.find((p) => p.id === presetId);
     if (!preset) return;
-    const targetId = selectedId ?? rows[rows.length - 1]?.id;
-    if (!targetId) return;
+    // Fix G: never a no-op. Use: selected row → last row → new row (if empty grid).
+    let targetId = selectedId ?? rows[rows.length - 1]?.id;
+    if (!targetId) {
+      // Grid is empty: create a new row and apply to it.
+      const newRow = emptyRow(newId());
+      setRows([newRow]);
+      setSelectedId(newRow.id);
+      setRows((prev) =>
+        prev.map((r) => (r.id === newRow.id ? { ...r, ...preset.values } : r))
+      );
+      return;
+    }
     setRows((prev) =>
       prev.map((r) => (r.id === targetId ? { ...r, ...preset.values } : r))
     );
@@ -495,6 +523,7 @@ export function UtmGrid() {
       setStoredRows(campaign.rows);
       setStoredSettings(campaign.settings);
       setOpenCampaignId(campaign.id);
+      setStoredOpenId(campaign.id); // Fix E: persist across reload
       setIsDirty(false);
     },
     [
@@ -502,6 +531,7 @@ export function UtmGrid() {
       isUsingSharedState,
       setStoredRows,
       setStoredSettings,
+      setStoredOpenId,
     ]
   );
 
@@ -510,6 +540,7 @@ export function UtmGrid() {
     (nextCampaigns: Campaign[], savedCampaign: Campaign) => {
       setCampaigns(nextCampaigns);
       setOpenCampaignId(savedCampaign.id);
+      setStoredOpenId(savedCampaign.id); // Fix E: persist across reload
       setIsDirty(false);
       // Flash the pill green for ~2s (ref-stable timer)
       if (savedFlashTimer.current) clearTimeout(savedFlashTimer.current);
@@ -519,7 +550,21 @@ export function UtmGrid() {
         savedFlashTimer.current = null;
       }, 2000);
     },
-    [setCampaigns]
+    [setCampaigns, setStoredOpenId]
+  );
+
+  // Fix E: wrap setCampaigns so that if the open campaign is removed, clear the stored id.
+  const handleCampaignsChanged = useCallback(
+    (next: Campaign[]) => {
+      setCampaigns(next);
+      // If the open campaign was deleted, clear the persisted pointer.
+      if (openCampaignId && !next.find((c) => c.id === openCampaignId)) {
+        setOpenCampaignId(null);
+        setStoredOpenId(null);
+        setIsDirty(false);
+      }
+    },
+    [setCampaigns, openCampaignId, setStoredOpenId]
   );
 
   // ── Toolbar pill ──────────────────────────────────────────────────────────
@@ -582,9 +627,11 @@ export function UtmGrid() {
         <button
           type="button"
           onClick={cleanAll}
+          title="Lowercase + normalize all flagged cells"
+          data-testid="auto-fix-naming-btn"
           className="rounded-md border border-amber-400 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-800 hover:bg-amber-100"
         >
-          Clean all
+          Auto-fix naming
         </button>
         {canUndo && (
           <button
@@ -698,7 +745,7 @@ export function UtmGrid() {
           isDirty={isDirty}
           onSave={handleCampaignSaved}
           onOpen={openCampaign}
-          onChange={setCampaigns}
+          onChange={handleCampaignsChanged}
           rows={rows}
           settings={settings}
           savedFlash={savedFlash}
@@ -754,10 +801,10 @@ export function UtmGrid() {
                       )}
                   </th>
                 ))}
-                <th className="sticky right-16 z-10 w-64 bg-gray-50 px-2 py-2.5 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)]">
+                <th className="sticky right-[108px] z-10 w-60 bg-gray-50 px-2 py-2.5 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)]">
                   Generated URL
                 </th>
-                <th className="sticky right-0 z-10 w-20 bg-gray-50 px-2 py-2.5 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)]">
+                <th className="sticky right-0 z-10 w-[108px] bg-gray-50 px-2 py-2.5 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)]">
                   Actions
                 </th>
               </tr>
@@ -831,20 +878,20 @@ export function UtmGrid() {
                         </td>
                       );
                     })}
-                    {/* Sticky Generated URL */}
-                    <td className="sticky right-16 z-10 px-2 py-2 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] bg-inherit">
+                    {/* Sticky Generated URL — truncates so row actions never overlap */}
+                    <td className="sticky right-[108px] z-10 px-2 py-2 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] bg-inherit">
                       <output
                         aria-label={`Generated URL row ${i + 1}`}
                         title={generated}
-                        className={`block max-w-60 truncate rounded-md bg-gray-50 px-2 py-1.5 font-mono text-xs ${
+                        className={`block w-56 truncate rounded-md bg-gray-50 px-2 py-1.5 font-mono text-xs ${
                           generated ? "text-gray-800" : "text-gray-400"
                         }`}
                       >
                         {generated || "—"}
                       </output>
                     </td>
-                    {/* Sticky Actions */}
-                    <td className="sticky right-0 z-10 px-2 py-2 whitespace-nowrap shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] bg-inherit">
+                    {/* Sticky Actions — fixed-width column (Fix A, Fix F) */}
+                    <td className="sticky right-0 z-10 w-[108px] px-2 py-2 whitespace-nowrap shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] bg-inherit">
                       <span className="inline-flex flex-col gap-1">
                         <span className="inline-flex items-center gap-1">
                           <button
@@ -856,21 +903,24 @@ export function UtmGrid() {
                           >
                             Copy
                           </button>
+                          {/* Icon-only with tooltips — Fix A: never reads "Dup"/"Del" */}
                           <button
                             type="button"
                             onClick={() => duplicateRow(row.id)}
                             aria-label={`Duplicate row ${i + 1}`}
-                            className="rounded-md border border-gray-200 px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100"
+                            title="Duplicate row"
+                            className="rounded-md border border-gray-200 px-1.5 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100"
                           >
-                            Dup
+                            ⧉
                           </button>
                           <button
                             type="button"
                             onClick={() => deleteRow(row.id)}
                             aria-label={`Delete row ${i + 1}`}
-                            className="rounded-md border border-gray-200 px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
+                            title="Delete row"
+                            className="rounded-md border border-gray-200 px-1.5 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
                           >
-                            Del
+                            🗑
                           </button>
                         </span>
                         {copied === row.id && (
@@ -895,7 +945,7 @@ export function UtmGrid() {
             isDirty={isDirty}
             onSave={handleCampaignSaved}
             onOpen={openCampaign}
-            onChange={setCampaigns}
+            onChange={handleCampaignsChanged}
             rows={rows}
             settings={settings}
             savedFlash={savedFlash}

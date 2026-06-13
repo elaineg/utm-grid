@@ -115,13 +115,8 @@ export function PresetsBar({
             <button
               type="button"
               onClick={() => applyPreset(p.id)}
-              disabled={!selectedRow}
-              title={
-                selectedRow
-                  ? "Fill the selected row with this preset"
-                  : "Click a row first to select it"
-              }
-              className="rounded-full px-2 py-0.5 text-xs font-medium text-blue-700 hover:bg-blue-100 disabled:cursor-not-allowed disabled:text-gray-400"
+              title="Fill the selected row with this preset (or the last row, or a new row)"
+              className="rounded-full px-2 py-0.5 text-xs font-medium text-blue-700 hover:bg-blue-100"
             >
               Apply
             </button>
@@ -150,6 +145,11 @@ export function PresetsBar({
             Saved preset &lsquo;{saveToast}&rsquo;
           </span>
         )}
+
+        {/* Fix G: hint so Apply is never a mystery */}
+        <span className="text-xs text-gray-400">
+          Applies to the selected row (or adds a new one).
+        </span>
 
         <label className="ml-auto flex items-center gap-2 text-sm text-gray-600">
           New rows use

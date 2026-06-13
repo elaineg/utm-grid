@@ -336,8 +336,9 @@ function CampaignRow({
   onDuplicate: (id: string) => void;
   onDelete: (c: Campaign) => void;
 }) {
-  const [hovered, setHovered] = useState(false);
-
+  // Fix C & A: actions are ALWAYS visible — no hover-gating.
+  // Full verbs that name the object ("Duplicate campaign", "Delete campaign")
+  // so they cannot be confused with grid-row actions.
   return (
     <li
       className={`group relative flex flex-col rounded-md px-2 py-2 text-sm transition-colors ${
@@ -345,8 +346,6 @@ function CampaignRow({
           ? "border-l-2 border-blue-500 bg-blue-50/60 pl-[6px]"
           : "hover:bg-gray-50"
       }`}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
       data-testid={`campaign-row-${campaign.id}`}
     >
       <div className="flex items-start justify-between gap-1 min-w-0">
@@ -373,35 +372,33 @@ function CampaignRow({
         · saved {relativeTime(campaign.savedAt)}
       </p>
 
-      {/* Action cluster — visible on hover or when open */}
-      {(hovered || isOpen) && (
-        <div className="mt-1.5 flex items-center gap-1.5">
-          <button
-            type="button"
-            onClick={() => onOpen(campaign)}
-            className="rounded border border-gray-200 px-1.5 py-0.5 text-[11px] text-gray-600 hover:bg-gray-100"
-            data-testid={`campaign-action-open-${campaign.id}`}
-          >
-            Open
-          </button>
-          <button
-            type="button"
-            onClick={() => onDuplicate(campaign.id)}
-            className="rounded border border-gray-200 px-1.5 py-0.5 text-[11px] text-gray-600 hover:bg-gray-100"
-            data-testid={`campaign-action-duplicate-${campaign.id}`}
-          >
-            Duplicate
-          </button>
-          <button
-            type="button"
-            onClick={() => onDelete(campaign)}
-            className="rounded border border-gray-200 px-1.5 py-0.5 text-[11px] text-red-600 hover:bg-red-50"
-            data-testid={`campaign-action-delete-${campaign.id}`}
-          >
-            Delete
-          </button>
-        </div>
-      )}
+      {/* Action cluster — always visible (Fix C); full object-scoped verbs (Fix A) */}
+      <div className="mt-1.5 flex flex-wrap items-center gap-1">
+        <button
+          type="button"
+          onClick={() => onOpen(campaign)}
+          className="rounded border border-gray-200 px-1.5 py-0.5 text-[11px] text-gray-600 hover:bg-gray-100"
+          data-testid={`campaign-action-open-${campaign.id}`}
+        >
+          Open
+        </button>
+        <button
+          type="button"
+          onClick={() => onDuplicate(campaign.id)}
+          className="rounded border border-gray-200 px-1.5 py-0.5 text-[11px] text-gray-600 hover:bg-gray-100"
+          data-testid={`campaign-action-duplicate-${campaign.id}`}
+        >
+          Duplicate campaign
+        </button>
+        <button
+          type="button"
+          onClick={() => onDelete(campaign)}
+          className="rounded border border-gray-200 px-1.5 py-0.5 text-[11px] text-red-600 hover:bg-red-50"
+          data-testid={`campaign-action-delete-${campaign.id}`}
+        >
+          Delete campaign
+        </button>
+      </div>
     </li>
   );
 }

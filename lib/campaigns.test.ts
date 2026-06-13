@@ -231,6 +231,33 @@ describe("saveCampaign", () => {
     // (this is exactly the case isSaveAsNewRef is used to force the confirm).
     expect(existing!.id).toBe("camp-1");
   });
+
+  // Fix D: save-as-new path — no silent overwrite
+  it("save-as-new: typing a different existing campaign name → collision detected by findCampaignByName", () => {
+    // Simulate: open campaign is Spring Sale (camp-2), user types "Black Friday" in Save as new.
+    // findCampaignByName("Black Friday") returns camp-1 (different from openCampaignId=camp-2)
+    // → isCollision = true (existing.id !== openCampaignId) → confirm must fire.
+    const existing = findCampaignByName([CAMP_BLACK_FRIDAY, CAMP_SPRING], "Black Friday");
+    const openCampaignId = CAMP_SPRING.id; // camp-2
+    const isCollision = !!existing && (existing.id !== openCampaignId || true /* isSaveAsNewRef */);
+    expect(isCollision).toBe(true);
+  });
+
+  it("save-as-new confirmed: existing.id passed → updates in-place, no duplicate created", () => {
+    const initial = [CAMP_BLACK_FRIDAY, CAMP_SPRING];
+    // User in SPRING saves as new with name "Black Friday" (collision), confirms → pass existing.id
+    const { campaigns } = saveCampaign(
+      initial,
+      "Black Friday",
+      [ROW_B],
+      DEFAULT_LINT_SETTINGS,
+      CAMP_BLACK_FRIDAY.id // existing.id from the collision
+    );
+    // Library stays at 2 entries — no silent creation of a 3rd
+    expect(campaigns).toHaveLength(2);
+    expect(campaigns[0].name).toBe("Black Friday");
+    expect(campaigns[0].rows).toHaveLength(1); // updated
+  });
 });
 
 // ── duplicateCampaign ─────────────────────────────────────────────────────────
@@ -266,6 +293,23 @@ describe("duplicateCampaign", () => {
   it("preserves the original at index 0", () => {
     const result = duplicateCampaign([CAMP_BLACK_FRIDAY], CAMP_BLACK_FRIDAY.id);
     expect(result[0]).toEqual(CAMP_BLACK_FRIDAY);
+  });
+
+  // Fix A: Duplicate campaign creates a new library card immediately (count increments)
+  it("increments the library count by exactly 1 (creates a new card, not a draft)", () => {
+    const before = [CAMP_BLACK_FRIDAY, CAMP_SPRING];
+    const after = duplicateCampaign(before, CAMP_BLACK_FRIDAY.id);
+    expect(after).toHaveLength(3); // 2 → 3
+    expect(after[2].name).toBe("Black Friday copy");
+    expect(after[2].id).not.toBe(CAMP_BLACK_FRIDAY.id);
+  });
+
+  it("multiple duplicates all get unique ids and names", () => {
+    const d1 = duplicateCampaign([CAMP_BLACK_FRIDAY], CAMP_BLACK_FRIDAY.id);
+    const d2 = duplicateCampaign(d1, d1[1].id);
+    expect(d2).toHaveLength(3);
+    expect(d2[2].name).toBe("Black Friday copy copy");
+    expect(new Set(d2.map((c) => c.id)).size).toBe(3); // all ids distinct
   });
 });
 

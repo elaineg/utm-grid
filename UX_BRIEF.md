@@ -162,3 +162,62 @@ to this browser, same prop as the rest of the app.
 Cold visitor sees the same hero: headline, subtitle, the pre-filled example grid row with a live
 generated URL + Copy. The Campaigns sidebar is present but quiet (empty-state one-liner on desktop,
 collapsed bar on mobile) — it never displaces the grid or competes for the first read.
+
+## Round 4 panel fixes (run 20260613-095144-daily)
+
+Targeted affordance/label/copy fixes only — keep the zero-network privacy prop, the cold-open
+grid-hero, and the R1–R3 grid/toolbar layout. Ceiling 9/10; Elena is the lone structural
+non-pass. Each item ties to a synthesis cause (A–G).
+
+**Fix A — Duplicate/Delete disambiguation (P0, biggest lever; A).** The collision is two
+different scopes sharing the verbs "Dup/Del". Resolve by scope-naming, never bare verbs:
+- **Grid-ROW buttons** become icon-only with explicit row scope: a copy-rows icon + tooltip
+  **"Duplicate row"** and a trash icon + tooltip **"Delete row"**. They never read "Dup"/"Del"
+  again. Place them inside a fixed-width row actions column (see Fix F).
+- **Campaign-CARD actions** keep full word verbs that name the object: **"Open"**,
+  **"Duplicate campaign"**, **"Delete campaign"**, rendered INSIDE the card's bounds, visually
+  attached to that card's name row (indented under/aligned to the name, on the card's tint),
+  so "Duplicate" unmistakably belongs to the card it sits on.
+- Campaign **Duplicate campaign** is exactly ONE click: it immediately creates a new library
+  card named **"<name> copy"**, increments the header count (e.g. 2→3), flashes the new card
+  green for ~2s. It must NOT load an unsaved draft, must NOT require a "Save as new" step.
+
+**Fix B — "Clean all" label + safety (P0; B).** Builder confirms the real action. Per R2 brief
+"Clean all" only rewrites flagged cells (lint auto-fix), is non-destructive, and is Undo-able —
+so it is NOT a grid wipe. Relabel to **"Auto-fix naming"** (tooltip: "Lowercase + normalize all
+flagged cells"). No native confirm needed for the lint-fix action (it's Undo-backed). Result
+copy: on changes **"Auto-fixed 7 cells — Undo"** (persistent ~5s, Undo inline); when nothing was
+flagged **"Nothing to fix — all cells are clean."** If the builder discovers it actually clears
+grid data, then keep destructive behavior gated behind a native `confirm()`: `"Clear all 8 links
+from the grid? This can't be undone."` — but the expected outcome is the rename above with no
+confirm.
+
+**Fix C — Campaign-card actions always discoverable (P1; C).** Remove hover/tap-gating entirely.
+On touch/narrow viewports (<900px) Open / Duplicate / Delete are ALWAYS visible as a persistent
+icon row under each card name — no reveal, no flicker, identical on first vs. existing cards. On
+desktop, surface a persistent **"⋯"** overflow affordance on every card (always rendered, not
+hover-gated) that opens the Open / Duplicate campaign / Delete campaign menu; hover may raise
+contrast but must never be the only way to learn the actions exist. A first-time mobile user must
+see actions exist without tapping.
+
+**Fix D — Overwrite confirm on "Save as new…" collision (P1; D).** Already specified in R4 §6
+(native `confirm()` "A campaign named … already exists. Replace it…?"). Reaffirm: this confirm
+MUST fire on the Save-as-new path too — no silent merge, no silent second entry. Cancel returns
+to the name field.
+
+**Fix E — Persist active-campaign pointer across reload (P1/P2; E).** The open-campaign pill
+("In: <name>") must survive reload, matching the grid that already persists (builder persists
+openCampaignId in localStorage and rehydrates the pill + the sidebar's active-row accent). It
+reverts to "Unsaved grid" only when nothing is open, never merely because the page reloaded.
+
+**Fix F — Row actions must not overlap the Generated URL cell (P1, CSS; F).** Row Copy /
+duplicate-row / delete-row icons live in a fixed-width actions column to the RIGHT of the
+Generated URL cell; the URL cell truncates with ellipsis (full value on hover/title) so buttons
+never render on top of URL text at ANY URL length. Per-row Copy stays reachable (sticky right on
+mobile per R2 §C).
+
+**Fix G — Preset Apply without a selected row (P1; G).** Clicking a preset chip must never be a
+no-op. If a row is selected, apply to it (flash green, per R2 §B). If NO row is selected, apply to
+the focused/last row, or if the grid is empty create a new row and apply — a click always produces
+a visible fill. Show a one-line hint beside the Presets control: **"Applies to the selected row
+(or adds a new one)."** so the behavior is legible before the first click.
