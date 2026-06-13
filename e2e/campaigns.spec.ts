@@ -125,11 +125,16 @@ test("save 2-row campaign → listed with 2 links → reload → Open restores r
   // The campaign is still in the list
   await expect(campaignRow(page, "Black Friday")).toBeVisible();
 
-  // First modify the grid (so Open actually does something visible)
+  // First modify the grid (so Open actually does something visible.
+  // NOTE: after reload, openCampaignId persists, so editing the grid makes it dirty
+  // and opening the campaign triggers a confirm() dialog — we accept it.)
   await cell(page, "Base URL", 1).fill("https://different.com");
   await page.waitForTimeout(500); // debounce
 
-  // Open the saved campaign
+  // Open the saved campaign — accept the dirty-guard confirm if it appears
+  page.once("dialog", async (dialog) => {
+    if (dialog.type() === "confirm") await dialog.accept();
+  });
   await openCampaign(page, "Black Friday");
 
   // The rows are restored exactly
