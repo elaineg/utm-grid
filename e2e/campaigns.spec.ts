@@ -480,16 +480,24 @@ test("spec check: opening share link does not overwrite pre-existing localStorag
 
   // Open share URL in same context
   const recipientPage = await ctx.newPage();
+
+  // FIX1: dirty-guard prompts when existing grid has content — accept to show banner.
+  recipientPage.once("dialog", async (dialog) => {
+    if (dialog.type() === "confirm") await dialog.accept();
+  });
+
   await recipientPage.goto(shareUrl);
   await recipientPage.waitForLoadState("networkidle");
 
-  // Banner must show
+  // Banner must show (after accepting the dirty-guard confirm)
   await expect(recipientPage.locator('[data-testid="shared-grid-banner"]')).toBeVisible();
 
-  // Navigate to "/" without hash — own grid is intact
+  // Navigate to "/" without hash — localStorage NOT overwritten until a cell edit.
+  // Accepting the confirm only switches to in-memory shared view.
   const checkPage = await ctx.newPage();
   await checkPage.goto("/");
   await checkPage.waitForLoadState("networkidle");
+  // Original own grid still in localStorage (no cell was edited)
   await expect(cell(checkPage, "Base URL", 1)).toHaveValue("https://my-own-site.com");
 
   await ctx.close();

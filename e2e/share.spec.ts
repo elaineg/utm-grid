@@ -204,6 +204,12 @@ test("opening a share URL does not overwrite pre-existing localStorage until a c
   // Open the share URL in a NEW page within the same context (same localStorage)
   // Using a new page ensures the React component mounts fresh and reads the URL hash.
   const recipientPage = await recipientCtx.newPage();
+
+  // FIX1: dirty-guard now prompts when existing grid has content — accept to load shared grid.
+  recipientPage.once("dialog", async (dialog) => {
+    if (dialog.type() === "confirm") await dialog.accept();
+  });
+
   await recipientPage.goto(shareUrl2);
   await recipientPage.waitForLoadState("networkidle");
 
@@ -213,11 +219,14 @@ test("opening a share URL does not overwrite pre-existing localStorage until a c
 
   // Do NOT edit anything — open a fresh page at "/" to reload original state
   // (same context = same localStorage origin)
+  // The spec says: localStorage is NOT overwritten until the visitor EDITS a cell.
+  // Accepting the confirm-dialog only switches to in-memory shared view; localStorage
+  // still holds the original rows until a cell edit triggers commitSharedToStorage.
   const checkPage = await recipientCtx.newPage();
   await checkPage.goto("/");
   await checkPage.waitForLoadState("networkidle");
 
-  // Their own grid should be intact (not overwritten by merely opening the share link)
+  // Their own grid should be intact (shared state was in-memory only, not yet committed)
   await expect(cell(checkPage, "Base URL", 1)).toHaveValue("https://my-own-site.com");
   await expect(cell(checkPage, "utm_source", 1)).toHaveValue("myown");
 
@@ -288,6 +297,12 @@ test("share hash wins over pre-seeded localStorage: shows shared rows + banner",
 
   // Open share URL in a new page within same context (same localStorage)
   const recipientPage = await recipientCtx.newPage();
+
+  // FIX1: dirty-guard now prompts when existing grid has content — accept to load shared grid.
+  recipientPage.once("dialog", async (dialog) => {
+    if (dialog.type() === "confirm") await dialog.accept();
+  });
+
   await recipientPage.goto(shareUrl);
   await recipientPage.waitForLoadState("networkidle");
 
@@ -307,10 +322,12 @@ test("share hash wins over pre-seeded localStorage: shows shared rows + banner",
   const row1Value = await cell(recipientPage, "Base URL", 1).inputValue();
   expect(row1Value).not.toContain("my-own-site.com");
 
-  // Navigate to "/" (no hash) and confirm saved grid is intact (no-clobber)
+  // Navigate to "/" (no hash) — localStorage is NOT overwritten until a cell edit.
+  // Accepting the dirty-guard only switches to in-memory shared view.
   const checkPage = await recipientCtx.newPage();
   await checkPage.goto("/");
   await checkPage.waitForLoadState("networkidle");
+  // Original "myown" grid still in localStorage (no cell was edited)
   await expect(cell(checkPage, "Base URL", 1)).toHaveValue("https://my-own-site.com");
   await expect(cell(checkPage, "utm_source", 1)).toHaveValue("myown");
 
