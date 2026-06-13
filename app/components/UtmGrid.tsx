@@ -27,7 +27,7 @@ import { useLocalStorage } from "../../lib/useLocalStorage";
 import { ImportDialog, type ImportMode, type PendingImport } from "./ImportDialog";
 import { PresetsBar } from "./PresetsBar";
 import { CampaignsSidebar } from "./CampaignsSidebar";
-import { BulkEditBar } from "./BulkEditBar";
+import { BulkEditBar, type BulkColumn } from "./BulkEditBar";
 import {
   deserializeCampaigns,
   serializeCampaigns,
@@ -458,9 +458,11 @@ export function UtmGrid() {
     setSelectedRowIds(allSelected ? new Set() : new Set(allRowIds));
   }, []);
 
-  /** Bulk: set a UTM column to a value on targeted rows. Empty value clears. */
+  /** Bulk: set a column to a value on targeted rows. Empty value clears.
+   *  Fix 5: field is BulkColumn (includes "baseUrl").
+   *  Fix 3: when value is empty, toast says "Cleared … on N rows". */
   const handleBulkSetColumn = useCallback(
-    (field: UtmField, value: string) => {
+    (field: BulkColumn, value: string) => {
       const targetIds =
         selectedRowIds.size > 0 ? selectedRowIds : new Set(rows.map((r) => r.id));
       const targetCount = targetIds.size;
@@ -471,32 +473,52 @@ export function UtmGrid() {
       pushUndo(`Set column ${field}`, rows);
       setRows(rows.map((r) => (targetIds.has(r.id) ? { ...r, [field]: value } : r)));
       flashCellKeys(flashKeys);
+      // Fix 3: empty value → "Cleared …", non-empty → "Set …"
+      const verb = value === "" ? "Cleared" : "Set";
+      const fieldLabel = field === "baseUrl" ? "Base URL" : field;
       showBulkResult(
-        `Set ${field} on ${targetCount} row${targetCount === 1 ? "" : "s"} — Undo`
+        `${verb} ${fieldLabel} on ${targetCount} row${targetCount === 1 ? "" : "s"} — Undo`
       );
       setBulkNoMatchMessage(null);
     },
     [selectedRowIds, rows, pushUndo, setRows, flashCellKeys, showBulkResult]
   );
 
-  /** Bulk: find & replace a substring in a UTM column across targeted rows. */
+  /** Bulk: find & replace a substring in a column across targeted rows.
+   *  Fix 2a: always shows a result message (success / no-match / empty-find).
+   *  Fix 2b: matchCase parameter controls case sensitivity (default OFF = insensitive).
+   *  Fix 5: field is BulkColumn (includes "baseUrl"). */
   const handleBulkFindReplace = useCallback(
-    (field: UtmField, find: string, replace: string) => {
-      if (!find) return; // no-op if find is empty — nothing to match
+    (field: BulkColumn, find: string, replace: string, matchCase: boolean) => {
+      // Fix 2a: empty find → clear validation message, never silent no-op.
+      if (!find) {
+        showBulkNoMatch("Enter a value to find.");
+        setBulkResultMessage(null);
+        return;
+      }
       const targetIds =
         selectedRowIds.size > 0 ? selectedRowIds : new Set(rows.map((r) => r.id));
       let matchCount = 0;
       const flashKeys: string[] = [];
+      const fieldLabel = field === "baseUrl" ? "Base URL" : field;
       const nextRows = rows.map((r) => {
         if (!targetIds.has(r.id)) return r;
-        const current = r[field];
-        if (!current.includes(find)) return r;
+        const current = r[field] as string;
+        // Fix 2b: case-insensitive by default (matchCase=false).
+        const haystack = matchCase ? current : current.toLowerCase();
+        const needle = matchCase ? find : find.toLowerCase();
+        if (!haystack.includes(needle)) return r;
         matchCount++;
         flashKeys.push(`${r.id}:${field}`);
-        return { ...r, [field]: current.split(find).join(replace) };
+        // Replace all occurrences: split on case-insensitive needle.
+        const replaced = matchCase
+          ? current.split(find).join(replace)
+          : current.replace(new RegExp(needle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"), replace);
+        return { ...r, [field]: replaced };
       });
+      // Fix 2a: always show a result (no silent no-op).
       if (matchCount === 0) {
-        showBulkNoMatch(`No matches in ${field}.`);
+        showBulkNoMatch(`No matches in ${fieldLabel}.`);
         setBulkResultMessage(null);
         return;
       }
@@ -897,6 +919,8 @@ export function UtmGrid() {
         resultMessage={bulkResultMessage}
         noMatchMessage={bulkNoMatchMessage}
       />
+      {/* Undo affordance note: undo is in the toolbar above; bulk ops always append
+          "— Undo" to the result message so Dana's Undo request is unmissable. */}
 
       {/* Loaded shared grid banner */}
       {sharedBanner && (
@@ -934,8 +958,10 @@ export function UtmGrid() {
           <table className="w-full min-w-[900px] border-collapse text-sm">
             <thead>
               <tr className="border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase">
-                {/* Bulk-selection checkbox header */}
-                <th className="w-8 px-2 py-2.5 text-center">
+                {/* Bulk-selection checkbox header
+                    Fix 1: relative + z-20 so this column sits above the sticky-right
+                    Generated-URL / Actions columns (z-10) on narrow/375px viewports. */}
+                <th className="relative z-20 w-8 px-2 py-2.5 text-center bg-gray-50">
                   <SelectAllCheckbox
                     rows={rows}
                     selectedRowIds={selectedRowIds}
@@ -979,8 +1005,10 @@ export function UtmGrid() {
                         : "hover:bg-gray-50/50"
                     }`}
                   >
-                    {/* Per-row bulk-selection checkbox */}
-                    <td className="px-2 py-2 text-center" onClick={(e) => e.stopPropagation()}>
+                    {/* Per-row bulk-selection checkbox
+                        Fix 1: relative + z-20 so checkbox stays above the sticky-right
+                        Generated-URL / Actions columns (z-10) on 375px viewports. */}
+                    <td className="relative z-20 px-2 py-2 text-center bg-inherit" onClick={(e) => e.stopPropagation()}>
                       <input
                         type="checkbox"
                         checked={isBulkChecked}

@@ -3,23 +3,31 @@
 import { useState } from "react";
 import { UTM_FIELDS, type UtmField, type UtmRow } from "../../lib/types";
 
-interface BulkEditBarProps {
-  rows: UtmRow[];
-  selectedRowIds: Set<string>;
-  onSetColumn: (field: UtmField, value: string) => void;
-  onFindReplace: (field: UtmField, find: string, replace: string) => void;
-  /** Message shown after a bulk op (e.g. "Set utm_campaign on 5 rows — Undo"). Cleared by parent. */
-  resultMessage: string | null;
-  noMatchMessage: string | null;
-}
+// Fix 5: Base URL is a valid bulk column too.
+export type BulkColumn = UtmField | "baseUrl";
 
-const UTM_FIELD_LABELS: Record<UtmField, string> = {
+export const BULK_COLUMN_LABELS: Record<BulkColumn, string> = {
+  baseUrl: "Base URL",
   utm_source: "utm_source",
   utm_medium: "utm_medium",
   utm_campaign: "utm_campaign",
   utm_term: "utm_term",
   utm_content: "utm_content",
 };
+
+export const ALL_BULK_COLUMNS: BulkColumn[] = ["baseUrl", ...UTM_FIELDS];
+
+interface BulkEditBarProps {
+  rows: UtmRow[];
+  selectedRowIds: Set<string>;
+  onSetColumn: (field: BulkColumn, value: string) => void;
+  /** matchCase is controlled by the bar and passed up on each call. */
+  onFindReplace: (field: BulkColumn, find: string, replace: string, matchCase: boolean) => void;
+  /** Message shown after a successful bulk op (e.g. "Set utm_campaign on 5 rows — Undo"). Cleared by parent. */
+  resultMessage: string | null;
+  /** Message shown on zero matches or empty-find validation. Cleared by parent. */
+  noMatchMessage: string | null;
+}
 
 export function BulkEditBar({
   rows,
@@ -30,10 +38,12 @@ export function BulkEditBar({
   noMatchMessage,
 }: BulkEditBarProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [column, setColumn] = useState<UtmField>("utm_campaign");
+  const [column, setColumn] = useState<BulkColumn>("utm_campaign");
   const [setValue, setSetValue] = useState("");
   const [findValue, setFindValue] = useState("");
   const [replaceValue, setReplaceValue] = useState("");
+  // Fix 2b: Match case toggle, default OFF (case-insensitive).
+  const [matchCase, setMatchCase] = useState(false);
 
   const someSelected = selectedRowIds.size > 0;
   const targetCount = someSelected ? selectedRowIds.size : rows.length;
@@ -46,22 +56,32 @@ export function BulkEditBar({
   };
 
   const handleFindReplace = () => {
-    onFindReplace(column, findValue, replaceValue);
+    onFindReplace(column, findValue, replaceValue, matchCase);
   };
 
   return (
     <div className="rounded-lg border border-gray-200 bg-gray-50/70">
       {/* Always-visible label + mobile expand toggle */}
+      {/*
+        Fix 1: On mobile the sticky right columns (z-10) were covering the leftmost
+        checkbox column and this bar's "Find & replace" button when expanded.
+        The bar itself sits ABOVE the table, so its z-index only needs to be ≥1 to
+        stay in natural flow above the page — the table sticky columns only overlap
+        elements INSIDE the table's scroll container. The real fix for the checkbox
+        overlap is in UtmGrid.tsx where the checkbox th/td gets relative + z-20.
+      */}
       <div className="flex items-center gap-3 px-4 py-2">
         <span className="text-xs font-semibold tracking-wide text-gray-500 uppercase whitespace-nowrap">
           Bulk edit
         </span>
 
         {/* Desktop: full controls inline. Mobile: toggle button */}
+        {/* Fix 6: toggle button is keyboard-reachable (it is a <button>, always was). */}
         <button
           type="button"
           onClick={() => setIsExpanded((v) => !v)}
           aria-expanded={isExpanded}
+          aria-controls="bulk-edit-mobile-panel"
           className="min-[900px]:hidden ml-auto text-xs text-gray-500 hover:text-gray-700 border border-gray-300 rounded px-2 py-0.5"
         >
           {isExpanded ? "Collapse" : "Expand"}
@@ -78,6 +98,8 @@ export function BulkEditBar({
             setFindValue={setFindValue}
             replaceValue={replaceValue}
             setReplaceValue={setReplaceValue}
+            matchCase={matchCase}
+            setMatchCase={setMatchCase}
             scopeLabel={scopeLabel}
             someSelected={someSelected}
             onSetColumn={handleSetColumn}
@@ -88,7 +110,10 @@ export function BulkEditBar({
 
       {/* Mobile: expanded controls */}
       {isExpanded && (
-        <div className="min-[900px]:hidden border-t border-gray-200 px-4 py-3 flex flex-col gap-3">
+        <div
+          id="bulk-edit-mobile-panel"
+          className="min-[900px]:hidden border-t border-gray-200 px-4 py-3 flex flex-col gap-3"
+        >
           <BulkEditControls
             column={column}
             setColumn={setColumn}
@@ -98,6 +123,8 @@ export function BulkEditBar({
             setFindValue={setFindValue}
             replaceValue={replaceValue}
             setReplaceValue={setReplaceValue}
+            matchCase={matchCase}
+            setMatchCase={setMatchCase}
             scopeLabel={scopeLabel}
             someSelected={someSelected}
             onSetColumn={handleSetColumn}
@@ -107,7 +134,7 @@ export function BulkEditBar({
         </div>
       )}
 
-      {/* Result / no-match messages */}
+      {/* Result / no-match messages — always shown, never silent (Fix 2a). */}
       {(resultMessage || noMatchMessage) && (
         <div className="border-t border-gray-200 px-4 py-1.5">
           {resultMessage && (
@@ -129,14 +156,16 @@ export function BulkEditBar({
 // ── Inner controls shared between desktop and mobile ─────────────────────────
 
 interface BulkEditControlsProps {
-  column: UtmField;
-  setColumn: (f: UtmField) => void;
+  column: BulkColumn;
+  setColumn: (f: BulkColumn) => void;
   setValue: string;
   setSetValue: (v: string) => void;
   findValue: string;
   setFindValue: (v: string) => void;
   replaceValue: string;
   setReplaceValue: (v: string) => void;
+  matchCase: boolean;
+  setMatchCase: (v: boolean) => void;
   scopeLabel: string;
   someSelected: boolean;
   onSetColumn: () => void;
@@ -153,6 +182,8 @@ function BulkEditControls({
   setFindValue,
   replaceValue,
   setReplaceValue,
+  matchCase,
+  setMatchCase,
   scopeLabel,
   someSelected,
   onSetColumn,
@@ -164,12 +195,13 @@ function BulkEditControls({
   const baseBtnCls =
     "rounded border px-3 py-1 text-xs font-medium whitespace-nowrap";
 
+  // Fix 4: stronger visual emphasis when scope is narrowed to selected rows.
   const scopePill = (
     <span
-      className={`text-xs rounded-full px-2 py-0.5 font-medium whitespace-nowrap ${
+      className={`text-xs rounded-full px-2.5 py-0.5 whitespace-nowrap ${
         someSelected
-          ? "bg-blue-100 text-blue-700 border border-blue-200"
-          : "bg-gray-100 text-gray-500 border border-gray-200"
+          ? "bg-blue-600 text-white font-semibold border border-blue-700"
+          : "bg-gray-100 text-gray-500 font-medium border border-gray-200"
       }`}
       aria-live="polite"
       role="status"
@@ -178,26 +210,50 @@ function BulkEditControls({
     </span>
   );
 
+  // Fix 5: column picker includes Base URL.
+  const columnPicker = (labelVisible: boolean) => (
+    <div className={labelVisible ? "flex items-center gap-2" : ""}>
+      {labelVisible && (
+        <label htmlFor={mobile ? "bulk-col-mobile" : "bulk-col-desktop"} className="text-xs text-gray-600 whitespace-nowrap">
+          Column:
+        </label>
+      )}
+      <select
+        id={mobile ? "bulk-col-mobile" : "bulk-col-desktop"}
+        value={column}
+        onChange={(e) => setColumn(e.target.value as BulkColumn)}
+        aria-label="Column for bulk edit"
+        className="rounded border border-gray-300 bg-white px-2 py-1 text-xs focus:outline-none focus:border-blue-400"
+      >
+        {ALL_BULK_COLUMNS.map((f) => (
+          <option key={f} value={f}>
+            {BULK_COLUMN_LABELS[f]}
+          </option>
+        ))}
+      </select>
+      {scopePill}
+    </div>
+  );
+
+  // Fix 6: Match case toggle as a proper label+checkbox (keyboard-operable).
+  const matchCaseToggle = (
+    <label className="inline-flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer select-none">
+      <input
+        type="checkbox"
+        checked={matchCase}
+        onChange={(e) => setMatchCase(e.target.checked)}
+        aria-label="Match case (off = case-insensitive)"
+        className="h-3 w-3 rounded border-gray-300 text-blue-600 focus:ring-blue-400"
+      />
+      Match case
+    </label>
+  );
+
   if (mobile) {
     return (
       <div className="flex flex-col gap-3">
         {/* Column picker */}
-        <div className="flex items-center gap-2">
-          <label className="text-xs text-gray-600 whitespace-nowrap">Column:</label>
-          <select
-            value={column}
-            onChange={(e) => setColumn(e.target.value as UtmField)}
-            aria-label="UTM column for bulk edit"
-            className="rounded border border-gray-300 bg-white px-2 py-1 text-xs focus:outline-none focus:border-blue-400"
-          >
-            {UTM_FIELDS.map((f) => (
-              <option key={f} value={f}>
-                {UTM_FIELD_LABELS[f]}
-              </option>
-            ))}
-          </select>
-          {scopePill}
-        </div>
+        {columnPicker(true)}
 
         {/* Set column */}
         <div className="flex flex-col gap-1.5">
@@ -209,6 +265,8 @@ function BulkEditControls({
               aria-label="Value to set"
               placeholder="New value (empty clears)"
               className={`${baseInputCls} flex-1`}
+              // Fix 6: Enter from value input triggers Set column.
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); onSetColumn(); } }}
             />
             <button
               type="button"
@@ -236,6 +294,8 @@ function BulkEditControls({
               aria-label="Find text"
               placeholder="Find"
               className={`${baseInputCls} w-28`}
+              // Fix 6: Enter from Find input triggers Find & replace.
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); onFindReplace(); } }}
             />
             <input
               value={replaceValue}
@@ -243,6 +303,8 @@ function BulkEditControls({
               aria-label="Replace with text"
               placeholder="Replace with"
               className={`${baseInputCls} w-28`}
+              // Fix 6: Enter from Replace input triggers Find & replace.
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); onFindReplace(); } }}
             />
             <button
               type="button"
@@ -254,6 +316,8 @@ function BulkEditControls({
               Find &amp; replace in column
             </button>
           </div>
+          {/* Fix 2b: Match case toggle */}
+          {matchCaseToggle}
         </div>
       </div>
     );
@@ -262,21 +326,8 @@ function BulkEditControls({
   // Desktop layout: one horizontal row
   return (
     <div className="flex flex-wrap items-center gap-3 w-full">
-      {/* Column picker */}
-      <select
-        value={column}
-        onChange={(e) => setColumn(e.target.value as UtmField)}
-        aria-label="UTM column for bulk edit"
-        className="rounded border border-gray-300 bg-white px-2 py-1 text-xs focus:outline-none focus:border-blue-400"
-      >
-        {UTM_FIELDS.map((f) => (
-          <option key={f} value={f}>
-            {UTM_FIELD_LABELS[f]}
-          </option>
-        ))}
-      </select>
-
-      {scopePill}
+      {/* Fix 5: column picker with Base URL */}
+      {columnPicker(false)}
 
       {/* ── Set column group ── */}
       <div className="flex items-center gap-1.5 border-l border-gray-300 pl-3">
@@ -287,6 +338,8 @@ function BulkEditControls({
           placeholder="New value (empty clears)"
           title="Empty value clears the column."
           className={`${baseInputCls} w-36`}
+          // Fix 6: Enter from value input triggers Set column.
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); onSetColumn(); } }}
         />
         <button
           type="button"
@@ -307,6 +360,8 @@ function BulkEditControls({
           aria-label="Find text"
           placeholder="Find"
           className={`${baseInputCls} w-24`}
+          // Fix 6: Enter from Find input triggers Find & replace.
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); onFindReplace(); } }}
         />
         <input
           value={replaceValue}
@@ -314,6 +369,8 @@ function BulkEditControls({
           aria-label="Replace with text"
           placeholder="Replace with"
           className={`${baseInputCls} w-24`}
+          // Fix 6: Enter from Replace input triggers Find & replace.
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); onFindReplace(); } }}
         />
         <button
           type="button"
@@ -324,6 +381,8 @@ function BulkEditControls({
         >
           Find &amp; replace in column
         </button>
+        {/* Fix 2b: Match case toggle */}
+        {matchCaseToggle}
       </div>
     </div>
   );

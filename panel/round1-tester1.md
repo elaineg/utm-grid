@@ -1,16 +1,50 @@
-# Priya — Round 1
-CLARITY: Yes — Subhead "Bulk-build campaign URLs in an editable grid with naming-convention linting, CSV import/export, presets. No account, fully in-browser" told me exactly what it is and that there's no signup in one read.
-VALUE: Yes — For a launch post with a handful of UTMs it beats hand-editing query strings: spreadsheet-style grid, correct encoding, lint catches the casing/space mistakes I actually make, and presets prefill the channel defaults so I'm not retyping utm_source.
-ADVOCACY: 8/10 — I'd send it to the teammate who sent me a spreadsheet and say "use this instead." Not a 9 because it's a narrow tool I'd hit a few times around a launch, not daily, and a couple of polish gaps below.
-LIKES:
-- Verified no network requests after page load (checked perf entries) — "no server, localStorage only" claim is true. As a skeptic, that's why I'd trust it.
-- Lint is non-destructive and specific: "Contains uppercase letters — use lowercase only ('twitter')" / "Contains spaces — use '_'... ('social_media')". Flags but doesn't silently mutate my input.
-- Preset flow is good: pick which fields to store, prefills from the current row, new rows auto-fill channel defaults (source=facebook, medium=cpc).
-- CSV import opens a column-mapping modal that pre-maps matching headers and handles arbitrary header names. Export header round-trips cleanly. 2-row import worked.
-- Zero console errors; correct URL encoding (utm_medium=social%20media).
-COMPLAINTS (ranked, most important first):
-- Lint warns but does nothing actionable: no "fix all to lowercase" / "replace spaces" one-click button, and a linted row still exports/copies the bad value. I'd want it to either block or offer a one-key autofix — flagging without fixing means I still hand-edit.
-- No keyboard-first ergonomics for a power user: I want to paste a list of URLs or Tab/Enter through cells fast and add rows from the keyboard; couldn't find shortcuts, and "Add row" is a mouse click each time.
-- Generated-URL cell is truncated with "…" and no obvious in-cell expand; I had to trust Copy rather than eyeball the full string.
-- Minor: dropping the trailing empty utm_term silently is correct, but there's no visible confirmation of what Copy-all grabbed (count/toast), so for a bulk job I can't tell I got every row.
-VERDICT_BLOCK: {"id":1,"name":"Priya","clarity":"Yes","value":"Yes","advocacy":8}
+{"name":"Priya","clarity":"Yes","value":"Yes","advocacy":8}
+
+# Priya — Senior backend engineer, keyboard-first, hates signups
+
+## Prior concerns (from earlier rounds)
+Last round my gripes were minor; my main reservation was that for more than ~3 links it was
+still cell-by-cell typing. Bulk edit is aimed squarely at that. Re-checked: addressed.
+
+## 1. CLARITY — Yes
+The "BULK EDIT" toolbar is labeled in caps, sits in its own bordered strip, and reads left
+to right exactly how you'd use it: column dropdown (utm_campaign…) → "Apply to: 4 rows" →
+"New value (empty clears)" → "Set column" | "Find" / "Replace with" → "Find & replace in
+column". The "(empty clears)" hint inside the input answered my "how do I blank a column?"
+question before I asked it. "Apply to: 2 selected rows" updating live when I tick row boxes
+made the scope unambiguous. I understood the whole bar in well under 5 seconds.
+
+## 2. VALUE — Yes
+Today I hand-edit query strings in neovim or paste into a throwaway spreadsheet; both are
+error-prone for casing. This is genuinely faster for a batch:
+- Set column on a subset: ticked rows 1 & 3, set utm_term once — only those two changed,
+  rows 2 & 4 stayed empty. Correct.
+- Select-all checkbox set all 4 at once; empty value cleared the column. Both worked.
+- Find & replace: Spring-Sale→spring-sale then spring_sale→spring-sale, and the
+  "Inconsistent utm_campaign" warning went 4→0. There's a "Replaced in 2 rows — Undo"
+  toast and a toolbar Undo, so a bad bulk op is reversible — that's what stops me being
+  nervous about it. Scoped F&R honored my row selection too.
+Suspicion checks passed: 0 network requests after page load, 0 console errors. It's all
+local, as advertised — I didn't need to babysit the network tab.
+
+## 3. ADVOCACY — 8
+I'd recommend it to a teammate doing a launch, and bulk edit is the thing that pushes it
+past "cute" into "actually faster than my spreadsheet." Not a 9 because:
+- For the exact demo case (Spring-Sale vs spring_sale) the per-row warning "Fix" link
+  already one-click-normalizes the column — so I did two F&R passes for something a single
+  "Fix" handled. Bulk F&R is one literal find string at a time; "fix all casing/separator
+  variants in this column to one canonical value" still isn't a single action.
+- Keyboard-first: I had to mouse to the toolbar; no shortcut to set a column or to jump
+  selection. A CLI-brain wants to tab through this without leaving the home row.
+
+## ONE change to raise advocacy
+Give "Set column"/F&R a case-insensitive + separator-insensitive "normalize column to one
+value" mode (one click, all near-duplicates collapse), and make the toolbar keyboard-
+reachable. That turns it from "two manual passes" into the one move I actually want.
+
+Evidence: /Users/elaine/app-factory/validator-workspace/r1t1-bulk/ (01-filled,
+03-subset-set, 04-cleared, 05-after-findreplace, 06-after-fix .png + step*.mjs logs)
+
+```json
+{"tester": 1, "round": 1, "clarity": "Yes", "value": "Yes", "advocacy": 8, "topComplaints": ["bulk F&R is one literal string at a time — no one-click 'normalize this column to one canonical value' across casing/separator variants", "toolbar isn't keyboard-reachable; no shortcuts for a keyboard-first user"], "priorConcernsAddressed": "all"}
+```

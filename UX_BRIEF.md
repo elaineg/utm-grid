@@ -281,3 +281,58 @@ lint, CSV, Campaigns sidebar, or share button.
 Cold visitor still sees the hero: headline, subtitle, the pre-filled example grid row with a live
 generated URL + Copy. The **Bulk edit** bar is present and labeled (so its power-tool purpose is
 instantly legible) but quiet — it never displaces the grid or competes for the first read.
+
+## Round 2 fixes — Bulk edit (panel round 1: 2/10 pass; ceiling = 2 recurring causes)
+
+Additive, client-side only. The zero-network privacy prop, cold-open grid-hero, headline, toolbar
+order, and R1–R5 layout must NOT regress. Each fix maps to a synthesis cause and the testers behind
+it. Scope is exactly these six — no more.
+
+**Fix 1 — Mobile overlap bug (P0; Cause 1: Sam t10, Jules t6).** On narrow/375px viewports the
+sticky Generated-URL/Actions column (and sticky header) currently render ON TOP of the leftmost
+row-select checkboxes, the header "select all" checkbox, AND the expanded Bulk-edit "Find & replace
+in column" button — a real tap hits the URL cell (elementFromPoint), so subset selection and F&R are
+both un-tappable on a phone. Fix the stacking/layout so **every** selection checkbox and **every**
+bulk control is fully tappable on mobile and never covered by the pinned column (raise the
+selection/bulk surface z-index above the pinned column, and/or reserve clear space so the pinned
+column can't overlap them). Verify on 375px: tap select-all, tap a single row checkbox, tap
+"Find & replace in column" — each lands on its own control.
+
+**Fix 2 — Find & replace feedback + matching (P0/P1; Cause 2: Rob t8, Marcus t2, Wen t3, Priya t1,
+Tomás t4, + validator P3).** (a) ALWAYS show a result message, never a silent no-op: on success
+**"Replaced in N rows"**, on zero matches **"No matches in <column>"**, and for an empty Find string
+a clear **"Enter a value to find"** hint. (b) Add a **"Match case" toggle defaulting to OFF**
+(case-insensitive) so `Spring-Sale` and `spring_sale` collapse in one pass instead of two. (c) Lint
+must keep re-running immediately after a replace (it already does) so the result reflects current
+warnings. Keep the result copy consistent with the Undo toast ("Replaced in 2 rows — Undo").
+
+**Fix 3 — Clear vs Set wording (P2; Cause 3: Aisha t7).** When the Set-column value is empty, the
+result toast must read **"Cleared <column> on N rows"**, not "Set <column> on N rows". A clear is not
+a set; the copy must say so.
+
+**Fix 4 — Scope-pill emphasis (P2; Cause 4: Aisha t7).** When scope is narrowed to selected rows,
+the "Apply to: K selected rows" pill must visibly change color/weight (e.g. neutral → accent fill +
+heavier weight) versus the all-rows default, so the targeting state is unmissable before Apply — not
+just a text diff a hurried user could overlook.
+
+**Fix 5 — Base URL as a bulk column (P2; Cause 5: Rob t8).** Add **Base URL** to the bulk-edit
+column picker so Set column / Find & replace operate on the base URL too, not only utm_* fields —
+filling one shared landing page across a batch in one move. Purely additive to the picker; all other
+bulk behavior unchanged.
+
+**Fix 6 — Keyboard reachability (P2; Cause 6: Priya t1).** The Bulk-edit toolbar controls (column
+picker, value input, "Set column", Find/Replace inputs, "Find & replace in column", Match-case
+toggle) must be reachable and operable by keyboard: sensible tab order, and Enter from a text input
+triggers the adjacent action button.
+
+**Explicitly OUT OF SCOPE this round (do NOT build):**
+- **Cross-device / team sync** (Elena t9, value No, adv 5) — needs accounts + a server, blocked on a
+  missing credential, and would regress the zero-network privacy prop. Elena is the accepted
+  structural out-of-ICP holdout; the panel ceiling for this round is 9/10, not 10/10.
+- **Multi-field "set source+medium+campaign in one action"** (Dana t5) — bigger feature, deferred.
+  NOTE: Dana's other ask, an Undo after bulk ops, ALREADY EXISTS — just ensure the **Undo affordance
+  after a bulk op stays unmissable** (no new build, confirm it isn't weakened by the above changes).
+- Tomás's Excel-paste fill-down and Sam's "Bulk hidden behind Expand" discoverability — noted, not
+  this round.
+
+All six changes are additive and client-side; the zero-network prop must not regress.
