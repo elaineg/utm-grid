@@ -31,6 +31,23 @@ export const DEFAULT_SPEC: UtmSpec = {
   enforceSpec: false,
 };
 
+/**
+ * Sample spec used by the "Load sample spec" button in the UTM Spec panel.
+ * Demonstrates a realistic org taxonomy so users can see the off-spec→Fix
+ * magic within ~5 seconds of clicking. Enforced on by default so the feature
+ * is immediately visible.
+ */
+export const SAMPLE_SPEC: UtmSpec = {
+  allowedValues: {
+    utm_source: ["newsletter", "facebook", "google"],
+    utm_medium: ["email", "paid_social", "cpc"],
+    utm_campaign: ["spring_sale", "black_friday", "onboarding"],
+    utm_term: [],
+    utm_content: [],
+  },
+  enforceSpec: true,
+};
+
 // ── Nearest-value computation ─────────────────────────────────────────────────
 
 /**

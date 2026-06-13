@@ -5,6 +5,7 @@
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_SPEC,
+  SAMPLE_SPEC,
   deserializeSpec,
   isAllowedValue,
   levenshtein,
@@ -402,5 +403,52 @@ describe("spec localStorage encoding (SSR hydration safety)", () => {
     const parsed = JSON.parse(rawStored) as unknown;
     const recovered = deserializeSpec(parsed);
     expect(recovered).toEqual(DEFAULT_SPEC);
+  });
+});
+
+// ── SAMPLE_SPEC (Load sample spec feature — Rob Fix 3a) ───────────────────────
+
+describe("SAMPLE_SPEC", () => {
+  it("has enforceSpec true so taxonomy enforcement is immediately visible on load", () => {
+    expect(SAMPLE_SPEC.enforceSpec).toBe(true);
+  });
+
+  it("has at least utm_source and utm_medium entries for the demo to be meaningful", () => {
+    expect(SAMPLE_SPEC.allowedValues.utm_source.length).toBeGreaterThan(0);
+    expect(SAMPLE_SPEC.allowedValues.utm_medium.length).toBeGreaterThan(0);
+  });
+
+  it("includes 'newsletter' in utm_source so the demo off-spec row produces a Fix-to chip", () => {
+    expect(SAMPLE_SPEC.allowedValues.utm_source).toContain("newsletter");
+  });
+
+  it("round-trips via JSON.stringify / deserializeSpec (localStorage-safe)", () => {
+    const raw = JSON.stringify(SAMPLE_SPEC);
+    const parsed = JSON.parse(raw) as unknown;
+    const recovered = deserializeSpec(parsed);
+    expect(recovered.enforceSpec).toBe(SAMPLE_SPEC.enforceSpec);
+    expect(recovered.allowedValues.utm_source).toEqual(SAMPLE_SPEC.allowedValues.utm_source);
+    expect(recovered.allowedValues.utm_medium).toEqual(SAMPLE_SPEC.allowedValues.utm_medium);
+  });
+
+  it("lintOffSpec flags an off-spec utm_source value against the sample spec", () => {
+    const rows = [makeRow("r-demo", { utm_source: "email_blast" })] as SpecRow[];
+    const warnings = lintOffSpec(rows, SAMPLE_SPEC);
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0].field).toBe("utm_source");
+    // nearest to "email_blast" in ["newsletter","facebook","google"] — likely "newsletter"
+    expect(typeof warnings[0].nearest).toBe("string");
+    expect(warnings[0].nearest.length).toBeGreaterThan(0);
+  });
+
+  it("a clean row matching the sample spec produces no off-spec warnings", () => {
+    const rows = [
+      makeRow("r-clean", {
+        utm_source: "newsletter",
+        utm_medium: "email",
+        utm_campaign: "spring_sale",
+      }),
+    ] as SpecRow[];
+    expect(lintOffSpec(rows, SAMPLE_SPEC)).toHaveLength(0);
   });
 });

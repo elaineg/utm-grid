@@ -22,7 +22,7 @@ import {
   type UtmField,
   type UtmRow,
 } from "../../lib/types";
-import { DEFAULT_SPEC, nearestAllowedValue, type UtmSpec } from "../../lib/spec";
+import { DEFAULT_SPEC, SAMPLE_SPEC, nearestAllowedValue, type UtmSpec } from "../../lib/spec";
 import { buildUtmUrl } from "../../lib/utm";
 import { useLocalStorage } from "../../lib/useLocalStorage";
 import { ImportDialog, type ImportMode, type PendingImport } from "./ImportDialog";
@@ -761,6 +761,46 @@ export function UtmGrid() {
     [setCampaigns, openCampaignId, setStoredOpenId]
   );
 
+  /**
+   * Rob Fix 3a: Load sample spec (explicit/opt-in only — never auto-loads).
+   * Respects the existing unsaved-edits guard; also pre-populates two demo rows
+   * so the off-spec→Fix magic is visible in ~5 seconds.
+   * Declared after setSpec to avoid TS "used before declaration" error.
+   */
+  const handleLoadSample = useCallback(() => {
+    // Guard: if the working grid has content, confirm before replacing.
+    const hasContent = rows.some(
+      (r) => r.baseUrl.trim() || UTM_FIELDS.some((f) => r[f].trim())
+    );
+    if (hasContent) {
+      const confirmed = window.confirm(
+        `Load example spec? Your current grid (${rows.length} link${rows.length === 1 ? "" : "s"}) will be replaced. This can't be undone.`
+      );
+      if (!confirmed) return;
+    }
+    // Load the sample spec with enforcement on
+    setSpec(SAMPLE_SPEC);
+    // Pre-populate demo rows showing clean + off-spec values
+    const demoRows = [
+      {
+        ...emptyRow("row-sample-1"),
+        baseUrl: "https://example.com/landing",
+        utm_source: "newsletter",
+        utm_medium: "email",
+        utm_campaign: "spring_sale",
+      },
+      {
+        ...emptyRow("row-sample-2"),
+        baseUrl: "https://example.com/landing",
+        utm_source: "email_blast",
+        utm_medium: "email",
+        utm_campaign: "spring_sale",
+      },
+    ];
+    setRows(demoRows);
+    showToast("Loaded example spec — tap Fix on the off-spec cell to see the taxonomy magic");
+  }, [rows, setSpec, setRows, showToast]);
+
   // ── Toolbar pill ──────────────────────────────────────────────────────────
   const openCampaignRecord = openCampaignId
     ? findCampaign(campaigns, openCampaignId)
@@ -998,6 +1038,9 @@ export function UtmGrid() {
         <UtmSpecPanel
           spec={spec}
           onChange={setSpec}
+          onLoadSample={handleLoadSample}
+          onShareSpec={() => void copyShareLink()}
+          specLinkCopied={shareLinkCopied}
           mobileOnly
         />
       </div>
@@ -1062,7 +1105,7 @@ export function UtmGrid() {
               </datalist>
             ) : null
           )}
-          <table className="w-full min-w-[900px] border-collapse text-sm">
+          <table className="w-full min-w-[1100px] border-collapse text-sm">
             <thead>
               <tr className="border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase">
                 {/* Bulk-selection checkbox header
@@ -1087,7 +1130,7 @@ export function UtmGrid() {
                       )}
                   </th>
                 ))}
-                <th className="sticky right-[108px] z-10 w-60 bg-gray-50 px-2 py-2.5 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)]">
+                <th className="sticky right-[108px] z-10 min-w-[280px] bg-gray-50 px-2 py-2.5 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)]">
                   Generated URL
                 </th>
                 <th className="sticky right-0 z-10 w-[108px] bg-gray-50 px-2 py-2.5 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)]">
@@ -1166,7 +1209,9 @@ export function UtmGrid() {
                            columns (z-10) so warning popovers and "Fix to" chips are
                            tappable on mobile at every horizontal scroll position. */
                         <td key={field} className="relative z-[11] px-2 py-2">
-                          {/* Fix F: pr-6 ensures datalist caret doesn't clip the last char */}
+                          {/* pr-7 + min-w-[8.5rem] ensures the native datalist caret and a 10–12 char
+                              allowed value (e.g. "newsletter") display whole without clipping.
+                              UTM fields get a wider min-width than baseUrl which benefits from more free space. */}
                           <input
                             value={row[field]}
                             onChange={(e) => updateCell(row.id, field, e.target.value)}
@@ -1176,7 +1221,7 @@ export function UtmGrid() {
                             placeholder={field === "baseUrl" ? "https://…" : ""}
                             spellCheck={false}
                             list={datalistId}
-                            className={`w-full min-w-24 rounded-md border pl-2 pr-6 py-1.5 font-mono text-xs focus:outline-none transition-colors duration-300 ${
+                            className={`w-full rounded-md border pl-2 pr-7 py-1.5 font-mono text-xs focus:outline-none transition-colors duration-300 ${field === "baseUrl" ? "min-w-36" : "min-w-[8.5rem]"} ${
                               isFlashing
                                 ? "border-green-400 bg-green-50"
                                 : cellWarnings && hasOffSpec
@@ -1237,12 +1282,13 @@ export function UtmGrid() {
                         </td>
                       );
                     })}
-                    {/* Sticky Generated URL — truncates so row actions never overlap */}
+                    {/* Sticky Generated URL — min-w-[280px] keeps it readable; title tooltip
+                        shows the full URL on hover so Priya can read the final tagged URL. */}
                     <td className="sticky right-[108px] z-10 px-2 py-2 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] bg-inherit">
                       <output
                         aria-label={`Generated URL row ${i + 1}`}
                         title={generated}
-                        className={`block w-56 truncate rounded-md bg-gray-50 px-2 py-1.5 font-mono text-xs ${
+                        className={`block min-w-[260px] max-w-sm truncate rounded-md bg-gray-50 px-2 py-1.5 font-mono text-xs ${
                           generated ? "text-gray-800" : "text-gray-400"
                         }`}
                       >
@@ -1315,6 +1361,9 @@ export function UtmGrid() {
           <UtmSpecPanel
             spec={spec}
             onChange={setSpec}
+            onLoadSample={handleLoadSample}
+            onShareSpec={() => void copyShareLink()}
+            specLinkCopied={shareLinkCopied}
             desktopOnly
           />
         </div>

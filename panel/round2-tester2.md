@@ -1,56 +1,37 @@
-{"name":"Marcus","clarity":"Yes","value":"Yes","advocacy":9}
+# Round 2 — Tester 2 (Marcus, frontend eng, desktop Chrome + devtools)
 
-# Marcus — Frontend engineer, 2yr (desktop Chrome, devtools open) — Round 2
+Re-exercised the UTM Spec flow (add allowed values → Enforce → off-spec cell → Fix to →
+inspect fixed cell) plus a core regression (Auto-fix naming + generated URL + Copy share
+link). Zero console/page errors the whole session; 0 network calls after initial load.
 
-Re-test of the new build. Shipping launch links across email, Twitter, blog. Today I hand-edit
-query params in a scratch file or ga-dev-tools one URL at a time. Came back specifically to
-re-check my round-1 gap: Find & replace handing back a value that re-trips the lint.
+## My 3 prior nits — verdict
+1. "Fix to" hidden behind a "warnings" chip → FIXED. The off-spec utm_medium cell now renders
+   an inline violet "Fix to newsletter" pill (data-testid fix-to-newsletter, 44px target)
+   directly under the cell — no expand needed. Clicked it, cell corrected. Right fix.
+2. green→violet chip ambiguity → FIXED. There's now a legend by the toggles
+   ("violet = off-spec | amber = case/space"), a violet "1 cell off-spec" counter, and an
+   "Enforcing — change in Lint rules" pill atop the Spec panel. No more "is this a state bug?"
+   hesitation; off-spec = violet, lint = amber, both labeled.
+3. fixed-cell caret clip ("newslette ▾") → ONLY PARTIALLY FIXED. pr-6 (24px) right-padding was
+   added, but the fixed cell is an `<input list=datalist>` and at this column width the value
+   still overflows: measured scrollWidth 120 > clientWidth 94. Unfocused it reads "newsle t",
+   focused the native datalist ▼ renders and clips it to "newslet▼". Same class of bug as
+   round 1, on the hero Fix-to interaction — an engineer still double-takes whether
+   "newsletter" actually got written. Widen the utm_medium column (or reserve caret space) so
+   a 10-char allowed value shows whole.
 
-## PRIOR GAP — closed
-Round 1: F&R to "Spring-Sale" cleared the cross-row warning but tripped a fresh lowercase
-warning, and F&R gave no signal — felt like a dead end. This round:
-- Built 3 rows with near-dup variants `Spring_Sale / spring_sale / SPRING_SALE`. With **Match
-  case OFF (default)**, one F&R `spring_sale`→`spring-sale` collapsed ALL THREE in a single
-  pass → toast "Replaced in 3 rows", and the "Inconsistent across rows…split data in GA4"
-  warning vanished **instantly**. That case-insensitive collapse is the real win — round 1 I'd
-  have needed three passes.
-- Replaced to a non-compliant `Spring-Sale`: lint re-ran on the spot and every row showed
-  "Contains uppercase letters — use lowercase only (**"spring-sale"**) [Fix]". So F&R no longer
-  leaves stale lint, AND it hands me the corrected value + a one-click **Fix** that normalizes
-  the cell (Fix turned "Spring-Sale"→"spring_sale", 0 network). That's the closed loop I asked for.
-- Result messages all fire: "Replaced in 3 rows", "No matches in utm_campaign.", "Enter a
-  value to find." No more guessing whether a click did anything.
+## Core regression — clean
+Auto-fix naming: "Newsletter"→newsletter, "Email Blast"→email_blast, "Summer Launch 2026"→
+summer_launch_2026. Generated URL correct. Copy share link returned a 409-char http URL
+(clipboard verified via readText, not blocked). No regressions.
 
-## Verified in devtools
-- **0 network requests** during every F&R op and the Fix click (only the 11 initial page-load
-  requests). Pure client-side as the footer claims. **0 console errors** across the whole run.
-- No CSS jank at 1280px; toolbar reads like a sentence, Undo affordance on the result toast.
-
-## CLARITY — Yes
-H1 + "Edit links in a grid, fix naming automatically, export clean CSV — no account." Lint
-rules sit right there as checkboxes. One-line pitch to a teammate, no hesitation.
-
-## VALUE — Yes
-Beats my scratch file and ga-dev-tools decisively: bulk set, case-insensitive collapse of
-typo'd campaign names, instant lint with one-click Fix, all local. Real time-save for tagging
-a launch across channels.
-
-## What still holds it back (one nit)
-F&R warns *after* the replace rather than at the moment of it — it writes a non-compliant value
-then shows the warning + Fix. Instant lint + per-row Fix makes this a non-issue in practice,
-but the per-row "Fix" only fixes the one row I clicked; fixing the whole grid means knowing the
-separate "Auto-fix naming" button exists.
-
-## ONE change to push to 10
-Make the F&R result toast lint-aware: when a replacement introduces violations, append
-"· N now violate <rule> — [Auto-fix all]" to the same toast. One click from replace to clean
-data, no per-row hunting or hunting for the global button.
-
-## ADVOCACY — 9
-Up from 8. My gap is closed, the case-insensitive collapse is a delight, devtools confirm zero
-network / zero errors. I'd drop this in team Slack today and bring it up unprompted next launch.
-Not a 10 only because replace-then-warn still needs one extra click to reach clean data.
+## Advocacy — 8
+Two of three nits genuinely fixed — and they were the ones that read as *functional* bugs
+(hidden fix button, ambiguous color), so that's real progress. But nit #3, the value clip on
+the marquee "Fix to" output, is exactly the jank I notice instantly and it sits on the app's
+hero flow. Make "newsletter" render whole in the corrected cell and this is the unprompted
+Slack-post 9.
 
 ```json
-{"tester": 2, "round": 2, "clarity": "Yes", "value": "Yes", "advocacy": 9, "topComplaints": ["F&R result toast isn't lint-aware — warns after replace instead of offering inline Auto-fix all", "Per-row Fix only fixes one row; global Auto-fix naming is a separate, less-obvious button"], "priorConcernsAddressed": "all"}
+{"clarity":"Yes","value":"Yes","advocacy":8,"priorConcernsAddressed":"some","notes":"Nits 1 (inline violet Fix-to chip, no expand) and 2 (violet/amber legend + off-spec counter pill) are genuinely fixed — those were the bug-looking ones. Nit 3 NOT fully fixed: pr-6 padding added but the corrected utm_medium cell still overflows (scrollW 120 > clientW 94); focused it shows 'newslet▼' as the native datalist caret clips the tail — same class of clip as round 1, on the hero Fix-to output. Core regression clean, 0 console errors, 0 post-load network. Widen the medium column so a 10-char allowed value like 'newsletter' renders whole -> that's the 9-10."}
 ```

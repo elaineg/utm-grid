@@ -1,40 +1,34 @@
-{"name":"Sam","clarity":"Yes","value":"Yes","advocacy":9}
+# Sam (PM, mobile-heavy) — Round 2 re-test: UTM Grid (spec + share-link loop)
 
-# Sam (PM, mobile-heavy between meetings) — Round 2 re-test
+## Prior concerns re-checked (round 1, advocacy 8)
+1. Duplicate "Enforce" toggle — FIXED. There is now ONE canonical "Enforce UTM Spec"
+   checkbox in the Lint rules bar. The UTM Spec panel shows a read-only status pill that
+   flips between "Not enforcing — enable in Lint rules" and "Enforcing — change in Lint
+   rules." No second switch anywhere. Ambiguity gone.
+2. No at-a-glance off-spec count — FIXED. Typed "newslettr" against allowed value
+   "newsletter" with Enforce on; a violet "1 cell off-spec" pill appeared right beside the
+   Enforce toggle, plus the cell's "Off-spec — nearest allowed: newsletter / Fix to
+   newsletter" button. That violet count is exactly my launch-readiness gauge.
+3. "Enforce your team's UTM taxonomy" label — ADDED, violet sublabel under LINT RULES.
+   Reads like a PM, not a linter.
 
-## The one thing I complained about last round — re-checked on a 375px phone
-RESOLVED. Last round the sticky "Generated URL" column and header rendered ON TOP of the
-row-select + select-all checkboxes, so a finger tap hit the URL cell, not the checkbox, and
-subset selection was impossible on my phone. This round I hit-tested at the exact finger
-position: elementFromPoint now returns the checkbox itself (hitsCheckbox: true) for BOTH
-"Select all rows" and "Select row 1" — not the URL cell. The screenshot shows the header and
-row checkboxes sitting clearly to the LEFT, fully clear of the "GENERATED URL" column.
+## Fresh judgement (375px phone)
+CLARITY — Yes. Cold open: headline + "fix naming automatically, export clean CSV — no
+account." I'd tell a teammate: "no-login grid to bulk-tag launch links to one shared UTM
+convention, with a live off-spec count, then send everyone a link that enforces it."
 
-I then did the exact job that was broken before: added 4 rows, tapped a NON-contiguous subset
-(rows 1 and 3 — the "tag only the paid-social links" case), and both stayed checked (count = 2).
-Opened Bulk Edit ("Expand"), and with 2 rows still selected the panel exposed "Set column" and
-"Find & replace in column" — all reachable on the narrow viewport. Select-all toggles too. Zero
-page errors. The headline feature now works on the device I'd demo it from.
+VALUE — Yes. Today it's a Notion convention doc nobody follows + a Sheets tab. Here I
+defined allowed source/medium values once, flipped Enforce, bad cells flag with a one-tap
+fix and a top-level count. Share link carried the spec + Enforce state into a CLEAN mobile
+browser ("Loaded shared grid (1 link) including this team's UTM Spec," newsletter chip +
+acme URL present, Enforce checkbox still ON). That cross-team handoff is the whole job.
 
-## 1. CLARITY — Yes
-The h1 spells out the job ("Tag all your campaign links with clean, consistent UTM tags at once
-— so one stray capital letter never splits your data in GA"). A PM gets it in ~5s.
-
-## 2. VALUE — Yes
-Still beats my Google Sheet CONCATENATE template, and now it does so on mobile too. Subset-tag
-a few rows + bulk Set column + clean CSV = the exact thing I re-do every launch, minus the
-formula babysitting. The "Applies to the selected row" / 2-selected indicators keep me honest.
-
-## 3. ADVOCACY — 9 (up from 7)
-Last round I said: fix the mobile tap target and "this is a 9 I'd bring up unprompted in every
-kickoff." It's fixed, so I'm honoring that — a real 9, not a courtesy bump. I'd pull this up in a
-standup and tag links live without it embarrassing me. Not a 10 only because Bulk Edit still hides
-behind "Expand", so a first-timer in a meeting may never discover the subset/batch superpower that
-is the whole point. ONE change to get me to 10: surface the bulk/subset controls by default (or
-auto-expand once 2+ rows are selected) instead of burying them one tap down.
-
-(Did not re-test clipboard read — it was a harness artifact last round, not an app bug.)
+ADVOCACY — 9. All three round-1 blockers fixed; the share+enforce loop works on my phone.
+What still caps it at 9: the spec lives in localStorage + the freshest share link — still no
+canonical "team source of truth" I own, so a teammate's edits can't sync back to my master
+taxonomy. A saved, named team spec (even an optional sign-in to own it) is the one thing
+between 9 and 10. Minor: "LINT RULES" header is still mild dev jargon despite the sublabel.
 
 ```json
-{"tester": 10, "round": 2, "clarity": "Yes", "value": "Yes", "advocacy": 9, "topComplaints": ["Bulk Edit hidden behind 'Expand', so first-timers may never discover the subset/batch superpower"], "priorConcernsAddressed": "all"}
+{"clarity":"Yes","value":"Yes","advocacy":9,"priorConcernsAddressed":"yes","notes":"Toggle dedupe RESOLVED — one canonical Enforce toggle in Lint rules; Spec panel is now a read-only status pill (Enforcing/Not enforcing — change in Lint rules), no second switch. Off-spec counter RESOLVED — violet '1 cell off-spec' next to the toggle plus Fix-to-nearest-allowed button. 'Enforce your team's UTM taxonomy' label present. Mobile worked end-to-end at 375px including copying the share link and reopening it in a clean context with spec + Enforce ON carried over. Still capping at 9: no owned central team source-of-truth — spec only rides localStorage / last share link, teammate edits can't sync back to my master taxonomy; 9-to-10 = a saved named team spec, optionally sign-in to own it. Minor: 'LINT RULES' header still dev jargon."}
 ```

@@ -7,6 +7,12 @@ import { parseAllowedValuePaste, type UtmSpec } from "../../lib/spec";
 interface UtmSpecPanelProps {
   spec: UtmSpec;
   onChange: (next: UtmSpec) => void;
+  /** Called when user clicks "Load sample spec" — parent handles dirty-guard + confirm. */
+  onLoadSample?: () => void;
+  /** Called when user clicks "Share this spec" — parent triggers the existing share-link flow. */
+  onShareSpec?: () => void;
+  /** True when the share-link was just copied (drives "Link copied!" cue). */
+  specLinkCopied?: boolean;
   /** Render as mobile disclosure bar (collapsed by default). */
   mobileOnly?: boolean;
   /** Render as desktop panel only. */
@@ -29,6 +35,9 @@ function specHasValues(spec: UtmSpec): boolean {
 export function UtmSpecPanel({
   spec,
   onChange,
+  onLoadSample,
+  onShareSpec,
+  specLinkCopied,
   mobileOnly,
   desktopOnly,
 }: UtmSpecPanelProps) {
@@ -146,10 +155,68 @@ export function UtmSpecPanel({
     </div>
   );
 
+  /** True when the spec has zero allowed values across all fields. */
+  const isEmpty = !specHasValues(spec);
+
   const innerContent = (
     <div className="flex flex-col gap-3">
       {/* Fix D: read-only status (enforcement controlled by canonical toggle in lint bar) */}
       {enforceStatusLine}
+
+      {/* Rob Fix 3b: "Share this spec" — triggers the existing Copy share link flow.
+          Labeled distinctly from the top-bar "Copy share link" so it reads as sharing
+          the spec/grid, not a duplicate control. */}
+      {onShareSpec && (
+        <div className="flex flex-col gap-0.5">
+          <button
+            type="button"
+            data-testid="share-this-spec-btn"
+            onClick={onShareSpec}
+            className={`flex w-full items-center justify-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium transition-colors duration-200 ${
+              specLinkCopied
+                ? "border-green-500 bg-green-500 text-white"
+                : "border-violet-300 bg-violet-50 text-violet-700 hover:bg-violet-100"
+            }`}
+          >
+            {specLinkCopied ? (
+              <>
+                <span aria-hidden="true">✓</span>{" "}
+                <span>Link copied!</span>
+              </>
+            ) : (
+              <>
+                <span aria-hidden="true">⤴</span>{" "}
+                <span>Share this spec with your team</span>
+              </>
+            )}
+          </button>
+          {/* Aria-live cue so mobile users hear the confirmation even when they glance away */}
+          <span role="status" aria-live="polite" className="text-[10px] text-green-600 min-h-[1em] text-center">
+            {specLinkCopied ? "Link copied!" : ""}
+          </span>
+        </div>
+      )}
+
+      {/* Rob Fix 3a: "Load sample spec" — only shown in the empty state, explicit/opt-in,
+          never auto-clobbers. The actual dirty-guard confirm lives in the parent handler. */}
+      {isEmpty && onLoadSample && (
+        <div className="rounded-md border border-dashed border-violet-200 bg-violet-50/50 p-3 text-center">
+          <p className="mb-2 text-[11px] text-gray-500">
+            No allowed values yet — define your taxonomy to enforce it on every cell.
+          </p>
+          <button
+            type="button"
+            data-testid="load-sample-spec-btn"
+            onClick={onLoadSample}
+            className="rounded-md border border-violet-300 bg-white px-3 py-1.5 text-xs font-medium text-violet-700 hover:bg-violet-50"
+          >
+            Try an example spec
+          </button>
+          <p className="mt-1.5 text-[10px] text-gray-400">
+            Loads sample values and an off-spec row so you can see the Fix-to magic in ~5s.
+          </p>
+        </div>
+      )}
 
       {/* Per-field allowed-value rows */}
       {UTM_FIELDS.map((field) => {

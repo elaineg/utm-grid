@@ -5,10 +5,10 @@ export default function Home() {
     <main className="mx-auto w-full max-w-7xl flex-1 p-6">
       <header className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">
-          Tag all your campaign links with clean, consistent UTM tags at once — so one stray capital letter never splits your data in Google Analytics.
+          Share one link that enforces your team&apos;s UTM taxonomy — stop policing casing and typos that split your GA4 data.
         </h1>
         <p className="mt-1 text-sm text-gray-500">
-          Edit links in a grid, fix naming automatically, export clean CSV — no account.
+          Build and tag links in a grid, define your org&apos;s allowed values, fix naming automatically, and export clean CSV — no account.
         </p>
       </header>
       <UtmGrid />
