@@ -59,3 +59,35 @@ spaces; your source cells are left as typed."
   Clean all + Presets visible in the toolbar.
 - **Pre-filled example:** one row showing a clean source → URL, plus optionally one flagged
   cell with a visible Fix link so the headline value is demonstrated, not described.
+
+## Round 3 delta — Copy share link
+
+Turns a single-user batch into a team handoff: send a link, not a CSV. Encodes the whole grid
+(rows + utm_* fields + active lint toggles) into the URL hash, compressed, 100% client-side.
+
+**1. Button placement + states.** A **"Copy share link"** button sits in the top toolbar
+between **Export** and **Clean all**, same button styling as its neighbors (secondary, not the
+accent). Idle label: "Copy share link". On click: button text swaps to **"Link copied!"**, the
+button fills solid green and shows a small check, and an inline persistent label stays for
+**~1.8s** before reverting — peripherally unmissable for someone who clicked and looked away (no
+brief flash, no tiny distant toast). The copied-state timer MUST be ref-stable so it survives the
+grid's re-renders, and the cue is backed by `aria-live="polite"`. Clipboard write MUST use an
+execCommand/textarea fallback if `navigator.clipboard` rejects, so the green "Link copied!" still
+fires in blocked-clipboard contexts.
+
+**2. "Loaded shared grid" banner.** When a URL with a share fragment opens, the grid rehydrates
+to exactly that state and a banner appears directly **above the grid** (in normal flow, pushing
+the grid down — never an overlay/modal, never blocking a cell): cool-neutral background, left text
+**"Loaded shared grid (N links)"**, a quiet "These are someone's links — edit any cell to make
+them yours" sub-line, and an **×** dismiss on the right. The banner does NOT overwrite the
+visitor's own saved localStorage until they edit a cell; dismissing it (or editing) clears it.
+`aria-live="polite"` so it's announced.
+
+**3. Privacy reassurance.** A quiet single line directly under/beside the button (and echoed in
+the banner): **"Shareable link is built in your browser — nothing is sent to any server."** This
+earns trust before the user pastes a link into a teammate's chat.
+
+**4. Mobile (~375px).** "Copy share link" joins the collapsed top action bar with Clean all / Add
+row / Export, full-label, thumb-reachable. On copy, the same green "Link copied!" fill on the
+button itself (not a corner toast that scrolls off). The loaded-grid banner spans full width above
+the grid container and stays in flow.

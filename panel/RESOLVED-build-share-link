@@ -1,0 +1,38 @@
+UTM Grid — user panel halted for Elaine's decision (2026-06-12, after round 2)
+
+STATUS: NOT PASSED (7/10 fully passing) — product-fit ceiling reached, not a quality failure.
+Round-over-round fully-passing: R1 = 1/10 → R2 = 7/10.
+
+Production now serves the round-2 improvements (commit cf3c788, verifier-passed:
+build OK, 68/68 unit, 21/21 e2e). https://utm-grid.vercel.app
+
+WHY HALTED (not auto-passed, not auto-parked):
+The 9/10 exit bar with value=Yes is structurally unreachable for a UTM-tagging tool against
+the generalist 10-persona roster. Two personas are out-of-ICP and honestly return value=No
+no matter the product quality:
+  - Aisha (product designer): value=No — "I personally rarely build UTMs." Advocacy 9.
+  - Elena (engineering manager): value=No — "persona fit, not a flaw; I'm an EM who never
+    builds UTMs." Advocacy 8.
+The third holdout is in-ICP but value-prop-conflicted:
+  - Sam (PM): value=Yes, advocacy 8. Only 9-blocker is LIVE TEAM SHARING beyond CSV, which
+    needs accounts + a server — directly contradicting the no-account/zero-network privacy
+    prop that 7 other testers praised and 2 verified in the network tab.
+
+The 8 in-ICP personas (marketers, analysts, launch-shipping engineers) are strongly served:
+7 fully pass at advocacy 9; the 8th (Sam) is value=Yes/adv-8. The round-1 dominant blocker
+(lint warned but never fixed) is fully resolved and confirmed live by every reporter.
+
+DECISION NEEDED FROM ELAINE (one of):
+  A. Accept the ceiling → mark apps/utm-grid/panel/PASSED (7/10 in-ICP-strong). The next
+     daily run will then skip utm-grid.
+  B. Pursue one more round → build a CLIENT-SIDE URL-hash "Copy share link" (no account, no
+     server — stays on-brand) to convert Sam 8→9, reaching 8/10. The 2 structural value=No
+     personas still cannot move past 8/10.
+  C. Park it → mark apps/utm-grid/panel/PARKED if you consider a UTM tool outside the
+     intended ICP focus.
+
+NOTE: until PASSED or PARKED exists, the next daily run will re-pick utm-grid as the oldest
+app lacking both markers. This halt is intentional — the structural ceiling is a judgment
+call that belongs to you, not the autonomous loop.
+
+Detail: apps/utm-grid/panel/SYNTHESIS-round2.md and round2-tester*.md.

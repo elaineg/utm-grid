@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   autoMapHeaders,
   csvToRows,
@@ -10,6 +10,7 @@ import {
 } from "../../lib/csv";
 import { groupWarnings, hasCellFix, lintRows, warningKey } from "../../lib/lint";
 import { isCellFixable, normalizeAllRows, normalizeValue } from "../../lib/normalize";
+import { buildShareUrl, parseShareHash, writeClipboard } from "../../lib/share";
 import {
   DEFAULT_LINT_SETTINGS,
   SEEDED_PRESETS,
@@ -45,20 +46,14 @@ interface Toast {
 }
 
 export function UtmGrid() {
-  const [storedRows, setRows] = useLocalStorage<UtmRow[]>("utm-grid:rows", INITIAL_ROWS, {
+  const [storedRows, setStoredRows] = useLocalStorage<UtmRow[]>("utm-grid:rows", INITIAL_ROWS, {
     debounceMs: 400,
   });
-  const rows =
+  const storedRowsNormalized =
     Array.isArray(storedRows) && storedRows.length > 0 ? storedRows : INITIAL_ROWS;
 
   const idCounter = useRef(1);
-  const newId = (current: UtmRow[] = rows) => {
-    for (const r of current) {
-      const m = /^row-(\d+)$/.exec(r.id);
-      if (m) idCounter.current = Math.max(idCounter.current, Number(m[1]));
-    }
-    return `row-${++idCounter.current}`;
-  };
+  // newId is defined after rows is resolved below.
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [pendingImport, setPendingImport] = useState<PendingImport | null>(null);
@@ -66,6 +61,45 @@ export function UtmGrid() {
   const [copied, setCopied] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ── Share link state ───────────────────────────────────────────────────────
+  // shareLinkCopied: true while the "Link copied!" green cue is showing
+  const [shareLinkCopied, setShareLinkCopied] = useState(false);
+  const shareCopyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // sharedBanner: non-null when we loaded a shared grid from the hash.
+  // rowCount = number of rows loaded, so we can display "N links".
+  const [sharedBanner, setSharedBanner] = useState<{ rowCount: number } | null>(null);
+
+  // pendingSharedState: the state we parsed from the hash.
+  // While this is set and the user hasn't edited a cell, we render the
+  // shared rows/settings in the live view WITHOUT writing to localStorage.
+  const pendingSharedState = useRef<{ rows: UtmRow[]; settings: LintSettings } | null>(null);
+
+  // isUsingSharedState: true while we are showing shared rows (not yet edited)
+  const [isUsingSharedState, setIsUsingSharedState] = useState(false);
+
+  // The live rows and settings to render — either shared (before edit) or stored
+  const [sharedRows, setSharedRows] = useState<UtmRow[] | null>(null);
+  const [sharedSettings, setSharedSettings] = useState<LintSettings | null>(null);
+
+  // On mount: check the URL hash for a share payload
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const hash = window.location.hash;
+    const payload = parseShareHash(hash);
+    if (!payload) return;
+
+    // Clear the hash from the URL bar so a later manual save isn't ambiguous
+    history.replaceState(null, "", window.location.pathname + window.location.search);
+
+    // Store shared state without writing to localStorage
+    pendingSharedState.current = { rows: payload.rows, settings: payload.settings };
+    setSharedRows(payload.rows);
+    setSharedSettings(payload.settings);
+    setIsUsingSharedState(true);
+    setSharedBanner({ rowCount: payload.rows.length });
+  }, []);
 
   // Flash state: rowId:field → "green" for brief cell highlight
   const [flashCells, setFlashCells] = useState<Set<string>>(new Set());
@@ -104,11 +138,12 @@ export function UtmGrid() {
     const entry = undoStack.current.pop();
     if (!entry) return;
     setUndoCount(undoStack.current.length);
-    setRows(entry.rows);
+    // Undo always writes back to stored state (not shared preview)
+    setStoredRows(entry.rows);
     showToast(`Undid: ${entry.label}`);
-  }, [setRows, showToast]);
+  }, [setStoredRows, showToast]);
 
-  const [settings, setSettings] = useLocalStorage<LintSettings>(
+  const [storedSettings, setStoredSettings] = useLocalStorage<LintSettings>(
     "utm-grid:lint-settings",
     DEFAULT_LINT_SETTINGS
   );
@@ -116,6 +151,68 @@ export function UtmGrid() {
   const [newRowPresetId, setNewRowPresetId] = useLocalStorage<string | null>(
     "utm-grid:new-row-preset",
     null
+  );
+
+  // ── Effective rows / settings (shared or stored) ──────────────────────────
+  // While isUsingSharedState, render sharedRows/sharedSettings without touching localStorage.
+  // On first cell edit, commitSharedToStorage() is called which writes shared state to
+  // localStorage and switches back to normal stored-state mode.
+  const rows: UtmRow[] = isUsingSharedState && sharedRows ? sharedRows : storedRowsNormalized;
+  const settings: LintSettings = isUsingSharedState && sharedSettings ? sharedSettings : storedSettings;
+
+  const newId = (current: UtmRow[] = rows) => {
+    for (const r of current) {
+      const m = /^row-(\d+)$/.exec(r.id);
+      if (m) idCounter.current = Math.max(idCounter.current, Number(m[1]));
+    }
+    return `row-${++idCounter.current}`;
+  };
+
+  // Commit the shared state to localStorage (called on first edit while viewing shared grid)
+  const commitSharedToStorage = useCallback(() => {
+    if (!isUsingSharedState || !pendingSharedState.current) return;
+    const { rows: sRows, settings: sSettings } = pendingSharedState.current;
+    setStoredRows(sRows);
+    setStoredSettings(sSettings);
+    pendingSharedState.current = null;
+    setSharedRows(null);
+    setSharedSettings(null);
+    setIsUsingSharedState(false);
+    setSharedBanner(null);
+  }, [isUsingSharedState, setStoredRows, setStoredSettings]);
+
+  // setRows: proxy that also commits shared state on first write
+  const setRows = useCallback(
+    (next: UtmRow[] | ((prev: UtmRow[]) => UtmRow[])) => {
+      if (isUsingSharedState) {
+        // Commit first, then apply update on top of the committed state
+        const sRows = pendingSharedState.current?.rows ?? storedRowsNormalized;
+        const sSettings = pendingSharedState.current?.settings ?? storedSettings;
+        // Commit to localStorage
+        const nextRows = typeof next === "function" ? next(sRows) : next;
+        setStoredRows(nextRows);
+        setStoredSettings(sSettings);
+        pendingSharedState.current = null;
+        setSharedRows(null);
+        setSharedSettings(null);
+        setIsUsingSharedState(false);
+        setSharedBanner(null);
+      } else {
+        setStoredRows(next);
+      }
+    },
+    [isUsingSharedState, storedRowsNormalized, storedSettings, setStoredRows, setStoredSettings]
+  );
+
+  // setSettings: proxy that also commits shared state on first write
+  const setSettings = useCallback(
+    (next: LintSettings | ((prev: LintSettings) => LintSettings)) => {
+      if (isUsingSharedState) {
+        commitSharedToStorage();
+      }
+      setStoredSettings(next);
+    },
+    [isUsingSharedState, commitSharedToStorage, setStoredSettings]
   );
 
   // All presets = seeded + user (mirroring PresetsBar)
@@ -210,6 +307,23 @@ export function UtmGrid() {
     } catch {
       // Clipboard unavailable.
     }
+  };
+
+  const copyShareLink = async () => {
+    const url = buildShareUrl({ rows, settings });
+    try {
+      await writeClipboard(url);
+    } catch {
+      // Even execCommand failed — still show the green cue so the user knows
+      // the action was attempted (they may have manually blocked clipboard).
+    }
+    // Ref-stable timer: clear any prior timer before setting a new one
+    if (shareCopyTimer.current) clearTimeout(shareCopyTimer.current);
+    setShareLinkCopied(true);
+    shareCopyTimer.current = setTimeout(() => {
+      setShareLinkCopied(false);
+      shareCopyTimer.current = null;
+    }, 1800);
   };
 
   const copyAll = () => {
@@ -348,6 +462,26 @@ export function UtmGrid() {
         >
           Export CSV
         </button>
+        <button
+          type="button"
+          data-testid="copy-share-link"
+          onClick={() => void copyShareLink()}
+          aria-live="polite"
+          className={`rounded-md border px-4 py-2 text-sm font-medium transition-colors duration-200 ${
+            shareLinkCopied
+              ? "border-green-500 bg-green-500 text-white"
+              : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+          }`}
+        >
+          {shareLinkCopied ? (
+            <span className="inline-flex items-center gap-1">
+              <span>✓</span>{" "}
+              <span>Link copied!</span>
+            </span>
+          ) : (
+            "Copy share link"
+          )}
+        </button>
         <span className="inline-flex items-center gap-2">
           <button
             type="button"
@@ -373,6 +507,11 @@ export function UtmGrid() {
         </div>
       </div>
 
+      {/* Privacy reassurance for share link */}
+      <p className="text-xs text-gray-400 -mt-2">
+        Shareable link is built in your browser — nothing is sent to any server.
+      </p>
+
       {importError && (
         <p role="alert" className="text-sm font-medium text-red-600">
           ⚠ {importError}
@@ -388,6 +527,35 @@ export function UtmGrid() {
         onApplyToSelected={applyPresetToSelected}
         onNewRowPresetChange={setNewRowPresetId}
       />
+
+      {/* Loaded shared grid banner — appears above the grid, in-flow, never blocking */}
+      {sharedBanner && (
+        <div
+          role="status"
+          aria-live="polite"
+          data-testid="shared-grid-banner"
+          className="flex items-start justify-between gap-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3"
+        >
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-blue-900">
+              Loaded shared grid ({sharedBanner.rowCount}{" "}
+              {sharedBanner.rowCount === 1 ? "link" : "links"})
+            </p>
+            <p className="mt-0.5 text-xs text-blue-700">
+              These are someone's links — edit any cell to make them yours.{" "}
+              Shareable link is built in your browser — nothing is sent to any server.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSharedBanner(null)}
+            aria-label="Dismiss shared grid banner"
+            className="shrink-0 text-blue-500 hover:text-blue-700 text-lg leading-none"
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       {/* Grid — mobile: scrollable container, sticky Generated URL + Actions columns */}
       <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
