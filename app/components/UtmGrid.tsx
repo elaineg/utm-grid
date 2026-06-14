@@ -1456,6 +1456,54 @@ export function UtmGrid({
         >
           Export CSV
         </button>
+
+        {/* P2-1: Top-level always-visible "Download QR codes" — primary QR bulk-export entry point.
+            Same handler + selection semantics as the BulkEditBar's QR section.
+            QR-square (⊞) + download (⬇) glyph; teal accent; green-fill result adjacent (P3-1).
+            Verb "Download QR codes" is distinct from all other toolbar controls.
+            READ-ONLY: no POST/PUT, safe on /w/<id>. */}
+        <span className="inline-flex flex-col items-start gap-0.5">
+          <button
+            type="button"
+            data-testid="download-qr-codes-btn"
+            aria-label="Download QR codes"
+            onClick={() => void handleBulkDownloadQr()}
+            className="min-h-[44px] inline-flex items-center gap-1.5 rounded-md border border-teal-500 bg-teal-50 px-4 py-2 text-sm font-semibold text-teal-700 hover:bg-teal-100 active:bg-teal-200 shadow-sm whitespace-nowrap"
+          >
+            {/* QR-square + download icon glyphs */}
+            <span aria-hidden="true" className="text-base leading-none">⊞⬇</span>
+            Download QR codes
+          </button>
+          {/* Scope indicator — same "Apply to:" model as BulkEditBar */}
+          <span
+            className={`text-[10px] rounded-full px-2 py-0.5 ${
+              selectedRowIds.size > 0
+                ? "bg-blue-100 text-blue-700 font-medium"
+                : "text-gray-400"
+            }`}
+            aria-live="polite"
+            role="status"
+          >
+            {selectedRowIds.size > 0
+              ? `Apply to: ${selectedRowIds.size} selected row${selectedRowIds.size === 1 ? "" : "s"}`
+              : `Apply to: all ${rows.length} row${rows.length === 1 ? "" : "s"}`}
+          </span>
+          {/* P3-1: green-fill result message adjacent to where user clicked — ref-stable ~3s timer */}
+          {qrResultMessage && (
+            <span
+              role="status"
+              aria-live="polite"
+              className={`text-xs font-medium px-2 py-0.5 rounded ${
+                qrResultMessage.startsWith("No QR")
+                  ? "text-amber-700 bg-amber-50"
+                  : "text-green-700 bg-green-50"
+              }`}
+            >
+              {qrResultMessage}
+            </span>
+          )}
+        </span>
+
         {/* Fix 1 + Fix 3: "Copy share link" — sublabel disambiguates from "Create shared workspace".
             Green fill + "Copied ✓" for 1.8s; ref-stable timer (shareCopyTimer); dedicated aria-live. */}
         <span className="inline-flex flex-col items-start gap-0.5">
