@@ -358,6 +358,82 @@ test("H5 — Preview shows a version read-only; exiting Preview returns current 
   void previewGridValue; // used just to confirm we can reach it
 });
 
+// ── H5b: Preview fix — previewed version renders THAT version's rows (not empty) ──
+
+test("H5b — Preview fix: previewed older version (summer) shows its actual rows, not empty; no PUT triggered; exiting shows current (winter)", async ({
+  page,
+}) => {
+  // Create workspace with utm_campaign="summer" (version A)
+  const id = await createWorkspace("summer");
+
+  // Navigate and make an edit to create version B (winter) via autosave
+  await page.goto(`/w/${id}`);
+  await expect(page.locator('[data-testid="workspace-banner"]')).toBeVisible({
+    timeout: 10_000,
+  });
+  await cell(page, "utm_campaign", 1).fill("winter");
+  // Wait for autosave to complete
+  await expect(
+    page.locator('[data-testid="workspace-banner"]').getByText(/last edited by/i)
+  ).toBeVisible({ timeout: 8000 });
+  await page.waitForTimeout(500); // let server commit
+
+  // Confirm 2 versions: winter (newest), summer (oldest)
+  const histEntries = (await apiGet(`/api/workspace/${id}/history`)) as Array<{
+    id: number;
+    data: string;
+  }>;
+  expect(histEntries.length).toBe(2);
+  expect(histEntries[0].data).toContain("winter");
+  expect(histEntries[1].data).toContain("summer");
+
+  // Current grid shows winter
+  await expect(cell(page, "utm_campaign", 1)).toHaveValue("winter", { timeout: 3000 });
+
+  // Track PUT calls during preview — preview must trigger ZERO PUTs
+  const putCalls: string[] = [];
+  page.on("request", (req) => {
+    if (req.method() === "PUT" && req.url().includes("/api/workspace")) {
+      putCalls.push(req.url());
+    }
+  });
+
+  // Open History panel and click Preview on the OLDER (summer) version
+  await page.locator('[data-testid="history-toggle"]').click();
+  await expect(page.locator('[data-testid="history-panel"]')).toBeVisible();
+  await page.waitForTimeout(1500); // allow history fetch
+
+  const summerVersionId = histEntries[histEntries.length - 1].id;
+  const previewBtn = page.locator(`[data-testid="preview-version-${summerVersionId}"]`);
+  await expect(previewBtn).toBeVisible({ timeout: 5000 });
+  await previewBtn.click();
+
+  // Preview ribbon must appear and show read-only
+  await expect(page.locator('[data-testid="preview-ribbon"]')).toBeVisible({ timeout: 5000 });
+  await expect(page.locator('[data-testid="preview-ribbon"]')).toContainText(/read-only/i);
+
+  // KEY ASSERTION: the preview grid must show "summer", NOT empty or "winter"
+  // The fix seeds the preview localStorage keys so the remounted UtmGrid shows real data.
+  await expect(cell(page, "utm_campaign", 1)).toHaveValue("summer", { timeout: 5000 });
+
+  // Confirm it is NOT showing the blank starter row (empty string)
+  const previewValue = await cell(page, "utm_campaign", 1).inputValue();
+  expect(previewValue).toBe("summer");
+  expect(previewValue).not.toBe("");
+  expect(previewValue).not.toBe("winter");
+
+  // Wait for autosave debounce (800ms) to confirm no PUT was triggered
+  await page.waitForTimeout(1500);
+  expect(putCalls).toHaveLength(0);
+
+  // Exit preview
+  await page.locator('[data-testid="preview-back-btn"]').click();
+  await expect(page.locator('[data-testid="preview-ribbon"]')).not.toBeVisible({ timeout: 3000 });
+
+  // Back to current: grid shows "winter" again
+  await expect(cell(page, "utm_campaign", 1)).toHaveValue("winter", { timeout: 5000 });
+});
+
 // ── H6: Restore confirmation is durably visible under tick-rerender ───────────
 
 test("H6 — Restore confirmation 'Restored …' is durably visible for ~3s under tick re-renders", async ({
