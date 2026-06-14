@@ -1391,7 +1391,7 @@ export function UtmGrid({
   // FIX B (My Workspaces Round 3): secondary feature panels collapsed by default
   // so the editable grid sits near the top of the first screenful.
   const [launchCheckExpanded, setLaunchCheckExpanded] = useState(false);
-  const [teamWorkspaceExpanded, setTeamWorkspaceExpanded] = useState(false);
+  // teamWorkspaceExpanded removed — Create shared workspace is now always-visible in the Share group (E1)
 
 
   const toggle = (settingKey: keyof LintSettings, label: string) => (
@@ -1476,7 +1476,7 @@ export function UtmGrid({
         </div>
       )}
 
-      {/* Toolbar */}
+      {/* Toolbar — E2: one PRIMARY CTA (Add row) + secondary cluster */}
       <div className="flex flex-wrap items-center gap-3 rounded-lg border border-gray-200 bg-white p-4">
         {/* Open-campaign indicator pill */}
         <span
@@ -1494,19 +1494,22 @@ export function UtmGrid({
           )}
         </span>
 
+        {/* ── E2: PRIMARY CTA — "Add row" is the single accent-weight button ── */}
         <button
           type="button"
           onClick={addRow}
-          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          className="rounded-md bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-700 shadow-sm"
         >
-          Add row
+          + Add row
         </button>
+
+        {/* E2: Auto-fix naming — promoted to a distinct secondary-primary so it's unmissable */}
         <button
           type="button"
           onClick={cleanAll}
           title="Lowercase + normalize all flagged cells"
           data-testid="auto-fix-naming-btn"
-          className="rounded-md border border-amber-400 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-800 hover:bg-amber-100"
+          className="rounded-md border-2 border-amber-400 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-800 hover:bg-amber-100"
         >
           Auto-fix naming
         </button>
@@ -1514,15 +1517,19 @@ export function UtmGrid({
           <button
             type="button"
             onClick={undo}
-            className="rounded-md border border-gray-300 px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50"
+            className="rounded-md border border-gray-300 px-3 py-2 text-sm font-medium text-gray-500 hover:bg-gray-50"
           >
             Undo
           </button>
         )}
+
+        {/* ── E2: secondary cluster — visually lighter, grouped ── */}
+        <span className="h-5 w-px bg-gray-200 hidden sm:block" aria-hidden="true" />
+
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          className="rounded-md border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50"
         >
           Import CSV
         </button>
@@ -1535,21 +1542,20 @@ export function UtmGrid({
           onChange={onFileChosen}
         />
 
-        {/* "Paste & Audit URLs" — distinct verb/icon/gap from Import CSV (UX brief §1).
-            Inspection glyph (magnifying glass), violet accent, one logical group gap. */}
+        {/* "Paste & Audit URLs" — secondary styling */}
         <span className="inline-flex flex-col items-start gap-0.5">
           <button
             type="button"
             data-testid="audit-urls-btn"
             onClick={() => setAuditDialogOpen(true)}
-            className="min-h-[44px] rounded-md border border-violet-400 bg-violet-50 px-4 py-2 text-sm font-semibold text-violet-800 hover:bg-violet-100 flex items-center gap-1.5"
+            className="min-h-[36px] rounded-md border border-violet-300 bg-violet-50 px-3 py-1.5 text-xs font-medium text-violet-700 hover:bg-violet-100 flex items-center gap-1"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 20 20"
               fill="currentColor"
               aria-hidden="true"
-              className="w-4 h-4 shrink-0"
+              className="w-3.5 h-3.5 shrink-0"
             >
               <path
                 fillRule="evenodd"
@@ -1557,14 +1563,8 @@ export function UtmGrid({
                 clipRule="evenodd"
               />
             </svg>
-            Paste &amp; Audit URLs
+            Paste &amp; Audit
           </button>
-          {/* Sub-caption — discoverable value tag for cold skimmers */}
-          {!auditStatus && (
-            <span className="text-[11px] text-gray-400 leading-tight max-w-[14rem]">
-              Already have tagged links? Paste them to find every inconsistency at once.
-            </span>
-          )}
           {/* Audit status — peripherally unmissable (ref-stable timer) */}
           {auditStatus && (
             <span role="status" aria-live="polite" className="text-xs font-medium text-violet-700">
@@ -1576,29 +1576,23 @@ export function UtmGrid({
         <button
           type="button"
           onClick={exportCsv}
-          className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          className="rounded-md border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50"
         >
           Export CSV
         </button>
 
-        {/* P2-1: Top-level always-visible "Download QR codes" — primary QR bulk-export entry point.
-            Same handler + selection semantics as the BulkEditBar's QR section.
-            QR-square (⊞) + download (⬇) glyph; teal accent; green-fill result adjacent (P3-1).
-            Verb "Download QR codes" is distinct from all other toolbar controls.
-            READ-ONLY: no POST/PUT, safe on /w/<id>. */}
+        {/* Download QR codes — secondary styling */}
         <span className="inline-flex flex-col items-start gap-0.5">
           <button
             type="button"
             data-testid="download-qr-codes-btn"
             aria-label="Download QR codes"
             onClick={() => void handleBulkDownloadQr()}
-            className="min-h-[44px] inline-flex items-center gap-1.5 rounded-md border border-teal-500 bg-teal-50 px-4 py-2 text-sm font-semibold text-teal-700 hover:bg-teal-100 active:bg-teal-200 shadow-sm whitespace-nowrap"
+            className="min-h-[36px] inline-flex items-center gap-1 rounded-md border border-teal-400 bg-teal-50 px-3 py-1.5 text-xs font-medium text-teal-700 hover:bg-teal-100 whitespace-nowrap"
           >
-            {/* QR-square + download icon glyphs */}
-            <span aria-hidden="true" className="text-base leading-none">⊞⬇</span>
-            Download QR codes
+            <span aria-hidden="true" className="text-sm leading-none">⊞⬇</span>
+            QR codes
           </button>
-          {/* Scope indicator — same "Apply to:" model as BulkEditBar */}
           <span
             className={`text-[10px] rounded-full px-2 py-0.5 ${
               selectedRowIds.size > 0
@@ -1609,10 +1603,9 @@ export function UtmGrid({
             role="status"
           >
             {selectedRowIds.size > 0
-              ? `Apply to: ${selectedRowIds.size} selected row${selectedRowIds.size === 1 ? "" : "s"}`
-              : `Apply to: all ${rows.length} row${rows.length === 1 ? "" : "s"}`}
+              ? `${selectedRowIds.size} selected`
+              : `all ${rows.length}`}
           </span>
-          {/* P3-1: green-fill result message adjacent to where user clicked — ref-stable ~3s timer */}
           {qrResultMessage && (
             <span
               role="status"
@@ -1628,52 +1621,120 @@ export function UtmGrid({
           )}
         </span>
 
-        {/* Fix 1 + Fix 3 + FIX E: "Copy share link — frozen snapshot, no server"
-            sublabel makes this distinct from "Create shared workspace — live, synced".
-            Green fill + "Copied ✓" for 1.8s; ref-stable timer (shareCopyTimer); dedicated aria-live. */}
-        <span className="inline-flex flex-col items-start gap-0.5">
-          <button
-            type="button"
-            data-testid="copy-share-link"
-            onClick={() => void copyShareLink()}
-            className={`rounded-md border px-4 py-2 text-sm font-medium transition-colors duration-200 ${
-              shareLinkCopied
-                ? "border-green-500 bg-green-500 text-white"
-                : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
-            }`}
+        {/* ── E1: ONE "Share" group — both options always visible, cue on persistent buttons ──
+            Both actions kept exactly as shipped; only presentation consolidated.
+            data-testid="copy-share-link" stays on the inner button (always mounted → Copied cue
+            lives here and NEVER unmounts). data-testid="create-workspace-strip" kept on the
+            wrapper so R3-6 test continues to pass. */}
+        {!isWorkspaceMode && (
+          <div
+            data-testid="create-workspace-strip"
+            className="inline-flex flex-col gap-1.5 rounded-lg border border-gray-200 bg-gray-50/80 px-3 py-2"
           >
-            {shareLinkCopied ? (
-              <span className="inline-flex items-center gap-1">
-                <span aria-hidden="true">✓</span>{" "}
-                <span>Copied ✓</span>
+            <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">Share</span>
+            {/* Option 1: Copy share link (frozen snapshot) */}
+            <div className="flex flex-col gap-0.5">
+              <button
+                type="button"
+                data-testid="copy-share-link"
+                onClick={() => void copyShareLink()}
+                className={`rounded-md border px-3 py-1.5 text-xs font-medium transition-colors duration-200 min-h-[36px] ${
+                  shareLinkCopied
+                    ? "border-green-500 bg-green-500 text-white"
+                    : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+                }`}
+              >
+                {shareLinkCopied ? (
+                  <span className="inline-flex items-center gap-1">
+                    <span aria-hidden="true">✓</span>{" "}
+                    <span>Copied ✓</span>
+                  </span>
+                ) : (
+                  "Copy share link"
+                )}
+              </button>
+              {/* aria-live region — persistent, announces cue even when button text change is missed */}
+              <span role="status" aria-live="polite" className="sr-only">
+                {shareLinkCopied ? "Share link copied!" : ""}
               </span>
-            ) : (
-              "Copy share link"
+              <span className="text-[10px] text-gray-400 leading-tight">
+                Frozen snapshot — no server
+              </span>
+              {shareEmptyWarning && (
+                <span role="alert" className="text-xs text-amber-700">
+                  Nothing to share yet
+                </span>
+              )}
+            </div>
+            {/* Option 2: Create shared workspace (live, synced) */}
+            <div className="flex flex-col gap-0.5">
+              <button
+                type="button"
+                data-testid="create-shared-workspace-btn"
+                onClick={() => void createSharedWorkspace()}
+                disabled={creatingWorkspace || gridIsEmpty}
+                aria-label="Create shared workspace"
+                className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 min-h-[36px]"
+              >
+                {creatingWorkspace ? "Creating…" : "Create shared workspace"}
+              </button>
+              <span className="text-[10px] text-gray-400 leading-tight">
+                Live, synced via secret link
+              </span>
+              {createWorkspaceError && (
+                <span role="alert" className="text-xs text-red-600">
+                  {createWorkspaceError}
+                </span>
+              )}
+              {gridIsEmpty && (
+                <span className="text-xs text-gray-400">Add at least one row first.</span>
+              )}
+            </div>
+          </div>
+        )}
+        {/* In workspace mode: keep "Copy share link" accessible (standalone, no Create workspace) */}
+        {isWorkspaceMode && (
+          <span className="inline-flex flex-col items-start gap-0.5">
+            <button
+              type="button"
+              data-testid="copy-share-link"
+              onClick={() => void copyShareLink()}
+              className={`rounded-md border px-3 py-1.5 text-xs font-medium transition-colors duration-200 min-h-[36px] ${
+                shareLinkCopied
+                  ? "border-green-500 bg-green-500 text-white"
+                  : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+              }`}
+            >
+              {shareLinkCopied ? (
+                <span className="inline-flex items-center gap-1">
+                  <span aria-hidden="true">✓</span>{" "}
+                  <span>Copied ✓</span>
+                </span>
+              ) : (
+                "Copy share link"
+              )}
+            </button>
+            <span role="status" aria-live="polite" className="sr-only">
+              {shareLinkCopied ? "Share link copied!" : ""}
+            </span>
+            <span className="text-[10px] text-gray-400 leading-tight">
+              frozen snapshot of current grid
+            </span>
+            {shareEmptyWarning && (
+              <span role="alert" className="text-xs text-amber-700">
+                Nothing to share yet
+              </span>
             )}
-          </button>
-          {/* Dedicated aria-live — announces the copy even if button text change is missed */}
-          <span role="status" aria-live="polite" className="sr-only">
-            {shareLinkCopied ? "Share link copied!" : ""}
           </span>
-          {/* FIX E: sublabel distinguishes snapshot vs. live workspace at a glance */}
-          {!shareLinkCopied && (
-            <span className="text-[10px] text-gray-400 leading-tight max-w-[12rem]">
-              {isWorkspaceMode ? "frozen snapshot of current grid" : "frozen snapshot — no server"}
-            </span>
-          )}
-          {shareEmptyWarning && (
-            <span role="alert" className="text-xs text-amber-700">
-              Nothing to share yet
-            </span>
-          )}
-        </span>
+        )}
+
         {/* P1-2b: Copy all URLs — same peripherally-unmissable green cue as share link */}
         <span className="inline-flex flex-col items-start gap-0.5">
           <button
             type="button"
             data-testid="copy-all-urls"
             onClick={() => void copyAll()}
-            className={`rounded-md border px-4 py-2 text-sm font-medium transition-colors duration-200 ${
+            className={`rounded-md border px-3 py-1.5 text-xs font-medium transition-colors duration-200 min-h-[36px] ${
               copyAllCopied
                 ? "border-green-500 bg-green-500 text-white"
                 : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
@@ -1925,64 +1986,6 @@ export function UtmGrid({
               Run Launch Check
             </button>
           </div>
-        </div>
-      )}
-
-      {/* "Create shared workspace" accent strip — FIX B: collapsed by default on cold open.
-          FIX E: label and descriptor clarify this is live/synced vs frozen snapshot.
-          Shown only in default (non-workspace) mode per UX brief §1. */}
-      {!isWorkspaceMode && (
-        <div data-testid="create-workspace-strip">
-          <button
-            type="button"
-            onClick={() => setTeamWorkspaceExpanded((v) => !v)}
-            aria-expanded={teamWorkspaceExpanded}
-            className="w-full flex items-center justify-between gap-3 rounded-lg border border-blue-100 bg-blue-50/60 px-4 py-3 text-left hover:bg-blue-50 transition-colors"
-          >
-            <span className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs font-semibold text-blue-900 uppercase tracking-wide">
-                Create shared workspace
-              </span>
-              {/* FIX E: one-line descriptor distinguishes live/synced from frozen snapshot */}
-              <span className="text-[10px] text-blue-600">
-                — live, synced via secret link
-              </span>
-            </span>
-            <span className="text-blue-400 text-[10px] shrink-0">{teamWorkspaceExpanded ? "▲" : "▼"}</span>
-          </button>
-          {teamWorkspaceExpanded && (
-            <div className="mt-1 flex flex-col sm:flex-row sm:items-center gap-3 rounded-lg border border-blue-100 bg-blue-50/60 px-4 py-3">
-              <div className="min-w-0 flex-1">
-                <p className="mt-0.5 text-xs text-blue-700">
-                  A live workspace your team edits together — changes save to a private link and sync across devices.{" "}
-                  <span className="text-gray-400">(Different from &ldquo;Copy share link&rdquo;, which sends a frozen snapshot — no server.)</span>
-                </p>
-              </div>
-              <div className="flex flex-col items-start sm:items-end gap-1 shrink-0">
-                <button
-                  type="button"
-                  data-testid="create-shared-workspace-btn"
-                  onClick={() => void createSharedWorkspace()}
-                  disabled={creatingWorkspace || gridIsEmpty}
-                  aria-label="Create shared workspace"
-                  className="rounded-md bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 min-h-[44px]"
-                >
-                  {creatingWorkspace ? "Creating…" : "Create shared workspace"}
-                </button>
-                <span className="text-[10px] text-blue-600 leading-tight">
-                  live, synced for the team
-                </span>
-                {createWorkspaceError && (
-                  <span role="alert" className="text-xs text-red-600">
-                    {createWorkspaceError}
-                  </span>
-                )}
-                {gridIsEmpty && (
-                  <span className="text-xs text-gray-400">Add at least one row to create a workspace.</span>
-                )}
-              </div>
-            </div>
-          )}
         </div>
       )}
 
@@ -3012,15 +3015,16 @@ export function UtmGrid({
         )}
       </div>
 
-      {/* F: Trust note — mode-aware (Fix 1). */}
+      {/* F: Trust note — mode-aware (Fix 1). POLISH 1: updated copy to match current behavior
+          (utm fields are lowercased/normalized on Auto-fix, not left as typed). */}
       {isWorkspaceMode ? (
         <p className="text-xs text-gray-400">
-          Generated URLs are trimmed of trailing spaces; your source cells are left as typed.
+          Generated URLs are trimmed of trailing spaces; utm fields are lowercased and normalized when you Auto-fix.
           Changes are synced to the server workspace automatically — anyone with the secret link can view and edit.
         </p>
       ) : (
         <p className="text-xs text-gray-400">
-          Generated URLs are trimmed of trailing spaces; your source cells are left as typed.
+          Generated URLs are trimmed of trailing spaces; utm fields are lowercased and normalized when you Auto-fix.
           Everything runs in your browser — no account, no server, no network
           requests after page load. Grid rows, presets, campaigns, and lint toggles are
           saved in localStorage.

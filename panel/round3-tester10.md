@@ -1,25 +1,12 @@
-Sam (Product manager, mobile-heavy) — round 3
-
-PRIOR-CONCERN RE-CHECK (my one remaining round-2 blocker), on my phone (375px, touch):
-- Per-row "Download PNG"/"Download SVG" in the card-view QR popover — FIXED. I built a
-  fully tagged row (newsletter/email/spring_launch), tapped the per-row ⊞ QR, and the
-  popover opened inline under the card with a real scannable QR + the full tagged URL.
-  Download PNG saved qr-row-1.png (a real 3.4KB scannable code), Download SVG saved
-  qr-row-1.svg — BOTH produced actual files this time, and the popover STAYED OPEN after
-  each tap (it used to do nothing 0/3). Verified on a real mobile/touch viewport, 0 console
-  errors. My single-link QR export finally works on the device I actually use.
-
-Bulk-skip and the green "✓ Copied!" Launch Check confirmation from prior rounds still hold.
-The whole organized-handoff flow — batch build, auto-fix naming, Launch Check Compliance
-Report, clean CSV, per-row + bulk QR — now works end-to-end on my phone with no login.
-
 ```json
-{
- "name":"Sam","clarity":"Yes","value":"Yes","advocacy":9,
- "qr_reaction":"The per-row QR popover now actually downloads a real PNG and SVG on my phone and stays open while I grab both — my last broken-on-mobile thing is gone, so single-link QR export works on the device I live in.",
- "prior_concerns_addressed":"fixed — the one remaining blocker (mobile card-view per-row Download PNG/SVG firing no file) is resolved: both saved real files and the popover no longer dismisses mid-tap; bulk-skip and Copy-summary confirmation from prior rounds still hold",
- "likes":["Per-row Download PNG/SVG now saves real files on mobile and the popover stays open — my last gripe is gone","Bulk QR skips untagged rows and tells me; no bad link in my handoff","Launch Check Compliance Report + Download report (CSV) is a tidy launch-doc artifact","Auto-fix naming + clean CSV, zero re-entry, no signup","Full flow works on my phone with 0 console errors across the session"],
- "complaints":["Minor: the card-view per-row action buttons (⊞ QR / duplicate / delete) are tiny icon targets close together on a 375px screen — easy to mis-tap between meetings; bigger touch targets or labels would help","Minor: the mobile home is still a long ~10-section scroll (Presets, Naming Template, Campaigns, Allowed values, Bulk Edit, Workspace…) — surface area feels heavy for a first-timer; collapsing the advanced stack under the core grid would make it a 10"],
- "verdict_summary":"My one remaining blocker is genuinely fixed — the mobile per-row QR popover now downloads real PNG and SVG files and stays open, verified on my phone. With the batch build, auto-fix, Launch Check report, and clean CSV all working login-free on mobile, this is now the organized launch-handoff tool I wanted, so I'm moving from 8 to 9 — I'd bring it up to other PMs unprompted, with just small touch-target and surface-area nits left."
-}
+{"name":"Sam","clarity":"Yes","value":"Yes","advocacy":10,"priorConcernsAddressed":"all","top_issues":["Nothing blocking. Minor: 'Auto-fix naming' is off by default, so my messy 'NewsletterCASE' passes through untouched until I notice the inline 'Fix' chip — a PM in a hurry could ship the un-fixed link. Defaulting auto-fix ON, or a one-tap 'Fix all' at the top, would close it."],"loved":["The two share paths are now unmistakable: toolbar 'Copy share link' carries the sublabel 'frozen snapshot — no server', and the separate CREATE SHARED WORKSPACE panel says in plain words 'live, synced via secret link... Different from Copy share link, which sends a frozen snapshot'. Zero beats lost.","Secondary panels (Launch Check, Create Shared Workspace, Presets, Campaigns, Allowed values, Bulk Edit) all collapsed by default — the cold mobile screen is headline + grid, not a wall of features.","Inline lint flags messy fields ('Contains uppercase letters — use lowercase only (newslettercase). Fix') with a '2 warnings · Fix' chip — catches the exact thing that splits my GA reports.","Mobile card layout clean at 375px, 44px tap targets, no horizontal overflow, 0 console errors."]}
 ```
+
+## Re-checking my ONE round-2 nit (mobile, 375px)
+- "'Copy share link' vs 'Create shared workspace' cost one beat to disambiguate" — FIXED, more thoroughly than I'd have asked. The snapshot action reads 'Copy share link' / 'frozen snapshot — no server'; the live one is its own collapsed panel 'CREATE SHARED WORKSPACE — live, synced via secret link' that, when opened, explicitly contrasts itself with the snapshot. The labels now decide for me; no thinking required.
+- Sentinel: collapsed landing did NOT break my flow. Cold open = headline + grid; everything else folds away and opens on tap. My Workspaces is a single instance. Build flow (base URL + source/medium/campaign) worked first try in the card layout, campaign URL-encoded correctly.
+
+## Fresh take (Sam, PM, between meetings)
+CLARITY Yes — H1 + 'Share one link anyone can open and reuse — no login, nothing leaves your browser' tells me in 5 seconds it's a team UTM grid I can hand off.
+VALUE Yes — replaces my Google Sheet + Slack approval thread: live /w link for the team, named searchable workspaces, inline typo-catching Sheets never gave me.
+ADVOCACY 10 — the last friction (share disambiguation) is gone, collapsed panels make the mobile first impression calm instead of busy, and inline 'Fix' lint is the look-organized detail that makes me drop it in our launch channel unprompted. The auto-fix-default item is a polish idea, not a reason to hold back.

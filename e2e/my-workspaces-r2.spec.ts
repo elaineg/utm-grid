@@ -103,10 +103,11 @@ test("R2-1a: rename → Enter commits → label updates in panel and persists ac
   const panel = visiblePanel(page);
   await expect(panel).toBeVisible({ timeout: 5_000 });
 
-  // Click the Rename button
-  const renameBtn = panel.locator(`[data-testid="rename-btn-${id}"]`);
-  await expect(renameBtn).toBeVisible({ timeout: 5_000 });
-  await renameBtn.click();
+  // ROUND-3 FIX F: rename is triggered by clicking the workspace NAME button
+  // (there is no separate rename-btn; the name itself is the rename trigger).
+  const nameBtn = panel.locator(`button[aria-label*="Rename workspace: acme.com"]`).first();
+  await expect(nameBtn).toBeVisible({ timeout: 5_000 });
+  await nameBtn.click();
 
   // Rename input appears, pre-filled with the current display label
   const renameInput = panel.locator(`[data-testid="rename-input-${id}"]`);
@@ -148,9 +149,10 @@ test("R2-1b: rename → Esc cancels → original label still shows", async ({
   const panel = visiblePanel(page);
   await expect(panel).toBeVisible({ timeout: 5_000 });
 
-  const renameBtn = panel.locator(`[data-testid="rename-btn-${id}"]`);
-  await expect(renameBtn).toBeVisible();
-  await renameBtn.click();
+  // ROUND-3 FIX F: clicking the workspace NAME enters rename mode
+  const nameBtn = panel.locator(`button[aria-label*="Rename workspace: original-label"]`).first();
+  await expect(nameBtn).toBeVisible({ timeout: 5_000 });
+  await nameBtn.click();
 
   const renameInput = panel.locator(`[data-testid="rename-input-${id}"]`);
   await expect(renameInput).toBeVisible({ timeout: 2_000 });
@@ -260,9 +262,12 @@ test("R2-3: search finds entry by user-given name, case-insensitively (raw-id-on
   await ctx.close();
 });
 
-// ── R2-4: Panel above grid on desktop `/` ─────────────────────────────────────
+// ── R2-4: Panel above grid on desktop `/` — ROUND-3 SINGLE-INSTANCE ──────────
+// ROUND-3 change: there is now exactly ONE panel (not a desktop+mobile twin pair).
+// The panel still renders above the grid in DOM order; assertion updated to use
+// the single panel instance (no longer looking for the "hidden min-[900px]:block" class).
 
-test("R2-4: My Workspaces panel renders ABOVE the editable grid on desktop `/`", async ({
+test("R2-4: My Workspaces panel (single instance) renders ABOVE the editable grid on desktop `/`", async ({
   browser,
 }) => {
   const id = await createWorkspaceViaApi();
@@ -279,24 +284,17 @@ test("R2-4: My Workspaces panel renders ABOVE the editable grid on desktop `/`",
   await page.reload();
   await page.waitForLoadState("networkidle");
 
-  // Check DOM order: the desktop panel must appear BEFORE the grid table
+  // ROUND-3: only ONE panel exists in the DOM
+  const panelCount = await page.locator('[data-testid="my-workspaces-panel"]').count();
+  expect(panelCount, "ROUND-3: exactly ONE My Workspaces panel in DOM").toBe(1);
+
+  // Check DOM order: the single panel must appear BEFORE the grid table
   const panelIsAboveGrid = await page.evaluate(() => {
-    // The desktop panel has data-testid="my-workspaces-panel" and class includes "hidden min-[900px]:block"
-    const panels = document.querySelectorAll('[data-testid="my-workspaces-panel"]');
+    const panel = document.querySelector('[data-testid="my-workspaces-panel"]');
     const gridTable = document.querySelector('table');
-    if (!gridTable) return null; // grid not found
-    // Find the desktop panel (nth(1) — second in DOM order, desktopOnly)
-    // Find it by checking which panel is NOT the mobileOnly (mobileOnly has min-[900px]:hidden)
-    let desktopPanel: Element | null = null;
-    panels.forEach((p) => {
-      if (p.className && p.className.includes('hidden min-[900px]:block')) {
-        desktopPanel = p;
-      }
-    });
-    if (!desktopPanel) return null;
-    // Compare DOM positions: panel before table = panel comes first
-    const rel = (desktopPanel as Element).compareDocumentPosition(gridTable);
+    if (!panel || !gridTable) return null;
     // DOCUMENT_POSITION_FOLLOWING = 4: panel comes BEFORE table → panel is above
+    const rel = panel.compareDocumentPosition(gridTable);
     return !!(rel & Node.DOCUMENT_POSITION_FOLLOWING);
   });
 
@@ -305,12 +303,10 @@ test("R2-4: My Workspaces panel renders ABOVE the editable grid on desktop `/`",
     "My Workspaces panel should be above the grid table in the DOM"
   ).toBe(true);
 
-  // Also verify the panel is actually visible on desktop
-  const desktopPanel = page
-    .locator('[data-testid="my-workspaces-panel"]')
-    .nth(1); // desktop panel is second in DOM
-  await expect(desktopPanel).toBeVisible({ timeout: 5_000 });
-  await expect(desktopPanel).toContainText("Panel Order Test");
+  // Verify the single panel is visible and shows the entry
+  const panel = page.locator('[data-testid="my-workspaces-panel"]').first();
+  await expect(panel).toBeVisible({ timeout: 5_000 });
+  await expect(panel).toContainText("Panel Order Test");
 
   await ctx.close();
 });
@@ -435,16 +431,18 @@ test("R2-6: 375px tap targets (Open/Copy link/Rename/Remove) ≥44px height, not
   );
   expect(hasHorizontalScroll, "No horizontal scroll at 375px").toBe(false);
 
-  // Check each action button is visible and has ≥44px height
+  // Check each ACTION button (Open / Copy link / Remove from list) is visible and ≥44px.
+  // Per spec line ~118: "Open / Copy link / Remove controls are reachable and operable at 375px".
+  // ROUND-3 FIX F: rename is triggered by clicking the workspace NAME (a text button) —
+  // the spec lists rename as a name-click interaction, not as one of the ≥44px action controls.
+  // We assert the three primary action buttons here.
   const openBtn = panel.locator("button", { hasText: /^Open$/ }).first();
   const copyBtn = panel.locator("button", { hasText: /^Copy link$/ }).first();
-  const renameBtn = panel.locator(`[data-testid="rename-btn-${id}"]`).first();
   const removeBtn = panel.locator("button", { hasText: /Remove from list/i }).first();
 
   for (const [name, btn] of [
     ["Open", openBtn],
     ["Copy link", copyBtn],
-    ["Rename", renameBtn],
     ["Remove from list", removeBtn],
   ] as [string, typeof openBtn][]) {
     await expect(btn).toBeVisible({ timeout: 3_000 });

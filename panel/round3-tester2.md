@@ -1,34 +1,13 @@
-{"name":"Marcus","clarity":"Yes","value":"Yes","advocacy":9}
+```json
+{"name":"Marcus","clarity":"Yes","value":"Yes","advocacy":10,"priorConcernsAddressed":"all","top_issues":["Toolbar is still verb-dense — ~9 buttons across the top before you reach the grid; on 375px it's a long wrap. Cosmetic, not blocking.","Default name pulls the RAW utm_campaign string (e.g. 'blackfriday2026'); a very long campaign slug could get unwieldy in the list — a truncation/tooltip would polish it."],"loved":["MY PRIOR NIT IS FIXED: two same-day workspaces, campaigns blackfriday2026 + summer_promo → 'My Workspaces (2)' lists them as 'blackfriday2026' and 'summer_promo', NOT two identical 'Workspace — Jun 14'. Default now = utm_campaign, exactly as asked.","My Workspaces is a single DOM node now (MyWorkspaces nodes:1) — the duplicate-search-input tell is gone.","Collapsed landing (Launch Check / Create Shared Workspace / Presets / Bulk Edit all chevron-collapsed) made the cold view calmer and did NOT break my flow — grid sits right below, localStorage kept my last row.","Share disambiguation is unambiguous: 'Copy share link — frozen snapshot — no server' vs 'Create Shared Workspace — live, synced via secret link'.","Zero console errors across 2x create, reload, mobile; real /w/<id> secret links per workspace."]}
+```
 
-# Marcus — round 3 (Chrome desktop @1280px, devtools open)
+Re-tested cold at 1280px + 375px, Chrome, devtools open.
 
-## My 2-round blocker, re-checked @1280 — RESOLVED
-The wide read-only Generated URL slab is gone. Table is now 1230px (was 1978),
-tableScrollW 1240 ≈ viewport; docW==innerW==1280: NO page scroll and effectively NO in-table
-horizontal scroll on cold load.
+**Prior concern (default name only used the date) — ALL FIXED.** I reproduced my exact round-2 scenario: two workspaces same day, campaigns `blackfriday2026` and `summer_promo`. The "My Workspaces (2)" list returned them as **blackfriday2026** and **summer_promo** — distinguishable at a glance, no manual rename needed. The duplicate search input is also gone (single My-Workspaces DOM instance).
 
-## Six editable columns on cold load — ALL VISIBLE, no scroll
-Measured x-positions (px), every one inView:true at scrollLeft=0: Base 100–250, utm_source
-266–376, utm_medium 392–501, utm_campaign 517–626, utm_term 642–751, utm_content 767–876.
-GENERATED URL is now clamped to ~250px and ACTIONS sits at ~1134. So all six inputs are
-editable at once with the read-only column no longer hogging width. Exactly the fix I asked
-for twice.
+**Clarity — Yes.** H1 "Clean UTM links for your whole campaign — in one grid" + subline land in under 10s. The collapsed secondary panels actually *helped* — less noise above the grid.
 
-## Cramped? Mild and acceptable. A 51-char utm_campaign in a 109px box (clientW 107, scrollW
-403) shows ~15 chars at a time and scrolls within the field. That's the honest cost of fitting
-six columns at 1280 — but it's the input scrolling, not the table, and the value stays intact.
-Far better than the old "see 2 fields, scroll the whole grid."
+**Value — Yes.** Same real win over Google's one-at-a-time builder + my Sheet, and now the return-visit list is genuinely usable: same-day workspaces self-label. This is the thing I'd paste in team Slack.
 
-## Copy gives the FULL URL — yes
-Per-row Copy returned the complete string incl. the full 51-char campaign:
-…&utm_campaign=2026_q3_global_product_launch_announcement_wave_two (clipboard match confirmed,
-not blocked in my env). "Enforce UTM Spec" appears as "Enforce allowed values" + "Enforce
-naming template" + inline lint ("utm_source is required") — spec enforcement present & legible.
-0 console errors all session.
-
-## Score: 9. The single thing that pinned me at 7 for two rounds is genuinely fixed — the
-widest sticky element is no longer the field I don't type into. This is the version I'd drop in
-our launch Slack. Not a 10 only because the 109px input means very long values need in-field
-scroll.
-
-priorConcernsAddressed: all
+**Advocacy — 10.** Up from 9. The one nit that pinned me at 9 is gone, the collapse cost me nothing, share verbs are clear, zero errors. Remaining items (dense toolbar, raw-slug labels) are pure polish, not friction — I'd bring this up unprompted to other FE/marketing folks now.

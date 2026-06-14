@@ -4,7 +4,11 @@
  * Spec success checks covered:
  * - Create workspace from `/`, return to `/`: panel shows Owner badge + "just now" time; Open navigates to /w/<id>.
  * - Open a /w/<id> in fresh localStorage context, then `/`: shows Visited badge.
- * - Reload `/`: list persists. First-ever visit (empty localStorage) panel visible + empty-state hint.
+ * - Reload `/`: list persists.
+ * - ROUND-3 EMPTY-STATE: on a fresh/empty-localStorage visit to `/`, the My Workspaces panel does NOT
+ *   occupy prime above-grid space — it is hidden so the editable grid is the visible hero high on the page.
+ *   The panel appears above the grid only once the list has ≥1 entry.
+ * - ROUND-3 SINGLE INSTANCE: exactly ONE "My Workspaces" heading and ONE search input in the DOM at all times.
  * - Copy link: "Copied!" survives a tick re-render; copied value is full /w/<id> URL.
  * - Remove from list (with confirm): removed locally, persists across reload; /w/<id> still resolves.
  * - Nonexistent /w/<id> does NOT add an entry.
@@ -83,9 +87,12 @@ function makeEntry(id: string, overrides: Partial<MyWorkspaceEntry> = {}): MyWor
   };
 }
 
-// ── Check MW-1: Panel always present on `/` — even with empty localStorage ─────
+// ── Check MW-1: ROUND-3 EMPTY-STATE — panel is HIDDEN when localStorage is empty ──
+// The spec (round-3 change, line ~112) says: when the list is empty, the above-grid
+// My Workspaces panel does NOT occupy prime above-grid space — it is hidden/unobtrusive
+// so the editable grid stays the visible hero high on the page.
 
-test("MW-1: empty localStorage → panel is visible with empty-state hint", async ({
+test("MW-1: empty localStorage → My Workspaces panel is HIDDEN (grid is the hero)", async ({
   browser,
 }) => {
   const ctx = await browser.newContext();
@@ -94,13 +101,80 @@ test("MW-1: empty localStorage → panel is visible with empty-state hint", asyn
   await page.goto("/");
   await page.waitForLoadState("networkidle");
 
-  // Panel must exist in DOM — use visiblePanel() to get the visible instance at
-  // this viewport (desktop=panel[1], mobile=panel[0]).
-  const panel = visiblePanel(page);
-  await expect(panel).toBeVisible({ timeout: 10_000 });
+  // ROUND-3: panel must NOT be in the DOM when list is empty (component returns null).
+  // There must be zero visible "My Workspaces" panels.
+  const panels = page.locator('[data-testid="my-workspaces-panel"]');
+  await expect(panels).toHaveCount(0, { timeout: 10_000 });
 
-  // Empty-state hint text must be present (panel is not gated on non-empty list)
-  await expect(panel).toContainText(/no workspaces yet|workspaces you create or open/i);
+  // The editable grid MUST be present and near the top (the hero)
+  const gridTable = page.locator("table").first();
+  await expect(gridTable).toBeVisible({ timeout: 10_000 });
+
+  // Grid must be within the first 600px of the page (near the top, not pushed below banners)
+  const gridBox = await gridTable.boundingBox();
+  expect(gridBox, "Grid table should have a bounding box").not.toBeNull();
+  if (gridBox) {
+    expect(
+      gridBox.y,
+      `Grid should be near the top of the page (y < 600px), got y=${gridBox.y}px`
+    ).toBeLessThan(600);
+  }
+
+  await ctx.close();
+});
+
+// ── Check MW-1b: ROUND-3 — after creating/recording a workspace, panel appears ──
+test("MW-1b: after seeding ≥1 workspace, My Workspaces panel appears above the grid", async ({
+  browser,
+}) => {
+  const id = await createWorkspaceViaApi();
+  const ctx = await browser.newContext();
+  const page = await ctx.newPage();
+
+  await page.goto("/");
+  await page.waitForLoadState("domcontentloaded");
+  // Seed one entry
+  await seedMyWorkspaces(page, [
+    makeEntry(id, { label: "Test Panel Appears", link: `${BASE_URL}/w/${id}` }),
+  ]);
+  await page.reload();
+  await page.waitForLoadState("networkidle");
+
+  // Now the panel should be visible
+  const panel = page.locator('[data-testid="my-workspaces-panel"]').first();
+  await expect(panel).toBeVisible({ timeout: 10_000 });
+  await expect(panel).toContainText("Test Panel Appears");
+
+  await ctx.close();
+});
+
+// ── Check MW-1c: ROUND-3 SINGLE INSTANCE — exactly ONE heading and ONE search input ──
+test("MW-1c: single DOM instance — exactly ONE My Workspaces heading and ONE search input", async ({
+  browser,
+}) => {
+  const id = await createWorkspaceViaApi();
+  const ctx = await browser.newContext();
+  const page = await ctx.newPage();
+
+  await page.goto("/");
+  await page.waitForLoadState("domcontentloaded");
+  await seedMyWorkspaces(page, [
+    makeEntry(id, { label: "Single Instance Test", link: `${BASE_URL}/w/${id}` }),
+  ]);
+  await page.reload();
+  await page.waitForLoadState("networkidle");
+
+  // Exactly ONE panel in DOM
+  const panels = page.locator('[data-testid="my-workspaces-panel"]');
+  await expect(panels).toHaveCount(1, { timeout: 10_000 });
+
+  // Exactly ONE "My Workspaces" heading
+  const headings = page.locator('[data-testid="my-workspaces-heading"]');
+  await expect(headings).toHaveCount(1);
+
+  // Exactly ONE search input
+  const searchInputs = page.locator('[data-testid="my-workspaces-search"]');
+  await expect(searchInputs).toHaveCount(1);
 
   await ctx.close();
 });
@@ -363,16 +437,28 @@ test("MW-6: Remove from list (confirm) — removed locally, persists across relo
   await removeBtn.scrollIntoViewIfNeeded();
   await removeBtn.click();
 
-  // After confirm+remove, the entry disappears. The panel may temporarily go to
-  // empty-state rendering. Use a fresh visiblePanel locator after the state update.
-  // Also wait for the empty-state (the panel shows "No workspaces yet" when empty).
-  await expect(page.locator('[data-testid="my-workspaces-panel"]').filter({visible:true}).first()).toContainText(/no workspaces yet|No workspaces match/i, { timeout: 5_000 });
+  // After confirm+remove, the entry disappears.
+  // ROUND-3: when list becomes empty, the panel returns null (removed from DOM).
+  // Wait for the panel to either disappear entirely OR no longer contain the label.
+  await page.waitForTimeout(500);
+  const panelAfterRemove = page.locator('[data-testid="my-workspaces-panel"]');
+  const panelCountAfterRemove = await panelAfterRemove.count();
+  if (panelCountAfterRemove > 0) {
+    // Panel still in DOM → must not contain the removed label
+    await expect(panelAfterRemove.first()).not.toContainText("Remove Me Workspace");
+  }
+  // If panelCount === 0, the panel returned null (expected: list is empty)
 
   // Reload to verify removal persists (localStorage was updated)
   await page.reload();
   await page.waitForLoadState("networkidle");
-  // After reload, panel shows empty state — does NOT show removed label
-  await expect(visiblePanel(page)).not.toContainText("Remove Me Workspace");
+  // After reload with empty list, the panel should be absent
+  // OR if somehow re-populated, must not show the removed label
+  const panelsAfterReload = page.locator('[data-testid="my-workspaces-panel"]');
+  const countAfterReload = await panelsAfterReload.count();
+  if (countAfterReload > 0) {
+    await expect(panelsAfterReload.first()).not.toContainText("Remove Me Workspace");
+  }
 
   // Verify /w/<id> still resolves (workspace NOT deleted server-side)
   await page.goto(`/w/${id}`);
@@ -638,8 +724,8 @@ test("MW-13: 1280px — no horizontal page overflow on `/`", async ({ browser })
   });
   expect(hasHorizontalScroll).toBe(false);
 
-  // Desktop panel should be visible
-  const panel = page.locator('[data-testid="my-workspaces-panel"]').nth(1); // desktopOnly is second
+  // ROUND-3 SINGLE INSTANCE: exactly ONE panel — use .first() not .nth(1)
+  const panel = page.locator('[data-testid="my-workspaces-panel"]').first();
   await expect(panel).toBeVisible({ timeout: 5_000 });
 
   await ctx.close();

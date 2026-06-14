@@ -29,6 +29,23 @@ const BASE_URL = process.env.BASE_URL ?? "http://localhost:3811";
 const cell = (page: Page, field: string, rowNum: number) =>
   page.getByLabel(`${field} row ${rowNum}`, { exact: true }).first();
 
+/**
+ * Round-3 FIX B: On the main builder `/`, the Launch Check is inside a collapsed disclosure.
+ * Expand it before clicking "Run Launch Check". On /w/<id> it is always visible.
+ */
+async function expandLaunchCheckIfNeeded(page: Page) {
+  const toggle = page.locator('[data-testid="prelaunch-qa-strip"] button[aria-expanded]').first();
+  const isPresent = await toggle.isVisible().catch(() => false);
+  if (isPresent) {
+    const expanded = await toggle.getAttribute("aria-expanded");
+    if (expanded === "false") {
+      await toggle.click();
+      // Wait for the button to appear inside the expanded section
+      await page.locator('[data-testid="run-launch-check-btn"]').first().waitFor({ state: "visible", timeout: 5000 });
+    }
+  }
+}
+
 /** Create a workspace via the API and return its id. */
 async function createWorkspace(payload: Record<string, unknown>): Promise<string> {
   const res = await fetch(`${BASE_URL}/api/workspace`, {
@@ -156,6 +173,7 @@ test("LC-1 — 3-row grid: 1 ok, 1 missing utm_medium, 1 'Spring Sale' → 3 tot
   // No report before clicking
   await expect(page.locator('[data-testid="compliance-report-panel"]')).toHaveCount(0);
 
+  await expandLaunchCheckIfNeeded(page);
   await page.getByTestId("run-launch-check-btn").click();
 
   const report = page.locator('[data-testid="compliance-report-panel"]');
@@ -195,6 +213,7 @@ test("LC-2 — clean 2-row grid shows 'All 2 links pass'", async ({ page }) => {
   await cell(page, "utm_medium", 2).fill("paid_social");
   await cell(page, "utm_campaign", 2).fill("clean_camp");
 
+  await expandLaunchCheckIfNeeded(page);
   await page.getByTestId("run-launch-check-btn").click();
 
   const report = page.locator('[data-testid="compliance-report-panel"]');
@@ -226,6 +245,7 @@ test("LC-3a — Download report (CSV) on dirty grid has per-violation rows with 
   // leave utm_medium blank
   await cell(page, "utm_campaign", 2).fill("spring_sale");
 
+  await expandLaunchCheckIfNeeded(page);
   await page.getByTestId("run-launch-check-btn").click();
   await expect(page.locator('[data-testid="compliance-report-panel"]')).toBeVisible({ timeout: 5000 });
 
@@ -265,6 +285,7 @@ test("LC-3b — Download report (CSV) on clean grid has single all-clear row", a
   await cell(page, "utm_medium", 2).fill("paid_social");
   await cell(page, "utm_campaign", 2).fill("clean");
 
+  await expandLaunchCheckIfNeeded(page);
   await page.getByTestId("run-launch-check-btn").click();
   await expect(page.locator('[data-testid="compliance-report-panel"]')).toBeVisible({ timeout: 5000 });
 
@@ -298,6 +319,7 @@ test("LC-4a — Copy summary: 'Copied!' cue shows even when clipboard API is blo
   await cell(page, "utm_medium", 1).fill("email");
   await cell(page, "utm_campaign", 1).fill("clean");
 
+  await expandLaunchCheckIfNeeded(page);
   await page.getByTestId("run-launch-check-btn").click();
   await expect(page.locator('[data-testid="compliance-report-panel"]')).toBeVisible({ timeout: 5000 });
 
@@ -329,6 +351,7 @@ test("LC-4b — Copy summary 'Copied!' cue survives re-render during live /w/<id
 
   await expect(page.locator('[data-testid="workspace-banner"]')).toBeVisible({ timeout: 10_000 });
 
+  await expandLaunchCheckIfNeeded(page);
   await page.getByTestId("run-launch-check-btn").click();
   await expect(page.locator('[data-testid="compliance-report-panel"]')).toBeVisible({ timeout: 5000 });
 
@@ -366,6 +389,7 @@ test("LC-5 — Run Launch Check on builder '/' triggers NO network request", asy
   await cell(page, "utm_source", 1).fill("newsletter");
   await cell(page, "utm_medium", 1).fill("email");
   await cell(page, "utm_campaign", 1).fill("camp");
+  await expandLaunchCheckIfNeeded(page);
   await page.getByTestId("run-launch-check-btn").click();
   await expect(page.locator('[data-testid="compliance-report-panel"]')).toBeVisible({ timeout: 5000 });
 
@@ -398,6 +422,7 @@ test("LC-6 — Run Launch Check on /w/<id> triggers NO POST/PUT; workspace uncha
     }
   });
 
+  await expandLaunchCheckIfNeeded(page);
   await page.getByTestId("run-launch-check-btn").click();
   await expect(page.locator('[data-testid="compliance-report-panel"]')).toBeVisible({ timeout: 5000 });
 
@@ -427,7 +452,10 @@ test("LC-7 — cold open of '/' shows no Compliance Report until button clicked"
   // No report on cold open
   await expect(page.locator('[data-testid="compliance-report-panel"]')).toHaveCount(0);
 
-  // "Run Launch Check" button must be visible though
+  // ROUND-3 FIX B: Launch Check is inside a collapsed disclosure on `/`.
+  // The disclosure HEADER must be visible; the Run Launch Check button is inside it
+  // and only visible after expanding. Expand then assert the button.
+  await expandLaunchCheckIfNeeded(page);
   await expect(page.getByTestId("run-launch-check-btn")).toBeVisible();
 });
 
@@ -462,6 +490,9 @@ test("LC-8 — 375px: Run Launch Check trigger, report, Download CSV, and Copy s
   await cardCell("utm_source", 1).fill("newsletter");
   await cardCell("utm_medium", 1).fill("email");
   await cardCell("utm_campaign", 1).fill("clean");
+
+  // ROUND-3 FIX B: expand the Launch Check disclosure before accessing the button
+  await expandLaunchCheckIfNeeded(page);
 
   // "Run Launch Check" must be reachable
   const launchBtn = page.getByTestId("run-launch-check-btn");
@@ -543,6 +574,7 @@ test("LC-9 — 1280px: no horizontal page overflow with Compliance Report open",
   await cell(page, "utm_medium", 2).fill("");  // missing
   await cell(page, "utm_campaign", 2).fill("spring_sale");
 
+  await expandLaunchCheckIfNeeded(page);
   await page.getByTestId("run-launch-check-btn").click();
   await expect(page.locator('[data-testid="compliance-report-panel"]')).toBeVisible({ timeout: 5000 });
 
@@ -581,6 +613,7 @@ test("LC-10 — regression: Paste & Audit (violet) panel is visually distinct an
 
   // Now run Launch Check — it must open WITHOUT disrupting the audit panel
   // and the compliance panel is DISTINCT (teal/slate, not violet)
+  await expandLaunchCheckIfNeeded(page);
   await page.getByTestId("run-launch-check-btn").click();
   const complianceReport = page.locator('[data-testid="compliance-report-panel"]');
   await expect(complianceReport).toBeVisible({ timeout: 5000 });
@@ -600,6 +633,7 @@ test("LC-workspace — /w/<id>: Launch Check over seeded rows shows correct scor
   await page.goto(`/w/${id}`);
   await expect(page.locator('[data-testid="workspace-banner"]')).toBeVisible({ timeout: 10_000 });
 
+  await expandLaunchCheckIfNeeded(page);
   await page.getByTestId("run-launch-check-btn").click();
 
   const report = page.locator('[data-testid="compliance-report-panel"]');
@@ -660,6 +694,7 @@ test("LC-returning-user — returning user with seeded localStorage state: Launc
   await expect(cell(page, "utm_medium", 2)).toHaveValue("");
 
   // Run Launch Check on the pre-existing state
+  await expandLaunchCheckIfNeeded(page);
   await page.getByTestId("run-launch-check-btn").click();
 
   const report = page.locator('[data-testid="compliance-report-panel"]');

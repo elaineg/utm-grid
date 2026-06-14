@@ -2534,3 +2534,118 @@ near-duplicate-workspace dedupe (Aisha nit, BACKLOG).
   list**, and search-by-name. The two share actions read as distinct, grouped, labeled
   ("Copy share link — frozen snapshot" vs "Create shared workspace — live, synced"). Exactly one
   My Workspaces heading + one ≥44px search input in the DOM; auto-fix yields "launch_day", no "!".
+
+## My Workspaces — Round 4 fixes (panel R3: 8/10 pass; flip Elena to reach 9/10) — added 2026-06-14
+
+Clarity 10/10 Yes; Value 8/10 Yes. Advocacy ≥9 = **8/10** (Priya 9, Marcus 10, Wen 9, Tomás 9
+carried, Dana 9, Jules 9 carried, Rob 9 carried, Sam 10). The R3 work all LANDED — dual-render gone,
+auto-fix punctuation/lowercase uniform, campaign-first default names, collapsed landing, share
+disambiguation by sublabel — do NOT regress any of it. **Aisha's value=No is persona-rooted (she
+makes a handful of UTMs/year, out of the recurrence ICP) and is the ACCEPTED 1 fail.** Therefore the
+ONLY path to 9/10 is to **flip ELENA (value No→Yes, adv 8→9)** — her two concrete asks are E1 + E2
+below. Scope is TIGHT and protective: two structural fixes Elena named + two cheap multi-tester
+polish copy fixes. Additive / CSS / copy / small-logic only — do NOT touch the headline, subhead,
+lint toggles, grid layout, or the cold-open grid's role as the hero. Each maps to an R3 synthesis
+cause.
+
+**Fix E1 — Consolidate the two share actions into ONE "Share" affordance (P0; Elena PRIMARY ask;
+recurring nit across Marcus/Jules/Tomás/Sam — synthesis G1).** "Copy share link" (frozen snapshot)
+and "Create shared workspace" (live, synced) are now clearly LABELED but still read as two separate,
+competing buttons in two places, so Elena pauses to pick which one to hand a report. Merge them into
+ONE clearly-labeled **"Share"** affordance that presents BOTH options together — Elena verbatim:
+"Merge into one 'Share' with frozen/live options to reach 9."
+- **ONE entry point** in the toolbar/header: a single **"Share"** control (button or **"Share ▾"**
+  menu/popover). Clicking it reveals BOTH options stacked, each with its one-line descriptor so the
+  choice is made inside one affordance, never across two scattered buttons:
+  - **"Copy share link"** — sub-line **"Frozen snapshot — built in your browser, no server."**
+  - **"Create shared workspace"** — sub-line **"Live, synced — saved to a private secret link your
+    team edits together."**
+  The two read as two clearly-distinct members of ONE Share group — a skimmer sees both paths and
+  their difference in a single read, no fine-print hunt, no pausing to pick between two competing
+  top-level buttons.
+- **BEHAVIOR UNCHANGED — both share mechanics stay exactly as shipped (PROTECT the 8 passers):**
+  "Copy share link" still copies the frozen client-side `#g=` hash snapshot; "Create shared
+  workspace" still POSTs and navigates to `/w/<id>`. This is grouping + presentation only — do not
+  change what either action does, the privacy props, or the `/w/<id>` flow.
+- **CRITICAL regression guard — the Copied cue must render on a PERSISTENT trigger (this app shipped
+  a Share-menu whose "Copied!" cue lived on a menu item that UNMOUNTED on click → no confirmation
+  ever showed; heed copy-confirmation-survives-tick-rerender + the dual-render dismiss lesson).** If
+  Share is a dropdown/menu that closes on selection, the **green-fill-in-place "Copied!"
+  confirmation MUST NOT live on the menu item that unmounts when the menu closes.** Render the cue on
+  a PERSISTENT element — e.g. keep the menu/popover open through the ~1.8s confirm and show "Copied!"
+  on its (still-mounted) item, OR reflect the confirm on the always-mounted "Share" trigger itself
+  ("Share" → green "Link copied!" for ~1.8s), OR a persistent inline status line in the open
+  popover. The green fill + label swap + `aria-live="polite"` + ref-stable revert timer (survives
+  re-render) must fire for BOTH copy actions, and the `execCommand`/textarea fallback stays so the
+  green still fires when `navigator.clipboard` rejects. Verify the cue fires at **375px** (no corner
+  toast that scrolls off) and on every repeat click.
+- **375px:** the single "Share" control is ≥44px in the top action stack; opening it stacks both
+  options full-width, each option ≥44px, in flow, nothing occluded, no horizontal scroll.
+
+**Fix E2 — One clearly-emphasized PRIMARY action; de-densify the toolbar (P0; Elena's second ask:
+"~9 controls with no single highlighted PRIMARY CTA" — synthesis G2; Sam: Auto-fix easy to miss).**
+The builder toolbar reads as a flat control strip (Add row · Auto-fix · Import · Paste & Audit ·
+Export · QR · Copy share · Copy all URLs · Naming Rules) with no visual answer to "what's the main
+thing to do here," so a 30-second skimmer doesn't know where to start. Give the toolbar a clear
+visual hierarchy — **this is grouping + emphasis, NOT removal; every control stays reachable.**
+- **ONE visually-emphasized PRIMARY action.** Make the main path obvious by emphasizing the hero
+  action so a skimmer instantly knows the main thing to do. The core job is tagging links in the
+  grid, so emphasize THAT path: e.g. give **"Add row"** (the grid's hero action) the single
+  accent/solid-primary treatment, and/or promote **"Auto-fix naming"** to a prominent primary
+  (Sam: auto-fix is off by default and easy to miss — making it the visible primary CTA closes
+  this). Pick ONE primary so there is exactly one accent-weight button in the toolbar; everything
+  else is visually lighter.
+- **Visually DEMOTE the secondary controls into a tidy group.** Render the remaining controls
+  (Import · Paste & Audit · Export · QR · the two share actions now folded into the one "Share"
+  affordance from E1 · Copy all URLs · Naming Rules) as lighter-weight secondary buttons, grouped
+  so the toolbar reads as "[one primary CTA] + [a tidy secondary cluster]" rather than ~9 equal
+  controls. A 30-second skimmer's eye lands on the single primary first.
+- **Keep ALL controls reachable — NO removal.** This is visual weight + grouping only. Auto-fix,
+  Import, Paste & Audit, Export, QR, Share, Copy all URLs, Naming Rules all stay present and one
+  interaction away. Do not regress any of the 8 passers' flows or any existing test.
+- **Width/wrap:** with E1 collapsing two share buttons into one, plus the secondary grouping, the
+  toolbar should read as one tidy primary + a compact secondary group at 1280–1440px (Wen's
+  two-row wrap eases) and stack cleanly at 375px (Marcus's long wrap eases) — verify no horizontal
+  overflow at 1280px and the primary CTA is the visually dominant control at every width.
+
+**POLISH 1 — Fix the stale footer copy (cheap; Priya — synthesis G4).** A footer/trust line still
+reads "your source cells are left as typed," but utm_source now LOWERCASES on auto-fix
+(Google→google). Update that line to match current behavior — e.g. **"Generated URLs are trimmed of
+trailing spaces; utm fields are lowercased and normalized when you Auto-fix."** Copy only; the line
+must not contradict what the app actually does.
+
+**POLISH 2 — Truncate long campaign-slug labels in My Workspaces (cheap; Marcus/Aisha — synthesis
+G4).** A very long `utm_campaign`-derived workspace label can blow out the My Workspaces row.
+Ellipsize/truncate the label to one line (`text-overflow: ellipsis`, no wrap) with the **full value
+on hover via `title`** (and the full name available in rename). This must not break the
+click-the-name-to-rename target or the Open/Copy link/Remove actions. Applies in both desktop and
+mobile renderings of the single responsive instance.
+
+**PROTECT — do NOT regress (all 8 passers; all existing tests must stay green):** both share
+BEHAVIORS unchanged (frozen `#g=` hash copy; live workspace POST→`/w/<id>`) + the Copied green cue
+on a PERSISTENT trigger (ref-stable, survives re-render, aria-live, execCommand fallback, fires at
+375px); grid / lint / CSV / Audit / Launch Check; workspace create/sync + auto-record (Owner/
+Visited); Review & Approval on `/w/<id>`; My Workspaces single responsive instance + rename
+(click-the-name) / search-by-name / campaign-first friendly default; ≥44px mobile targets;
+collapsed-landing with the grid high as the hero; no React #185; no enforceSpec crash; recording
+triggers NO extra POST/PUT (a `GET /api/workspace/<id>` before equals one after). E1+E2 are
+presentation/grouping/emphasis only — they must keep every feature one interaction away.
+
+**Out of scope (do NOT build):** cross-device/team sync (needs accounts + server, regresses
+zero-network prop — the accepted structural ceiling; Aisha is the accepted out-of-ICP value-No
+holdout); near-duplicate-workspace dedupe cue (Aisha nit, BACKLOG); internal-punctuation auto-fix
+("spring_sale!!_2026", Priya edge case, deferred — do NOT add new stripping rules this round).
+
+### 5-second check (My Workspaces Round 4 — one Share, one primary CTA)
+- **Cold visitor (`/`):** unchanged short hero → editable example grid row/card HIGH in the first
+  screenful → secondary surfaces collapsed/labeled below. The toolbar now reads as **one visually
+  dominant PRIMARY action** (the grid/tag-a-link path — e.g. Add row / prominent Auto-fix) plus a
+  tidy secondary cluster, so a 30-second skimmer instantly knows the main thing to do. Same
+  headline/subhead + pre-filled example row with live Generated URL + Copy.
+- **Returning visitor (`/`):** same hero; the compact **My Workspaces (N)** panel lists workspaces
+  by a campaign-first friendly name (long names ellipsized, full value on hover) with Rename
+  (click the name) / Open · Copy link · Remove from list / search-by-name. **ONE "Share"
+  affordance** presents both options inline — "Copy share link (frozen snapshot)" and "Create
+  shared workspace (live, synced)" — so a report is shared without pausing to pick between two
+  competing buttons; clicking either copy action shows the green "Copied!" cue on a persistent
+  trigger at every width.

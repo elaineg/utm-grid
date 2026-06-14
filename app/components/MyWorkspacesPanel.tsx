@@ -249,13 +249,14 @@ export function MyWorkspacesPanel() {
           ) : (
             /* FIX F: clicking the workspace NAME itself enters inline rename.
                The "Open" button is a distinct action below so name-click = rename
-               and Open = navigate are unambiguous. */
+               and Open = navigate are unambiguous.
+               POLISH 2: truncate long names with ellipsis; full value via title/hover. */
             <button
               type="button"
               onClick={() => startRename(entry)}
               aria-label={`Rename workspace: ${displayName}. Click to rename, or use the Open button to navigate.`}
-              title="Click to rename"
-              className="font-semibold text-sm text-gray-900 truncate hover:text-blue-700 text-left min-w-0 underline-offset-2 hover:underline cursor-text"
+              title={displayName}
+              className="font-semibold text-sm text-gray-900 truncate hover:text-blue-700 text-left min-w-0 max-w-[16rem] underline-offset-2 hover:underline cursor-text block overflow-hidden text-ellipsis whitespace-nowrap"
             >
               {displayName}
             </button>
