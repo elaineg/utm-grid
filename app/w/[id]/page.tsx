@@ -267,8 +267,10 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
         setWorkspaceName(loadedName);
         workspaceNameRef.current = loadedName;
 
-        // Review: restore reviewMap from payload (additive field, may be absent on legacy workspaces)
-        const loadedReviewMap = data.reviewMap ?? undefined;
+        // Review: restore reviewMap from payload (additive field, may be absent on legacy workspaces).
+        // Default to {} so the Review column always renders on /w/<id> — even for workspaces
+        // created before reviewMap was introduced. Empty map = all rows Unreviewed (correct UX).
+        const loadedReviewMap = data.reviewMap ?? {};
         setReviewMap(loadedReviewMap);
         reviewMapRef.current = loadedReviewMap;
 

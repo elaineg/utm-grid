@@ -2058,10 +2058,12 @@ export function UtmGrid({
                   />
                 </th>
                 <th className="w-8 px-2 py-2.5" style={{ width: "32px" }} aria-label="Row number" />
-                {/* Review column — only when reviewMap prop is provided (workspace mode). 80px.
-                    When present, genUrl shrinks from 240→160px, keeping total budget = 1212px.
+                {/* Review column — only when onReviewChange prop is provided (workspace /w/<id> mode).
+                    Gating on onReviewChange (not reviewMap) means the column renders even when
+                    reviewMap is {} (empty/legacy workspace) — all rows show "Unreviewed" badges.
+                    80px. When present, genUrl shrinks from 240→160px, keeping total budget = 1212px.
                     Guard #1: w-[80px] with overflow hidden — cannot escape parent resize. */}
-                {reviewMap !== undefined && (
+                {onReviewChange !== undefined && (
                   <th
                     className="px-2 py-2.5 text-indigo-600"
                     style={{ width: "80px" }}
@@ -2086,9 +2088,9 @@ export function UtmGrid({
                   </th>
                 ))}
                 {/* Generated URL: sticky, right-offset = Actions width.
-                    When reviewMap active: 160px (shrunk from 240 to balance +80 review col).
-                    When reviewMap absent: 240px (existing). Both keep total budget at 1212px. */}
-                <th className="sticky right-[148px] z-30 bg-gray-50 px-2 py-2.5 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] whitespace-nowrap" style={{ width: reviewMap !== undefined ? "160px" : "240px" }}>
+                    When review active (onReviewChange set): 160px (shrunk from 240 to balance +80 review col).
+                    When review absent: 240px (existing). Both keep total budget at 1212px. */}
+                <th className="sticky right-[148px] z-30 bg-gray-50 px-2 py-2.5 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] whitespace-nowrap" style={{ width: onReviewChange !== undefined ? "160px" : "240px" }}>
                   Generated URL
                 </th>
                 {/* Actions: sticky right-0, 148px wide (widened from 116px for QR button). z-30 same as Generated URL header. */}
@@ -2157,11 +2159,13 @@ export function UtmGrid({
                         {i + 1}
                       </button>
                     </td>
-                    {/* Review badge cell — only when reviewMap prop is provided.
+                    {/* Review badge cell — only when onReviewChange is provided (workspace mode).
+                        Gating on onReviewChange (not reviewMap) ensures the column renders even
+                        for workspaces with no prior review data (empty/legacy reviewMap = all Unreviewed).
                         Guard #1: overflow-hidden keeps badge within the 80px column.
                         Guard #5: z-[50] on the popover itself (in ReviewBadge).
                         Guard #11: testidSuffix="table" for dual-render safety. */}
-                    {reviewMap !== undefined && !isPreview && (
+                    {onReviewChange !== undefined && !isPreview && (
                       <td
                         className="px-1 py-2 align-middle overflow-hidden"
                         onClick={(e) => e.stopPropagation()}
@@ -2179,7 +2183,7 @@ export function UtmGrid({
                         />
                       </td>
                     )}
-                    {reviewMap !== undefined && isPreview && (
+                    {onReviewChange !== undefined && isPreview && (
                       <td className="px-1 py-2 align-middle" style={{ width: "80px" }}>
                         <span className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold ${
                           getRowReviewState(reviewMap, row.id) === "approved"
@@ -2380,7 +2384,7 @@ export function UtmGrid({
                     {/* Sticky Generated URL — truncated with title tooltip.
                         Width: 160px when Review column active (to keep 1212px budget), 240px otherwise.
                         Copy button (in Actions) copies the FULL untruncated URL (title has full value). */}
-                    <td className="sticky right-[148px] z-20 px-2 py-2 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] overflow-hidden bg-white" style={{ width: reviewMap !== undefined ? "160px" : "240px" }}>
+                    <td className="sticky right-[148px] z-20 px-2 py-2 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] overflow-hidden bg-white" style={{ width: onReviewChange !== undefined ? "160px" : "240px" }}>
                       <output
                         aria-label={`Generated URL row ${i + 1}`}
                         title={generated}
@@ -2586,11 +2590,12 @@ export function UtmGrid({
                     )}
                   </div>
 
-                  {/* Review badge in card view — only when reviewMap is provided.
+                  {/* Review badge in card view — only when onReviewChange is provided (workspace mode).
+                      Gating on onReviewChange ensures empty/legacy workspaces still show badges.
                       Guard #5: popover z-[50] (in ReviewBadge).
                       Guard #6: role="dialog" on popover, single instance per card.
                       Guard #11: testidSuffix="card" for dual-render safety. */}
-                  {reviewMap !== undefined && !isPreview && (
+                  {onReviewChange !== undefined && !isPreview && (
                     <div className="w-full">
                       <ReviewBadge
                         rowId={row.id}
