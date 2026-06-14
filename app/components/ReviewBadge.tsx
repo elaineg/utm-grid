@@ -21,9 +21,14 @@
  * FIX E (P1): "Needs changes" chip label "Changes" (short enough to fit at 1280px).
  *   Badge shows full "Needs changes" in tooltip/aria-label; chip label shows "Changes".
  *
+ * FIX PORTAL (P0): Popover rendered via createPortal to document.body so it escapes
+ *   the overflow:hidden <td> container. Position uses FIXED coordinates from
+ *   getBoundingClientRect() on the badge button. Opens below button, flips above
+ *   when near viewport bottom. High z-index (z-[9999]) so thead/th cannot intercept.
+ *
  * Guards implemented here:
  * #1 NO HORIZONTAL OVERFLOW — badge compact fixed-width.
- * #5 MOBILE — high z-[50] popover, ≥44px tap targets.
+ * #5 MOBILE — high z-[9999] portaled popover, ≥44px tap targets.
  * #6 DUAL-RENDER — only ONE popover per row; document click handler ignores
  *    clicks inside [role="dialog"] to prevent cross-dismiss.
  * #9 DISTINCT VERB — "Review"/"Approve"/"Needs changes".
@@ -32,6 +37,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { ReviewEntry } from "../../lib/review";
 
 type ReviewState = "approved" | "needs-changes" | "unreviewed";
@@ -106,8 +112,8 @@ export function ReviewBadge({
   const [noteInput, setNoteInput] = useState("");
   // FIX A: local name state inside popover — pre-filled from prop, editable before confirm.
   const [nameInput, setNameInput] = useState("");
-  // FIX C: track whether popover should open upward (near bottom of viewport).
-  const [openUpward, setOpenUpward] = useState(false);
+  // FIX PORTAL: store fixed-position coords for the portaled popover.
+  const [popoverStyle, setPopoverStyle] = useState<React.CSSProperties>({});
   const badgeRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
@@ -123,12 +129,33 @@ export function ReviewBadge({
     // FIX A: pre-fill with current reviewer name (from unified identity)
     setNameInput(reviewerName || "");
 
-    // FIX C: determine if we're near the bottom of the viewport so we can open upward
+    // FIX PORTAL: compute fixed-position for the portaled popover from the badge button rect.
+    // Opens below button by default; flips above when less than 280px remain below viewport.
     if (badgeRef.current) {
       const rect = badgeRef.current.getBoundingClientRect();
       const viewportH = window.innerHeight;
-      // If less than 280px below the badge, open upward
-      setOpenUpward(viewportH - rect.bottom < 280);
+      const popoverW = 256; // w-64 = 16rem = 256px
+      // Clamp left so popover doesn't overflow right edge of viewport
+      const left = Math.min(rect.left, Math.max(0, viewportH - popoverW));
+      if (viewportH - rect.bottom < 280) {
+        // Open upward: bottom of popover aligns with top of badge
+        setPopoverStyle({
+          position: "fixed",
+          bottom: viewportH - rect.top + 4,
+          left,
+          width: popoverW,
+          zIndex: 9999,
+        });
+      } else {
+        // Open downward: top of popover aligns with bottom of badge
+        setPopoverStyle({
+          position: "fixed",
+          top: rect.bottom + 4,
+          left,
+          width: popoverW,
+          zIndex: 9999,
+        });
+      }
     }
 
     setOpen(true);
@@ -199,10 +226,127 @@ export function ReviewBadge({
       ? reviewEntry.note.slice(0, 40) + "…"
       : reviewEntry?.note;
 
-  // FIX C: popover position — open upward when near viewport bottom to stay visible.
-  const popoverPositionClass = openUpward
-    ? "absolute left-0 bottom-full mb-1 z-[50]"
-    : "absolute left-0 top-full mt-1 z-[50]";
+  // FIX PORTAL: build the popover node; portal-rendered so it escapes overflow:hidden td.
+  const popoverNode = open ? (
+    <div
+      ref={popoverRef}
+      role="dialog"
+      aria-label={`Review row ${rowIndex + 1}`}
+      data-testid={`review-popover-row-${rowIndex}${suffix}`}
+      style={popoverStyle}
+      className="rounded-lg border border-indigo-200 bg-white shadow-lg shadow-indigo-100/50 p-3 flex flex-col gap-2"
+    >
+      {/* Popover header */}
+      <div className="flex items-center justify-between gap-2 mb-0.5">
+        <span className="text-xs font-semibold text-indigo-800">
+          Review row {rowIndex + 1}
+        </span>
+        <button
+          type="button"
+          aria-label="Close review popover"
+          onClick={() => setOpen(false)}
+          className="text-xs text-gray-400 hover:text-gray-700 p-1 -mr-1 min-h-[36px] min-w-[36px] flex items-center justify-center"
+        >
+          ×
+        </button>
+      </div>
+
+      {/* FIX A: "Reviewing as" identity inline in the popover. */}
+      <div className="flex flex-col gap-0.5">
+        <label
+          htmlFor={`popover-reviewer-name-${rowId}${suffix}`}
+          className="text-[10px] font-medium text-indigo-600"
+        >
+          Reviewing as
+        </label>
+        <input
+          ref={nameInputRef}
+          id={`popover-reviewer-name-${rowId}${suffix}`}
+          type="text"
+          value={nameInput}
+          maxLength={80}
+          placeholder="Your name (optional)"
+          aria-label="Your name for this review"
+          data-testid={`review-popover-name-input-row-${rowIndex}${suffix}`}
+          className="rounded border border-indigo-200 bg-white px-2 py-1 text-xs text-indigo-900 w-full focus:outline-none focus:ring-1 focus:ring-indigo-300"
+          onChange={(e) => setNameInput(e.target.value)}
+          onBlur={() => {
+            const trimmed = nameInput.trim().slice(0, 80);
+            if (onNameChange && trimmed !== reviewerName) {
+              onNameChange(trimmed);
+            }
+          }}
+        />
+      </div>
+
+      {/* Prior review context */}
+      {reviewEntry && (
+        <div className="text-[11px] text-indigo-600 bg-indigo-50 rounded px-2 py-1">
+          {reviewEntry.state === "approved" ? "✓ Approved" : "⚠ Needs changes"}{" "}
+          by{" "}
+          <span className="font-semibold">
+            {reviewEntry.reviewer || "Anonymous"}
+          </span>
+        </div>
+      )}
+
+      {/* Note field */}
+      <div className="flex flex-col gap-1">
+        <label
+          htmlFor={`review-note-${rowId}${suffix}`}
+          className="text-[11px] font-medium text-gray-600"
+        >
+          Note <span className="font-normal text-gray-400">(optional)</span>
+        </label>
+        <textarea
+          id={`review-note-${rowId}${suffix}`}
+          value={noteInput}
+          onChange={(e) => setNoteInput(e.target.value)}
+          maxLength={300}
+          rows={2}
+          placeholder="e.g. fix campaign casing"
+          className="w-full resize-none rounded border border-gray-200 px-2 py-1.5 text-xs text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-300"
+        />
+      </div>
+
+      {/* Action buttons */}
+      <div className="flex flex-col gap-1.5">
+        <button
+          type="button"
+          data-testid={`review-approve-btn-row-${rowIndex}${suffix}`}
+          onClick={handleApprove}
+          className="w-full rounded-md border border-green-300 bg-green-50 px-3 py-2 text-xs font-semibold text-green-800 hover:bg-green-100 transition-colors min-h-[40px]"
+        >
+          ✓{" "}
+          Approve
+        </button>
+        <button
+          type="button"
+          data-testid={`review-needs-changes-btn-row-${rowIndex}${suffix}`}
+          onClick={handleNeedsChanges}
+          className="w-full rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800 hover:bg-amber-100 transition-colors min-h-[40px]"
+        >
+          ⚠{" "}
+          Needs changes
+        </button>
+        {reviewState !== "unreviewed" && (
+          <button
+            type="button"
+            data-testid={`review-clear-btn-row-${rowIndex}${suffix}`}
+            onClick={handleClear}
+            className="w-full rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-normal text-gray-500 hover:bg-gray-50 transition-colors min-h-[36px]"
+          >
+            Clear review
+          </button>
+        )}
+      </div>
+
+      {/* Name is optional, never required to review */}
+      <p className="text-[10px] text-indigo-400 leading-tight">
+        Name is optional — your device only, never required to review.
+      </p>
+    </div>
+  ) : null;
 
   return (
     <div className="relative" data-testid={`review-badge-container-row-${rowIndex}${suffix}`}>
@@ -235,131 +379,13 @@ export function ReviewBadge({
         )}
       </button>
 
-      {/* Anchored popover — guard #5: z-50, guard #6: role="dialog" */}
-      {/* FIX C: position upward when near viewport bottom (openUpward state) */}
-      {open && (
-        <div
-          ref={popoverRef}
-          role="dialog"
-          aria-label={`Review row ${rowIndex + 1}`}
-          data-testid={`review-popover-row-${rowIndex}${suffix}`}
-          className={`${popoverPositionClass} w-64 rounded-lg border border-indigo-200 bg-white shadow-lg shadow-indigo-100/50 p-3 flex flex-col gap-2`}
-        >
-          {/* Popover header */}
-          <div className="flex items-center justify-between gap-2 mb-0.5">
-            <span className="text-xs font-semibold text-indigo-800">
-              Review row {rowIndex + 1}
-            </span>
-            <button
-              type="button"
-              aria-label="Close review popover"
-              onClick={() => setOpen(false)}
-              className="text-xs text-gray-400 hover:text-gray-700 p-1 -mr-1 min-h-[36px] min-w-[36px] flex items-center justify-center"
-            >
-              ×
-            </button>
-          </div>
-
-          {/* FIX A: "Reviewing as" identity inline in the popover.
-              Pre-filled from the unified "Your name" (editor-name).
-              Allows user who hasn't set a name to set it before confirming.
-              NEVER blocks opening the popover or clicking Approve/Needs changes. */}
-          <div className="flex flex-col gap-0.5">
-            <label
-              htmlFor={`popover-reviewer-name-${rowId}${suffix}`}
-              className="text-[10px] font-medium text-indigo-600"
-            >
-              Reviewing as
-            </label>
-            <input
-              ref={nameInputRef}
-              id={`popover-reviewer-name-${rowId}${suffix}`}
-              type="text"
-              value={nameInput}
-              maxLength={80}
-              placeholder="Your name (optional)"
-              aria-label="Your name for this review"
-              data-testid={`review-popover-name-input-row-${rowIndex}${suffix}`}
-              className="rounded border border-indigo-200 bg-white px-2 py-1 text-xs text-indigo-900 w-full focus:outline-none focus:ring-1 focus:ring-indigo-300"
-              onChange={(e) => setNameInput(e.target.value)}
-              onBlur={() => {
-                // Save on blur so name persists if user blurs without clicking a button
-                const trimmed = nameInput.trim().slice(0, 80);
-                if (onNameChange && trimmed !== reviewerName) {
-                  onNameChange(trimmed);
-                }
-              }}
-            />
-          </div>
-
-          {/* Prior review context */}
-          {reviewEntry && (
-            <div className="text-[11px] text-indigo-600 bg-indigo-50 rounded px-2 py-1">
-              {reviewEntry.state === "approved" ? "✓ Approved" : "⚠ Needs changes"}{" "}
-              by{" "}
-              <span className="font-semibold">
-                {reviewEntry.reviewer || "Anonymous"}
-              </span>
-            </div>
-          )}
-
-          {/* Note field */}
-          <div className="flex flex-col gap-1">
-            <label
-              htmlFor={`review-note-${rowId}${suffix}`}
-              className="text-[11px] font-medium text-gray-600"
-            >
-              Note <span className="font-normal text-gray-400">(optional)</span>
-            </label>
-            <textarea
-              id={`review-note-${rowId}${suffix}`}
-              value={noteInput}
-              onChange={(e) => setNoteInput(e.target.value)}
-              maxLength={300}
-              rows={2}
-              placeholder="e.g. fix campaign casing"
-              className="w-full resize-none rounded border border-gray-200 px-2 py-1.5 text-xs text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-300"
-            />
-          </div>
-
-          {/* Action buttons */}
-          <div className="flex flex-col gap-1.5">
-            <button
-              type="button"
-              data-testid={`review-approve-btn-row-${rowIndex}${suffix}`}
-              onClick={handleApprove}
-              className="w-full rounded-md border border-green-300 bg-green-50 px-3 py-2 text-xs font-semibold text-green-800 hover:bg-green-100 transition-colors min-h-[40px]"
-            >
-              ✓{" "}
-              Approve
-            </button>
-            <button
-              type="button"
-              data-testid={`review-needs-changes-btn-row-${rowIndex}${suffix}`}
-              onClick={handleNeedsChanges}
-              className="w-full rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800 hover:bg-amber-100 transition-colors min-h-[40px]"
-            >
-              ⚠{" "}
-              Needs changes
-            </button>
-            {reviewState !== "unreviewed" && (
-              <button
-                type="button"
-                data-testid={`review-clear-btn-row-${rowIndex}${suffix}`}
-                onClick={handleClear}
-                className="w-full rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-normal text-gray-500 hover:bg-gray-50 transition-colors min-h-[36px]"
-              >
-                Clear review
-              </button>
-            )}
-          </div>
-
-          {/* Name is optional, never required to review */}
-          <p className="text-[10px] text-indigo-400 leading-tight">
-            Name is optional — your device only, never required to review.
-          </p>
-        </div>
-      )}
+      {/* FIX PORTAL: render popover to document.body to escape overflow:hidden td.
+          Guard #5: z-[9999] so thead/th cannot intercept.
+          Guard #6: role="dialog" kept so outside-click guard (ignores [role="dialog"]) works.
+          Only portal on the client (typeof document !== "undefined"). */}
+      {typeof document !== "undefined" && popoverNode
+        ? createPortal(popoverNode, document.body)
+        : null}
     </div>
   );
 }

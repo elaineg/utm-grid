@@ -193,7 +193,7 @@ test("CHK-6 — /w/<id> 'Copy report link' button visible and distinct from othe
   // "Copy report link" button must be present
   const reportBtn = page.getByTestId("share-report-link-btn");
   await expect(reportBtn).toBeVisible();
-  await expect(reportBtn).toContainText("Copy report link");
+  await expect(reportBtn).toContainText("Copy compliance report link");
 
   // Must be distinct from "Share style guide" (different label)
   const guideBtn = page.getByTestId("share-style-guide-btn");

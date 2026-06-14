@@ -507,6 +507,86 @@ test("R12 — pre-populated reviewMap: /w/<id>/review renders pre-existing revie
   await expect(scorecard).toBeVisible();
 });
 
+// ─── R17: Portal fix — "Needs changes" button in desktop table-view popover is clickable ──
+// Regression guard: elementFromPoint at the Needs-changes button center must be the button
+// itself (not a TH), and clicking it sets the row to needs-changes.
+
+test("R17 — desktop table-view: Needs-changes button is clickable (portal fix, not clipped by overflow:hidden td)", async ({
+  browser,
+}) => {
+  const id = await createWorkspace();
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+  const page = await ctx.newPage();
+
+  await page.goto(`/w/${id}`);
+  await expect(page.locator('[data-testid="workspace-banner"]')).toBeVisible({ timeout: 12_000 });
+
+  // Open the review popover for row 0 (table view at 1280px)
+  const badge = page.locator('[data-testid="review-badge-btn-row-0-table"]');
+  await expect(badge).toBeVisible({ timeout: 8_000 });
+  await badge.click();
+
+  const popover = page.locator('[data-testid="review-popover-row-0-table"]');
+  await expect(popover).toBeVisible({ timeout: 5_000 });
+
+  const needsBtn = page.locator('[data-testid="review-needs-changes-btn-row-0-table"]');
+  await expect(needsBtn).toBeVisible({ timeout: 3_000 });
+
+  // Assert elementFromPoint at the button center is the button (not a TH intercepting clicks)
+  const isButtonAtCenter = await page.evaluate(() => {
+    const btn = document.querySelector('[data-testid="review-needs-changes-btn-row-0-table"]');
+    if (!btn) return false;
+    const rect = btn.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const el = document.elementFromPoint(cx, cy);
+    // elementFromPoint must be the button or a child of it, not a TH
+    return el !== null && (el === btn || btn.contains(el));
+  });
+  expect(isButtonAtCenter).toBe(true);
+
+  // Actually click it and verify the row flips to needs-changes
+  await needsBtn.click();
+  await expect(popover).not.toBeVisible({ timeout: 3_000 });
+  await expect(badge).toContainText("Changes", { timeout: 5_000 });
+
+  await ctx.close();
+});
+
+// ─── R18: Share trigger button shows "Copied!" after a copy action ────────────
+// Regression guard: closing the dropdown must not swallow the copy confirmation.
+
+test("R18 — Share trigger shows visible 'Copied!' cue after copy-review-link action", async ({
+  browser,
+}) => {
+  const id = await createWorkspace();
+  const ctx = await browser.newContext({
+    viewport: { width: 1280, height: 800 },
+    permissions: ["clipboard-read", "clipboard-write"],
+  });
+  const page = await ctx.newPage();
+
+  await page.goto(`/w/${id}`);
+  await expect(page.locator('[data-testid="workspace-banner"]')).toBeVisible({ timeout: 12_000 });
+
+  const shareBtn = page.locator('[data-testid="share-menu-btn"]');
+  await expect(shareBtn).toBeVisible({ timeout: 8_000 });
+  await shareBtn.click();
+
+  // Click "Share review summary" — closes dropdown, triggers copy
+  const reviewBtn = page.locator('[data-testid="share-review-summary-btn"]');
+  await expect(reviewBtn).toBeVisible({ timeout: 5_000 });
+  await reviewBtn.click();
+
+  // Dropdown must be gone
+  await expect(page.locator('[role="menu"]')).not.toBeVisible({ timeout: 2_000 });
+
+  // REGRESSION 2: trigger button itself must show "Copied!" (green fill) within 500ms
+  await expect(shareBtn).toContainText("Copied!", { timeout: 2_000 });
+
+  await ctx.close();
+});
+
 // ─── R13: Mobile card view (375px): per-row review control exists ─────────────
 
 test("R13 — 375px mobile: per-row review control exists and roll-up visible (no reviewMap in payload)", async ({

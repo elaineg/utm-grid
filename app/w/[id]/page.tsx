@@ -195,6 +195,9 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
   // FIX F: Share dropdown state
   const [shareMenuOpen, setShareMenuOpen] = useState(false);
   const shareMenuRef = useRef<HTMLDivElement>(null);
+  // REGRESSION 2 FIX: "Copied!" cue on the trigger button itself (visible after dropdown closes).
+  const [shareTriggerCopied, setShareTriggerCopied] = useState(false);
+  const shareTriggerCopyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Copy review summary link state — /w/<id>/review
   const [reviewLinkCopied, setReviewLinkCopied] = useState(false);
@@ -410,6 +413,16 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
     });
   }, [id, doSave]);
 
+  /** Show the "Copied ✓" green-fill cue on the Share trigger button for 1.5s. */
+  const flashShareTrigger = useCallback(() => {
+    if (shareTriggerCopyTimer.current) clearTimeout(shareTriggerCopyTimer.current);
+    setShareTriggerCopied(true);
+    shareTriggerCopyTimer.current = setTimeout(() => {
+      setShareTriggerCopied(false);
+      shareTriggerCopyTimer.current = null;
+    }, 1500);
+  }, []);
+
   const copyWorkspaceLink = useCallback(async () => {
     if (!id) return;
     const url = `${window.location.origin}/w/${id}`;
@@ -425,7 +438,8 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
       setWorkspaceLinkCopied(false);
       copyTimer.current = null;
     }, 2000);
-  }, [id]);
+    flashShareTrigger();
+  }, [id, flashShareTrigger]);
 
   const copyStyleGuideLink = useCallback(async () => {
     if (!id) return;
@@ -442,7 +456,8 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
       setStyleGuideCopied(false);
       styleGuideCopyTimer.current = null;
     }, 2000);
-  }, [id]);
+    flashShareTrigger();
+  }, [id, flashShareTrigger]);
 
   // ── Review callbacks ──────────────────────────────────────────────────────
   // Guard #3: gate review mutations behind isHydratedRef so a failed/slow GET
@@ -514,7 +529,8 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
       setReviewLinkCopied(false);
       reviewLinkCopyTimer.current = null;
     }, 2000);
-  }, [id]);
+    flashShareTrigger();
+  }, [id, flashShareTrigger]);
 
   // F6: Copy compliance report link — /w/<id>/check (read-only shareable report)
   const copyReportLink = useCallback(async () => {
@@ -532,7 +548,8 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
       setReportLinkCopied(false);
       reportLinkCopyTimer.current = null;
     }, 2000);
-  }, [id]);
+    flashShareTrigger();
+  }, [id, flashShareTrigger]);
 
   // ── Preview handler ────────────────────────────────────────────────────────
   const handleHistoryPreview = useCallback(
@@ -792,18 +809,37 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
               Guard #6: outside-click closes the menu (useEffect above). */}
           <div className="flex flex-col items-start sm:items-end gap-2 shrink-0">
             <div ref={shareMenuRef} className="relative">
+              {/* REGRESSION 2 FIX: "Copied ✓" green-fill cue on the trigger after any copy action.
+                  The dropdown closes immediately so we show the cue HERE (outside the menu).
+                  aria-live fires so screen readers also hear it. */}
               <button
                 type="button"
                 data-testid="share-menu-btn"
-                aria-label="Share options"
+                aria-label={shareTriggerCopied ? "Copied!" : "Share options"}
                 aria-expanded={shareMenuOpen}
                 aria-haspopup="menu"
                 onClick={() => setShareMenuOpen((prev) => !prev)}
-                className="inline-flex items-center gap-1.5 rounded-md border border-blue-400 bg-white px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-50 transition-colors min-h-[44px]"
+                className={`inline-flex items-center gap-1.5 rounded-md border px-4 py-2 text-sm font-medium transition-colors min-h-[44px] ${
+                  shareTriggerCopied
+                    ? "border-green-500 bg-green-500 text-white"
+                    : "border-blue-400 bg-white text-blue-700 hover:bg-blue-50"
+                }`}
               >
-                <span>Share</span>
-                <span aria-hidden="true" className="text-xs">▾</span>
+                {shareTriggerCopied ? (
+                  <>
+                    <span aria-hidden="true">✓</span>
+                    <span>Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Share</span>
+                    <span aria-hidden="true" className="text-xs">▾</span>
+                  </>
+                )}
               </button>
+              <span role="status" aria-live="polite" className="sr-only">
+                {shareTriggerCopied ? "Link copied!" : ""}
+              </span>
 
               {shareMenuOpen && (
                 <div
