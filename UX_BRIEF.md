@@ -805,3 +805,91 @@ strip ("Live team workspace — a live workspace your team edits together…") i
 clearly distinct from the lighter "Copy share link". On a `/w/<id>` page the first read is the in-flow
 **"Team Workspace — synced"** banner with the live **"All changes saved · saved just now"** status and
 a **"Copy workspace link"** button — the grid/cards sit fully below it, none occluded at 375px.
+
+## Panel Round 2 fixes (2026-06-13) — mode-aware copy, UTM Spec visibility, disambiguation
+
+**Fix 1 — Mode-aware privacy copy.** All copy referencing "browser / server / localStorage / network"
+is now mode-aware:
+- **Local / snapshot mode (main page `/`):**
+  - Toolbar sub-line: "Shareable link is built in your browser — nothing is sent to any server."
+  - Footer: "Everything runs in your browser — no account, no server, no network requests after page
+    load. Grid rows, presets, campaigns, and lint toggles are saved in localStorage."
+- **Workspace mode (`/w/<id>`):**
+  - Toolbar sub-line: "Synced to a private server workspace — anyone with the secret link can view
+    and edit. Changes save automatically."
+  - Footer: "Generated URLs are trimmed of trailing spaces; your source cells are left as typed.
+    Changes are synced to the server workspace automatically — anyone with the secret link can view
+    and edit."
+
+**Fix 2 — Permission note on workspace pages.** Below the "Copy workspace link" button on `/w/<id>`
+pages, a one-line note appears: **"Anyone with this secret link can edit."** (blue, 10px, right-aligned).
+
+**Fix 3 — Copy confirmation on "Copy share link" and "Copy all URLs".** Already shipped in the
+previous build round (green-fill button + "Link copied!" / "Copied!" + aria-live region). Confirmed
+present in both buttons.
+
+**Fix 4 — Disambiguate the two share buttons inside a workspace.** On `/w/<id>` pages:
+- "Copy workspace link" (banner, right side) = the live synced workspace link.
+- "Copy share link" (toolbar) shows a sublabel beneath it: **"Frozen snapshot of the current grid"**
+  (shown only in workspace mode, hidden when the copied state is showing).
+
+**Fix 5 — 1280px desktop layout.** Sticky right column offsets corrected: both header and body cells
+use `right-[116px]` for Generated URL (matching the actual Actions column width of 116px). Generated
+URL column min-width reduced to 240px/220px to reduce cramping at 1280px with sidebar open.
+
+**Fix 6 — UTM Spec visible in workspace mode.** The UTM Spec panel is now shown on `/w/<id>` pages
+in both desktop sidebar and mobile disclosure. Header label: **"Shared UTM taxonomy"**. Sub-line:
+**"Synced to this workspace — your team's shared allowed values, enforced on every cell."** Mobile
+toggle label: **"Shared UTM taxonomy — synced to this workspace"**. Load-sample and Share-spec
+buttons are hidden in workspace mode (spec syncs automatically via workspace PUT).
+
+**Fix 7 — Remove duplicate "Enforce allowed values" control.** The redundant `enforce-taxonomy-link`
+button (a styled link under the lint bar that duplicated the canonical `enforce-spec-toggle` checkbox)
+has been removed. Only the checkbox remains.
+
+## Side-panel behavior at constrained widths — bounded-internal-scroll design (2026-06-13)
+
+At ≤1535px viewport widths (including 1280px laptops), both the Campaigns sidebar and the
+"Shared UTM taxonomy" (UTM Spec) panel remain as an **inline right-hand column** (the
+existing `min-[900px]:flex w-64` layout). The grid table uses a **bounded-internal-scroll**
+approach — the table has comfortable, readable column widths, the inner `overflow-x-auto`
+container scrolls horizontally while the PAGE never scrolls sideways:
+
+**Column widths:**
+- Base URL: 160px min-width
+- utm_source / utm_medium / utm_campaign / utm_term / utm_content: 120px min-width each
+- Generated URL: 250px (fixed) — wide enough for Dana to read a typical final URL inline
+- Actions (Copy/Dup/Del): 116px (fixed)
+- Row checkbox + row number: 32px each
+
+The table's natural width (~1100px+) exceeds the ~960px available area at 1280px+sidebar.
+That is expected and intentional — the INNER container (`overflow-x-auto`, bounded as a
+flex child of the main layout) scrolls internally. The PAGE (`documentElement`) never
+receives horizontal overflow.
+
+**Sticky-pinned columns:**
+- Generated URL: `sticky right-[116px]` (exact Actions column width), `z-20`, solid
+  `bg-white` background — visible at the container's right edge while UTM columns scroll
+- Actions: `sticky right-0`, `z-20`, solid `bg-white` — Copy/Dup/Del always reachable
+- Header sticky cells: `z-30` (above body sticky cells)
+- Row checkbox body cell: `z-30` (above sticky columns for tappability)
+- Header checkbox: `z-20` (in thead, separate stacking layer)
+
+**Why this resolves the Dana vs Marcus/Aisha tension:**
+- Dana (edit 30-50 rows, must scan values): readable 120-250px columns mean she can eyeball
+  utm values and full generated URLs without clicking into each cell or relying on hover.
+  `title` attributes on all UTM inputs provide the full value on hover as a cheap scan aid.
+- Marcus + Aisha (no page overflow at 1280px+sidebar): the bounded `overflow-x-auto`
+  container prevents page-level horizontal scroll. Copy button is sticky-pinned to the
+  container's right edge and always visible/reachable.
+
+**Why not table-fixed / shrink-to-fit:** `table-fixed` with ~960px constraint forced UTM
+columns to ~87px (~6-7 chars visible), making Dana unable to scan values inline. The internal
+scroll approach removes the width constraint entirely — readable columns, no page overflow.
+
+**Why not overlay drawers:** Overlay drawers would hide the sidebar on narrow screens,
+losing the Campaigns/UTM-Spec panels. The bounded-internal-scroll keeps the sidebar visible
+and avoids toggling state to show/hide it.
+
+Mobile card view (≤640px) is unchanged — it uses a separate pure-CSS card layout with no
+horizontal scroll needed (`sm:hidden` / `hidden sm:block` breakpoint CSS only).

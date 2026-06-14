@@ -1,40 +1,25 @@
-# Round 1 — Tester 1 (Priya, senior backend SWE, keyboard-first, skeptical of new tools)
+# Round 1 (re-test) — Tester 1 (Priya, senior backend SWE, keyboard-first, skeptical)
+
+## Prior concerns re-checked
+- "Too much chrome above the single row" — PARTLY worse: a new blue LIVE TEAM WORKSPACE panel now sits above the grid too. Presets/Bulk Edit/Campaigns still there. For a one-link job it's busier, not leaner.
+- "Auto-fix is manual, not on-by-default" — NOT addressed; still a button. (Did its job well: Twitter→twitter, "Social "→trimmed social, lint flagged "Inconsistent utm_medium".)
+- "Keyboard-first paste-a-URL-it-parses" — NOT addressed.
 
 ## Clarity — Yes
-H1 lands in <5s: "Share one link that enforces your team's UTM taxonomy — stop policing
-casing and typos that split your GA4 data." Subline says the job + "no account," and
-"Shareable link is built in your browser — nothing is sent to any server" is what made me
-actually try it instead of bouncing. To a friend: "a spreadsheet-grid UTM builder that lints
-your tags, auto-lowercases them, and runs entirely client-side."
+H1 "Clean UTM links for your whole campaign — in one grid" + "no login, nothing leaves your browser" lands the job in <5s. To a friend: "a client-side grid that builds/lints UTM links and now also gives a live shared link your team co-edits."
 
 ## Value — Yes
-Today I'd hand-edit query strings or use a Google Sheet with a CONCAT formula. This is
-faster: base URL + Twitter/Paid Social/Launch Post → "Auto-fix naming" → one click gave
-`?utm_source=twitter&utm_medium=paid_social&utm_campaign=launch_post`, casing and spaces
-fixed, with per-cell warnings beforehand and a flag for the missing utm_campaign. My sheet
-doesn't lint casing or catch a missing field. "Copy all URLs" gave clean output instantly.
+I hand-edit query strings or copy a teammate's sheet. Building 2 rows + Auto-fix beat fiddling with params and caught casing/trailing-space/inconsistency bugs my sheet never would. Usable for a launch post.
 
-## Verification (the skeptic's checks)
-- Captured all network requests: ZERO POSTs / server calls on build, autofix, copy, or
-  share. The "nothing sent to any server" claim is TRUE — that earns my trust.
-- Share link encodes the whole grid in the URL fragment (`/#g=...`, 406 chars). Opened it
-  in a fresh browser context and the row restored byte-for-byte. Real client-side handoff —
-  this is the one thing that genuinely beats my spreadsheet for sending a teammate UTMs.
-- 0 console errors. At 375px the grid collapses into stacked labeled cards, lint intact,
-  full-width Copy buttons — a teammate opening my link on a phone gets a usable view.
-- Clipboard read was blocked in my headless test env on one path; copy verified visually
-  (label flips to "Link copied!") — env artifact, not an app bug.
+## New feature (Team Workspace) — trust verified
+Discoverable (distinct blue panel). Value lands instantly: "Different from Copy share link, which sends a frozen snapshot." Trust held under MY scrutiny: a clean browser context (real teammate, no localStorage) opened /w/<id> and saw my rows; network tab showed real GET + PUT /api/workspace/<id> autosave; a teammate edit persisted to a THIRD fresh device after reload. "Team Workspace — synced · All changes saved" is honest. Share link (/#g=…) made ZERO network calls = genuinely frozen/local. NOT duplicates.
 
-## Friction holding the score back
-Heavy chrome for the common case: Presets bar, Bulk Edit bar, Lint Rules toggles, and
-Campaigns/UTM Spec side panels all sit above the single row I needed. For one launch link
-it feels busier than a CLI one-liner. And Auto-fix is a manual button, not on-by-default —
-I'd want lint-to-fix as I type. Keyboard-first me wants tab-through + paste-a-URL-it-parses,
-less mouse. Strong tool, not yet a reflex.
+## What blocks a higher score
+The body copy "no server, no network requests after page load" stays on screen INSIDE a synced workspace that demonstrably PUTs to /api — self-contradictory for anyone who checks the network tab, and it nicks the very privacy claim that won me. Plus the unaddressed prior friction (manual auto-fix, no paste-parse, growing chrome).
 
-```
-CLARITY (is the purpose clear in 5s): Yes — H1 + "no account / nothing sent to server" lands the job instantly
-VALUE (would it save you real time): Yes — one-click casing/space lint + verifiably client-side shareable link beats my CONCAT sheet
-ADVOCACY (0-10, would you recommend to a peer): 8 — I'd send it to a teammate doing UTMs; not 9 because it's UI-heavy vs a CLI and auto-fix isn't on by default
-TOP FRICTION: too much chrome for the common one-link case, and auto-fix is a manual click rather than lint-on-type
+## Advocacy — 8
+I'd send this to a teammate over a spreadsheet for a launch. Not 9: the contradictory no-server copy is a credibility ding for engineers, none of my prior friction was fixed, and UTMs are too infrequent in my own work to evangelize unprompted.
+
+```json
+{"tester":1,"name":"Priya","clarity":"Yes","value":"Yes","advocacy":8,"top_problems":["'no server / no network requests' copy persists inside a synced workspace that provably PUTs to /api — self-contradiction caught in the network tab","prior friction unfixed: auto-fix still manual not lint-on-type, no paste-a-URL-it-parses, chrome growing not shrinking"],"likes":["Team Workspace truly server-persists: verified cross-device sync from a clean browser via real GET/PUT /api","workspace vs frozen /#g share link are clearly distinct, not duplicates, and copy explains it","Auto-fix + lint caught casing/trailing-space/inconsistency faster than hand-editing"]}
 ```

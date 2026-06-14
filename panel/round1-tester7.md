@@ -1,40 +1,11 @@
-# Round 1 — Tester 7 (Aisha, Product Designer)
+# Round 1 — Tester 7: Aisha (Product designer, judges craft hard)
 
-A teammate shared this; I judge craft hard — spacing, copy tone, empty states, lint affordances.
+**Clarity (Yes):** Headline "Clean UTM links for your whole campaign — in one grid" + subhead naming the real pain (casing/typos splitting GA, no login) landed in ~3s. The grid below makes the job obvious.
 
-## Clarity — Yes
-The H1 "Share one link that enforces your team's UTM taxonomy — stop policing casing and typos
-that split your GA4 data" plus the verb subhead (build, tag, fix naming, export CSV, no account)
-told me in 5s what it is and who it's for: a growth/marketing team standardizing UTMs. The words
-"Auto-fix naming," "Lint Rules," and "Enforce UTM Spec" are what landed for me.
+**Value (Yes):** I don't build UTMs weekly, but the considered touches earn it: Auto-fix normalized "Twitter"→"twitter", "Social "→"social", green-diffed the changed cells, and gave a reversible "Auto-fixed 4 cells — Undo" toast. That's real craft. The live Team Workspace is genuinely different from the snapshot share — the callout even says "(Different from 'Copy share link', which sends a frozen snapshot.)", which preempts the confusion. I verified a fresh teammate browser saw my rows and my edit synced back; "All changes saved · saved just now" + green dot made me trust it saved. Discoverable (prominent blue panel) and value lands in <5s.
 
-## Value — Yes
-Today I'd hand-build UTMs in a Notion table / shared Google Sheet and nag teammates about casing
-in Slack. The lint toggles + Auto-fix (LinkedIn→linkedin, Paid Social→paid_social, Q2 Launch→
-q2_launch, with an inline "Contains uppercase — use lowercase ('newsletter'). Fix" hint and an
-"Undo" toast) do the policing the sheet can't. The shareable link that carries the spec is the part
-I'd actually advocate — the taxonomy travels, not just the values.
-
-## Craft notes
-Desktop is considered: green-border "fixed" cells, inline "warnings · Fix" affordances, Undo toast,
-preset pills, "nothing is sent to any server" reassurance. Nit: column headers clip (UTM_MEDIUM →
-"UTM_MED", GENERATED URL cramped). I also couldn't tell at a glance whether the violet "Enforce UTM
-Spec" category visually outranks plain amber lint in the grid — off-spec and case warnings read as
-the same amber until you click a cell, so a taxonomy violation doesn't pull my eye on a long grid.
-Mobile (375px) is the standout: genuinely phone-designed, not a squashed table — vertical cards,
-uppercase labels with red required asterisks, full-width inputs, per-card "Copy URL", bulk edit
-collapsed to "Expand," "Select #1" row affordance. Nits: duplicate/trash icons are thin wireframe
-glyphs that read unpolished, and empty GENERATED URL is a bare "–" instead of a "fill required
-fields" hint. (Copy share link verified; clipboard returned the #g= link in my env.)
-
-## Verdict
-```
-CLARITY (is the purpose clear in 5s): Yes — H1 + verb subhead nail the "stop policing UTM casing" job instantly.
-VALUE (would it save you real time): Yes — Auto-fix + lint + spec-in-link replaces my Notion table and Slack nagging.
-ADVOCACY (0-10, would you recommend to a peer): 8 — I'd raise it with my growth team; held back by amber/violet lint not being glance-distinct and minor card-icon/header polish.
-TOP FRICTION: Off-spec (violet "Enforce UTM Spec") cells read as the same amber as plain case/space lint until you click — on a long grid I can't glance-distinguish a typo from a taxonomy violation, which defeats the separate category; plus clipped desktop column headers ("UTM_MED").
-```
+**Advocacy (6/10):** I'd share it, but the craft has a trust-breaking contradiction that stops me from advocating loudly. INSIDE the server-synced /w/ workspace the page still reads "Shareable link is built in your browser — nothing is sent to any server" and the footer "no server, no network requests after page load." That is literally false on a synced page — for a tool whose whole pitch is data hygiene, lying about where data goes is the worst possible inconsistency. Fix that copy on workspace pages and this is an 8. Lesser nits: "Enforce allowed values" appears twice (checkbox + redundant underlined link) — looks like a leftover; and at 1280px the grid is cramped (GENERATED URL overlaps the campaign cell, ACTIONS squeezed off-edge).
 
 ```json
-{"tester": 7, "round": 1, "clarity": "Yes", "value": "Yes", "advocacy": 8, "topComplaints": ["Off-spec/taxonomy violations render the same amber as plain case/space lint in the grid — the violet 'Enforce UTM Spec' distinction isn't glanceable, only one click deep", "Desktop column headers clip (UTM_MEDIUM → 'UTM_MED'); mobile duplicate/trash icons + bare '–' empty generated-URL state feel a notch below the otherwise considered craft"], "priorConcernsAddressed": "n/a"}
+{"tester":7,"name":"Aisha","clarity":"Yes","value":"Yes","advocacy":6,"top_problems":["Synced /w/ workspace still shows 'nothing is sent to any server' + 'no network requests' copy — contradicts the saved-to-server promise and breaks trust","Duplicate 'Enforce allowed values' (checkbox + redundant underlined link) reads as a UI leftover","Grid cramped at 1280px: GENERATED URL overlaps neighbor cell, ACTIONS column squeezed off-edge"],"likes":["Auto-fix with green cell-diff + reversible Undo toast feels considered","Two share modes clearly differentiated by the 'frozen snapshot' parenthetical — not duplicates","'Team Workspace — synced / All changes saved · saved just now' status makes saves trustworthy; server sync verified across fresh browsers"]}
 ```

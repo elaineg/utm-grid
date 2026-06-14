@@ -1,34 +1,15 @@
-# Round 1 — Tester 5 (Dana, demand-gen marketer; tested on 375px phone)
+# Round 1 — Tester 5 (Dana, demand-gen marketer)
 
-**Clarity — Partially.** I'd tell a friend: "It's a grid where you build a batch of UTM-tagged
-campaign links and it auto-fixes casing/spaces so your GA4 doesn't split into garbage." The
-subhead "Build and tag links in a grid… fix naming automatically… no account" nailed it. The
-headline itself is a 5-line wall on my phone ("Share one link that enforces your team's UTM
-taxonomy — stop policing casing and typos…") — too long to parse in 5 seconds, the subhead did
-the real work. "UTM taxonomy" is jargon some of my team wouldn't know.
+**Clarity: Yes.** Headline "Clean UTM links for your whole campaign — in one grid" + subline "Auto-fix messy casing and typos before they split your Google Analytics… no login" nailed my exact Thursday grind in one scroll. No hunting.
 
-**Value — Yes.** Today I do this in a Google Sheet with a CONCATENATE formula I copy every week,
-then eyeball each of 30+ links for stray caps/spaces by hand — ~15 min and I still ship typos.
-This is faster: I filled rows, "Auto-fix naming" turned LinkedIn→linkedin and "paid social"→
-paid_social instantly, the inline "2 warnings — Fix" caught exactly what I miss, "Set column"
-stamped utm_campaign across all 3 rows at once, and Copy all URLs gave me clean links. The
-share-link is the real unlock — opened mine in a fresh phone tab and it loaded "Loaded shared
-grid (3 links)" intact, so I can hand a junior the taxonomy without a meeting.
+**Value: Yes.** I tag 30+ links/week and fight dirty UTMs in GA4. The grid + inline lint ("Contains uppercase — use lowercase only (linkedin) · Fix") + one-click "Auto-fix naming" ("Auto-fixed 6 cells — Undo") replaces the 15-min copy-paste-from-Notion grind. Export CSV + Copy all URLs = drop straight into HubSpot/Ads. This is screenshot-for-the-team-channel good.
 
-**Advocacy — 8.** Phone experience is the genuine surprise: real stacked cards (not a squished
-table), 44px touch targets, every field thumb-reachable, zero horizontal scroll, and the share
-link landed legibly at 375px. I'd screenshot this for our team channel. Not a 9 because the
-headline buries the value, the bulk panel's "Apply to: 3 selected rows" button clips off the
-right edge on my phone, and there's no HubSpot/GA4-style saved presets per channel that persist
-without me re-applying — I want my team's allowed values locked, not re-typed each week.
+**New feature — Team Workspace:** Discoverable (blue banner, top of page, "Create shared workspace"). Value landed in ~5s once I built rows. I trusted it saved: banner flips to "Team Workspace — synced · All changes saved · saved just now" (green dot), URL became /w/<id>, link auto-copied. I opened it as a teammate in a clean browser — saw my exact rows, edited a campaign, and an owner reload picked up the edit from the server. Real live sync. Impressive.
 
-TOP FRICTION: the value lives in the subhead, not the giant headline — and the "Set column"
-bulk feature is hidden behind a small "Expand" toggle I almost missed, which is the exact
-feature that saves me the most time.
+**But two things cost it points:** (1) Inside a workspace, "Copy share link" AND "Copy workspace link" both sit on screen — I can't tell which to hand my teammate without thinking; they read as near-duplicates. The "frozen snapshot vs live" distinction is buried in one grey parenthetical I'd skim past. (2) The persistent line "Shareable link is built in your browser — nothing is sent to any server" is still showing even AFTER I created a server-persisted workspace — that's a flat contradiction. As the person handing a "secret" link to my team, that makes me unsure where my campaign data actually lives.
 
-```
-CLARITY (is the purpose clear in 5s): No — headline is a 5-line wall; the subhead carries it
-VALUE (would it save you real time): Yes — auto-fix + Set column + share link beat my CONCATENATE sheet
-ADVOCACY (0-10, would you recommend to a peer): 8 — real phone app, but value is buried and bulk feature is hidden
-TOP FRICTION: the time-saving "Set column" bulk edit is hidden behind a small "Expand" toggle, and the headline buries the value under "UTM taxonomy" jargon
+**Advocacy: 8.** I'd share the core grid+lint+autofix unprompted today. Holding it back from 9: the share-vs-workspace duplication and the "nothing leaves your browser" copy that contradicts the new feature — fix the two-button confusion and the privacy line and it's a 9.
+
+```json
+{"tester":5,"name":"Dana","clarity":"Yes","value":"Yes","advocacy":8,"top_problems":["'Copy share link' and 'Copy workspace link' both visible in-workspace read as duplicates; snapshot-vs-live distinction buried in grey parenthetical","'Shareable link is built in your browser — nothing is sent to any server' still shown after creating a server-persisted workspace = contradiction, undermines trust in where data lives"],"likes":["Auto-fix naming fixed 6 dirty cells in one click with Undo toast","Inline per-cell lint catches the casing/space typos that split my GA4 campaigns","Team Workspace live sync verified: teammate edit synced cross-context, clear 'synced · saved just now' status"]}
 ```

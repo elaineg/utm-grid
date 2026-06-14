@@ -68,6 +68,10 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestPayloadRef = useRef<WorkspacePayload | null>(null);
 
+  // P0-2: gate autosave — do NOT fire until server payload is fully hydrated into the grid.
+  // Set to true AFTER writeValue seeds the prefixed localStorage keys and UtmGrid has mounted.
+  const isHydratedRef = useRef(false);
+
   // Fetch workspace on mount (after id is resolved)
   useEffect(() => {
     if (!id) return;
@@ -98,11 +102,19 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
         // Server wins on load: write the server payload into the prefixed
         // localStorage keys BEFORE UtmGrid mounts, so useLocalStorage reads
         // the server data on first snapshot — not stale prior-visit data.
-        const prefix = `ws:${id}:`;
-        // Write directly to the store (synchronously, before React render)
-        writeValue(`${prefix}rows`, data.rows, data.rows, 0);
-        writeValue(`${prefix}settings`, data.settings, data.settings, 0);
-        writeValue(`${prefix}spec`, data.spec, data.spec, 0);
+        //
+        // IMPORTANT: key names must match exactly what UtmGrid computes via key(k):
+        //   storageKeyPrefix + k  →  `ws:<id>:utm-grid:rows`  etc.
+        // The prefix passed to UtmGrid is `ws:<id>:` and UtmGrid appends `utm-grid:rows`,
+        // `utm-grid:lint-settings`, and `utm-grid:utm-spec` — so we must write those same
+        // fully-qualified keys here.
+        const wsPrefix = `ws:${id}:`;
+        writeValue(`${wsPrefix}utm-grid:rows`, data.rows, data.rows, 0);
+        writeValue(`${wsPrefix}utm-grid:lint-settings`, data.settings, data.settings, 0);
+        writeValue(`${wsPrefix}utm-grid:utm-spec`, data.spec, data.spec, 0);
+
+        // Mark hydrated BEFORE setStatus so the autosave guard is active when UtmGrid mounts.
+        isHydratedRef.current = true;
 
         setPayload(data);
         latestPayloadRef.current = data;
@@ -145,10 +157,14 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
     }
   }, [id]);
 
-  // Autosave: debounced PUT to server
+  // Autosave: debounced PUT to server.
+  // P0-2 guard: only fires after server payload has been fully seeded into UtmGrid.
+  // UtmGrid already skips the first onStateChange emission (didMountOnStateChange ref),
+  // but this extra guard prevents any PUT before hydration completes (belt + suspenders).
   const handleStateChange = useCallback(
     (next: WorkspacePayload) => {
       if (!id) return;
+      if (!isHydratedRef.current) return;
       latestPayloadRef.current = next;
 
       if (saveTimer.current) clearTimeout(saveTimer.current);
@@ -328,30 +344,36 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
           </span>
           {renderSyncStatus()}
         </div>
-        <button
-          type="button"
-          data-testid="copy-workspace-link"
-          aria-label="Copy workspace link"
-          onClick={() => void copyWorkspaceLink()}
-          className={`shrink-0 rounded-md border px-4 py-2 text-sm font-medium transition-colors duration-200 min-h-[44px] ${
-            workspaceLinkCopied
-              ? "border-green-500 bg-green-500 text-white"
-              : "border-blue-400 bg-white text-blue-700 hover:bg-blue-50"
-          }`}
-        >
-          {workspaceLinkCopied ? (
-            <span className="inline-flex items-center gap-1.5">
-              <span>✓</span>{" "}
-              <span>Workspace link copied!</span>
-            </span>
-          ) : (
-            "Copy workspace link"
-          )}
-        </button>
-        {/* aria-live region for screen readers on copy */}
-        <span role="status" aria-live="polite" className="sr-only">
-          {workspaceLinkCopied ? "Workspace link copied!" : ""}
-        </span>
+        <div className="flex flex-col items-end gap-1 shrink-0">
+          <button
+            type="button"
+            data-testid="copy-workspace-link"
+            aria-label="Copy workspace link"
+            onClick={() => void copyWorkspaceLink()}
+            className={`rounded-md border px-4 py-2 text-sm font-medium transition-colors duration-200 min-h-[44px] ${
+              workspaceLinkCopied
+                ? "border-green-500 bg-green-500 text-white"
+                : "border-blue-400 bg-white text-blue-700 hover:bg-blue-50"
+            }`}
+          >
+            {workspaceLinkCopied ? (
+              <span className="inline-flex items-center gap-1.5">
+                <span>✓</span>{" "}
+                <span>Workspace link copied!</span>
+              </span>
+            ) : (
+              "Copy workspace link"
+            )}
+          </button>
+          {/* Fix 2: permission note — anyone with the link can edit */}
+          <span className="text-[10px] text-blue-600 text-right leading-tight">
+            Anyone with this secret link can edit.
+          </span>
+          {/* aria-live region for screen readers on copy */}
+          <span role="status" aria-live="polite" className="sr-only">
+            {workspaceLinkCopied ? "Workspace link copied!" : ""}
+          </span>
+        </div>
       </div>
 
       {/* The UtmGrid editor, seeded from server payload, in workspace mode.

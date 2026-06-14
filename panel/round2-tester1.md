@@ -1,31 +1,14 @@
-# Round 2 — Tester 1 (Priya, senior backend SWE, keyboard-first, skeptical)
+# Round 2 — Tester 1 (Priya, senior backend SWE, network-tab skeptic)
 
-## Prior concerns re-checked (cold, network tab open: 0 server POSTs, 0 console errors)
-- "Too much chrome for the single-link case": NOT fixed. Hero shrank, but below it the Presets
-  bar, Bulk Edit bar, Lint Rules row, and Campaigns + UTM Spec side panels all still sit above
-  the one row I need. For a single launch link it's the same wall of UI as round 1.
-- "Auto-fix is a manual button, not lint-on-type": PARTIALLY. utm_source lowercased "Twitter"
-  →"twitter" live as I typed, but utm_medium stayed "Launch%20Post" in the generated URL until
-  I clicked "Auto-fix naming". Inconsistent — some cells lint live, others don't.
+## My R1 blocker — RESOLVED (verified live)
+The self-contradiction is gone. On /w/<id> the footer now reads "Changes are synced to the server workspace automatically — anyone with the secret link can view and edit"; banner says "Synced to a private server workspace." The "no server / no network requests" line is no longer on the workspace page. Network tab confirms a real `GET /api/workspace/<id>` on load, and a fresh teammate context (no localStorage) saw my row + synced banner. On the MAIN page the client-side copy ("nothing leaves your browser… saved in localStorage") remains — and NET=[] confirms it's true there. Mode-aware copy is honest. The secret-link warning "Anyone with this secret link can edit." sits right under Copy workspace link.
 
-## Fresh judgment
-Clarity: shorter H1 "Clean UTM links for your whole campaign — in one grid" + plain subline
-("no login, nothing leaves your browser") lands the job in <5s. Good.
-Keyboard win: tab order is now correct (base→source→medium→campaign→term→content) — real plus.
-Value: still beats my CONCAT sheet on casing/space lint and the client-side share link.
-But the claimed "improved shared-link landing" didn't show for me: opening a /#g= share link
-rendered the same cold homepage with no "a teammate shared this grid" banner orienting a
-recipient — for skeptical me it reads as the generic home, not a received handoff.
+## Clarity — Yes. H1 + "Different from Copy share link, which sends a frozen snapshot" lands the job and the two share modes in seconds.
+## Value — Yes. Beats hand-editing query strings or a teammate's sheet; Auto-fix + lint caught casing; workspace genuinely server-syncs cross-device.
 
-## What still caps the score
-Strong for a BATCH of links; for the one-link launch case a teammate sent me, it's heavier
-than a CLI one-liner and the auto-fix is half-live / half-manual. Not yet a reflex over a sheet
-for a single link.
+## Advocacy — 8. Moved from credibility-ding to clean trust, but NOT to 9.
+Still blocking 9: (1) prior friction unfixed — Auto-fix is still a manual button not lint-on-type, and no paste-a-URL-it-parses flow; for a keyboard-first engineer that's the gap to "faster than a CLI." (2) Minor: at 1280px the "Shared UTM taxonomy" side panel overlaps the right of the GENERATED URL/ACTIONS columns. (3) I tag UTMs too rarely to evangelize unprompted. I'd send it to a teammate over a spreadsheet — just not spontaneously.
 
-```
-CLARITY (purpose clear in 5s): Yes — shorter H1 + "no login, nothing leaves your browser" lands it fast
-VALUE (saves real time): Yes — live source-lint + client-side share link beat my CONCAT sheet, more for batches than singles
-ADVOCACY (0-10): 8 — same as round 1; tab order improved but single-link chrome and inconsistent live-lint still cap it
-PRIOR CONCERNS ADDRESSED: Partially — keyboard tab order fixed; chrome unchanged, auto-fix only partly lint-on-type
-TOP FRICTION: for the common single-link case it's still a full grid of presets/bulk/panels, and medium isn't lowercased until I click Auto-fix
+```json
+{"tester":1,"name":"Priya","clarity":"Yes","value":"Yes","advocacy":8,"prior_blocker_resolved":true,"top_problems":["Auto-fix still a manual button not lint-on-type; no paste-a-URL-it-parses keyboard flow — not yet 'faster than a CLI'","At 1280px the 'Shared UTM taxonomy' side panel overlaps the right edge of GENERATED URL/ACTIONS columns"],"likes":["Mode-aware privacy copy now honest: /w/ says server-synced, main page client-side — verified in network tab (GET /api/workspace + clean teammate sync)","'Anyone with this secret link can edit' warning present and well-placed","Workspace vs frozen /#g share link clearly disambiguated ('Frozen snapshot of the current grid')"]}
 ```

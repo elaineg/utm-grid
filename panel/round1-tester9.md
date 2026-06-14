@@ -1,38 +1,27 @@
-# Elena — Re-test (EM, 8 reports; tested on PHONE @375px, 30s budget)
+# Elena — re-test (EM, 8 reports, 30s budget; checked laptop + phone @375px)
 
-PRIOR CONCERNS, re-checked explicitly on mobile:
-- (a) "Killer feature — shareable enforced spec — buried, absent from hero": **FIXED.** The
-  hero now literally leads with "Share one link that enforces your team's UTM taxonomy — stop
-  policing casing and typos." Exactly what I asked for. (Side effect below: it's now too long
-  for a phone screen.)
-- (b) "Recipient sees no banner saying 'this link enforces <team>'s UTM spec'": **NOT FIXED.**
-  Opened my own share link in a fresh mobile context — still lands in the full editor, no
-  banner, no "your teammate shared an enforced spec" framing. Confirmed programmatically: no
-  such text on the recipient page.
-- (c) "'Fix to' button under an overlapping warnings popover, fiddly to tap": **FIXED.** On
-  mobile the inline "Fix" link is present and tapped cleanly, no overlap.
+PRIOR holdout (recipient/standardize gap → real shared team source-of-truth): ADDRESSED.
+Built 2 rows, hit "Create shared workspace" → got a real server `/w/<id>` link with a
+"Team Workspace — synced · All changes saved" banner. HARD test: a fresh browser (no
+localStorage) loaded my rows from the server; teammate A edited a cell to "webinar" and a
+SEPARATE fresh teammate B opened the same link and saw "webinar." Cross-device, cross-person
+live edit genuinely persists. This is the thing I held out for — it's here and it works.
 
-CLARITY — No (for a 5s phone skim). The hero is now a 5-line bold wall that fills my whole
-screen: "Share one link that enforces your team's UTM taxonomy — stop policing casing and
-typos that split your GA4 data." The MESSAGE is right, but as a thumb-skim it's too dense; the
-job ("make clean, enforced UTM links") should be the first four words. The subhead "Build and
-tag links... export clean CSV — no account" is what actually lands.
+CLARITY — Yes. Headline "Clean UTM links for your whole campaign — in one grid" landed in
+<5s. The blue LIVE TEAM WORKSPACE box pre-answers my question: "Different from 'Copy share
+link', which sends a frozen snapshot." Distinct, discoverable on mobile too, setup-free.
 
-VALUE — Yes. Today my reports hand-edit UTMs in a Google Sheet and half ship `Paid Social`
-(space) or `LinkedIn` (caps), splitting GA4. I typed messy values, hit "Auto-fix naming," and
-got `linkedin / paid_social / q3` instantly, zero setup. On mobile the grid collapses to clean
-stacked cards with inline warnings + a working Fix. This beats the Sheet, which enforces
-nothing.
+VALUE — Yes. A report asked if we should standardize on it. Today they hand-edit UTMs in a
+Google Sheet and ship dirty casing that splits GA4. Now I can give 8 people one live link,
+zero onboarding, with auto-fix lint enforcing hygiene. That's a real every-campaign use.
 
-ADVOCACY — 7 (held flat from last time, honestly). Two of my three blockers are fixed, which
-is real progress, but the score doesn't move because the remaining gap is the one that matters
-for "standardize on this": the RECIPIENT experience. When my report opens the link on their
-phone they get the full editor with no banner telling them it's an enforced team spec, and the
-shared row arrives with the un-fixed dirty values + a URL still containing `Paid%20Social` —
-they must notice the warning and tap Fix themselves. A hurried report copies a dirty link. For
-me to forward this to 8 people unprompted (a 9), the recipient view has to be foolproof and
-self-explaining. It isn't yet.
+ADVOCACY — 8. I'd bring it to the report unprompted. Not 9 because of one trust wrinkle: the
+workspace page STILL shows the footer "no server, no network requests after page load… runs
+in your browser" — flatly false on a synced /w/ page, and that contradiction makes me second-
+guess whether edits really persist (they do; the copy lies). Plus last-write-wins with no
+presence indicator makes me mildly nervous about two reports silently clobbering each other.
+Fix the contradictory copy and add a "who's editing" hint and I'm at 9.
 
 ```json
-{"tester": 9, "round": 2, "clarity": "No", "value": "Yes", "advocacy": 7, "topComplaints": ["Recipient of a shared link lands in the full editor with NO banner explaining it enforces my team's UTM spec, and the shared row arrives un-fixed (URL still has %20) so a hurried report copies a dirty link", "Hero is a 5-line wall of text on a phone — message is right but the job isn't skimmable in 5s; lead with the action, not the GA4 explanation"], "priorConcernsAddressed": "some"}
+{"tester":9,"round":3,"clarity":"Yes","value":"Yes","advocacy":8,"topComplaints":["Workspace /w/ page still shows 'no server / nothing leaves your browser' footer — contradicts the live sync and dents trust that edits actually persist for the team","Last-write-wins with no presence/lock indicator risks two reports silently clobbering each other mid-edit"],"priorConcernsAddressed":"all"}
 ```

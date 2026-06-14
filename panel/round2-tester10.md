@@ -1,15 +1,17 @@
-# Round 2 — Tester 10 (Sam, PM, mobile-heavy)
+# Round 2 — Tester 10 (Sam, PM, mobile-heavy, 375px)
 
-PRIOR CONCERNS RE-CHECKED (round 1, advocacy 7):
-1. Dense 6-line headline → FIXED. Now "Clean UTM links for your whole campaign — in one grid." (2 lines) with a plain subhead, and the toolbar (Add row / Auto-fix / Export / Copy share link) sits above the fold. Read it in ~3s.
-2. Shared-link handoff → FIXED. I built 2 messy rows on my phone, hit Auto-fix (LinkedIn/Paid Social → linkedin/paid_social), copied the link, opened it fresh at 375px. The big marketing H1 is gone — replaced by tiny "UTM Grid — shared link loaded" plus a pinned blue banner: "Loaded shared grid (2 links) / Edit any cell to make them yours." Both rows reproduce cleanly with full generated URLs. It finally reads as "here's the grid Sam sent," not a marketing page.
+PRIOR BLOCKERS RE-CHECKED (from my last verdict, advocacy 8):
+- #1 contradictory "nothing sent to server / saved in localStorage" on a synced /w/ page → RESOLVED. Copy is now mode-aware. On /w/ the header reads "Synced to a private server workspace — anyone with the secret link can view and edit. Changes save automatically." and the footer reads "Changes are synced to the server workspace automatically." The browser-only/localStorage claim now appears ONLY on the main page (verified — accurate, since the main grid is local).
+- #2 no "anyone with this link can edit" permission note → RESOLVED. "Anyone with this secret link can edit." sits directly under the "Copy workspace link" button — exactly the line I wanted before pasting in Slack.
 
-STILL NIGGLING: "LINT RULES" / "Enforce your team's UTM taxonomy" jargon survives on both the home and shared views — fine for me, but a non-marketer teammate opening my link still meets "lint/taxonomy." And the recipient still scrolls past the full toolbar + presets + lint block to reach the actual rows; the banner helps but the rows aren't pinned right beneath it.
+CLARITY: Yes. In ~3s: "batch-build your campaign's UTMs in one grid, it auto-cleans casing/typos, and you can share a live link your team edits together, no login." Helped: H1 "Clean UTM links for your whole campaign — in one grid" and the LIVE TEAM WORKSPACE box spelling out live-vs-snapshot.
 
-```
-CLARITY (purpose clear in 5s): Yes — short 2-line headline + plain subhead, grid/toolbar above the fold
-VALUE (saves real time): Yes — auto-cleaned a messy batch and produced a drop-in shared grid my UTM Sheet can't do
-ADVOCACY (0-10): 9 — share link now lands on "Loaded shared grid (2 links)", a clean handoff I'd forward a teammate unprompted
-PRIOR CONCERNS ADDRESSED: Yes — both the headline and the share-landing summary are fixed
-TOP FRICTION: recipient still scrolls past toolbar/presets/"lint/taxonomy" jargon to reach the shared rows; banner helps but rows aren't pinned directly beneath it
+VALUE: Yes. Today = Google Sheet + Slack screenshot; casing always drifts and splits my GA4/Amplitude. Built a row, hit Create shared workspace, got a /w/ link, opened it in a CLEAN mobile browser and my "Newsletter" data was there (real cross-device sync, not a snapshot). Lint flagged Newsletter/Email/Summer Launch with inline "Fix". Replaces the sheet-and-screenshot dance.
+
+ADVOCACY: 9. Up from 8. Both trust gaps that held me at 8 are gone, sync re-verified in a fresh browser, zero console errors, mobile layout clean. I'd bring this up unprompted to a launch team. Held off 10 by one nit, not a blocker: the GENERATED URL still shows the un-fixed dirty values (Newsletter/Email/Summer%20Launch) until you click Auto-fix — a hurried PM could copy a dirty URL despite the lint warnings right above it.
+
+LIKES: mode-aware server/local copy now correct on /w/; explicit edit-permission line under the share button; live cross-device sync re-verified in a clean browser; inline per-cell lint with Fix; clean 375px layout; zero console errors.
+
+```json
+{"tester":10,"name":"Sam","clarity":"Yes","value":"Yes","advocacy":9,"prior_blocker_resolved":true,"top_problems":["Generated URL still shows un-fixed dirty casing (Newsletter/Email/Summer%20Launch) until Auto-fix is clicked — a rushed PM could copy a dirty URL despite lint warnings above it","Copy-URL is per-row; no one-tap 'auto-fix then copy all' to guarantee every shared link is clean"],"likes":["Mode-aware copy: /w/ page correctly says synced to private server workspace; localStorage claim only on main page","'Anyone with this secret link can edit' shown directly under Copy workspace link","Live cross-device sync re-verified in a clean mobile browser","Inline per-cell lint with Fix affordance","Clean 375px mobile layout, zero console errors"]}
 ```

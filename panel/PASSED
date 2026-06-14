@@ -1,1 +1,1 @@
-2026-06-13 (run 20260613-150256-daily) round 4: PASSED 9/10 at advocacy>=9 (clarity+value=Yes). Passing: Aisha9 Jules9 Marcus9 Wen9 Tomas9 Dana9 Sam9 Elena9 Rob9; holdout Priya7 (CLI-bias, narrow same-tab hashchange edge). Mobile card layout feature.
+20260613-171855-daily round4: 9/10 PASS (Wen,Tomás,Dana,Jules,Rob,Elena,Sam,Marcus,Aisha ≥9; Priya structural 8). Feature: Team Workspace (Turso-backed shared /w/<id>). Verified preview: https://utm-grid-fq49igqhc-elainegao.vercel.app

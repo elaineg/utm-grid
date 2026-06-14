@@ -1,29 +1,13 @@
-# Round 3 — Tester 5 (Dana, demand-gen marketer; 375px phone)
+# Round 3 — Tester 5 (Dana, demand-gen marketer) — grid-layout re-check (desktop)
 
-**Prior concern re-checked (round 2 off-10 reason):** "Presets are suggestions, not enforced team
-rules." ADDRESSED. First screen now has a top-level **NAMING RULES → "Enforce allowed values"**
-checkbox ("Enforce your team's UTM taxonomy") plus a collapsed **"Allowed values — catch typos before
-they split your analytics"** section. That's exactly the lock I asked for.
+**Layout change verdict: minor regression, not a blocker.** The new fixed-layout table clips hard: UTM input cells are ~87px and show only ~6-7 chars ("paid_sc", "spring_", "linkedi"), and the GENERATED URL column reads "https://acme.com…". So I CANNOT eyeball-verify a value or a final URL inline anymore — I have to click into a cell or hit Copy. At 30-50 rows that's real friction. BUT: per-row **Copy puts the full, correct URL on the clipboard** (verified: `...?utm_source=linkedin&utm_medium=paid_social&utm_campaign=spring_launch_2026`), and **Copy all URLs** dumped all rows clean. Verification still works — just by copy, not by sight. Typing is fine; reading-back is the cost.
+**Bulk Set column works** — set utm_source=linkedin across all 4 rows in one click; find&replace present. Grid stayed fast, 0 console errors.
+**Round-2 wins all hold:** distinct "Copy share link" vs "LIVE TEAM WORKSPACE / Create shared workspace" (frozen vs live cleanly separated), mode-aware sync copy, per-row Copy. Nothing I flagged before regressed.
 
-**The change I was told to judge — bulk edit collapsed:** Still trivially findable. One-line labeled
-header "BULK EDIT — set or replace a column across rows ▼"; one tap expands the full toolbar (Column
-picker, Set column, Find & replace, "Apply to: all 1 row" pill) — same tools I praised, no clipping,
-scrollWidth stayed 375. Collapsing it HELPED: the first screen is lighter and the headers (Presets /
-Campaigns / Allowed values / Bulk edit) read like a clean menu of what's available without scrolling
-through open panels. One extra tap on a phone is nothing; I lost no function.
+**Clarity: Yes.** Same headline nailed my Thursday grind in one scroll.
+**Value: Yes.** Still kills the 15-min grind; bulk Set is exactly my batch workflow.
+**Advocacy: 8.** Down one, honestly: the cell/URL truncation means I can't scan the grid to sanity-check values before export — I trust Copy, but editing 40 rows I want to SEE the campaign string and the generated URL without clicking each cell. Give the GENERATED URL column hover-to-expand or wider min-width and I'm back to 9.
 
-**Clarity — Yes.** 2-line hero + plain subhead, grid + buttons one scroll down. No jargon up top.
-
-**Value — Yes.** Beats my CONCATENATE sheet: auto-fix, bulk Set column, Presets, share link, and now
-enforced allowed values so a junior can't quietly type "Email" vs "email". Recurring weekly win.
-
-**Advocacy — 9 (hold).** Enforced values closes my last gap and the collapse is a net improvement, so
-this is a confident 9, not a polite one. Off 10 only because allowed values/campaigns live in MY
-browser's localStorage — no real cross-device team sync, so "our team's taxonomy" is per-device until
-someone re-shares the link. That's the one thing between me and an unprompted 10.
-
-CLARITY (purpose clear in 5s): Yes — short hero, plain subhead, clean labeled section headers
-VALUE (saves real time): Yes — auto-fix + bulk Set column + enforced allowed values beat my weekly sheet
-ADVOCACY (0-10): 9 — every prior friction fixed; collapse made it cleaner, I'd screenshot it today
-PRIOR CONCERNS ADDRESSED: Yes — enforced allowed values added; bulk edit still one-tap findable
-TOP FRICTION: allowed values/campaigns are localStorage-only, so team taxonomy doesn't sync across devices
+```json
+{"tester":5,"name":"Dana","clarity":"Yes","value":"Yes","advocacy":8,"prior_blocker_resolved":true,"top_problems":["Fixed-layout clips UTM cells (~87px, ~6 chars) and GENERATED URL column ('https://acme.com…') — can't eyeball-verify values/final URLs inline at 30-50 rows; must click in or Copy","No hover/expand on truncated generated-URL cell to confirm the full link by sight"],"likes":["Bulk Set column applied across all rows in one click — matches my weekly batch","Per-row Copy and Copy all URLs deliver full correct URLs despite visual truncation","Round-2 wins intact: distinct share vs live-workspace buttons, mode-aware sync copy, no regression"]}
+```

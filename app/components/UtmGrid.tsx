@@ -949,6 +949,7 @@ export function UtmGrid({
   // P1: collapsible panel state — collapsed by default on cold open
   const [lintRulesExpanded, setLintRulesExpanded] = useState(false);
 
+
   const toggle = (settingKey: keyof LintSettings, label: string) => (
     <label className="flex items-center gap-1.5 text-sm text-gray-700">
       <input
@@ -1121,6 +1122,12 @@ export function UtmGrid({
           <span role="status" aria-live="polite" className="text-xs font-medium text-green-600 min-h-[1em]">
             {shareLinkCopied ? "Link copied!" : ""}
           </span>
+          {/* Fix 4: in workspace mode, clarify this is a frozen snapshot, not the workspace link */}
+          {isWorkspaceMode && !shareLinkCopied && (
+            <span className="text-[10px] text-gray-400 leading-tight max-w-[10rem]">
+              Frozen snapshot of the current grid
+            </span>
+          )}
           {shareEmptyWarning && (
             <span role="alert" className="text-xs text-amber-700">
               Nothing to share yet
@@ -1199,23 +1206,6 @@ export function UtmGrid({
               ) : null;
             })()}
           </div>
-          {/* P0-2: functional link always visible — opens/turns on Enforce + scrolls to UTM Spec */}
-          <button
-            type="button"
-            data-testid="enforce-taxonomy-link"
-            onClick={() => {
-              if (!spec.enforceSpec) setSpec({ ...spec, enforceSpec: true });
-              setLintRulesExpanded(true);
-              const panel = document.querySelector("[data-testid='utm-spec-panel']");
-              if (panel) {
-                panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
-                panel.dispatchEvent(new CustomEvent("utm-spec-open"));
-              }
-            }}
-            className="mt-0.5 text-[10px] text-violet-600 hover:text-violet-800 underline underline-offset-2 text-left cursor-pointer block"
-          >
-            Enforce allowed values
-          </button>
           {/* Collapsible: the remaining three toggles + legend */}
           {lintRulesExpanded && (
             <div className="mt-2 flex flex-wrap items-center gap-4">
@@ -1237,10 +1227,16 @@ export function UtmGrid({
         </div>
       </div>
 
-      {/* Privacy reassurance for share link */}
-      <p className="text-xs text-gray-400 -mt-2">
-        Shareable link is built in your browser — nothing is sent to any server.
-      </p>
+      {/* Privacy reassurance — mode-aware (Fix 1). */}
+      {isWorkspaceMode ? (
+        <p className="text-xs text-gray-400 -mt-2">
+          Synced to a private server workspace — anyone with the secret link can view and edit. Changes save automatically.
+        </p>
+      ) : (
+        <p className="text-xs text-gray-400 -mt-2">
+          Shareable link is built in your browser — nothing is sent to any server.
+        </p>
+      )}
 
       {/* "Create shared workspace" accent strip — always visible in flow above the grid.
           Shown only in default (non-workspace) mode per UX brief §1.
@@ -1301,9 +1297,9 @@ export function UtmGrid({
       />
 
       {/* Mobile campaigns + UTM Spec disclosures — above grid, below toolbar.
-          Hidden in workspace mode (campaigns are local-only, not part of workspace payload). */}
-      {!isWorkspaceMode && (
-        <div className="min-[900px]:hidden flex flex-col gap-1">
+          Campaigns hidden in workspace mode (local-only). UTM Spec shown in all modes. */}
+      <div className="min-[900px]:hidden flex flex-col gap-1">
+        {!isWorkspaceMode && (
           <CampaignsSidebar
             campaigns={campaigns}
             openCampaignId={openCampaignId}
@@ -1317,17 +1313,18 @@ export function UtmGrid({
             savedFlash={savedFlash}
             mobileOnly
           />
-          {/* UTM Spec mobile disclosure — collapsed by default */}
-          <UtmSpecPanel
-            spec={spec}
-            onChange={setSpec}
-            onLoadSample={handleLoadSample}
-            onShareSpec={() => void copyShareLink()}
-            specLinkCopied={shareLinkCopied}
-            mobileOnly
-          />
-        </div>
-      )}
+        )}
+        {/* UTM Spec mobile disclosure — shown in all modes; workspace-labeled when in workspace mode */}
+        <UtmSpecPanel
+          spec={spec}
+          onChange={setSpec}
+          onLoadSample={isWorkspaceMode ? undefined : handleLoadSample}
+          onShareSpec={isWorkspaceMode ? undefined : () => void copyShareLink()}
+          specLinkCopied={isWorkspaceMode ? undefined : shareLinkCopied}
+          workspaceMode={isWorkspaceMode}
+          mobileOnly
+        />
+      </div>
 
       {/* Bulk edit bar — directly above grid header, below toolbar (per UX brief §Round 6 §2) */}
       <BulkEditBar
@@ -1361,28 +1358,41 @@ export function UtmGrid({
         <div className="min-w-0 flex-1">
 
           {/* ── TABLE VIEW (sm and up) ──────────────────────────────────────── */}
-          {/* P0-1: overflow-x-auto on THIS wrapper ensures the table scrolls horizontally
-              INSIDE its container — the page never scrolls sideways.
-              min-w-[1200px] on the table guarantees all UTM column headers (utm_campaign,
-              utm_term, utm_content) stay fully readable with the sidebar open at 1280–1440px.
-              whitespace-nowrap on header cells prevents any mid-word truncation. */}
+          {/* Bounded-internal-scroll design (round 4 fix):
+              The table has comfortable, readable column widths (UTM inputs ~120-130px each,
+              Generated URL ~250px, base URL ~160px) so Dana can scan values inline.
+              The table's natural width exceeds the ~960px available at 1280px+sidebar —
+              that's expected and fine. The page NEVER scrolls horizontally because this
+              overflow-x-auto container is bounded by the flex layout (proper sibling of
+              the Campaigns sidebar), so its right edge stops at the sidebar's left edge.
+              Generated URL (sticky right-[116px]) and Actions (sticky right-0) are
+              pinned to THIS container's right edge with a solid opaque background and
+              z-index above the scrolling middle columns, so they remain fully visible
+              while the middle UTM columns scroll under them. The Actions column is
+              116px wide; sticky offset for Generated URL matches that exactly. */}
           <div className="hidden sm:block overflow-x-auto rounded-lg border border-gray-200 bg-white">
-          <table className="w-full min-w-[1200px] border-collapse text-sm">
+          <table className="border-collapse text-sm" style={{ minWidth: "1100px" }}>
             <thead>
               <tr className="border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase">
                 {/* Bulk-selection checkbox header
                     Fix 1: relative + z-20 so this column sits above the sticky-right
-                    Generated-URL / Actions columns (z-10) on narrow/375px viewports. */}
-                <th className="relative z-20 w-8 px-2 py-2.5 text-center bg-gray-50">
+                    Generated-URL / Actions columns (z-10) on narrow/375px viewports.
+                    With new layout sticky body cells are z-20, header sticky cells z-30 —
+                    z-20 here is fine since this is in the thead (separate stacking layer). */}
+                <th className="relative z-20 w-8 px-2 py-2.5 text-center bg-gray-50" style={{ minWidth: "32px" }}>
                   <SelectAllCheckbox
                     rows={rows}
                     selectedRowIds={selectedRowIds}
                     onToggleAll={toggleSelectAll}
                   />
                 </th>
-                <th className="w-8 px-2 py-2.5" aria-label="Row number" />
+                <th className="w-8 px-2 py-2.5" style={{ minWidth: "32px" }} aria-label="Row number" />
                 {COLUMNS.map((c) => (
-                  <th key={c} className="px-2 py-2.5 whitespace-nowrap">
+                  <th
+                    key={c}
+                    className="px-2 py-2.5 whitespace-nowrap"
+                    style={{ minWidth: c === "baseUrl" ? "160px" : "120px" }}
+                  >
                     {FIELD_LABELS[c]}
                     {settings.requiredParams &&
                       ["utm_source", "utm_medium", "utm_campaign"].includes(c) && (
@@ -1392,10 +1402,15 @@ export function UtmGrid({
                       )}
                   </th>
                 ))}
-                <th className="sticky right-[108px] z-10 min-w-[280px] bg-gray-50 px-2 py-2.5 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] whitespace-nowrap">
+                {/* Generated URL: sticky, pinned 116px from right (= Actions width).
+                    Wide enough (250px) so Dana can read a typical final URL inline.
+                    Solid bg (bg-gray-50) so scrolling middle columns slide under cleanly.
+                    z-30 so header cells float above body sticky cells (z-20) + scrolling cells (z-[11]). */}
+                <th className="sticky right-[116px] z-30 bg-gray-50 px-2 py-2.5 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] whitespace-nowrap" style={{ minWidth: "250px", width: "250px" }}>
                   Generated URL
                 </th>
-                <th className="sticky right-0 z-10 w-[108px] bg-gray-50 px-2 py-2.5 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] whitespace-nowrap">
+                {/* Actions: sticky right-0, 116px wide. z-30 same as Generated URL header. */}
+                <th className="sticky right-0 z-30 bg-gray-50 px-2 py-2.5 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] whitespace-nowrap" style={{ minWidth: "116px", width: "116px" }}>
                   Actions
                 </th>
               </tr>
@@ -1418,9 +1433,9 @@ export function UtmGrid({
                     }`}
                   >
                     {/* Per-row bulk-selection checkbox
-                        Fix 1: relative + z-20 so checkbox stays above the sticky-right
-                        Generated-URL / Actions columns (z-10) on 375px viewports. */}
-                    <td className="relative z-20 px-2 py-2 text-center bg-inherit" onClick={(e) => e.stopPropagation()}>
+                        z-30: above sticky body cells (z-20) so checkbox is tappable
+                        even when the sticky columns are at the same horizontal position. */}
+                    <td className="relative z-30 px-2 py-2 text-center bg-white" onClick={(e) => e.stopPropagation()}>
                       <input
                         type="checkbox"
                         checked={isBulkChecked}
@@ -1479,10 +1494,10 @@ export function UtmGrid({
                         /* relative z-[11]: creates stacking context above sticky right
                            columns (z-10) so warning popovers and "Fix to" chips are
                            tappable on mobile at every horizontal scroll position. */
-                        <td key={field} className="relative z-[11] px-2 py-2">
-                          {/* pr-7 + min-w-[8.5rem] ensures the native datalist caret and a 10–12 char
-                              allowed value (e.g. "newsletter") display whole without clipping.
-                              UTM fields get a wider min-width than baseUrl which benefits from more free space. */}
+                        <td key={field} className="relative z-[11] px-2 py-2 overflow-hidden" style={{ minWidth: field === "baseUrl" ? "160px" : "120px" }}>
+                          {/* Column width is set by the th minWidth above.
+                              Inputs use w-full to fill the cell for readable display.
+                              title attr shows full value on hover — cheap scan aid for Dana. */}
                           <input
                             value={row[field]}
                             onChange={(e) => updateCell(row.id, field, e.target.value)}
@@ -1490,9 +1505,10 @@ export function UtmGrid({
                             aria-label={`${FIELD_LABELS[field]} row ${i + 1}`}
                             aria-invalid={!!cellWarnings && !isPresetFreshRequired}
                             placeholder={isPresetFreshRequired ? "Add a campaign name" : field === "baseUrl" ? "https://…" : ""}
+                            title={row[field] || undefined}
                             spellCheck={false}
                             list={datalistId}
-                            className={`w-full rounded-md border pl-2 pr-7 py-1.5 font-mono text-xs focus:outline-none transition-colors duration-300 ${field === "baseUrl" ? "min-w-36" : "min-w-[8.5rem]"} ${
+                            className={`w-full rounded-md border pl-2 pr-7 py-1.5 font-mono text-xs focus:outline-none transition-colors duration-300 ${
                               isFlashing
                                 ? "border-green-400 bg-green-50"
                                 : cellWarnings && hasOffSpec
@@ -1555,21 +1571,24 @@ export function UtmGrid({
                         </td>
                       );
                     })}
-                    {/* Sticky Generated URL — min-w-[280px] keeps it readable; title tooltip
-                        shows the full URL on hover so Priya can read the final tagged URL. */}
-                    <td className="sticky right-[108px] z-10 px-2 py-2 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] bg-inherit">
+                    {/* Sticky Generated URL — 250px wide so Dana can read a typical URL inline.
+                        right-[116px] pins it 116px from the container's right edge (= Actions width).
+                        bg-white (solid opaque) so scrolling middle columns slide cleanly under.
+                        z-20 so it floats above scrolling cells (z-[11]) but below the checkbox col (z-20 same level). */}
+                    <td className="sticky right-[116px] z-20 px-2 py-2 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] overflow-hidden bg-white" style={{ minWidth: "250px", width: "250px" }}>
                       <output
                         aria-label={`Generated URL row ${i + 1}`}
                         title={generated}
-                        className={`block min-w-[260px] max-w-sm truncate rounded-md bg-gray-50 px-2 py-1.5 font-mono text-xs ${
+                        className={`block w-full truncate rounded-md bg-gray-50 px-2 py-1.5 font-mono text-xs ${
                           generated ? "text-gray-800" : "text-gray-400"
                         }`}
                       >
                         {generated || "—"}
                       </output>
                     </td>
-                    {/* Sticky Actions — fixed-width column (Fix A, Fix F) */}
-                    <td className="sticky right-0 z-10 w-[116px] px-3 py-2 whitespace-nowrap shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] bg-inherit">
+                    {/* Sticky Actions — 116px wide, right-0, solid opaque bg.
+                        z-20 ensures it floats above scrolling cells. */}
+                    <td className="sticky right-0 z-20 px-3 py-2 whitespace-nowrap shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] bg-white" style={{ minWidth: "116px", width: "116px" }}>
                       <span className="inline-flex flex-col gap-1">
                         <span className="inline-flex items-center gap-1.5">
                           <button
@@ -1840,10 +1859,14 @@ export function UtmGrid({
 
         </div>
 
-        {/* Desktop campaigns + UTM Spec sidebar — hidden on mobile.
-            Campaigns hidden in workspace mode (local-only). UTM Spec still shown. */}
-        {!isWorkspaceMode && (
-          <div className="hidden min-[900px]:flex flex-col w-64 shrink-0 gap-0">
+        {/* Desktop sidebar — hidden on mobile (<900px); inline flex column at ≥900px.
+            At 1280px viewport (sidebar 256px + gap 16px + page padding 48px = 320px),
+            the grid gets ~960px. The table uses table-fixed layout with explicit column
+            widths totalling ≤960px, so the table never overflows its 960px container —
+            the sticky right columns are always visible without horizontal scroll.
+            Campaigns hidden in workspace mode (local-only). UTM Spec shown in all modes. */}
+        <div className="hidden min-[900px]:flex flex-col w-64 shrink-0 gap-0">
+          {!isWorkspaceMode && (
             <CampaignsSidebar
               campaigns={campaigns}
               openCampaignId={openCampaignId}
@@ -1857,26 +1880,34 @@ export function UtmGrid({
               savedFlash={savedFlash}
               desktopOnly
             />
-            {/* UTM Spec panel — disclosure, collapsed by default, under Campaigns */}
-            <UtmSpecPanel
-              spec={spec}
-              onChange={setSpec}
-              onLoadSample={handleLoadSample}
-              onShareSpec={() => void copyShareLink()}
-              specLinkCopied={shareLinkCopied}
-              desktopOnly
-            />
-          </div>
-        )}
+          )}
+          {/* UTM Spec panel — shown in all modes; workspace-labeled in workspace mode */}
+          <UtmSpecPanel
+            spec={spec}
+            onChange={setSpec}
+            onLoadSample={isWorkspaceMode ? undefined : handleLoadSample}
+            onShareSpec={isWorkspaceMode ? undefined : () => void copyShareLink()}
+            specLinkCopied={isWorkspaceMode ? undefined : shareLinkCopied}
+            workspaceMode={isWorkspaceMode}
+            desktopOnly
+          />
+        </div>
       </div>
 
-      {/* F: Trust note */}
-      <p className="text-xs text-gray-400">
-        Generated URLs are trimmed of trailing spaces; your source cells are left as typed.
-        Everything runs in your browser — no account, no server, no network
-        requests after page load. Grid rows, presets, campaigns, and lint toggles are
-        saved in localStorage.
-      </p>
+      {/* F: Trust note — mode-aware (Fix 1). */}
+      {isWorkspaceMode ? (
+        <p className="text-xs text-gray-400">
+          Generated URLs are trimmed of trailing spaces; your source cells are left as typed.
+          Changes are synced to the server workspace automatically — anyone with the secret link can view and edit.
+        </p>
+      ) : (
+        <p className="text-xs text-gray-400">
+          Generated URLs are trimmed of trailing spaces; your source cells are left as typed.
+          Everything runs in your browser — no account, no server, no network
+          requests after page load. Grid rows, presets, campaigns, and lint toggles are
+          saved in localStorage.
+        </p>
+      )}
 
       {/* Toast stack */}
       {toasts.length > 0 && (

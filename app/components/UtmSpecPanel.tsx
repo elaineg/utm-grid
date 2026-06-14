@@ -17,6 +17,8 @@ interface UtmSpecPanelProps {
   mobileOnly?: boolean;
   /** Render as desktop panel only. */
   desktopOnly?: boolean;
+  /** In workspace mode: show workspace-sync subtext and open by default when spec has values. */
+  workspaceMode?: boolean;
 }
 
 const FIELD_LABELS: Record<UtmField, string> = {
@@ -40,8 +42,10 @@ export function UtmSpecPanel({
   specLinkCopied,
   mobileOnly,
   desktopOnly,
+  workspaceMode,
 }: UtmSpecPanelProps) {
   // Fix C: open by default when spec has any allowed values; collapsed when empty so cold open stays clean.
+  // In workspace mode, always open when values exist (the spec is team-shared, users should see it).
   const [expanded, setExpanded] = useState(() => specHasValues(spec));
   // Per-field pending add-value input state
   const [addInputs, setAddInputs] = useState<Record<UtmField, string>>({
@@ -307,6 +311,12 @@ export function UtmSpecPanel({
   );
 
   if (desktopOnly) {
+    const headerLabel = workspaceMode
+      ? "Shared UTM taxonomy"
+      : "Allowed values";
+    const subText = workspaceMode
+      ? "Synced to this workspace — your team's shared allowed values, enforced on every cell."
+      : "Define allowed values per field — catch typos before they split your analytics. Saved on this device.";
     return (
       <aside
         ref={panelRef}
@@ -321,20 +331,18 @@ export function UtmSpecPanel({
           aria-expanded={expanded}
           data-testid="utm-spec-toggle"
         >
-          <span>Allowed values</span>
+          <span>{headerLabel}</span>
           <span className="text-gray-400 text-xs">{expanded ? "▲" : "▼"}</span>
         </button>
         {!expanded && (
           <p className="text-[11px] text-gray-400 leading-relaxed">
-            Define allowed values per field — catch typos before they split your analytics.{" "}
-            Saved on this device.
+            {subText}
           </p>
         )}
         {expanded && (
           <>
             <p className="text-[11px] text-gray-400 mb-2 leading-relaxed">
-              Define allowed values per field — catch typos before they split your analytics.{" "}
-              Saved on this device.
+              {subText}
             </p>
             {innerContent}
           </>
@@ -344,6 +352,12 @@ export function UtmSpecPanel({
   }
 
   if (mobileOnly) {
+    const mobileSubText = workspaceMode
+      ? "Synced to this workspace — your team's shared allowed values, enforced on every cell."
+      : "Your team’s allowed values — enforced on every cell. Saved on this device.";
+    const mobileHeaderHint = workspaceMode
+      ? "— synced to this workspace"
+      : "— catch typos before they split your analytics";
     return (
       <>
         <button
@@ -354,8 +368,8 @@ export function UtmSpecPanel({
           data-testid="utm-spec-mobile-toggle"
         >
           <span>
-            Allowed values{" "}
-            <span className="font-normal text-gray-400 text-xs">— catch typos before they split your analytics</span>
+            {workspaceMode ? "Shared UTM taxonomy" : "Allowed values"}{" "}
+            <span className="font-normal text-gray-400 text-xs">{mobileHeaderHint}</span>
           </span>
           <span className="text-gray-400">{expanded ? "▲" : "▼"}</span>
         </button>
@@ -366,8 +380,7 @@ export function UtmSpecPanel({
             data-testid="utm-spec-panel"
           >
             <p className="text-[11px] text-gray-400 mb-3 leading-relaxed">
-              Your team&apos;s allowed values — enforced on every cell.{" "}
-              Saved on this device.
+              {mobileSubText}
             </p>
             {innerContent}
           </div>

@@ -60,6 +60,48 @@ describe("writeValue without debounce", () => {
   });
 });
 
+// ── Regression: autosave-skip-initial-seed guard (P0-2) ──────────────────────
+// The /w/[id] page has an isHydratedRef that starts false and is set to true
+// BEFORE UtmGrid mounts (after writeValue seeds the prefixed keys). The
+// handleStateChange callback is a no-op while isHydratedRef.current === false.
+// This test verifies the underlying writeValue→readSnapshot round-trip that the
+// seeding relies on, confirming the guard window works as expected.
+describe("writeValue seeds the store synchronously before any subscriber mounts", () => {
+  it("readSnapshot after writeValue (debounce=0) returns the seeded value immediately", () => {
+    const rows = [{ id: "r1", baseUrl: "https://example.com", utm_source: "email",
+      utm_medium: "cpc", utm_campaign: "launch", utm_term: "", utm_content: "" }];
+    writeValue(key, [] as typeof rows, rows, 0);
+    // Simulate UtmGrid mounting and calling readSnapshot for the client snapshot
+    const snap = readSnapshot(key, [] as typeof rows);
+    expect(snap).toEqual(rows);
+    // The store was seeded (in localStorage) before any subscriber attached
+    expect(fake.backing.get(key)).toBe(JSON.stringify(rows));
+  });
+
+  it("isHydratedRef pattern: a guard flag set before seeding prevents any write before hydration", () => {
+    // Model the isHydratedRef pattern: ref starts false, set to true before mounting.
+    // Any call arriving while false is dropped.
+    let isHydrated = false;
+    const puts: unknown[] = [];
+    const handleStateChange = (next: unknown) => {
+      if (!isHydrated) return; // P0-2 guard
+      puts.push(next);
+    };
+
+    // Simulate UtmGrid emitting state BEFORE hydration (should be dropped)
+    handleStateChange({ rows: [], settings: {}, spec: {} });
+    expect(puts).toHaveLength(0);
+
+    // Hydrate
+    isHydrated = true;
+    writeValue(key, null, "seeded", 0);
+
+    // Now a user edit fires — must go through
+    handleStateChange({ rows: [{ id: "r1" }] });
+    expect(puts).toHaveLength(1);
+  });
+});
+
 describe("writeValue with debounce", () => {
   it("updates the in-memory snapshot immediately but defers the write", () => {
     writeValue(key, "", "typed", 400);

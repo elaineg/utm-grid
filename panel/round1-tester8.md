@@ -1,28 +1,21 @@
-# Round 1 — Tester 8 (Rob, freelance brand/visual designer, desktop)
+# Round 1 (re-test) — Tester 8 (Rob, freelance brand/visual designer, desktop)
 
-I tag a handful of client campaign links occasionally. Today I either type the query string
-by hand or keep a Google Sheet with a CONCATENATE formula. My reflex is "I could just type
-this myself in 4 minutes." I built a small batch and exported CSV to judge if it beats that.
+PRIOR CONCERNS (mine, last round):
+1. "Headline pitched at a marketing-ops team lead, almost bounced thinking it was enterprise governance." FIXED. New headline "Clean UTM links for your whole campaign — in one grid" + subhead "Auto-fix messy casing and typos before they split your Google Analytics. Share one link anyone can open — no login." That's a freelancer's link tagger, not governance. I'd no longer bounce.
+2. "Crowded first screen buries the simple core flow." PARTIALLY fixed — Presets and Bulk Edit are now collapsed accordions, so the grid is what I land on. Still a Campaigns panel + Allowed-values block on the right, but it reads as a tool now, not a config app.
 
-What worked: I typed `Facebook` / `CPC` / `Spring Sale 2026` and Auto-fix corrected them to
-`facebook`, `cpc`, `spring_sale_2026` (green highlights + an Undo toast). Copy all URLs and
-the CSV exported clean — proper headers, a generated_url column, base URLs intact. No login,
-runs locally. The casing/space fixing is the genuine win over my Sheet, which never catches a
-stray capital that splits GA4 data. At 375px the toolbar reflows fine; I'd never use it on
-mobile but it doesn't break.
+FRESH PASS:
 
-What held it back: the headline ("enforces your team's UTM taxonomy — stop policing casing")
-is pitched at a marketing-ops team lead, not a freelancer tagging 3 links — I almost bounced
-thinking it was enterprise governance. And the first screen is crowded with BULK EDIT, LINT
-RULES, "Enforce UTM Spec", presets, and a Campaigns panel, which makes a simple tool look
-like a config app. For one link my Sheet ties it; the batch + auto-fix is where it pulls
-ahead, but that payoff isn't sold up front.
+**Clarity — Yes.** ~3s. Headline + subhead told me the job, the grid columns confirmed it. No jargon, no wall.
 
-CLARITY (is the purpose clear in 5s): Partially — grid + Export CSV is obvious, but the headline reads like enterprise team-governance, not a freelancer's link tagger.
-VALUE (would it save you real time): Yes — auto-fixing my casing/spaces and a clean CSV beats my Google Sheet on a 5–10 link batch; ties it for a single link.
-ADVOCACY (0-10, would you recommend to a peer): 6 — solid engine, real fix for real mistakes, but incremental over my Sheet and dressed up heavier than the simple job it does.
-TOP FRICTION: the headline + button-heavy first screen pitch this at a marketing-ops team lead and bury how simple the core flow actually is — a freelancer nearly bounces before reaching the value.
+**Value — Yes.** I hand-type query strings or use a CONCATENATE Sheet, and I'd never catch that "Spring_Sale" vs "spring sale" splits a client's GA4. The lint flagged that across-row inconsistency and Auto-fix normalized all 5 cells in one click with Undo. CSV exported clean (real generated_url column) — drops straight into a client deliverable. Beats my "4 minutes by hand," and by hand I'd ship dirty data.
+
+**Shared Workspace — works, earned my trust.** Discoverable: blue "LIVE TEAM WORKSPACE" banner above the grid, and the "Different from Copy share link / frozen snapshot" parenthetical clearly separates live-edit from one-shot. Value landed in 5s. I created one, opened the /w/ link in a fully fresh browser (my client, no localStorage) — it saw all my rows. The client's edit autosaved; a second fresh browser confirmed it persisted server-side. "All changes saved · saved just now" made me believe it. For sending a client an editable link, this is real and a genuine reason to pick this over my Sheet.
+
+**Holds it back:** the footer on the LIVE /w/ page still reads "no server, no network requests... saved in localStorage" — directly contradicts the "Team Workspace — synced" banner right above it. A client reading both can't tell if edits are saved or private; undercuts the exact trust the feature builds. Minor: workspaces have no name, so juggling several client grids I can't tell two /w/ links apart.
+
+**Advocacy — 8** (was 6). The headline fix plus the editable shared link moved this from "incremental over my Sheet" to something I'd bring up to other freelancers. Not 9 only for the contradictory localStorage footer on a synced page and no way to name multiple workspaces.
 
 ```json
-{"tester": 8, "round": 1, "clarity": "Partially", "value": "Yes", "advocacy": 6, "topComplaints": ["Headline ('enforces your team's UTM taxonomy') and crowded first screen pitch at a marketing-ops team lead, not the freelancer using it — almost bounced", "Win over my existing Google Sheet is real but incremental for low-volume tagging; not 'mention it unprompted' territory"], "priorConcernsAddressed": "n/a"}
+{"tester":8,"name":"Rob","clarity":"Yes","value":"Yes","advocacy":8,"top_problems":["Footer on the synced /w/ workspace page still says 'no server, saved in localStorage' — contradicts the 'Team Workspace — synced' banner and undermines client trust","Shared workspaces have no name/label, so juggling multiple client grids you can't tell two /w/ links apart"],"likes":["Lint caught cross-row campaign inconsistency that splits GA4; Auto-fix fixed all 5 cells in one click with Undo","Shared /w/ link genuinely persisted server-side — a fresh-browser client saw my rows and their edit synced back","Headline now reads as a freelancer's link tagger, not enterprise governance — my main prior complaint is fixed"]}
 ```

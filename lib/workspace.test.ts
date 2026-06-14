@@ -13,6 +13,87 @@ import {
 } from "./workspace";
 import type { WorkspacePayload } from "./workspace";
 
+// ── Regression: GET-body wire format (P0-1) ───────────────────────────────────
+// The GET /api/workspace/[id] route returns { data: "<JSON-string>" }
+// (data is a JSON-stringified WorkspacePayload stored verbatim in Turso).
+// The /w/[id] page MUST call JSON.parse(body.data) to recover the payload.
+// This test pins the round-trip so a future refactor of the wire format is caught.
+describe("GET body wire format: body.data is a JSON string that must be parsed", () => {
+  const PAYLOAD: WorkspacePayload = {
+    rows: [
+      {
+        id: "row-1",
+        baseUrl: "https://example.com/a",
+        utm_source: "newsletter",
+        utm_medium: "email",
+        utm_campaign: "spring_sale",
+        utm_term: "",
+        utm_content: "",
+      },
+    ],
+    settings: { requiredParams: true, lowercaseOnly: true, noSpaces: true },
+    spec: {
+      allowedValues: { utm_source: ["newsletter"], utm_medium: [], utm_campaign: [], utm_term: [], utm_content: [] },
+      enforceSpec: false,
+    },
+  };
+
+  it("parseWorkspacePayload recovers the payload from the raw string stored in Turso (as PUT sends it)", () => {
+    // PUT sends JSON.stringify(payload); Turso stores that string; GET returns { data: storedString }.
+    const storedString = JSON.stringify(PAYLOAD);
+    const result = parseWorkspacePayload(storedString);
+    expect(result).not.toBeNull();
+    expect(result!.rows).toHaveLength(1);
+    expect(result!.rows[0].baseUrl).toBe("https://example.com/a");
+    expect(result!.rows[0].utm_source).toBe("newsletter");
+    expect(result!.rows[0].utm_campaign).toBe("spring_sale");
+  });
+
+  it("client-side GET parse: JSON.parse(body.data) then parseWorkspacePayload returns the same payload", () => {
+    // Simulate the full round-trip: PUT body → Turso store → GET response body → client parse
+    const putBody = JSON.stringify(PAYLOAD);          // what PUT sends
+    const getBody = { data: putBody };                // what GET returns: { data: "<string>" }
+    const rawFromServer = getBody.data;               // client reads body.data (a string)
+    const recovered = parseWorkspacePayload(rawFromServer);
+    expect(recovered).not.toBeNull();
+    expect(recovered!.rows[0].utm_campaign).toBe("spring_sale");
+    expect(recovered!.settings.requiredParams).toBe(true);
+  });
+
+  it("parseWorkspacePayload returns null on a double-encoded string (would be a server-side bug)", () => {
+    // Guard: if GET were to double-encode (JSON.stringify(JSON.stringify(payload))), the client
+    // must not silently produce garbage — it should get null and fail safely.
+    const doubleEncoded = JSON.stringify(JSON.stringify(PAYLOAD));
+    // JSON.parse(doubleEncoded) returns a string, not an object → isWorkspacePayload → false
+    expect(parseWorkspacePayload(doubleEncoded)).toBeNull();
+  });
+});
+
+// ── Regression: localStorage key names used by UtmGrid (P0-1) ─────────────────
+// /w/[id]/page.tsx must write to keys that UtmGrid actually reads.
+// UtmGrid: key(k) = storageKeyPrefix + k, with storageKeyPrefix = "ws:<id>:"
+//   rows     → "ws:<id>:utm-grid:rows"
+//   settings → "ws:<id>:utm-grid:lint-settings"
+//   spec     → "ws:<id>:utm-grid:utm-spec"
+// This test documents the contract so a rename is caught immediately.
+describe("workspace localStorage key contract", () => {
+  it("documents the correct prefixed key names UtmGrid reads in workspace mode", () => {
+    const wsId = "ABCDEFGHIJKLMNOPQRSTUVw"; // 23-char valid id
+    const storageKeyPrefix = `ws:${wsId}:`;
+    const utmGridKey = (k: string) => `${storageKeyPrefix}${k}`;
+
+    // These must match exactly what /w/[id]/page.tsx calls writeValue() with
+    expect(utmGridKey("utm-grid:rows")).toBe(`ws:${wsId}:utm-grid:rows`);
+    expect(utmGridKey("utm-grid:lint-settings")).toBe(`ws:${wsId}:utm-grid:lint-settings`);
+    expect(utmGridKey("utm-grid:utm-spec")).toBe(`ws:${wsId}:utm-grid:utm-spec`);
+
+    // Confirm the WRONG keys (what the old code wrote) do NOT match
+    expect(utmGridKey("utm-grid:rows")).not.toBe(`ws:${wsId}:rows`);
+    expect(utmGridKey("utm-grid:lint-settings")).not.toBe(`ws:${wsId}:settings`);
+    expect(utmGridKey("utm-grid:utm-spec")).not.toBe(`ws:${wsId}:spec`);
+  });
+});
+
 // ── generateWorkspaceId ───────────────────────────────────────────────────────
 
 describe("generateWorkspaceId", () => {

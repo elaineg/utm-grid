@@ -1,31 +1,12 @@
-# Round 2 — Tester 2 (Marcus, frontend eng, desktop Chrome + devtools)
+# Round 2 — Tester 2 (Marcus, frontend eng, Chrome + devtools, 1280px)
 
-## Prior concern re-checked (channel preset → blank required campaign)
-FIXED. Applying the Email preset fills source=newsletter / medium=email and the
-utm_campaign cell now shows a muted placeholder "Add a campaign" (highlighted, NOT red)
-with a "0 warnings" line — a guided fill, not the old "utm_campaign is required" error.
-Same on mobile ("Add a campaign name"). No "required" error text anywhere after a preset.
-0 console/page errors all session. Exactly the fix I asked for.
+**Prior blockers:** (#1 copy contradiction) RESOLVED — on `/w/` the helper now reads "Synced to a private server workspace — anyone with the secret link can view and edit. Changes save automatically"; the browser-only/localStorage claim shows ONLY on the main page ("nothing leaves your browser"). Mode-aware copy correct on both. Share buttons disambiguated: "Copy workspace link · Anyone with this secret link can edit" vs toolbar "Copy share link · Frozen snapshot of the current grid"; allowed-values panel labeled "Shared UTM taxonomy · Synced to this workspace." Exactly what I asked for. (#3 header overlap) RESOLVED — at 1280px GENERATED URL ends at 840px, ACTIONS starts at 840px, no header overlap. (#2 edit presence/attribution) NOT added — last-write-wins remains.
 
-## Fresh look (new hero + 375px)
-Shorter hero "Clean UTM links for your whole campaign — in one grid." + auto-fix/no-login
-subhead is tighter and still clear in <5s. Mobile @375px is polished: stacked labeled card,
-no horizontal scroll, no jank. Value unchanged and real — beats my CONCATENATE Google Sheet
-because it enforces taxonomy and the share link carries the whole grid.
+**Clarity: Yes.** Same strong cold-open H1 + subhead; mode-aware copy actually improves clarity now.
+**Value: Yes.** Auto-fix verified ("Twitter "→"twitter"), inline lint warnings with Fix links, Copy all URLs returns a clean correct query string (clipboard read OK). Workspace is genuinely server-synced. Zero console/page errors all session.
 
-## New friction I clocked
-My round-1 nit #2 (mid-width desktop header truncation) is STILL there. At 1280px with the
-Campaigns sidebar open the table is squeezed: the campaign header clips to "UTM_" and the
-TERM/CONTENT headers disappear — the row reads "UTM_SOURCE*  UTM_MEDIUM*  UTM_  GENERATED URL".
-Cells work, but on first glance an engineer reads "broken header." It's purely a layout
-width bug (sidebar steals from the grid), but it's the kind of jank I notice instantly.
-
-CLARITY (purpose clear in 5s): Yes — shorter hero names the job and the no-login hook fast.
-VALUE (saves real time): Yes — enforces taxonomy + share-link my sheet can't; faster per launch.
-ADVOCACY (0-10): 8 — preset-as-guided-fill fully fixed; held off 9 only by clipped desktop headers.
-PRIOR CONCERNS ADDRESSED: Partially — preset/error concern fully fixed; mid-width header truncation still present.
-TOP FRICTION: with the Campaigns sidebar open at laptop width the header row collapses to "UTM_ … GENERATED URL", losing the campaign/term/content labels — looks broken on first glance.
+**Advocacy: 8.** Two of my three round-1 nits fully fixed; I'd share it in team Slack today. Not a 9 because: (a) the GRID still overflows its container at 1280px — table scrollWidth 1469 vs scroll-area clientWidth 958, so the ACTIONS/Copy column gets pushed off-screen behind the Campaigns panel (Copy renders as "C…") and needs horizontal scroll inside the grid. Header overlap is gone but the cramped/clipped Copy button is the same root layout bug — a frontend eng spots it instantly. (b) Still no edit presence/attribution in the live workspace; concurrent editing is a leap of faith vs my Google-Sheets mental model. Fix the 1280px grid width and I'm at 9.
 
 ```json
-{"tester": 2, "round": 2, "clarity": "Yes", "value": "Yes", "advocacy": 8, "topComplaints": ["with Campaigns sidebar open at ~1280px the grid is squeezed: campaign header clips to 'UTM_' and term/content headers vanish — reads as a broken header row"], "priorConcernsAddressed": "some"}
+{"tester":2,"name":"Marcus","clarity":"Yes","value":"Yes","advocacy":8,"prior_blocker_resolved":true,"top_problems":["grid overflows its container at 1280px (table 1469px in a 958px scroll area) — ACTIONS/Copy column clipped off-screen behind Campaigns panel, needs in-grid horizontal scroll","no edit presence/attribution in live workspace; last-write-wins feels risky vs Google Sheets for concurrent edits"],"likes":["mode-aware copy fixed: /w/ says 'synced to private server workspace', main page says 'nothing leaves your browser'","share buttons disambiguated + 'anyone with secret link can edit' warning + shared-taxonomy labeling","auto-fix lint + clean Copy all URLs verified, zero console errors"]}
 ```

@@ -1,27 +1,15 @@
 # Round 2 — Tester 8 (Rob, freelance brand/visual designer, desktop)
 
-Re-check of my round-1 complaints:
-- Enterprise headline: FIXED. "Clean UTM links for your whole campaign — in one grid" + subhead
-  "Auto-fix messy casing and typos before they split your Google Analytics... no login, nothing
-  leaves your browser." That is my job, in plain words, in 5 seconds. Real improvement — I would
-  not bounce now.
-- Crowded first screen: PARTIALLY. The hero lands, but below it I still wade past LINT RULES
-  ("Enforce your team's UTM taxonomy"), a Presets row, BULK EDIT, a Campaigns panel, and a "UTM
-  Spec / Your team's allowed values" box — four config panels stacked above ONE empty grid row.
-  For 3 client links that is a lot of team-ops furniture, and "team/teammates" framing is still
-  everywhere even though the hero promises a simple personal tool.
+PRIOR BLOCKER (my 9-stopper): contradictory "no server, saved in localStorage" footer on the synced /w/ page. **RESOLVED.** Verified live: built a grid (Newsletter/EMAIL/Spring_Sale), created a workspace, opened the /w/ link in a fresh no-localStorage browser (my "client"). The /w/ footer now reads "Changes are synced to the server workspace automatically — anyone with the secret link can view and edit" — zero localStorage/"no server" phrases on that page. Banner adds "Anyone with this secret link can edit." right under it. Main page still correctly carries the browser-only claim. No contradiction left.
 
-Re-ran my real flow: typed Facebook/CPC/Spring Sale 2026 plus a second messy row, hit Auto-fix —
-green cells, an "Auto-fixed 2 cells — Undo" toast, and Copy all URLs gave clean
-lowercased/underscored links. The engine is genuinely good and still beats my Google Sheet, which
-never catches a stray capital that splits GA4 data.
+ACCESS MODEL (my secondary): the "Anyone with this secret link can edit" note now appears in banner, subhead, and footer. I know exactly what I'm handing a client. Good.
 
-Still incremental for my volume: one link, my Sheet ties it; the casing fix + batch is the real win
-at 3-10 links. The hero fix moved me from "almost bounced" to "I'd actually try this," but the body
-reads heavier than the job, so it is not yet unprompted-recommend territory.
+**Clarity — Yes.** Same fast read as R1; headline + grid columns tell the job in ~3s.
 
-CLARITY (purpose clear in 5s): Yes — new hero + "auto-fix casing, no login" nails it instantly.
-VALUE (saves real time): Yes — auto-fixing casing/spaces + clean batch copy beats my Sheet at 3+ links.
-ADVOCACY (0-10): 7 — hero fix earned a point; held back because the body still feels like a team-ops config app.
-PRIOR CONCERNS ADDRESSED: Partially — headline fully fixed; the crowded, team-pitched body below the hero remains.
-TOP FRICTION: four config panels (Lint/Presets/Bulk Edit/Campaigns) plus pervasive "team taxonomy" language sit above a single empty row, making a simple 3-link job look like marketing-ops setup.
+**Value — Yes.** Lint caught Newsletter/EMAIL/Spring_Sale casing; a fresh client browser saw my rows synced server-side. For sending a client an editable link this beats my CONCATENATE Sheet, and I ship clean GA4 data.
+
+**Advocacy — 9** (was 8). The footer contradiction that capped me at 8 is gone, and the secret-link note removes the "is this private?" hesitation when handing a client a link. I'd bring this up to other freelancers unprompted. Held below 10 by one real thing: per-workspace NAMING still doesn't exist — pill says "Unsaved grid," nothing labels the workspace, so juggling 3 client /w/ links I can't tell them apart. That's a polish gap now, not a trust blocker, so it no longer caps the 9.
+
+```json
+{"tester":8,"name":"Rob","clarity":"Yes","value":"Yes","advocacy":9,"prior_blocker_resolved":true,"top_problems":["No per-workspace name/label — pill still reads 'Unsaved grid'; juggling multiple client /w/ links you can't tell them apart"],"likes":["Round-1 blocker gone: /w/ footer now says 'synced to server workspace' with zero localStorage contradiction; client view earns trust","'Anyone with this secret link can edit' access note now stated in banner+subhead+footer — I know what I'm handing a client","Fresh no-localStorage client browser saw my rows synced server-side; lint caught cross-cell casing that splits GA4"]}
+```

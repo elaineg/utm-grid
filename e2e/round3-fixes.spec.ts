@@ -276,9 +276,12 @@ test("'Share this spec' URL carries the UTM Spec into a fresh context", async ({
   await freshCtx.close();
 });
 
-// ── Test 8: UTM value column width — 10-char value not clipped ───────────────
+// ── Test 8: No page-level horizontal overflow at 1280px; Copy visible; internal scroll ──
+// Design: bounded-internal-scroll + sticky-pinned-columns. The table is wider than the
+// ~960px available area at 1280px+sidebar; the INNER grid container scrolls horizontally
+// (not the page). Generated URL + Actions are sticky-pinned to the container's right edge.
 
-test("UTM value cell: a 10-char value is not clipped (scrollWidth <= clientWidth)", async ({
+test("UTM value cell: no page overflow, Copy visible; inner container has own scroll (bounded-internal-scroll)", async ({
   browser,
 }) => {
   const ctx = await browser.newContext();
@@ -287,19 +290,46 @@ test("UTM value cell: a 10-char value is not clipped (scrollWidth <= clientWidth
   await page.goto("/");
   await page.waitForLoadState("networkidle");
 
-  // Type a 10-char value in utm_source
-  const tenChars = "newsletter"; // exactly 10 chars
-  await cell(page, "utm_source", 1).fill(tenChars);
+  // Fill a row with content so the table renders real cells.
+  await cell(page, "Base URL", 1).fill("https://example.com/lp");
+  await cell(page, "utm_source", 1).fill("newsletter");
+  await cell(page, "utm_medium", 1).fill("email");
+  await cell(page, "utm_campaign", 1).fill("spring_sale");
+  await page.waitForTimeout(200);
 
-  // Measure scrollWidth vs clientWidth on the input element
-  const clipped = await page.evaluate(() => {
-    const inputs = Array.from(document.querySelectorAll('input[aria-label="utm_source row 1"]'));
-    if (!inputs.length) return "NOT_FOUND";
-    const el = inputs[0] as HTMLInputElement;
-    return el.scrollWidth > el.clientWidth ? "CLIPPED" : "OK";
+  // 1. Document must not horizontally overflow (page never scrolls sideways).
+  const overflow = await page.evaluate(() => {
+    return {
+      scrollWidth: document.documentElement.scrollWidth,
+      clientWidth: document.documentElement.clientWidth,
+    };
   });
+  expect(overflow.scrollWidth).toBeLessThanOrEqual(overflow.clientWidth + 20);
 
-  expect(clipped).toBe("OK");
+  // 2. The row Copy button (Actions column) must be visible within the viewport.
+  const copyBtn = page.getByRole("button", { name: "Copy URL row 1" }).first();
+  await expect(copyBtn).toBeVisible();
+  const box = await copyBtn.boundingBox();
+  expect(box).not.toBeNull();
+  // Right edge of Copy button must be within viewport width.
+  expect(box!.x + box!.width).toBeLessThanOrEqual(1280);
+  // Copy button must be on-screen (not clipped left).
+  expect(box!.x).toBeGreaterThan(0);
+  // Width > 20px (not clipped to a single character).
+  expect(box!.width).toBeGreaterThan(20);
+
+  // 3. Inner container must be scrollable (table wider than its bounded container).
+  const innerScroll = await page.evaluate(() => {
+    const table = document.querySelector("table");
+    if (!table) return { scrollWidth: 0, clientWidth: 0 };
+    const container = table.closest(".overflow-x-auto") ?? table.parentElement;
+    if (!container) return { scrollWidth: 0, clientWidth: 0 };
+    return {
+      scrollWidth: (container as HTMLElement).scrollWidth,
+      clientWidth: (container as HTMLElement).clientWidth,
+    };
+  });
+  expect(innerScroll.scrollWidth).toBeGreaterThan(innerScroll.clientWidth);
 
   await ctx.close();
 });

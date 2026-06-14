@@ -1,9 +1,18 @@
-# Wen — Round 2 (new build)
-Re-check of prior friction (flagship Spec buried): Mostly fixed. Expanding "UTM Spec" now shows a "Not enforcing — enable in Lint rules" pill, "Try an example spec", "Share this spec with your team", and per-dimension "+ add value" inputs hinting "Paste a list — define once, reuse every week." Pasting "google, facebook, linkedin" split into three clean removable chips — the paste-your-taxonomy move I wanted now works. Two snags: the card is still collapsed-by-default in the right rail, and the purple "Enforce your team's UTM taxonomy" text under LINT RULES LOOKS clickable but is an inert span (clicking does nothing). Also newline paste mangles to one chip; only commas split.
-CSV round-trip re-verified lossless: source cells stayed EXACTLY as typed (Google vs google, CPC vs cpc, trailing-space "Summer_Sale " kept in source), trimmed only in generated_url, "running shoes"→running%20shoes, empty utm_term omitted. Cross-row lint still nails "Inconsistent utm_source: 'Google' vs 'google' — these will split campaign data in GA4."
+# Round 2 — Tester 3 (Wen, marketing data analyst)
 
-CLARITY (purpose clear in 5s): Yes — new H1 "Clean UTM links for your whole campaign — in one grid" + visible lint toggles tell the job instantly.
-VALUE (saves real time): Yes — lossless CSV round-trip, zero silent transforms, every casing split flagged; beats my Sheets+BigQuery dedup chore.
-ADVOCACY (0-10): 8 — better than round 1 (spec reachable, paste-list works); held back by spec collapsed-by-default + a dead pseudo-link + still localStorage-only (no real team sync).
-PRIOR CONCERNS ADDRESSED: Partially — spec is now usable and paste-a-list works, but it's fixed by a hint not by default-open, and a fake "Enforce your team's UTM taxonomy" link misleads.
-TOP FRICTION: The purple "Enforce your team's UTM taxonomy" text under LINT RULES looks clickable but does nothing, and the Spec card is still collapsed by default — the flagship governance feature still takes a click (and a hunt past a dead link) to find.
+## Prior blockers re-checked (LIVE)
+- **#1 contradictory "no server / localStorage" copy** — RESOLVED. Main page still correctly reads "Shareable link is built in your browser — nothing is sent to any server" + "Saved on this device" (true there). On a /w/ page the copy is mode-aware: "Synced to a private server workspace — anyone with the secret link can view and edit. Changes save automatically." No more mixed message about where my data lives.
+- **#2 allowed-values Spec didn't sync to the workspace** — RESOLVED. Panel is now "Shared UTM taxonomy — synced to this workspace, enforced on every cell." I added `newsletter` to UTM_SOURCE in session A, opened the same /w/ link in a CLEAN browser (session B, no shared localStorage) and the chip was there — real server round-trip, not relabeled localStorage. Per-field "+ add value", paste-a-list, and a clear "Not enforcing — enable in Naming rules" affordance.
+
+## Clarity — Yes
+"Auto-fix messy casing and typos before they split your Google Analytics" still names my exact pain in seconds.
+
+## Value — Yes
+Cross-row lint ("newsletter vs NewsLetter — these will split campaign data in GA4"), lossless CSV, AND now a server-synced shared taxonomy my whole team is linted against. This is the source-of-truth for naming rules I wanted — it replaces my hand-rolled tagging sheet and the Slack "please use lowercase" nagging.
+
+## Advocacy — 9
+Both blockers gone; I'd post this in our analytics Slack unprompted as "the shared UTM linter that enforces one taxonomy." Holding it at exactly 9 not 10: enforcement is OFF by default in the workspace ("Not enforcing"), so a careless teammate can still type a bad value unless someone flips Naming rules on — I'd want enforce-on by default once a taxonomy exists. Minor.
+
+```json
+{"tester":3,"name":"Wen","clarity":"Yes","value":"Yes","advocacy":9,"prior_blocker_resolved":true,"top_problems":["Shared taxonomy exists but enforcement is OFF by default in a workspace ('Not enforcing — enable in Naming rules'); a defined taxonomy should auto-enforce so a teammate can't bypass it"],"likes":["Mode-aware copy: /w/ pages correctly say 'synced to a private server workspace', main page keeps the browser-only claim","Shared UTM taxonomy round-trips server-side — verified the allowed value I added appeared in a fresh clean browser","Cross-row casing lint citing GA4 campaign-split + lossless CSV still excellent"]}
+```
