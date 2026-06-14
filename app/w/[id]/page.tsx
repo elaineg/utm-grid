@@ -285,10 +285,20 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
   // ── Preview handler ────────────────────────────────────────────────────────
   const handleHistoryPreview = useCallback(
     (p: WorkspacePayload | null, v: HistoryVersion | null) => {
+      if (p !== null && id) {
+        // Seed the preview-prefixed localStorage keys with the version's data so
+        // UtmGrid's useLocalStorage picks them up on first snapshot (same pattern
+        // as handleRestore / initial workspace load). Without this, UtmGrid reads
+        // empty/null for `preview:<id>:utm-grid:rows` and shows a blank starter row.
+        const previewPrefix = `preview:${id}:`;
+        writeValue(`${previewPrefix}utm-grid:rows`, p.rows, p.rows, 0);
+        writeValue(`${previewPrefix}utm-grid:lint-settings`, p.settings, p.settings, 0);
+        writeValue(`${previewPrefix}utm-grid:utm-spec`, p.spec, p.spec, 0);
+      }
       setPreviewPayload(p);
       setPreviewVersion(v);
     },
-    []
+    [id]
   );
 
   // ── Restore handler ────────────────────────────────────────────────────────

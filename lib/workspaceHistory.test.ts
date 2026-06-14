@@ -1,7 +1,8 @@
 /**
  * Unit tests for workspaceHistory.ts pure logic.
  */
-import { describe, it, expect } from "vitest";
+// @vitest-environment node
+import { afterEach, beforeEach, describe, it, expect, vi } from "vitest";
 import {
   isDuplicateVersion,
   idsToprune,
@@ -9,6 +10,89 @@ import {
   relativeTimeFromMs,
   VERSION_CAP,
 } from "./workspaceHistory";
+import { writeValue, readSnapshot } from "./useLocalStorage";
+
+// ── Preview-seeding regression test ─────────────────────────────────────────
+// Validates the fix for P1 bug: Preview showed empty grid because the page
+// never wrote preview-prefixed localStorage keys before mounting UtmGrid.
+// The fix calls writeValue(`preview:${id}:utm-grid:rows`, ...) in
+// handleHistoryPreview before setPreviewPayload — this test verifies the
+// writeValue→readSnapshot round-trip that the fix relies on.
+
+function makeFakeWindow() {
+  const backing = new Map<string, string>();
+  return {
+    backing,
+    window: {
+      localStorage: {
+        getItem: (k: string) => backing.get(k) ?? null,
+        setItem: (k: string, v: string) => void backing.set(k, v),
+      },
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    },
+  };
+}
+
+describe("Preview-seeding: writeValue seeds preview prefix so UtmGrid reads version rows", () => {
+  let fake: ReturnType<typeof makeFakeWindow>;
+
+  beforeEach(() => {
+    fake = makeFakeWindow();
+    vi.stubGlobal("window", fake.window);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("seeds preview rows and readSnapshot recovers them (mirrors handleHistoryPreview fix)", () => {
+    const workspaceId = "ws-abc";
+    const versionRows = [
+      { id: "row-1", baseUrl: "https://example.com", utm_source: "email",
+        utm_medium: "newsletter", utm_campaign: "q3-launch", utm_term: "", utm_content: "" },
+      { id: "row-2", baseUrl: "https://example.com", utm_source: "cpc",
+        utm_medium: "paid", utm_campaign: "q3-launch", utm_term: "keyword", utm_content: "" },
+    ];
+    const versionSettings = { requiredParams: true, lowercaseOnly: true, noSpaces: false };
+    const versionSpec = { enforceSpec: false, allowedValues: {} };
+
+    // Simulate what handleHistoryPreview now does before setPreviewPayload:
+    const previewPrefix = `preview:${workspaceId}:`;
+    writeValue(`${previewPrefix}utm-grid:rows`, [] as typeof versionRows, versionRows, 0);
+    writeValue(`${previewPrefix}utm-grid:lint-settings`, {}, versionSettings, 0);
+    writeValue(`${previewPrefix}utm-grid:utm-spec`, {}, versionSpec, 0);
+
+    // Verify UtmGrid's useLocalStorage would read the seeded values on first snapshot:
+    const recoveredRows = readSnapshot(`${previewPrefix}utm-grid:rows`, [] as typeof versionRows);
+    expect(recoveredRows).toEqual(versionRows);
+    expect(recoveredRows).toHaveLength(2);
+    expect(recoveredRows[0].utm_source).toBe("email");
+    expect(recoveredRows[1].utm_source).toBe("cpc");
+
+    const recoveredSettings = readSnapshot(`${previewPrefix}utm-grid:lint-settings`, {});
+    expect(recoveredSettings).toEqual(versionSettings);
+
+    const recoveredSpec = readSnapshot(`${previewPrefix}utm-grid:utm-spec`, {});
+    expect(recoveredSpec).toEqual(versionSpec);
+  });
+
+  it("different workspace ids get isolated preview keys (no cross-contamination)", () => {
+    const rows1 = [{ id: "row-A", baseUrl: "https://a.com", utm_source: "a",
+      utm_medium: "", utm_campaign: "", utm_term: "", utm_content: "" }];
+    const rows2 = [{ id: "row-B", baseUrl: "https://b.com", utm_source: "b",
+      utm_medium: "", utm_campaign: "", utm_term: "", utm_content: "" }];
+
+    writeValue("preview:ws-1:utm-grid:rows", [] as typeof rows1, rows1, 0);
+    writeValue("preview:ws-2:utm-grid:rows", [] as typeof rows2, rows2, 0);
+
+    const snap1 = readSnapshot("preview:ws-1:utm-grid:rows", [] as typeof rows1);
+    const snap2 = readSnapshot("preview:ws-2:utm-grid:rows", [] as typeof rows2);
+
+    expect(snap1[0].utm_source).toBe("a");
+    expect(snap2[0].utm_source).toBe("b");
+  });
+});
 
 describe("VERSION_CAP", () => {
   it("is 25", () => {
