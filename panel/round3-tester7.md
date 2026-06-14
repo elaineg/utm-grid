@@ -1,24 +1,8 @@
-# utm-grid — Round 3, Tester 7 (Aisha, Product Designer)
-Sentinel re-test: a duplicate bottom "Copy summary" button was removed. I judge craft hard; checking nothing regressed.
-
-## Sentinel — CONFIRMED, no regression
-- Exactly ONE "Copy summary" button now (DOM count = 1). The duplicate is gone; no orphaned/stray button anywhere in the report panel. Clean.
-- "Copy summary" + "Download report (CSV)" sit together at the TOP-RIGHT of the "✓ Launch Check — Compliance Report" header, exactly where I expect the panel's actions. Same row, well-placed.
-- Green "✓ Copied!" cue still fires: label flips to "✓ Copied!" on a SOLID-GREEN pill, holds, reverts to "Copy summary" within ~2s. Clipboard actually received 180 chars. (My first 150ms sample missed it; polling caught the full green→revert cycle.)
-- 0 console errors across Launch Check + copy.
-
-## Compliance Report panel — polish holds
-Still placed under the teal PRE-LAUNCH QA strip, above the grid. Distinct teal "✓ Launch Check — Compliance Report" header, "1 link checked / 1 passing" counter, green "✓ All 1 link pass" state reads cleanly. Trust line "Checked in your browser — nothing sent to any server" intact. Does not blur with the gray Presets/Bulk-Edit panels. Nothing visually shifted from the button removal.
-
-## Clarity — Yes
-H1 + casing/typos subline land in seconds; sections grouped and labeled.
-
-## Value — Yes
-Beats my Notion-eyeball habit; the cross-row casing catch is something I can't do by eye.
-
-## Advocacy — 9
-Holds at 9. The removal was surgical — no layout shift, no orphaned control, the green cue is intact and consistent. Same single thing keeps it off 10: the home toolbar still has ~7-10 near-equal-weight controls with no clear primary "start here" for a cold first-timer. Not affected by this change.
-
-```json
-{"tester": 7, "round": 3, "clarity": "Yes", "value": "Yes", "advocacy": 9, "topComplaints": ["Home toolbar still has no single clear primary 'start here' action for a cold first-timer (~7-10 near-equal-weight controls) — unchanged, not introduced by this fix"], "priorConcernsAddressed": "all"}
-```
+{
+ "name":"Aisha","clarity":"Yes","value":"Yes","advocacy":9,
+ "qr_reaction":"Both craft nits are genuinely closed: the popover now has a caret tethering it to the row's QR button (caret x1242 vs trigger x1247, y~718 — adjacent, not floating ~350px away), and the ENCODES line wraps the full URL with a title tooltip plus a Copy button that flips to a green 'Copied ✓' and actually writes the full encoded string to the clipboard. The chrome — 'QR Code — Row 1' heading, ✕, centered QR, paired Download PNG/SVG — reads as finished and considered.",
+ "prior_concerns_addressed":"fixed — re-checked at 1440px: (1) caret present and pinned to the trigger QR button, (2) URL wraps instead of hard-clipping and carries a full-value title tooltip, (3) Copy button works and confirms in the app's green; clipboard read returned the full encoded URL.",
+ "likes":["Caret tethers the popover to its exact trigger row — the row association my round-2 flag broke is restored","ENCODES line wraps + has a Copy button with a green 'Copied ✓' that really puts the full URL on the clipboard","Per-row QR stays disabled with an honest 'Fix required fields to make a QR' title until the row is valid — considered disabled/empty state","Tidy popover chrome: clear heading, even-margin centered QR, paired Download PNG/SVG"],
+ "complaints":["Minor: the wrapped ENCODES URL's last line still visually trails off at the box's right edge ('…landing-page-path') and leans on the tooltip/Copy to recover the tail — a touch more padding or a soft fade would read cleaner, but it no longer reads as broken"],
+ "verdict_summary":"They fixed the exact two things I flagged and did it with care — the caret pins the popover to its row and the encoded URL is now wrappable, tooltipped, and copyable with a real green confirm. That's the considered finish I was holding the point back on, so I'm moving to 9 and I'd bring this up to a teammate unprompted. The only thing keeping it off a 10 is the last wrapped line still kissing the box edge."
+}

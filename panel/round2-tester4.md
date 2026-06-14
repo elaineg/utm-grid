@@ -1,40 +1,27 @@
-# Round 2 (re-test) — Tester 4 (Tomás, Ops analyst, Edge on corporate laptop)
+# Round 2 — Tester 4 (Tomás, Ops analyst, Edge on corporate Windows laptop)
 
-## Prior concern — RESOLVED (priorConcernsAddressed = all)
-My single 9-not-10 ding: report CSV had no UTF-8 BOM, so em-dashes (—) in messages could
-mojibake on a double-click open in Excel on Windows. FIXED. Re-downloaded the Launch Check
-report and read the raw bytes:
-- First three bytes are `EF BB BF` — a proper UTF-8 BOM. A double-click into Excel/Edge now
-  picks the right codepage automatically; no more Data > From Text/CSV dance.
-- The em-dash is real UTF-8 (`E2 80 94`): `…"june_ops" — these will split…`. No `â€`
-  mojibake anywhere. Opens clean.
+I gave a 9 last round, held off 10 only by the missing UTF-8 BOM on Export CSV. That
+was the single thing blocking me. Re-checked it first.
 
-## Still well-formed — no regression
-- Header `row #,base URL,full URL,field,value,issue type,message` (now also a full-URL col,
-  a nice add). One row PER ISSUE (13 issue rows for my 3 messy grid rows).
-- RFC-4180 quoting intact: doubled quotes (`""june_ops""`) escaped; blank value = empty
-  cell (`,,required`), not "undefined". Every data row parses to exactly 7 columns.
-- NON-GET REQUESTS = [] across full build + Launch Check + CSV download — still zero
-  data-carrying traffic. Safe for company campaign data.
+## Re-check of my prior complaint (CSV BOM)
+FIXED. Downloaded Export CSV with non-ASCII data (`promoción`, `Boletín`, `Año Nuevo
+2026`). First three bytes are `EF BB BF` — a proper UTF-8 BOM. In my Edge/Windows-Excel
+mental model that means a double-click opens it in the right codepage, no mojibake. The
+accented chars survive the round-trip intact in the CSV, my existing `?ref=q3` is
+preserved, and UTMs are appended with `&` and %-encoded in the generated URL. This was my
+exact ask and it's done right.
 
-## 1. CLARITY — Yes (<5s)
-H1 + "PRE-LAUNCH QA / Run Launch Check" still say it in one line: clean a whole batch of UTM
-links in a grid, catch mistakes before launch, round-trip CSV, nothing leaves the browser.
+## Re-confirmed this round
+- Privacy: across cold load, data entry, and Export CSV — NON-GET requests = 0. Nothing
+  uploaded. Still the thing that lets me use it with company campaign data.
+- Round-trip integrity: casing and special chars preserved, no mangling.
+- QR: skips incomplete rows (didn't deep-test again; was solid round 1).
 
-## 2. VALUE — Yes
-Same core win: cross-row consistency ("June Ops" vs "june_ops") + per-field casing/space/
-required flags my Excel CONCAT sheet never catches. Now the report drops into Excel with a
-true double-click, zero cleanup. That was the last friction; it's gone.
-
-## 3. ADVOCACY — 10
-The thing between 9 and 10 — the missing BOM — is fixed, verified at the byte level on my
-exact Windows-Excel double-click path. It does the one job I'd switch for and exports a file
-I open without thinking. I'd bring this up unprompted to ops peers.
-
-### Biggest remaining thing
-Minor now: single-purpose tool I reach for 2–4x/month, not a daily driver — a category
-ceiling, not a flaw. Nothing in the flow holds it back for me anymore.
+## Remaining
+Honestly nothing blocking. Minor: the QR popover's "Download PNG/SVG" still shares an
+accessible name space with the toolbar "Download QR codes" — a keyboard/SR edge case, not
+a dealbreaker. With the BOM fixed I have no reason to dock a point.
 
 ```json
-{"tester": 4, "round": 2, "clarity": "Yes", "value": "Yes", "advocacy": 10, "topComplaints": ["Single-purpose tool used 2-4x/month — category ceiling, not a flaw"], "priorConcernsAddressed": "all"}
+{"name":"Tomás","clarity":"Yes","value":"Yes","advocacy":10,"qr_reaction":"QR generation is fully client-side and now correctly skips incomplete rows; verified zero uploads, exactly what a data-wary ops analyst needs.","prior_concerns_addressed":"fixed","likes":["Export CSV now ships a UTF-8 BOM (EF BB BF) — opens cleanly in Windows Excel, no mojibake","Non-ASCII campaign data (promoción, Boletín, Año Nuevo) round-trips intact","Zero non-GET requests across import/entry/export — nothing leaves my browser","Existing ?ref query param preserved, UTMs appended with & and properly %-encoded"],"complaints":["Minor a11y: QR popover Download PNG/SVG shares accessible-name space with toolbar 'Download QR codes' button — keyboard/screen-reader edge case only"],"verdict_summary":"My one held-back half-point is gone: Export CSV now has a real UTF-8 BOM and my accented ops data opens cleanly in Windows Excel with no mangling, and nothing ever leaves the browser. CSV round-trips perfectly and QR is fully local. This is now a tool I'd actually drop into my workflow — a 10."}
 ```

@@ -1920,3 +1920,196 @@ below the card** with working PNG/SVG downloads and no scroll-jump; QR filenames
 labels now name the channel (`01-spring_sale-newsletter-email.png`); the desktop popover opens beside
 its trigger within the viewport; Export CSV carries a UTF-8 BOM and Launch Check "Copy summary"
 confirms on mobile.
+
+### Bulk QR — Round 2 fixes (panel R2: 7/10 at the 9-bar — up from 2/10)
+
+Clarity 10/10 Yes, value 10/10 Yes — the QR feature is clear, wanted, and now trusted (eligibility,
+channel filenames, contact sheet, desktop popover, CSV BOM all verified across the panel). Exactly
+TWO craft fixes flip the bar, each tied to one sub-bar tester who gave an explicit "do X → 9". Both
+are QR-popover-scoped, low regression risk. Additive / logic / CSS only — do NOT touch the headline,
+subhead, lint toggles, grid layout, the QR concept/placement/verbs, the eligibility rule, channel
+filenames, the contact sheet, or any other panel. **Explicitly NO whole-app hero/layout reshuffle
+this round** (Elena's "grid sits below ~6 feature cards" is a deferred dedicated-layout pass, NOT
+in scope here — re-ordering the landing risks regressing the 7 passing testers).
+
+**Fix 1 — Card-view (mobile ≤640px) per-row Download PNG/SVG must produce a REAL file (P0; Sam 8).**
+The per-row popover's **"Download PNG" / "Download SVG"** fire NO file in the **CARD-VIEW** instance
+on mobile (0/3 at 375px, no error), even though the **identical buttons work in the desktop
+TABLE-VIEW** instance. The Round-1 blob-download fix landed on the table-view popover only; the
+card-view popover never invokes it (the bug points to a stale/different handler on the card
+instance). Fix:
+- The card-view popover's Download PNG/SVG MUST use the **same Blob + object-URL + programmatic
+  `<a download>` (revoke after)** path that already works on desktop — wire the card instance to the
+  SAME handler, not a stale/different one. Keep the existing iOS open-in-new-tab fallback so a
+  blocked download still lets the user long-press-save.
+- **Verify a file actually downloads at 375px on mobile Safari AND mobile Chrome** from the card-view
+  popover (not just the table view). This is the device Sam lives on and it was reported fixed last
+  round, so the verification at 375px is mandatory, not optional.
+
+**Fix 2 — Per-row QR popover must read as TETHERED to its trigger + show the full encoded URL (P1;
+Aisha 8).** The popover now stays in-viewport (Round-1 fix verified at 1280/1440px) but **floats
+~350px above its trigger row with no caret/arrow**, so the row association is lost; and the encoded
+URL is **hard-clipped mid-string** with no ellipsis/tooltip/copy, reading as unfinished. Fix both,
+on **desktop AND card view**:
+- **Tether it:** add a **caret/arrow pointing at the row's QR trigger button** (or position the
+  popover immediately adjacent to it) so the row association is obvious — while KEEPING the existing
+  viewport clamp/flip from Round 1 (do not regress the anchoring fix that just landed).
+- **Show the full URL, never hard-clipped:** the encoded-URL display must **wrap or ellipsis** (no
+  `white-space:nowrap` + `overflow:clip` mid-string cut), carry a **`title`/tooltip with the full
+  value**, and offer a **small copy affordance** that reuses the app's existing green copy-
+  confirmation cue (ref-stable, `aria-live`, the proven copy-survives-rerender pattern). Aisha
+  stated: caret tether + ellipsis-or-copy → she goes to 9.
+
+**Do NOT build this round (deprioritized, with reason):** Elena's hero/feature-card layout reshuffle
+(whole-app landing change, regression risk to 7 passing testers — candidate for a future dedicated
+layout pass) and her shareable read-only Launch Check link for a cold user (needs a server
+workspace). Non-blocking nits from PASSING testers stay unactioned: Wen (skipped-count more
+prominent), Dana (contact-sheet label raw casing vs slug filename), Tomás (a11y accessible-name
+overlap on Download buttons), Jules (X/Mastodon/Buffer presets out of the box), Priya (separate
+read-only share token), Rob (PNG DPI option).
+
+#### 5-second check (Bulk QR Round 2 — unchanged above the fold)
+Cold visitor still sees the unchanged hero and no QR popover. On a phone, the per-row QR popover's
+**Download PNG/SVG now save a real file at 375px** (card view), matching desktop; the popover reads
+as **tethered to its row** (caret/adjacent) and shows the **full encoded URL** (wrapped/ellipsis +
+tooltip + a copy button) instead of a mid-string clip — while the Round-1 viewport-clamp anchoring
+stays intact. No landing/hero/feature-card layout changed this round.
+
+## Workspace Review & Approval — two-way pre-launch sign-off (added 2026-06-14)
+
+ONE new capability, ONLY on Team Workspace pages (`/w/<id>`): turn the one-way shared workspace into
+a two-way **review loop**. A teammate acts as a **REVIEWER** (no account) — sets a reviewer name once
+(anonymous, localStorage, NEVER blocks the cold-open editable grid), then marks each link row
+**Approved** or **Needs changes** with an optional short note. Everyone on the workspace sees a live
+**review roll-up** and per-row state, plus a shareable READ-ONLY **`/w/<id>/review`** summary page for
+a stakeholder. Server-persisted (it's a shared workspace), free-tier (reuses the existing workspace
+payload / Turso — no new credential). Additive only — do NOT touch the headline, subhead, lint
+toggles, grid layout, Presets, Campaigns/UTM-Spec/Naming-Template panels, Bulk edit, CSV, Audit URLs,
+Launch Check, QR, or any share action. NONE of this exists off `/w/` pages: the main builder, Rung-1
+share link, Campaigns library, presets, and a cold `/` open have zero review state. Each item is
+shaped by this app's repeated panel failures.
+
+**1. Distinct verb — "Review" / "Approve" / "Needs changes", never a near-duplicate of an existing
+control (heed same-verb-adjacent-controls-read-as-broken).** The app already has "Paste & Audit",
+"Run Launch Check", and the share cluster. Review uses its OWN word family — **"Review"**,
+**"Approve"**, **"Needs changes"** — and its OWN color identity (a distinct **indigo/blue "review"
+accent**, NOT the slate/teal Launch-Check QA treatment, NOT the violet off-spec lint, NOT the amber
+case/space lint). The roll-up panel is titled **"Workspace Review — Approval Status"** so a skimmer
+never confuses it with Launch Check (which scores lint) — Launch Check answers "is the naming
+clean?", Review answers "did a human sign off?". The two never sit in the same strip.
+
+**2. Reviewer-name entry — set once, optional, NEVER blocks the cold-open grid (heed anonymous-first;
+the editable grid must never be gated).** A small **"Reviewing as: [name]"** control in the review
+roll-up panel header (mirrors the existing History "Editing as:" pattern). Default **"Anonymous"**;
+clicking reveals an inline pre-filled field (Enter commits, Esc cancels), stored in **localStorage
+per browser** — never required, never an account, never an email, and it NEVER blocks loading or
+editing the grid. The grid is fully usable before any name is set; the name is only attached to
+review marks the user makes. A reviewer who never sets a name still reviews — marks just show
+"Anonymous".
+
+**3. Roll-up panel — FULL-WIDTH SUMMARY ABOVE the grid, in normal flow, default visible (heed
+added-feature-buried-panel-surfaces-not-function — 4 recurrences — and
+audit-result-feature-needs-summary-above-the-grid).** The live review roll-up renders as a
+**full-width panel in normal page flow directly above the grid** on `/w/<id>` (below the synced
+banner, above/separate from the Pre-launch-QA strip), pushing the grid down — NEVER per-cell-only,
+NEVER a collapsed disclosure at the bottom of a side rail, NEVER inside grid columns, NEVER an
+overlay. It is **default-visible** on every `/w/<id>` page (a `×` collapses it to a one-line
+**"Review: 12 approved · 3 need changes · 5 unreviewed"** chip that re-expands on click — it is never
+hidden by default). Panel contents:
+- **Title** "Workspace Review — Approval Status" + the **"Reviewing as: [name]"** control.
+- **Live roll-up counts** (the headline number): **"12 approved · 3 need changes · 5 unreviewed"**
+  out of N total — approved in green, needs-changes in amber, unreviewed muted, with a thin
+  three-segment ratio bar. Updates the instant any row mark changes (and on workspace refresh).
+- A short mode-aware line (see item 7) and, when every row is approved, a clear
+  **"All N links approved — ready to launch"** success state (green, check glyph).
+
+**4. Per-row review affordance — COMPACT, never a wide squeezing column (heed
+side-panel-squeezes-grid-hides-editable-columns, readonly-wide-column-must-be-width-capped-from-build,
+container-resize-leaves-hardcoded-width-children; NO horizontal overflow at 1280px).** The per-row
+review control must NOT be a wide inline grid column that pushes the 6 editable UTM columns
+off-screen. Concretely, on the desktop table (≥640px):
+- Add ONE **fixed-width, narrow review cell** as the **leftmost column** (next to the existing bulk
+  select checkbox, LEFT of the row data) — a compact **state badge/button ≤ ~72px wide** showing the
+  row's current state: a muted **"Review"** prompt when unreviewed, a green **"Approved ✓"** badge, or
+  an amber **"Needs changes"** badge. It is a single small control, NOT separate Approve + note +
+  reviewer-name columns inline. The note + reviewer name do NOT get their own grid columns.
+- Clicking the badge opens a **small popover anchored to that row** (indigo accent, reuse the proven
+  viewport-clamped/tethered popover pattern from QR) containing: an **Approve** button, a **Needs
+  changes** button, an optional short **note** input, and (read-only) the reviewer name. Choosing a
+  state sets the badge, records reviewer + note + timestamp, closes the popover, and updates the
+  roll-up. The reviewer name + note surface as a small `title`/tooltip + a one-line muted sub-row
+  under the badge (truncated, ellipsis) — never as wide inline columns.
+- **Width budget (must verify at 1280px with Enforce ON + a long generated URL):** the review column
+  is fixed-width and capped FROM THE BUILD (no hardcoded `w-NN shrink-0` that escapes the container);
+  all 6 editable UTM columns + the Generated-URL column stay visible/readable, and there is **NO
+  horizontal PAGE scroll at 1280px**. If width is tight, the review state lives only in the narrow
+  badge + popover — never expand it into a multi-column inline block.
+
+**5. Mobile (375px card view) — tappable, in flow, nothing occluded (heed
+mobile-sticky-overlay-occludes-tap-targets; CSS-responsive only, no JS viewport detection).** In the
+≤640px card view, the per-row review badge joins the card's **top-bar action cluster** (alongside the
+select checkbox / Duplicate row / Delete row), ≥44px, icon+label, in normal card flow — no
+sticky/pinned anything. Tapping it opens the Approve / Needs-changes / note popover; the popover
+**z-stacks ABOVE all cell affordances and any sticky element** (high z-index) so the tap lands on the
+control, never a cell behind it, and it renders in/near card flow at constrained width with **no
+horizontal scroll**, never squeezing the editable inputs. The roll-up panel spans full width above
+the card list, in flow. Verify at 375px with elementFromPoint that each review tap lands on its own
+control. Pure CSS breakpoints — the badge/popover exist in both layouts; breakpoint-suffix any shared
+`data-testid` (per the dual-mount lesson).
+
+**6. Read-only summary page `/w/<id>/review` — mirrors `/guide` and `/check` (DOCUMENT, not a tool;
+NEVER writes).** A separate route rendering the workspace's review state as a single legible,
+link-shareable page for a stakeholder who needs to KNOW the sign-off status WITHOUT editing. It is
+**TRULY READ-ONLY**: it only GETs the workspace payload (reuse the existing GET, no new
+schema/table/credential) and makes **NO PUT/POST, never autosaves, never writes localStorage** (a
+read-only page that writes back can clobber the workspace).
+- **5-second read:** a stranger landing on `/w/<id>/review` understands within 5s "this is where the
+  campaign gets signed off before launch." Lead with an **h1** "Campaign Review — Approval Status" +
+  a one-line description, then the same roll-up counts (12 approved · 3 need changes · 5 unreviewed +
+  ratio bar / "All N approved — ready to launch"), then a read-only list of EVERY link showing its
+  generated URL (truncate/wrap), its state badge, the reviewer name, and the note. NO editable inputs
+  anywhere (no buttons that change state, no text boxes).
+- **Empty/zero-review state (graceful, never blank):** if no row has been reviewed yet, still render
+  the page with the roll-up reading **"0 of N reviewed"** and a friendly line **"No links reviewed
+  yet — open the workspace to start the sign-off."** plus the link list (all "Unreviewed"). Never a
+  blank page.
+- **CTA card:** prominent **"Open the workspace to review →"** linking to `/w/<id>` (the on-ramp).
+- **Not-found:** `/w/<bad-id>/review` shows the standard **"Workspace not found"** + link back to the
+  builder — mirror `/w/<id>` and `/guide`, never a crash/blank.
+- **Mobile (375px):** fully legible top-to-bottom, no horizontal scroll, list rows + badges + notes
+  wrap.
+
+**7. Mode-aware privacy copy — review state is SERVER-PERSISTED (heed
+server-layer-makes-client-side-privacy-claims-a-trust-bomb).** Review marks live on the shared
+workspace server (it's how everyone sees the live roll-up), so NO "client-side only" / "nothing
+leaves your browser" wording anywhere on the review roll-up OR the `/w/<id>/review` page. State it
+honestly + name the access control: **"Review status is saved on this shared workspace — anyone with
+this secret link can see and add reviews."** (The local builder's zero-network prop is untouched —
+this copy appears ONLY on `/w/` review surfaces.)
+
+**8. Discoverability of the shareable review page FROM `/w/<id>` (heed added-feature-buried-panel;
+share-concept-clutter — don't let it blur with the existing share cluster).** Add a **"Share review
+summary (read-only)"** action with sublabel **"a page stakeholders read without editing"** to the
+existing `/w/<id>` **share cluster** (alongside "Copy share link (snapshot)" / "Create shared
+workspace (live, synced)" / "Share style guide (read-only reference)"), grouped + distinctly labeled
+so the four read as distinct members of one group. Clicking COPIES the `/w/<id>/review` link with the
+app's **peripherally-unmissable green-fill-in-place "Copied ✓"** confirmation that **survives
+re-render** (ref-stable timer, `aria-live="polite"`, execCommand/textarea clipboard fallback) — reuse
+the established copy-cue pattern; never a fast-fading corner toast. Verify the cue fires at 375px.
+
+### 5-second check (Workspace Review & Approval)
+- **On `/w/<id>` (unchanged above the fold for the builder; this is the workspace surface):** the
+  hero/grid loads normally and is editable WITHOUT setting a reviewer name; directly above the grid
+  the **"Workspace Review — Approval Status"** roll-up panel is visible by default reading
+  **"12 approved · 3 need changes · 5 unreviewed"** with its indigo accent + ratio bar, so anyone
+  lands and sees the sign-off state in 5s. Each row carries a compact state badge in the narrow
+  leftmost review column (Approved ✓ / Needs changes / Review) — and all 6 editable UTM columns stay
+  visible at 1280px.
+- **On `/w/<id>/review` (the read-only summary):**
+  - **Headline (h1):** "Campaign Review — Approval Status".
+  - **Subtitle (one line):** "Where this campaign gets signed off before launch. Read-only summary."
+  - **Primary action:** none to perform — the page IS the outcome; the prominent **"Open the workspace
+    to review →"** CTA card is the on-ramp, visible near the top.
+  - **Pre-filled example:** the first visible content is real workspace data — the live roll-up counts
+    + ratio bar and the per-link state badges with reviewer names/notes — never a blank box (empty
+    state shows "0 of N reviewed" + the friendly start line).

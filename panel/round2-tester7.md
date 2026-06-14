@@ -1,24 +1,8 @@
-# utm-grid — Round 2, Tester 7 (Aisha, Product Designer)
-A teammate shared this; I judge craft hard. Round 1 I scored 8/10, held down by copy buttons that gave zero feedback.
-
-## Prior concern re-checked — RESOLVED
-"Copy summary" and "Share style guide" gave no visible confirmation (label never flipped). Both FIXED, verified cold:
-- Ran Launch Check → clicked "Copy summary" → it flips to a SOLID-GREEN "✓ Copied!" pill (white text), holds ~2s, reverts. Clipboard actually received 441 chars. This is exactly the considered cue I asked for.
-- Created a workspace, clicked "Share style guide" → same green "✓ Copied!" flip, holds ~2s, reverts. Identical pattern to the report button — good system thinking; the affordance is now uniform across the app.
-- No console errors in either flow.
-
-## Compliance Report panel — polish holds at 9-level
-Placement still correct: directly under the teal PRE-LAUNCH QA strip, above the grid, so I read it before touching rows. Distinct teal "✓ Launch Check — Compliance Report" header with a dismiss ✕, a clear "2 links checked / 0 passing / 2 with issues" counter, and grouped issue cards ("Inconsistent values · utm_medium · 2 rows" with the exact 'Email' vs 'email' → "will split campaign data in GA4" explanation and row refs). Does not blur with the gray Presets/Bulk-Edit panels. The "Checked in your browser — nothing sent to any server" line is a nice trust touch.
-
-## Clarity — Yes
-H1 + the casing/typos subline land in seconds; sections are clearly grouped and labeled.
-
-## Value — Yes
-Today I'd eyeball links in a Notion doc and hope nothing's mistyped. The cross-row catch ('Email' vs 'email' splits GA4) is something I cannot do by eye. Real win over my manual scan.
-
-## Advocacy — 9
-My one repeated trust-killer (silent copy buttons) is gone, and the fix is applied consistently across both buttons with a clean green pill that holds ~2s. The report panel is genuinely well-crafted. Single biggest remaining thing: the home toolbar still has no clear primary "start here" action — a first-timer meets ~7-10 near-equal-weight controls. Minor now that everything else feels considered, but it's the one thing keeping me from a 10.
-
-```json
-{"tester": 7, "round": 2, "clarity": "Yes", "value": "Yes", "advocacy": 9, "topComplaints": ["Home toolbar still has no single clear primary 'start here' action — a cold first-timer meets ~7-10 near-equal-weight controls at once"], "priorConcernsAddressed": "all"}
-```
+{
+ "name":"Aisha","clarity":"Yes","value":"Yes","advocacy":8,
+ "qr_reaction":"The per-row QR popover now clamps/flips to stay fully in the viewport at 1280 and 1440px and no longer drops to page-bottom over the Allowed-values panel — my round-1 blocker is genuinely fixed and the chrome (header, ✕, centered 160px QR, paired Download PNG/SVG) is tidy. It loses a point only because it floats ~350px above its trigger row with no caret tethering it, and the ENCODES URL is hard-clipped with no ellipsis or copy, which reads as unfinished.",
+ "prior_concerns_addressed":"fixed — re-checked at 1280px and 1440px: popover stays inside the viewport (right gap ~117–197px, bottom gap ~130px), never lands at page-bottom, never overlaps the side config panels",
+ "likes":["Round-1 anchoring blocker resolved: popover clamps/flips and stays on-screen at every desktop width I tried","Considered layout — left-aligned 'QR Code — Row 1' heading, clean ✕, centered even-margin 160px QR, paired Download PNG/SVG buttons","Per-row QR stays disabled until the row is valid; warm specific result/ZIP messaging still holds"],
+ "complaints":["Popover isn't adjacent to its trigger row and has no caret/arrow — it floats up-and-left into the toolbar zone (trigger ~y715, popover ~y361), so the row association is lost","ENCODES URL is white-space:nowrap + overflow:clip with no ellipsis, no title tooltip, and no copy button — full encoded string (scrollWidth 530 vs 222 visible) is hard-cut mid-URL ('…utm_medium=email&ut')"],
+ "verdict_summary":"They fixed the exact thing I flagged — the QR popover is now well-behaved at every desktop width I tested and the chrome is clean. It's not a 9 yet because the popover detaches from its row with no caret and the clipped, un-copyable ENCODES line reads as unfinished. Add a caret tether and an ellipsis-or-copy on that URL and I'd advocate loudly."
+}

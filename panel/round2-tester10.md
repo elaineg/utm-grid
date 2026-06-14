@@ -1,36 +1,30 @@
-# Sam (PM, tester 10) — round 2 (mobile 375px)
+Sam (Product manager, mobile-heavy) — round 2
 
-{"name":"Sam","clarity":"Yes","value":"Yes","advocacy":9}
+PRIOR-CONCERN RE-CHECK (my 3 round-1 complaints), all on my phone (375px):
+1. Per-row "Download PNG"/"Download SVG" fired no file on mobile — STILL OPEN on mobile.
+   The card-view QR popover renders a real scannable code + Download PNG/SVG buttons, but
+   tapping Download PNG produced NO download 3/3 tries (no file, no error, no console error).
+   I checked the same button on a wide/laptop layout and it DID save qr-row-1.png — so the
+   fix landed for the desktop table view but NOT the mobile card popover, which is exactly
+   where I live. Changelog said this was fixed; on my phone it isn't.
+2. Bulk QR only skipped blank-base-URL rows — FIXED. I added an untagged row (real URL,
+   zero utm tags); bulk "Download QR codes" showed "1 QR code generated, 1 skipped —
+   incomplete or invalid URL" and the ZIP held only the tagged PNG + contact-sheet. No
+   untagged link slips into the handoff now.
+3. Launch Check "Copy summary" gave no confirmation — FIXED. On mobile the button flips to
+   a green "✓ Copied!" and the clipboard fills (180 chars). Two rounds of nagging, resolved.
 
-## Prior-concern re-check — BOTH RESOLVED
-- (1) **Copy summary confirmation — FIXED.** Clicked it; the button flips from white "Copy summary"
-  to a bold **solid-green "✓ Copied!"** (white text), holds ~2s, then reverts. Clipboard had the real
-  report ("Total: 1 link checked | Passing: 1..."). No more clicking 3x unsure — I see it instantly.
-- (2) **Launch Check buried on mobile — FIXED.** At 375px the green "PRE-LAUNCH QA / Run Launch Check"
-  block is now the FIRST section right under the grid card (button top ≈778px; peeks into the first
-  viewport, one short scroll to tap). Last round it sat under Workspace/Presets/Naming/Campaigns/
-  Allowed values/Bulk Edit — now those all come AFTER it. The most valuable action is no longer hidden.
-
-## What I did this round
-Cold home (375px, 0 console errors) → spotted Run Launch Check near top → ran it → report rendered
-("1 link checked / 1 passing", green pass bar) → tested Copy summary (green confirm) + Download CSV.
-
-## 1. CLARITY — Yes
-Same instant read: "builds a whole batch of consistent UTMs, flags the broken ones, hands you a
-CSV/summary — no login." H1 + "before they split your Google Analytics" still nails it.
-
-## 2. VALUE — Yes
-Beats my Google Sheet formula column nobody checks. Launch Check + Slack-ready summary + CSV handoff
-is the exact "make me look organized" artifact I wanted, and now I trust the Copy button. My sheet
-can't produce any of this.
-
-## 3. ADVOCACY — 9/10
-Both two-round-running asks are fixed, so this clears my bar — I'd bring it up unprompted to anyone
-coordinating a launch. Single biggest remaining thing (the -1): the home screen is still a LONG mobile
-scroll of ~10 sections (Presets, Naming Template, Campaigns, Allowed values, Bulk Edit, Workspace…);
-a first-timer can feel the surface area. Collapsing the advanced stack under the core grid + Launch
-Check would make it a clean 10. Not a blocker — the two things that nagged me are gone.
+Fresh pass: tagged launch link built, auto-fix naming cleans casing, Launch Check sits near
+the top with a green "All 1 link pass" Compliance Report + Download report (CSV) — my exact
+look-organized handoff. 0 console errors all session, no signup.
 
 ```json
-{"tester":10,"round":2,"clarity":"Yes","value":"Yes","advocacy":9,"topComplaints":["Mobile home is still a long ~10-section scroll; surface area feels heavy for a first-timer (would collapse advanced sections)"],"priorConcernsAddressed":"all"}
+{
+ "name":"Sam","clarity":"Yes","value":"Yes","advocacy":8,
+ "qr_reaction":"Bulk QR now correctly skips untagged rows and tells me so, and per-row codes render a real scannable QR with the tagged URL — but on my phone the per-row Download PNG/SVG STILL does nothing while it works on desktop, so my single-link QR export is broken on the device I actually use.",
+ "prior_concerns_addressed":"2 of 3 fixed (bulk-skip and Copy-summary green confirmation both verified fixed on mobile); per-row Download PNG/SVG still fires no file in the mobile card popover even though it works on desktop — still open",
+ "likes":["Bulk QR skips untagged rows and tells me ('1 skipped — incomplete or invalid URL') — no bad link in my handoff","Launch Check 'Copy summary' finally shows green '✓ Copied!' on mobile — my two-round gripe is gone","Compliance Report + Download report (CSV) is a tidy launch-doc artifact","Auto-fix naming + clean CSV export, zero re-entry, no signup","Whole flow works on my phone, 0 console errors"],
+ "complaints":["Per-row 'Download PNG'/'Download SVG' in the QR popover STILL fire no file on mobile (0/3 attempts, no error) even though the identical button works on desktop — single-link QR export is dead on the device I use, and this was claimed fixed","Works-on-laptop-not-phone inconsistency is the kind of thing that quietly erodes my trust before a team handoff — I'd hand a teammate a button that does nothing and not know why"],
+ "verdict_summary":"Two of my three round-1 gripes are genuinely fixed and verified on my phone — the untagged-row skip and the green Copied confirmation — and the batch/auto-fix/CSV/Launch-Check flow is exactly the organized launch handoff I want with no login. But the per-row PNG/SVG QR download is STILL dead in the mobile card view (it works on desktop), and it was reported fixed, so I'm holding at 8: I'd recommend it to other PMs but I'd warn them the single-link QR export only works on a laptop."
+}
 ```

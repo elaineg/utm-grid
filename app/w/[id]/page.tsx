@@ -31,8 +31,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { UtmGrid } from "../../components/UtmGrid";
 import { WorkspaceHistory, type HistoryVersion } from "../../components/WorkspaceHistory";
+import { ReviewerNameControl } from "../../components/ReviewerNameControl";
+import { ReviewRollupPanel } from "../../components/ReviewRollupPanel";
 import { writeValue } from "../../../lib/useLocalStorage";
 import type { WorkspacePayload } from "../../../lib/workspace";
+import { computeReviewRollup, type ReviewMap } from "../../../lib/review";
 import { writeClipboard } from "../../../lib/share";
 
 type SyncStatus = "idle" | "saving" | "saved" | "error";
@@ -176,6 +179,19 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
   const [reportLinkCopied, setReportLinkCopied] = useState(false);
   const reportLinkCopyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Review & Approval state
+  // reviewMap is part of the workspace payload (additive field).
+  // Guard #3 (SERVER AUTOSAVE FIRST-PERSIST GUARD): only allow review mutations after hydration.
+  // Guard #4 (SSR/HYDRATION): reviewer name read in useEffect, not useState lazy initializer.
+  const [reviewMap, setReviewMap] = useState<ReviewMap | undefined>(undefined);
+  const reviewMapRef = useRef<ReviewMap | undefined>(undefined);
+  const [reviewerName, setReviewerName] = useState<string>("");
+  const reviewerNameRef = useRef<string>("");
+
+  // Copy review summary link state — /w/<id>/review
+  const [reviewLinkCopied, setReviewLinkCopied] = useState(false);
+  const reviewLinkCopyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Mount the workspace link copied state on entry (if we just navigated from "Create shared workspace")
   // Check sessionStorage for a pending copy-on-load signal
   const didMountCopyCheck = useRef(false);
@@ -251,6 +267,11 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
         setWorkspaceName(loadedName);
         workspaceNameRef.current = loadedName;
 
+        // Review: restore reviewMap from payload (additive field, may be absent on legacy workspaces)
+        const loadedReviewMap = data.reviewMap ?? undefined;
+        setReviewMap(loadedReviewMap);
+        reviewMapRef.current = loadedReviewMap;
+
         // Mark hydrated BEFORE setStatus so the autosave guard is active when UtmGrid mounts.
         isHydratedRef.current = true;
 
@@ -302,10 +323,14 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
     async (toSave: WorkspacePayload, editorLabel: string | null): Promise<boolean> => {
       if (!id) return false;
       try {
-        // Merge the current workspace name into the payload (name lives on page, not in UtmGrid)
-        const payloadWithName: WorkspacePayload = workspaceNameRef.current
-          ? { ...toSave, name: workspaceNameRef.current }
-          : toSave;
+        // Merge the current workspace name + reviewMap into the payload
+        // (name and reviewMap live on page, not in UtmGrid)
+        const payloadWithName: WorkspacePayload = {
+          ...toSave,
+          ...(workspaceNameRef.current ? { name: workspaceNameRef.current } : {}),
+          // Include reviewMap if present (additive field — undefined = omit for clean wire)
+          ...(reviewMapRef.current !== undefined ? { reviewMap: reviewMapRef.current } : {}),
+        };
         const payloadRaw = JSON.stringify(payloadWithName);
         const body = JSON.stringify({ payload: payloadRaw, editor: editorLabel });
         const res = await fetch(`/api/workspace/${id}`, {
@@ -406,6 +431,71 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
     styleGuideCopyTimer.current = setTimeout(() => {
       setStyleGuideCopied(false);
       styleGuideCopyTimer.current = null;
+    }, 2000);
+  }, [id]);
+
+  // ── Review callbacks ──────────────────────────────────────────────────────
+  // Guard #3: gate review mutations behind isHydratedRef so a failed/slow GET
+  // can't autosave a blank reviewMap over real server state.
+  const handleReviewChange = useCallback(
+    (newMap: ReviewMap) => {
+      if (!id || !isHydratedRef.current) return;
+      // Update local state
+      setReviewMap(newMap);
+      reviewMapRef.current = newMap;
+      // Trigger debounced autosave by updating the latestPayloadRef and kicking the timer.
+      // We do this by merging the new reviewMap into the latest payload and calling handleStateChange
+      // with a synthetic payload. Since reviewMap is separate from UtmGrid's state, we need
+      // to trigger a save directly.
+      const currentPayload = latestPayloadRef.current;
+      if (!currentPayload) return;
+      // Update latestPayloadRef with the new reviewMap
+      const updatedPayload: WorkspacePayload = {
+        ...currentPayload,
+        reviewMap: newMap,
+      };
+      latestPayloadRef.current = updatedPayload;
+      // Debounce the save
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+      setSyncStatus("saving");
+      saveTimer.current = setTimeout(async () => {
+        saveTimer.current = null;
+        const toSave = latestPayloadRef.current;
+        if (!toSave) return;
+        const ok = await doSave(toSave, editorNameRef.current || null);
+        if (ok) {
+          setSyncStatus("saved");
+          setSavedAt(Date.now());
+          setHistoryTick((t) => t + 1);
+        } else {
+          setSyncStatus("error");
+        }
+      }, 800);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [id, doSave]
+  );
+
+  const handleReviewerNameChange = useCallback((name: string) => {
+    setReviewerName(name);
+    reviewerNameRef.current = name;
+  }, []);
+
+  // Copy review summary link — /w/<id>/review (read-only summary page)
+  const copyReviewLink = useCallback(async () => {
+    if (!id) return;
+    const url = `${window.location.origin}/w/${id}/review`;
+    try {
+      await writeClipboard(url);
+    } catch {
+      // execCommand fallback already tried inside writeClipboard
+    }
+    if (reviewLinkCopyTimer.current) clearTimeout(reviewLinkCopyTimer.current);
+    setReviewLinkCopied(true);
+    // Guard #7: 2s hold — peripherally unmissable green fill
+    reviewLinkCopyTimer.current = setTimeout(() => {
+      setReviewLinkCopied(false);
+      reviewLinkCopyTimer.current = null;
     }, 2000);
   }, [id]);
 
@@ -764,6 +854,40 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
                   {reportLinkCopied ? "Compliance report link copied!" : ""}
                 </span>
               </div>
+
+              {/* Share review summary — /w/<id>/review, indigo accent (distinct from teal/violet/blue).
+                  Guard #7: green-fill-in-place + aria-live, 2s hold.
+                  Guard #9: distinct verb "Share review summary" (not Audit/Check/Guide).
+                  Guard #8: sublabel is mode-aware (server-persisted). */}
+              <div className="flex flex-col items-start gap-0.5">
+                <button
+                  type="button"
+                  data-testid="share-review-summary-btn"
+                  aria-label="Share review summary link"
+                  onClick={() => void copyReviewLink()}
+                  className={`w-full sm:w-auto rounded-md border px-4 py-2 text-sm font-medium transition-colors duration-200 min-h-[44px] ${
+                    reviewLinkCopied
+                      ? "border-green-500 bg-green-500 text-white"
+                      : "border-indigo-400 bg-indigo-50 text-indigo-700 hover:bg-indigo-100"
+                  }`}
+                >
+                  {reviewLinkCopied ? (
+                    <span className="inline-flex items-center gap-1.5">
+                      <span aria-hidden="true">✓</span>{" "}
+                      <span>Copied!</span>
+                    </span>
+                  ) : (
+                    "Share review summary"
+                  )}
+                </button>
+                <span className="text-[10px] text-indigo-500 leading-tight">
+                  read-only approval status
+                </span>
+                {/* Dedicated aria-live for review-link copy — guard #7 */}
+                <span role="status" aria-live="polite" className="sr-only">
+                  {reviewLinkCopied ? "Review summary link copied!" : ""}
+                </span>
+              </div>
             </div>
             {/* Fix 4(c): server-data note — accurate for a server-backed surface */}
             <p className="text-[10px] text-gray-500 leading-tight text-right max-w-xs">
@@ -773,20 +897,39 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
           </div>
         </div>
 
-        {/* History & Editing-as row */}
+        {/* History & Editing-as row (existing) + Reviewer name control */}
         {id && (
-          <WorkspaceHistory
-            workspaceId={id}
-            onRestore={(p, label) => void handleRestore(p, label)}
-            onPreview={handleHistoryPreview}
-            onEditorChange={handleEditorChange}
-            tick={historyTick}
-            latestVersionId={latestVersionId}
-            isPreviewing={isPreviewing}
-            previewVersion={previewVersion}
-          />
+          <>
+            <div className="flex flex-wrap items-center gap-2 mt-1">
+              {/* Reviewer name control — mirrors "Editing as" but for the reviewer role.
+                  Guard #4: localStorage read in useEffect inside ReviewerNameControl.
+                  Guard #8: text explicitly says "optional, saved on this device".
+                  NEVER required, NEVER blocks the cold-open editable flow. */}
+              <ReviewerNameControl onNameChange={handleReviewerNameChange} />
+            </div>
+            <WorkspaceHistory
+              workspaceId={id}
+              onRestore={(p, label) => void handleRestore(p, label)}
+              onPreview={handleHistoryPreview}
+              onEditorChange={handleEditorChange}
+              tick={historyTick}
+              latestVersionId={latestVersionId}
+              isPreviewing={isPreviewing}
+              previewVersion={previewVersion}
+            />
+          </>
         )}
       </div>
+
+      {/* Review roll-up panel — full-width, in normal flow, ABOVE the grid.
+          Only shown when payload is loaded (not in preview mode).
+          Guard #2 (SINGLE SOURCE): computeReviewRollup is the one source of truth.
+          Guard #8 (MODE-AWARE): panel label says "Server-synced". */}
+      {!isPreviewing && payload && (
+        <ReviewRollupPanel
+          rollup={computeReviewRollup(reviewMap, (payload.rows ?? []).map((r) => r.id))}
+        />
+      )}
 
       {/* P0-1: Preview mode — UtmGrid with isPreview=true renders all inputs as
           disabled/readOnly with greyed/locked visual treatment. No pointer-events
@@ -798,6 +941,7 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
           storageKeyPrefix={`preview:${id}:`}
           initialWorkspace={previewPayload}
           isPreview={true}
+          reviewMap={previewPayload.reviewMap}
         />
       ) : (
         payload && (
@@ -808,6 +952,9 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
             onStateChange={handleStateChange}
             specSyncStatus={syncStatus === "idle" ? null : syncStatus}
             specSavedAt={savedAt}
+            reviewMap={reviewMap}
+            onReviewChange={handleReviewChange}
+            reviewerName={reviewerName}
           />
         )
       )}

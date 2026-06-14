@@ -5,6 +5,7 @@
 import { UTM_FIELDS, type LintSettings, type UtmRow } from "./types";
 import { deserializeSpec, type UtmSpec } from "./spec";
 import { deserializeNamingTemplate, type NamingTemplate } from "./namingTemplate";
+import { deserializeReviewMap, type ReviewMap } from "./review";
 
 // ── Payload type ──────────────────────────────────────────────────────────────
 
@@ -19,6 +20,11 @@ export interface WorkspacePayload {
   namingTemplate?: NamingTemplate;
   /** Optional user-visible name for the workspace (e.g. "Q3 Paid Campaigns"). */
   name?: string;
+  /**
+   * Per-row review state — additive field, absent in legacy workspaces.
+   * Map from row.id → ReviewEntry. Legacy workspaces show 0 reviews.
+   */
+  reviewMap?: ReviewMap;
 }
 
 // ── ID generation ─────────────────────────────────────────────────────────────
@@ -127,6 +133,8 @@ export function parseWorkspacePayload(raw: string): WorkspacePayload | null {
       namingTemplate: deserializeNamingTemplate(parsed.namingTemplate as unknown),
       // Preserve optional workspace name (trim to 120 chars max)
       name: typeof parsed.name === "string" ? parsed.name.trim().slice(0, 120) || undefined : undefined,
+      // Deserialize reviewMap — additive field, undefined for legacy workspaces
+      reviewMap: deserializeReviewMap((parsed as unknown as Record<string, unknown>).reviewMap),
     };
   } catch {
     return null;

@@ -1,44 +1,20 @@
-# Round 2 — Tester 3 (Wen, marketing data analyst) — violation-CSV join-key re-test
-
-## Prior concern (my one ding at 9) — RE-CHECKED FIRST: RESOLVED
-My ding: the Launch Check violation CSV's `base URL` column stripped utm_* params, so I couldn't pivot a
-failing row back to the exact original tagged URL — no join key for a paste-audit batch.
-
-Now the report header is literally `row #,base URL,full URL,field,value,issue type,message` — a NEW 7th
-column `full URL` carries the COMPLETE original tagged URL with every param. Verified on a fresh dirty
-8-row paste batch (35 violation rows): every data row has exactly 7 columns, none truncated/mangled.
-`parse_qs` round-trips it cleanly — `Summer%20Sale%202026`->`Summer Sale 2026`, comma in `shoes,boots`
-->`%2C`, embedded quotes in `top "banner"` encoded in the URL and doubled in the CSV `value` field. This
-is exactly the join key I asked for: the report's `full URL` is byte-identical to the grid export's
-`generated_url`, so I can VLOOKUP/JOIN a failing violation straight back to its source row. Ding closed.
-(saved: validator-workspace/round2-tester3/launch-check-report.csv + export-grid.csv)
-
-## Regression sweep — report / CSV / export round-trip: PASS
-- Grid Export CSV: all 8 rows, raw values preserved (no silent normalization — `Facebook` stays
-  `Facebook` until I auto-fix), proper RFC-4180 quoting, `generated_url` == report `full URL`.
-- 0 console errors and 0 page errors across paste -> audit -> launch check -> download report -> export.
-- Cross-row inconsistency lint intact and named ("...will split campaign data in GA4"), groups the 3-way
-  campaign split (Summer Sale 2026 / summer_sale_2026 / Summer_Sale_2026). Nothing regressed.
-- Nit, not a ding: report CSV has a UTF-8 BOM before `row #` — correct for Excel/accented chars; Sheets
-  and BigQuery strip it fine.
-
-## 1. CLARITY — Yes
-Headline + "Auto-fix messy casing and typos before they split your Google Analytics" = my pain in 5s.
-
-## 2. VALUE — Yes
-Today I eyeball a Sheet + a broken VLOOKUP and only catch casing splits after GA4 already shows two rows.
-This catches them pre-launch AND now exports a per-violation audit log that joins back to the source URL —
-that drops straight into BigQuery as my campaign QA gate. Strict CSV in/out, zero invisible transforms. Weekly use.
-
-## 3. ADVOCACY — 10
-My only blocker at 9 is gone and implemented exactly right: the full original tagged URL as a join key, no
-mangling, no round-trip regressions. For a free, no-login, browser-only tool this is best-in-class data
-hygiene — I'll bring it up unprompted in marketing-ops Slack. Single biggest remaining thing (a nice-to-have,
-not a deduction): a `severity` column (failing vs warning) in the report CSV would let me filter blockers
-from nits without re-deriving from `issue type`. Cosmetic only.
-
 ```json
-{"tester": 3, "round": 2, "clarity": "Yes", "value": "Yes", "advocacy": 10,
- "topComplaints": ["Nit only: report CSV lacks a severity column (failing vs warning) — must infer from issue type", "Report CSV carries a UTF-8 BOM (intentional/harmless for my tools)"],
- "priorConcernsAddressed": "all"}
+{
+ "name":"Wen",
+ "clarity":"Yes",
+ "value":"Yes",
+ "advocacy":9,
+ "qr_reaction":"Re-ran my exact repro (row1 valid, row2 missing utm_source, row3 empty): the bulk download now reports '1 QR code generated, 2 skipped — incomplete or invalid URL' and the per-row QR button is DISABLED on the incomplete row, enabled only on the valid one. 'Generated' now means 'valid' — the inflated count is gone, exactly what I needed.",
+ "prior_concerns_addressed":"fixed — both. (1) QR no longer overcounts: a row missing required utm_source is skipped AND counted, per-row QR disabled when lint blocks, verified live. (2) Export CSV now begins with the UTF-8 BOM (xxd shows EF BB BF before base_url); a non-ASCII campaign (été_naïve_café) round-trips clean and is correctly percent-encoded in generated_url — Excel-safe.",
+ "likes":[
+   "QR eligibility is now data-honest: incomplete/invalid rows skipped + counted, per-row QR disabled when lint blocks — no QR ships for a tool-flagged-invalid URL",
+   "Export CSV carries the UTF-8 BOM; accented campaign names open clean in Excel and generated_url is properly percent-encoded — no invisible transforms",
+   "Lint still catches casing/space inconsistencies per-field with the exact offending value; one-click Auto-fix naming normalizes them",
+   "Lossless CSV round-trip with explicit column mapping, plus Launch Check to QA a whole batch against naming rules pre-launch"
+ ],
+ "complaints":[
+   "Minor: the '1 generated, 2 skipped' result is a quiet inline line I had to hunt for in the body after the ZIP downloaded — a data person wants that count as a prominent, persistent summary (or in the ZIP contact sheet), not a transient note."
+ ],
+ "verdict_summary":"They fixed both things I flagged and fixed them correctly — I re-ran my exact repro and the QR count now treats a required-field-missing row as 'skipped', not 'generated', and the CSV finally carries a UTF-8 BOM so my accented campaign names don't mangle in Excel. This nails my whole data-hygiene loop with zero silent transforms. Only thing keeping it off a 10 is that the skip/generate count is a quiet inline note rather than a prominent persistent summary."
+}
 ```

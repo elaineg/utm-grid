@@ -56,6 +56,15 @@ import {
 } from "../../lib/campaigns";
 import { extractNamingTemplateFromPayload } from "../../lib/share";
 import type { WorkspacePayload } from "../../lib/workspace";
+import type { ReviewMap } from "../../lib/review";
+import {
+  computeReviewRollup,
+  getRowReviewState,
+  getRowReviewEntry,
+  setRowReview,
+  clearRowReview,
+} from "../../lib/review";
+import { ReviewBadge } from "./ReviewBadge";
 import { QrPopover } from "./QrPopover";
 import {
   filterValidQrRows,
@@ -118,6 +127,18 @@ export interface UtmGridProps {
   specSyncStatus?: "saving" | "saved" | "error" | null;
   /** Timestamp of last successful spec sync (for relative time display). */
   specSavedAt?: number | null;
+  /**
+   * When provided (workspace mode only): the current review map from server payload.
+   * Enables per-row Review badges. Absent on main builder / Rung 1 share links.
+   */
+  reviewMap?: ReviewMap;
+  /**
+   * Called when the reviewer changes a row's review state.
+   * Parent updates the workspace payload and triggers autosave.
+   */
+  onReviewChange?: (newReviewMap: ReviewMap) => void;
+  /** The reviewer's display name from localStorage (for the ReviewBadge popover). */
+  reviewerName?: string;
 }
 
 export function UtmGrid({
@@ -127,6 +148,9 @@ export function UtmGrid({
   isPreview = false,
   specSyncStatus,
   specSavedAt,
+  reviewMap,
+  onReviewChange,
+  reviewerName = "",
 }: UtmGridProps = {}) {
   const router = useRouter();
 
@@ -1267,6 +1291,32 @@ export function UtmGrid({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rows, settings, spec, namingTemplate]);
 
+  // ── Review map callbacks (workspace mode only) ──────────────────────────
+  // Stabilize via ref to avoid re-creating on every render.
+  const onReviewChangeRef = useRef(onReviewChange);
+  onReviewChangeRef.current = onReviewChange;
+
+  const handleSetReview = useCallback(
+    (rowId: string, state: "approved" | "needs-changes", note: string) => {
+      if (!onReviewChangeRef.current) return;
+      const next = setRowReview(reviewMap, rowId, state, reviewerName || "Anonymous", note);
+      onReviewChangeRef.current(next);
+    },
+    // reviewMap and reviewerName are stable enough — called only in event handlers
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [reviewMap, reviewerName]
+  );
+
+  const handleClearReview = useCallback(
+    (rowId: string) => {
+      if (!onReviewChangeRef.current) return;
+      const next = clearRowReview(reviewMap, rowId);
+      onReviewChangeRef.current(next);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [reviewMap]
+  );
+
   // ── "Create shared workspace" state ──────────────────────────────────────
   const [creatingWorkspace, setCreatingWorkspace] = useState(false);
   const [createWorkspaceError, setCreateWorkspaceError] = useState<string | null>(null);
@@ -1987,18 +2037,11 @@ export function UtmGrid({
               z-index above the scrolling middle columns — they no longer overlap editable cells
               because the container is now ~274px wider than before the fix. */}
           <div ref={tableContainerRef} className="hidden sm:block overflow-x-auto rounded-lg border border-gray-200 bg-white">
-          {/* Table min-width: 1212px (32+32+160+5×120+240+148); w-full fills wider containers.
-              Actions column widened from 116px to 148px to accommodate the new QR button beside Copy.
-              table-fixed: column widths are set by headers, content cannot expand td width.
-              Fix 6: explicit widths ensure UTM cols never collapse even when enforce warnings
-              and "Build name" buttons add height. The overflow-x-auto container handles scroll. */}
-          {/* table-fixed: locks column widths to header-defined values; cell content
-              that overflows is clipped (inputs/outputs use w-full to fill, not expand).
-              This prevents warning badges / "Fix to" chips from stretching td widths and
-              pushing editable columns out of the 1280px viewport.
-              Column budget at 1280px (≈1217px container after padding+scrollbar):
-                checkbox 32 + row# 32 + baseUrl 160 + 5×utm 120 = 600 + genUrl 240 + actions 148 = 1212px
-              1212 < 1217 → all columns visible with no horizontal scroll. */}
+          {/* Table min-width: when reviewMap present: 1212px (32+32+80+160+5×120+160+148).
+              When reviewMap absent: 1212px (32+32+160+5×120+240+148).
+              Both budgets fit within ≈1217px at 1280px — no horizontal page overflow.
+              table-fixed: column widths set by headers; cell content clipped, not expanded.
+              When Review column is active, genUrl shrinks from 240→160px (still truncated+tooltip). */}
           <table className="w-full border-collapse text-sm table-fixed" style={{ minWidth: "1212px" }}>
             <thead>
               <tr className="border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase">
@@ -2015,6 +2058,18 @@ export function UtmGrid({
                   />
                 </th>
                 <th className="w-8 px-2 py-2.5" style={{ width: "32px" }} aria-label="Row number" />
+                {/* Review column — only when reviewMap prop is provided (workspace mode). 80px.
+                    When present, genUrl shrinks from 240→160px, keeping total budget = 1212px.
+                    Guard #1: w-[80px] with overflow hidden — cannot escape parent resize. */}
+                {reviewMap !== undefined && (
+                  <th
+                    className="px-2 py-2.5 text-indigo-600"
+                    style={{ width: "80px" }}
+                    aria-label="Review status"
+                  >
+                    Review
+                  </th>
+                )}
                 {COLUMNS.map((c) => (
                   <th
                     key={c}
@@ -2030,12 +2085,10 @@ export function UtmGrid({
                       )}
                   </th>
                 ))}
-                {/* Generated URL: sticky, pinned 148px from right (= Actions width after QR button addition).
-                    Capped at 240px — enough for a truncated URL preview; full value shown
-                    via title tooltip on hover and via the Copy button (copies full URL).
-                    Solid bg (bg-gray-50) so scrolling middle columns slide under cleanly.
-                    z-30 so header cells float above body sticky cells (z-20) + scrolling cells (z-[11]). */}
-                <th className="sticky right-[148px] z-30 bg-gray-50 px-2 py-2.5 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] whitespace-nowrap" style={{ width: "240px" }}>
+                {/* Generated URL: sticky, right-offset = Actions width.
+                    When reviewMap active: 160px (shrunk from 240 to balance +80 review col).
+                    When reviewMap absent: 240px (existing). Both keep total budget at 1212px. */}
+                <th className="sticky right-[148px] z-30 bg-gray-50 px-2 py-2.5 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] whitespace-nowrap" style={{ width: reviewMap !== undefined ? "160px" : "240px" }}>
                   Generated URL
                 </th>
                 {/* Actions: sticky right-0, 148px wide (widened from 116px for QR button). z-30 same as Generated URL header. */}
@@ -2104,6 +2157,42 @@ export function UtmGrid({
                         {i + 1}
                       </button>
                     </td>
+                    {/* Review badge cell — only when reviewMap prop is provided.
+                        Guard #1: overflow-hidden keeps badge within the 80px column.
+                        Guard #5: z-[50] on the popover itself (in ReviewBadge).
+                        Guard #11: testidSuffix="table" for dual-render safety. */}
+                    {reviewMap !== undefined && !isPreview && (
+                      <td
+                        className="px-1 py-2 align-middle overflow-hidden"
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ width: "80px" }}
+                      >
+                        <ReviewBadge
+                          rowId={row.id}
+                          rowIndex={i}
+                          reviewState={getRowReviewState(reviewMap, row.id)}
+                          reviewEntry={getRowReviewEntry(reviewMap, row.id)}
+                          reviewerName={reviewerName}
+                          onSetReview={handleSetReview}
+                          onClearReview={handleClearReview}
+                          testidSuffix="table"
+                        />
+                      </td>
+                    )}
+                    {reviewMap !== undefined && isPreview && (
+                      <td className="px-1 py-2 align-middle" style={{ width: "80px" }}>
+                        <span className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold ${
+                          getRowReviewState(reviewMap, row.id) === "approved"
+                            ? "bg-green-100 text-green-800 border border-green-300"
+                            : getRowReviewState(reviewMap, row.id) === "needs-changes"
+                            ? "bg-amber-100 text-amber-800 border border-amber-300"
+                            : "bg-indigo-50 text-indigo-600 border border-indigo-200"
+                        }`}>
+                          {getRowReviewState(reviewMap, row.id) === "approved" ? "✓" :
+                           getRowReviewState(reviewMap, row.id) === "needs-changes" ? "⚠" : "—"}
+                        </span>
+                      </td>
+                    )}
                     {COLUMNS.map((field) => {
                       const cellKey = warningKey(row.id, field);
                       const rawCellWarnings = warnings.get(cellKey);
@@ -2288,13 +2377,10 @@ export function UtmGrid({
                         </td>
                       );
                     })}
-                    {/* Sticky Generated URL — 240px wide, truncated with title tooltip for hover.
-                        Copy button (in Actions column) copies the FULL untruncated URL.
-                        right-[116px] pins it 116px from the container's right edge (= Actions width).
-                        bg-white (solid opaque) so scrolling middle columns slide cleanly under.
-                        z-20 so it floats above scrolling cells (z-[11]) but below the checkbox col (z-20 same level).
-                        overflow-hidden + truncate on output: visual-only clipping, copy is unaffected. */}
-                    <td className="sticky right-[148px] z-20 px-2 py-2 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] overflow-hidden bg-white" style={{ width: "240px" }}>
+                    {/* Sticky Generated URL — truncated with title tooltip.
+                        Width: 160px when Review column active (to keep 1212px budget), 240px otherwise.
+                        Copy button (in Actions) copies the FULL untruncated URL (title has full value). */}
+                    <td className="sticky right-[148px] z-20 px-2 py-2 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] overflow-hidden bg-white" style={{ width: reviewMap !== undefined ? "160px" : "240px" }}>
                       <output
                         aria-label={`Generated URL row ${i + 1}`}
                         title={generated}
@@ -2499,6 +2585,25 @@ export function UtmGrid({
                       </div>
                     )}
                   </div>
+
+                  {/* Review badge in card view — only when reviewMap is provided.
+                      Guard #5: popover z-[50] (in ReviewBadge).
+                      Guard #6: role="dialog" on popover, single instance per card.
+                      Guard #11: testidSuffix="card" for dual-render safety. */}
+                  {reviewMap !== undefined && !isPreview && (
+                    <div className="w-full">
+                      <ReviewBadge
+                        rowId={row.id}
+                        rowIndex={i}
+                        reviewState={getRowReviewState(reviewMap, row.id)}
+                        reviewEntry={getRowReviewEntry(reviewMap, row.id)}
+                        reviewerName={reviewerName}
+                        onSetReview={handleSetReview}
+                        onClearReview={handleClearReview}
+                        testidSuffix="card"
+                      />
+                    </div>
+                  )}
 
                   {/* Stacked fields: label above each full-width input */}
                   {COLUMNS.map((field) => {
