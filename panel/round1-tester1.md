@@ -1,43 +1,28 @@
-# Round 1 — Tester 1 — Priya (Senior backend SWE, keyboard-first, skeptical, hates signups)
+{"name":"Priya","clarity":"Yes","value":"Yes","advocacy":8}
 
-## Clarity — Yes
-Within 5s: "It's a grid for building clean UTM links for a campaign, runs entirely in your
-browser, no login." The h1 "Clean UTM links for your whole campaign — in one grid" + subhead
-"no login, nothing leaves your browser" nailed it for me — that last line is exactly what made
-me NOT bounce. I checked the network tab: zero third-party requests after load (only Vercel's
-own feedback.js), no console errors. That earns trust no spreadsheet template gives me.
-New feature: the "Campaign Naming Template" panel says "The STRUCTURE of utm_campaign... Different
-from Allowed Values, which sets allowed values." That one sentence is what told me it's NOT the
-same thing as the allowed-values linter. Good. Enforce showed a teal "1 cell off-template" badge
-and a row warning "Off-template — expected 2 segments, found 1" — instantly legible.
+I'm Priya — senior backend eng, keyboard-first, skeptical, hand-edits query strings, hates signups. A teammate sent me this for a side-project launch post.
 
-## Value — Yes (for this one task)
-Today I'd hand-edit query strings or paste into a Notes file — error-prone, no validation. For a
-one-off launch post this is genuinely faster than hand-editing: it caught my uppercase + spaces in
-"Holiday Sale!!" AND flagged it as off-template, all live. The naming template means my teammate and
-I won't argue about whether it's `q2_social` or `Q2-Social`. I tag links rarely, so I personally
-won't open this weekly — but for the people who DO (the marketer who sent it to me), the template +
-enforce is the thing that stops the GA-splitting mess. I'd reach for this over a spreadsheet.
+WHAT I DID
+- Cold-opened the app (desktop 1440px). H1: "Clean UTM links for your whole campaign — in one grid." Got it in <5s: a spreadsheet-style UTM builder, no login, runs in-browser.
+- Built a row: base URL + Twitter/social/Launch Day. App correctly validated ("Not a valid http(s) URL — include https://", "utm_campaign required") and "Auto-fix naming" lowercased + underscored everything. Copied link = `https://myproject.dev/launch?utm_source=twitter&utm_medium=social&utm_campaign=launch_day`. Exactly what I'd have typed by hand, faster and without typos.
+- New feature: viewed the seeded style guide (/w/.../guide). Then created my own workspace from scratch, clicked "Share style guide" — it copied the correct /guide link to clipboard. Viewed my empty-state guide too.
+- Zero console errors anywhere. Core flow stays client-side (copy verified).
 
-## Advocacy — 8/10
-I'd send it to our growth person unprompted with "this is better than the UTM spreadsheet." It loses
-2 points, not on the feature but on polish: the Naming Template panel is buried as the 2nd collapsed
-item in a right sidebar UNDER "Allowed values" — I only found it fast because I went looking. A first-
-timer enforcing without a template defined gets a vague state. And the composer popover is fiddlier
-than typing the name myself once I know the convention.
+WHAT WORKED
+- Core flow genuinely beats hand-editing 5 URLs. Auto-fix is the real value — it catches the casing splits I'd never notice.
+- Style guide is a legible, sendable artifact: "WHY UTM TAGS MATTER" explainer, allowed-value chips per field, a campaign naming template WITH a worked example (q1_email), and a checklist of conventions. I'd actually send this to an agency/contractor instead of writing a Notion doc.
+- Empty-state guide doesn't render broken — it says "No custom taxonomy defined yet" and still shows universal rules. Thoughtful.
+- "Anyone with this secret link can view this page" sets the right trust expectation for a read-only share.
 
-## Biggest friction
-Discoverability: two near-identical concepts ("Allowed values" + "Naming Template") stacked in a thin
-right rail, both with "Enforce" checkboxes up top. I got it because the copy spells out the difference,
-but a rushed marketer will conflate them.
+FRICTION
+- For a one-off launch post (my actual job), the whole workspace/team/style-guide machinery is overkill. Single-grid + autofix + copy is what I want; the team stuff is noise to me personally.
+- Three share concepts — "Copy share link" vs "Create shared workspace" vs "Share style guide". I had to read gray helper text ("Different from Copy share link, which sends a frozen snapshot") to tell them apart. A skeptic skims; this loses people.
+- Guide is read-only with no auth — fine for trust, BUT anyone with the guide link can also click "Open the editable workspace" and edit the team standard. That undermines "read-only reference"; a real team wants view-only to NOT expose edit.
+- No CLI-speed single-link fast path (paste + keyboard-only + instant copy). Power users want one.
 
-```json
-{ "name": "Priya", "clarity": "Yes", "value": "Yes", "advocacy": 8,
-  "likes": ["Truly no-signup, zero network calls after load — verified in net tab; huge trust win","'Different from Allowed Values' copy makes the two panels genuinely distinguishable","Off-template warning ('expected 2 segments, found 1') stacks cleanly with existing uppercase/space lint — no regression","Live preview 'quarter_cha…' + teal '1 cell off-template' header badge are instantly legible"],
-  "frictions": [
-    {"severity":"P2","issue":"Naming Template panel is the 2nd collapsed item in a narrow right sidebar, below 'Allowed values' — easy to miss; the two 'Enforce' toggles look near-identical at a glance"},
-    {"severity":"P3","issue":"Build name composer is fiddlier than just typing the campaign once you know the convention; power users will skip it"},
-    {"severity":"P3","issue":"Enforcing with no template defined gives a soft/ambiguous state rather than prompting you to define segments first"}
-  ],
-  "verdict_sentence": "As a skeptic who hates new tools, the no-server proof + a naming template that actually flags off-pattern campaigns made this beat my spreadsheet — only the buried, easy-to-conflate sidebar panel keeps it off a 9." }
-```
+TO GET TO 9-10
+- A genuinely fast single-link mode (paste base URL + 3 values, keyboard-only, instant copy) so I'd reach for it over hand-editing every time.
+- Separate view-only sharing from edit access — the one-click "Open editable workspace" button contradicts "read-only reference."
+- Collapse the three share buttons into one share menu with plain labels; the trio reads as feature-creep.
+
+It works and I'd recommend it to a teammate who tags links weekly. I wouldn't bring it up unprompted because my use is occasional — which is exactly why it's an 8, not a 9.

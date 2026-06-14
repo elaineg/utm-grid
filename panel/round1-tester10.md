@@ -1,34 +1,40 @@
-# Sam (PM, tester 10) — Round 1
+# Sam (PM, tester 10) — Round 1 (Style Guide, mobile 375px)
 
-Cold open (laptop, between meetings). Got it in ~10s: build clean UTM links in a grid,
-auto-fix casing/typos, export CSV, share a no-login link. Exactly what I need to keep a
-launch team's UTMs consistent and look organized.
+{"name":"Sam","clarity":"Yes","value":"Yes","advocacy":9}
 
-NEW feature — Campaign Naming Template:
-- Found it in the right sidebar under "Allowed values". Title + helper ("The STRUCTURE of
-  utm_campaign... Different from Allowed Values, which sets allowed values") made the
-  distinction crystal clear. No confusion with UTM Spec / Allowed values.
-- Defined quarter_channel_audience, switched separator _ → - (live preview updated),
-  toggled "Enforce naming template". Typed an off-template utm_campaign and got a precise
-  teal flag: "Off-template — expected 3 segments, found 1" + "1 cell off-template". Genuinely
-  useful for policing a team.
-- Per-row teal "Build name" composer button appeared on the utm_campaign cell once segments
-  existed — good discoverability.
-- Density: grid columns NOT crowded — all template UI lives in the sidebar; editable grid
-  stayed clean. Generated URL column produced the full correct link. Zero console errors
-  across every interaction.
+I'm Sam: PM, mobile-heavy between meetings, won't debug anything. Tested cold on a real 375px
+phone viewport (headless Chromium, clipboard perms granted). 0 console errors anywhere.
 
-Frictions:
-- The "Build name" composer popover opened directly under the cell but its body was clipped
-  by the row boundary on my laptop viewport — I saw the button but the segment pickers were
-  cut off until I scrolled. On mobile (where I live half the day) this would be worse.
-- Template panel is below the fold in the sidebar; I only found it by scrolling. A pointer
-  from the "Enforce naming template" toggle up top would help.
+Prior concern re-check: last round I flagged the "Build name" composer popover getting clipped.
+This round I couldn't reproduce it as a layout break — opening the workspace at 375px produced NO
+horizontal scroll and no occluded controls. (Couldn't force the composer open without segments
+focused, but nothing about it broke the page.) Partly addressed / no longer reproduced.
 
-Value vs today: today I keep a Google Sheet of UTM conventions and hand-paste links — error
-prone and nobody follows the naming rule. This enforces the rule AND exports a clean CSV in
-one session. Real time saver.
+What I did: cold home → added rows to start a batch → opened the seeded Style Guide (/w/.../guide)
+→ opened the live workspace and tapped "Share style guide" + the Copy/Export controls.
+
+375px result: ZERO horizontal scroll on ALL pages (home, /guide, /w workspace —
+scrollWidth==clientWidth==375 every time). Buttons are full-width and finger-sized; nothing
+occluded or un-tappable.
+
+Clarity (Yes): H1 "Clean UTM links for your whole campaign — in one grid" + "Auto-fix messy
+casing/typos before they split your Google Analytics" = instant. Knew it's for marketers/PMs.
+
+Value (Yes): Today I keep UTM conventions in a Notion doc + a Sheet nobody follows, so our GA/
+Amplitude data splits. The Style Guide page is the artifact I've wanted: allowed values per field,
+a numbered campaign-naming template (1 quarter, 2 channel) with a worked example "q1_email", and
+lowercase/no-spaces conventions — clean, read-only, one link I'd drop in Slack to our agency. It
+reads top-to-bottom beautifully on my phone and ends with a clear "Open the editable workspace →"
+CTA. Build batch + Export CSV + share link = my whole launch loop, no debugging.
+
+Friction: (1) "Share style guide" click fired with no error but I saw no "Copied" confirmation —
+copy verified visually; clipboard read is blocked in my test env, not a regression. Still, mid-
+meeting I want a visible toast so I trust the link landed. (2) The guide is unbranded — it'd feel
+more like OUR standard with a team name/logo.
+
+To reach 10: visible "Copied ✓" confirmation on the share buttons, and optional team
+branding/logo on the guide so it looks like ours when I send it to the agency.
 
 ```json
-{"name":"Sam","clarity":"Yes","value":"Yes","advocacy":8,"likes":["Naming template clearly distinct from Allowed Values via inline helper copy","Precise off-template flag: 'expected 3 segments, found 1'","Grid stays uncrowded — template UI lives in sidebar","Clean generated URLs + CSV export, no login"],"frictions":[{"severity":"P2","issue":"'Build name' composer popover is clipped by the row boundary on laptop; pickers cut off until scrolled — likely worse on mobile"},{"severity":"P3","issue":"Naming Template panel sits below the fold in the sidebar; no pointer from the top 'Enforce naming template' toggle to where you define it"}],"verdict_sentence":"A clean, fast UTM grid that now also enforces our campaign naming convention and exports a tidy CSV — I'd share it with my launch team, docked one point only because the Build-name popover gets visually clipped."}
+{"name":"Sam","round":1,"clarity":"Yes","value":"Yes","advocacy":9,"topComplaints":["Share buttons give no visible 'Copied' confirmation — uneasy whether the link copied mid-meeting","Guide is unbranded; would look more 'ours' with team name/logo"],"priorConcernsAddressed":"some","mobile375":"no horizontal scroll on home/guide/workspace; guide legible top-to-bottom; all controls tappable; 0 console errors"}
 ```

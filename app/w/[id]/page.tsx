@@ -643,61 +643,78 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
             )}
             {renderSyncStatus()}
           </div>
+          {/* Fix 1 + Fix 3: two share actions, visually grouped, each with its own
+              sublabel and dedicated aria-live region so announcements never collide.
+              Buttons fill green on copy for ~1.5s (ref-stable timer). */}
           <div className="flex flex-col items-start sm:items-end gap-2 shrink-0">
-            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-              <button
-                type="button"
-                data-testid="copy-workspace-link"
-                aria-label="Copy workspace link"
-                onClick={() => void copyWorkspaceLink()}
-                className={`rounded-md border px-4 py-2 text-sm font-medium transition-colors duration-200 min-h-[44px] ${
-                  workspaceLinkCopied
-                    ? "border-green-500 bg-green-500 text-white"
-                    : "border-blue-400 bg-white text-blue-700 hover:bg-blue-50"
-                }`}
-              >
-                {workspaceLinkCopied ? (
-                  <span className="inline-flex items-center gap-1.5">
-                    <span>✓</span>{" "}
-                    <span>Workspace link copied!</span>
-                  </span>
-                ) : (
-                  "Copy workspace link"
-                )}
-              </button>
-              {/* Share style guide — FIRST-CLASS, visually distinct button */}
-              <button
-                type="button"
-                data-testid="share-style-guide-btn"
-                aria-label="Share style guide link"
-                onClick={() => void copyStyleGuideLink()}
-                className={`rounded-md border px-4 py-2 text-sm font-medium transition-colors duration-200 min-h-[44px] ${
-                  styleGuideCopied
-                    ? "border-green-500 bg-green-500 text-white"
-                    : "border-violet-400 bg-violet-50 text-violet-700 hover:bg-violet-100"
-                }`}
-              >
-                {styleGuideCopied ? (
-                  <span className="inline-flex items-center gap-1.5">
-                    <span>✓</span>{" "}
-                    <span>Copied!</span>
-                  </span>
-                ) : (
-                  "Share style guide"
-                )}
-              </button>
+            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+              {/* Copy workspace link — live, synced for the team */}
+              <div className="flex flex-col items-start gap-0.5">
+                <button
+                  type="button"
+                  data-testid="copy-workspace-link"
+                  aria-label="Copy workspace link"
+                  onClick={() => void copyWorkspaceLink()}
+                  className={`w-full sm:w-auto rounded-md border px-4 py-2 text-sm font-medium transition-colors duration-200 min-h-[44px] ${
+                    workspaceLinkCopied
+                      ? "border-green-500 bg-green-500 text-white"
+                      : "border-blue-400 bg-white text-blue-700 hover:bg-blue-50"
+                  }`}
+                >
+                  {workspaceLinkCopied ? (
+                    <span className="inline-flex items-center gap-1.5">
+                      <span aria-hidden="true">✓</span>{" "}
+                      <span>Copied ✓</span>
+                    </span>
+                  ) : (
+                    "Copy workspace link"
+                  )}
+                </button>
+                <span className="text-[10px] text-blue-600 leading-tight">
+                  live, synced for the team
+                </span>
+                {/* Dedicated aria-live for workspace-link copy — never conflicts with style-guide */}
+                <span role="status" aria-live="polite" className="sr-only">
+                  {workspaceLinkCopied ? "Workspace link copied!" : ""}
+                </span>
+              </div>
+
+              {/* Share style guide — read-only reference page */}
+              <div className="flex flex-col items-start gap-0.5">
+                <button
+                  type="button"
+                  data-testid="share-style-guide-btn"
+                  aria-label="Share style guide link"
+                  onClick={() => void copyStyleGuideLink()}
+                  className={`w-full sm:w-auto rounded-md border px-4 py-2 text-sm font-medium transition-colors duration-200 min-h-[44px] ${
+                    styleGuideCopied
+                      ? "border-green-500 bg-green-500 text-white"
+                      : "border-violet-400 bg-violet-50 text-violet-700 hover:bg-violet-100"
+                  }`}
+                >
+                  {styleGuideCopied ? (
+                    <span className="inline-flex items-center gap-1.5">
+                      <span aria-hidden="true">✓</span>{" "}
+                      <span>Copied ✓</span>
+                    </span>
+                  ) : (
+                    "Share style guide"
+                  )}
+                </button>
+                <span className="text-[10px] text-violet-500 leading-tight">
+                  read-only reference page
+                </span>
+                {/* Dedicated aria-live for style-guide copy */}
+                <span role="status" aria-live="polite" className="sr-only">
+                  {styleGuideCopied ? "Style guide link copied!" : ""}
+                </span>
+              </div>
             </div>
-            {/* Permission note + style guide sublabel */}
-            <span className="text-[10px] text-blue-600 text-right leading-tight">
-              Anyone with this secret link can edit.
-            </span>
-            <span className="text-[10px] text-violet-500 text-right leading-tight">
-              Share style guide: a read-only page teammates can read without editing.
-            </span>
-            {/* aria-live regions for screen readers */}
-            <span role="status" aria-live="polite" className="sr-only">
-              {workspaceLinkCopied ? "Workspace link copied!" : styleGuideCopied ? "Style guide link copied!" : ""}
-            </span>
+            {/* Fix 4(c): server-data note — accurate for a server-backed surface */}
+            <p className="text-[10px] text-gray-500 leading-tight text-right max-w-xs">
+              Workspace data is stored on the server — anyone with this secret link can view and edit.
+              The secret link is the access control.
+            </p>
           </div>
         </div>
 

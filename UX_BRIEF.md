@@ -1594,3 +1594,75 @@ sections stack; value chips wrap.
   **"Open the editable workspace →"** CTA card is the on-ramp and is visible near the top.
 - **Pre-filled example:** the first visible content is real workspace data — allowed-value chips and
   the worked naming-template example string (e.g. `2026q3_paidsocial_retargeting`) — never a blank box.
+
+## Style Guide — Round 2 fixes (panel run 20260614-015304-daily: 5/10 at the 9-bar)
+
+Clarity 10/10 Yes, value 10/10 Yes — comprehension and value are solved; the exit gap is pure
+craft on advocacy. Sub-bar: Marcus 7, Priya/Jules/Aisha/Rob 8. Additive / CSS / copy only — do
+NOT touch the headline, subhead, lint toggles, ≤640px card view, or the guide page content; pure
+CSS breakpoints, no JS viewport detection. Four fixes, priority order.
+
+**Fix 1 — Copy cue on "Share style guide" must be peripherally UNMISSABLE (P0; the dominant
+blocker — Jules 8, Aisha 8, Sam 9).** The button copies the correct `/guide` URL but the on-screen
+confirmation is silent/intermittent — testers clicked unsure it worked. On click: the button
+**fills solid green in place**, label flips to **"Copied ✓"** for **~1.5s**, then reverts. The
+timer MUST be **ref-stable so it survives re-render** (the recurring copy-confirmation-survives-
+tick-rerender lesson — three testers saw nothing while three others saw the flip, which is exactly
+the non-stable-timer symptom), backed by `aria-live="polite"`, with an execCommand/textarea
+clipboard fallback when `navigator.clipboard` rejects. Match or upgrade the strongest copy cue
+already in the app. Apply the SAME treatment to **"Copy workspace link"** and **"Copy share link"**
+if either is weaker, so all three share-copies confirm identically. Verify the green-fill + label
+flip actually fires at 375px (no corner toast that scrolls off).
+
+**Fix 2 — Give the editable grid real width at ≥1280px; sticky columns must never occlude editable
+cells (P0; the only thing pinning Marcus to 7 — Marcus 7, Rob 8).** Page-level horizontal scroll
+is already fixed; the regression is the right-rail config panels (UTM Spec / Campaigns / Naming
+Template / Presets) permanently squeezing the grid into a ~958px sub-pane while the table needs
+~1745px, so editable cells + Generated URL scroll horizontally inside the box even on a 1680px
+monitor. Direction (apply the established lesson — render config panels BELOW/ABOVE the full-width
+grid, not beside it, so editable columns stay visible): make those config panels **collapsible and
+stack them above OR below the full-width grid**, OR move them into a **collapsible drawer**, so the
+grid uses the full page width. Separately, fix the sticky **Generated-URL / Actions** columns so
+they **NEVER overlap or occlude the editable utm cells at any width** — either drop sticky when it
+would overlap, or give the sticky column an **opaque background** AND have the editable cells
+reserve their own space so the sticky column can't sit on top of them. **Target:** at 1280px with
+Enforce ON + a long generated URL, ALL editable cells AND inline lint warnings are readable with
+NO horizontal scrolling, and no sticky column sits on top of an editable cell. Do NOT regress the
+375px card view.
+
+**Fix 3 — Differentiate the three share actions so each is instantly distinct (P1; Priya 8,
+Tomás 9, Elena 9).** "Copy share link" / "Create shared workspace" / "Share style guide" read as
+confusingly similar to a skimmer. Differentiate with labels + one-line sublabels + visual
+grouping so each is unmistakable at a glance, e.g.:
+- **"Copy share link (snapshot)"** — sublabel "a frozen copy of this grid".
+- **"Create shared workspace (live, synced)"** — sublabel "a workspace teammates edit together".
+- **"Share style guide (read-only reference)"** — sublabel "a page teammates read without editing".
+Group the workspace-page share actions together visually (one share cluster) so the three read as
+distinct members of one group, not three lookalike buttons scattered in the rail.
+
+**Fix 4 — Workspace empty/short state must not read as unfinished or as data loss (P1; Aisha 8,
+Dana 9; + Tomás 9 server note).** (a) A new/short workspace grid must NOT render a ~200px-tall
+single row with a large empty white block below — **size the grid area to its content** (or add a
+subtle starter affordance/placeholder row) so a one-row workspace reads as deliberate, not a
+broken empty state. (b) After **Auto-fix**, the layout must NOT read as if the input columns
+vanished — keep the source/medium/campaign columns visible (don't collapse to Generated-URL only)
+or give explicit feedback ("Auto-fixed N cells — Undo") so a user never thinks their inputs were
+lost. (c) Add a small, **mode-aware** server-data note where a workspace is shared — e.g.
+**"Shared workspace data lives on our server behind this secret link"** (only on the shared-
+workspace surface, NOT on the client-side local grid, whose "nothing leaves your browser" prop
+must not regress) — addressing Tomás's company-data concern; the secret link is the access control.
+
+**Deprioritized with reason (NOT this round):** Priya CLI single-link fast path (out of scope —
+the app is a grid); Priya view-only-guide-exposes-edit (design stance: secret link = access
+control); Jules X/Mastodon presets + auto-fix trailing-punctuation strip; Wen per-row Auto-fix
+diff + lint-report CSV export; Elena enforcement-that-blocks (the guide is documentation by
+design; Enforce already lints); Sam/Elena team branding + "ours, governed" guide. **Bad TEST seed
+data, not an app bug:** seeded template channel segment (email/social/ppc) not matching utm_medium
+allowed values (email/paid_social/cpc) — fix the seed, don't re-architect the guide.
+
+### 5-second check (Style Guide Round 2 — unchanged above the fold)
+Headline, subhead, lint toggles, and the pre-filled example grid row + Copy stay exactly as
+shipped. On `/w/<id>` the three share actions now read as a clearly-labeled, grouped cluster with
+distinct sublabels; clicking any copy action gives a peripherally-unmissable green "Copied ✓"; the
+grid uses full page width with config panels collapsible/stacked so editable cells + lint are
+readable at 1280px with no horizontal scroll.

@@ -1,55 +1,46 @@
-# Round 1 — Wen (Marketing data analyst, GA4 reporting, lives in data hygiene)
-# Focus: NEW "Campaign Naming Template" feature
+{"name":"Wen","clarity":"Yes","value":"Yes","advocacy":9}
 
-## Prior concern re-check (I remember this app)
-Last time I docked points for warnings REPEATING per-row instead of grouping, and wanting a
-one-click fix from the lint. Not re-tested in depth this round (different feature). The paste/
-audit + CSV-in/out I relied on before are still intact — no regression seen this pass.
+# Wen — Marketing data analyst (GA4 / BigQuery / Sheets / dbt). Re-test round.
 
-## Clarity — Yes
-Cold open, desktop. Headline "Clean UTM links for your whole campaign — in one grid" + subhead
-"Auto-fix messy casing and typos before they split your Google Analytics" = for me in <10s. The
-right rail has three clearly separated panels: Campaigns, "Allowed values", and "Campaign Naming
-Template". The template panel's own copy nails the distinction: "The STRUCTURE of utm_campaign —
-its parts and their order. Different from Allowed Values, which sets allowed field values." I
-never confused the two. Teal template warnings vs purple allowed-value warnings is a clean split.
+## Prior-concern re-check (my P1 last round)
+LAST ROUND I docked from 9 to 6 because the naming template silently failed to hydrate on
+reload: localStorage saved segments but on load only the enforce toggle restored, leaving an
+empty template enforcing against nothing. **FIXED — verified.** Defined segments quarter +
+channel, set separator "_", enabled enforce, reloaded: segment inputs hydrated to
+["quarter","channel"] AND the panel reads "Enforce naming template — On". LS holds
+`{"segments":[{quarter},{channel}],"separator":"_","enforceTemplate":true}` and it now renders
+back correctly. "Define once, reuse next week" finally holds. This was the one thing blocking me.
+P3 (Add-token affordance) not re-tested in depth; minor.
 
-## Using the new feature
-Added segments (channel, audience), set separator "_", added allowed tokens (paid/organic,
-newusers). Per-row "Build name" composer opened over the utm_campaign cell with a live "Preview:"
-line; picking tokens built `paid_newusers` and Apply wrote it cleanly into the cell. Toggled
-"Enforce naming template" and typed `Summer_Sale_2026` — got a "1 cell off-template" badge plus
-TWO precise warnings: "⚠ Off-template — expected 2 segments, found 3" AND "⚠ Contains uppercase
-letters — use lowercase only". That casing lint is exactly the bug class that splits my GA4 rows.
+## What I did this round (fresh)
+Pasted 4 dirty URLs (Facebook/facebook/FaceBook, CPC/cpc/Cpc, Summer_Sale/summer_sale/Summer-Sale,
+"email " w/ trailing space) via Paste & Audit. Ran Auto-fix, Exported CSV. Imported a 2-row CSV.
+Opened the seeded Style Guide and tested "Share style guide".
 
-## Value — Yes
-Today I lint UTM casing with a BigQuery query + a Sheet of allowed values, and dirty campaign
-names still slip through and split rows in Looker. This catches both, in-session, and speaks GA4.
-CSV export is strict and honest: clean unquoted header `base_url,utm_source,utm_medium,...`,
-generated_url matches exactly, footer confirms "source cells left as typed" — no invisible
-transforms. That trust is my #1 requirement and it passed.
+## What I saw (nails my pain)
+- Audit lint is exactly right: "Inconsistent utm_source across rows: 'Facebook' vs 'facebook' vs
+  'FaceBook' — these will split campaign data in GA4." That is the dashboard-wrecking bug, named.
+- Auto-fix collapsed all 3 casing variants to one `summer_sale`. Export CSV: clean lowercase GA4
+  headers `base_url,utm_source,...,generated_url`, lossless — I'd pipe it straight into a dbt seed.
+- Import CSV opens a column-MAPPING modal (pre-mapped headers, per-column override, Append/Replace,
+  "Either way you can Undo"). That transparency is what I distrust most tools for lacking. Trust earned.
+- "Generated URLs are trimmed of trailing spaces; your source cells are left as typed." No invisible
+  transforms — my #1 requirement.
+- NEW Style Guide: legible, real artifact. Allowed values per field, naming template with ORDERED
+  segments + worked example (q1_email), 3 conventions, "why" in my own words. "Share style guide"
+  copied the correct /w/<id>/guide link, label → "✓ Copied!". This is something I'd send an agency
+  instead of the stale Google Doc nobody reads. Zero console errors across every flow.
 
-## Friction
-- **P1 — naming template does not hydrate on reload.** Confirmed: localStorage saves it
-  (`utm-grid:naming-template` held my 2 segments + tokens), but on load only the `enforceTemplate`
-  toggle restores — segment definitions render EMPTY (verified by seeding LS pre-load: enforce ON,
-  segments []). As a daily returning analyst I'd come back, find enforce ON but my convention gone,
-  and either everything flags or enforcement silently no-ops. Defeats "define once, reuse next
-  week" — the whole point of saving a template.
-- **P3** — token-add reacts to Enter/blur but the "Add" button isn't always obviously the commit;
-  a less technical marketer might not realize Enter commits a token.
+## What would raise me to 10
+- Per-row diff/confirm on Auto-fix (it changed Summer-Sale's separator in bulk; I want to approve
+  edge cases like an intended hyphen — lint flags it first, so not invisible, but no per-row control).
+- Export the lint VIOLATION report itself as CSV, so I can attach it to a ticket/Slack thread.
+- A guide default/empty-state hint, and a "copy as TSV/Sheets" option for where my taxonomy lives.
 
-## Advocacy — 6
-In-session it's the UTM lint tool I've wanted and I'd demo it; but the template silently failing
-to restore on reload is the one thing that has to work for a returning user, and it drops me from
-a 9 to a 6.
+Today: hand-kept Google Sheet of allowed values + a BigQuery lint, and dirty names still split rows
+in Looker. This caught every inconsistency in one pass, persists my template, and gives a shareable
+standard. Saves real time and prevents the exact bug I babysit. I'd raise it in my team channel.
 
 ```json
-{ "name": "Wen", "clarity": "Yes", "value": "Yes", "advocacy": 6,
- "likes": ["Naming Template panel clearly distinct from Allowed values with explicit 'STRUCTURE vs values' copy", "Build name composer shows live Preview and Apply writes utm_campaign cleanly", "Enforce gives specific warnings: 'expected 2 segments, found 3' AND uppercase casing lint", "Strict honest CSV export — clean header, generated_url matches, source cells untouched", "Teal vs purple visual separation of template vs allowed-value warnings"],
- "frictions": [
-   {"severity":"P1","issue":"Naming template segments do not hydrate on reload: localStorage saves segments+tokens, but on load only the enforceTemplate toggle restores — panel shows empty segments (verified by pre-load LS seed: enforce ON, segs []). Returning daily user loses their convention while enforce stays ON; off-template checks then run against an empty template. Breaks 'define once, reuse next week'."},
-   {"severity":"P3","issue":"Token-add commits on Enter/blur but the 'Add' button isn't an obvious commit affordance; a less technical marketer may not realize Enter adds the token."}
- ],
- "verdict_sentence": "In a single session this is the UTM lint tool I've wanted — strict CSV, casing checks, and a naming template clearly distinct from allowed values — but the template silently fails to restore on reload, which for a daily returning analyst is the one thing that has to work." }
+{"tester": 3, "round": 1, "clarity": "Yes", "value": "Yes", "advocacy": 9, "topComplaints": ["Auto-fix applies separator/casing changes in bulk with no per-row diff/confirm", "Can't export the lint violation report itself to attach to a ticket/Slack"], "priorConcernsAddressed": "all"}
 ```

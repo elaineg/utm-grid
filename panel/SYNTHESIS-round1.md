@@ -1,100 +1,101 @@
-# Campaign Naming Template — Panel Round 1 Synthesis
+# utm-grid — Panel Round 1 Synthesis (run 20260614-015304-daily, Style Guide)
 
-Feature WORKS and is VALUED — clarity=Yes and value=Yes for all 10 — but nobody cleared the
-9-bar. 9 testers at advocacy 8, Wen at 6. The dominant, near-universal blocker is
-DISCOVERABILITY of the Naming Template panel (and its per-row composer); the rest is a small
-set of real defects. Ceiling this round: 9/10. This is NOT a comprehension problem — the
-"Different from Allowed Values" copy is praised by every tester — it is a surfacing + craft
-problem (the panel is below the fold) plus a returning-user P1 bug.
+## Scores
 
-## Score table
+| Name   | Persona                    | Clarity | Value | Advocacy |
+|--------|----------------------------|---------|-------|----------|
+| Priya  | Senior backend SWE         | Yes     | Yes   | 8        |
+| Marcus | Frontend engineer          | Yes     | Yes   | 7        |
+| Wen    | Marketing data analyst     | Yes     | Yes   | 9        |
+| Tomás  | Ops analyst (Excel)        | Yes     | Yes   | 9        |
+| Dana   | Demand-gen marketer        | Yes     | Yes   | 9        |
+| Jules  | Content/community marketer | Yes     | Yes   | 8        |
+| Aisha  | Product designer           | Yes     | Yes   | 8        |
+| Rob    | Freelance brand designer   | Yes     | Yes   | 8        |
+| Elena  | Engineering manager        | Yes     | Yes   | 9        |
+| Sam    | PM                         | Yes     | Yes   | 9        |
 
-| # | Name   | Persona                      | Clarity | Value | Advocacy |
-|---|--------|------------------------------|---------|-------|----------|
-| 1 | Priya  | Senior backend SWE           | Yes     | Yes   | 8        |
-| 2 | Marcus | Frontend engineer            | Yes     | Yes   | 8        |
-| 3 | Wen    | Marketing data analyst       | Yes     | Yes   | 6        |
-| 4 | Tomás  | Ops analyst (Excel)          | Yes     | Yes   | 8        |
-| 5 | Dana   | Demand-gen marketer          | Yes     | Yes   | 8        |
-| 6 | Jules  | Content/community marketer   | Yes     | Yes   | 8        |
-| 7 | Aisha  | Product designer             | Yes     | Yes   | 8        |
-| 8 | Rob    | Freelance brand designer     | Yes     | Yes   | 8        |
-| 9 | Elena  | Engineering manager          | Yes     | Yes   | 8        |
-| 10| Sam    | PM                           | Yes     | Yes   | 8        |
+Exit bar = 9/10 testers at advocacy ≥9 + clarity Yes + value Yes.
+**Currently 5/10** (Wen, Tomás, Dana, Elena, Sam). Clarity & value are unanimous Yes — the
+gap is pure craft/polish on advocacy. The five sub-9 testers (7–8) are all recoverable with
+the four fixes below.
 
-Mean advocacy 7.8; clarity 10/10 Yes, value 10/10 Yes.
+## Complaints behind every advocacy < 9, grouped by cause
 
-## Complaints grouped by cause (every advocacy<9 and the one 6)
+### 1. COPY CUE INVISIBLE on "Share style guide" — DOMINANT BLOCKER (recurring: real)
+The button copies the correct `/guide` URL but shows no reliable visible confirmation; the
+label never flips / no toast fires on screen.
+- **Jules (8)** — explicit blocker: "gives NO confirmation… I clicked and had no idea it
+  worked; I'd click 3x." Stresses it is NOT an env artifact — clipboard read succeeded, the
+  UI is silent.
+- **Aisha (8)** — P2: "Label stays 'Share style guide' after click… I saw nothing on
+  screen, so I'd click twice unsure. Flip label to 'Copied ✓'."
+- **Sam (9)** — "fired with no error but I saw no 'Copied' confirmation… mid-meeting I want
+  a visible toast so I trust the link landed."
+Note: Wen/Tomás/Rob saw the label flip to "Copied!" in their runs — so the cue is
+intermittent / not ref-stable across re-renders, which is itself the defect. **Recurring,
+real, the single highest-leverage fix.**
 
-### Cause A — DISCOVERABILITY of the Naming Template panel (RECURRING — 9/10; the dominant blocker)
-The panel is a COLLAPSED card at the BOTTOM of the right sidebar, below the fold, under
-Campaigns / Allowed values. Testers found it only by hunting; several found it only by clicking
-the top "Enforce naming template" toggle, never by scanning. It is also easy to conflate with
-"Allowed values" and with the two near-identical "Enforce" toggles.
-- **Priya (P2):** "2nd collapsed item in a narrow right sidebar UNDER 'Allowed values' — easy to miss; the two 'Enforce' toggles look near-identical at a glance."
-- **Marcus (P2):** "very bottom of the right sidebar under Allowed values — low cold discoverability; I found it via the top Enforce toggle, not by scanning."
-- **Jules (P2):** "collapsed sidebar card under Campaigns/Allowed values — I almost missed it." + three similarly-named "naming" surfaces (NAMING RULES toggles / Allowed values / Campaign Naming Template) are a lot to disambiguate at a glance.
-- **Aisha (P2):** "sits at the very bottom of the right rail, below the fold and collapsed; the per-row 'Build name' chip only appears AFTER a template exists. A cold user may never realize the feature is there."
-- **Rob (P2):** "bottom of the sidebar (below Campaigns + Allowed values), found only by scrolling — a setup-first feature a first-timer won't discover cold."
-- **Elena (P2):** "a 30-sec skimmer may scroll past; the power features aren't above the fold."
-- **Dana (P3):** after reload the panel "collapses and reads empty until re-expanded, looking like data loss."
-- **Sam (P3):** "below the fold in the sidebar … no pointer from the top Enforce toggle to where you define it."
-- **Tomás** is the lone "found it quickly" read — and credits the explicit "Different from Allowed Values" copy, the exact thing the other 8 said helps but is NOT enough.
-RECURRING and near-universal (8 explicit + Tomás's implicit dependence). The disambiguation copy
-is praised by all but only disambiguates ONCE FOUND; it does not get the panel found.
+### 2. GRID SQUEEZED BY RIGHT-RAIL at 1280–1680px (recurring: real)
+Page-level horizontal scroll IS fixed (confirmed Marcus, Rob, Sam). The regression: the
+right config rail starves the grid of width and sticky columns occlude editable cells.
+- **Marcus (7, lowest)** — main blocker: table is 2335px inside a ~1022px container; sticky
+  "Generated URL" (x=301,w=630) and "Actions" (x=904) OVERLAP static utm_term/utm_content;
+  with Enforce on + a long URL the lint warnings are clipped/covered and require in-table
+  horizontal scroll. "A FE notices this instantly."
+- **Rob (8)** — grid boxed in an `overflow-x-auto` sub-pane squeezed to ~958px on a 1680px
+  monitor while the table needs ~1745px; editable cells + Generated URL scroll horizontally
+  inside the box. "the grid sub-pane scrolls and is starved for width."
+**Recurring, real — the only thing pinning Marcus to 7.**
 
-### Cause A2 — Per-row "Build name" composer affordance too subtle (RECURRING — Dana, Aisha; same family)
-The composer entry is a small/subtle teal pill/chip under the utm_campaign cell, and it only
-appears AFTER a template exists.
-- **Dana (P2):** "subtle small teal pill under the utm_campaign cell — low discoverability for the headline feature; I only found it because I went looking."
-- **Aisha (P2):** "the per-row 'Build name' chip only appears AFTER a template exists, so cold users may never find the feature."
-(Counter-note: Sam called the per-row pill "good discoverability" ONCE segments existed — so the
-pill works after the panel is found; the gap is cold discovery + the pill's subtlety.)
+### 3. OVERLAPPING / CONFUSING SHARE CONCEPTS (recurring: real)
+"Copy share link" / "Create shared workspace" / "Copy workspace link" / "Share style guide"
+read as confusingly similar; a skimmer can't tell them apart.
+- **Priya (8)** — "Three share concepts… I had to read gray helper text to tell them apart.
+  A skeptic skims; this loses people."
+- **Tomás (9)** — "Four share-ish actions… it took a beat to know which freezes a snapshot
+  vs syncs vs sends the read-only guide."
+- **Elena (9)** — "three similar share-ish actions… a busy person could fumble which to
+  send. One sentence per button would remove all doubt."
+**Recurring, real — caps several testers; cheap to fix with labels/sublabels/grouping.**
 
-### Cause B — P1 RELOAD-HYDRATION BUG (Wen; single-confirm but P1 — drove the 6)
-On a cold load from EXISTING localStorage the segment panel comes up EMPTY — only the
-enforceTemplate toggle restores. The returning-user "define once, reuse next week" promise breaks.
-- **Wen (P1):** "localStorage saves segments+tokens, but on load only the enforceTemplate toggle restores — panel shows empty segments (verified by pre-load LS seed: enforce ON, segs []). Returning daily user loses their convention while enforce stays ON; off-template checks then run against an empty template."
-Single full repro (Wen's pre-seed test is authoritative), but corroborated obliquely by Dana's
-"reads empty until re-expanded." Dana/Aisha's "persisted across reload" reads were likely with an
-already-expanded tab; Wen's seeded cold load proves the segments genuinely don't hydrate. Treat as
-REAL, returning-user-breaking. **Builder owns** (hydrate namingTemplate segments from storage into
-the panel on mount — likely the effect-closure/SSR-hydration friction).
+### 4. CRAFT — workspace empty/short state (recurring across 2: real)
+- **Aisha (8)** — P2: a single data row renders ~200px tall with a large empty white block
+  below — "looks like an unhandled empty state / layout bug… reads as unfinished."
+- **Dana (9)** — after Auto-fix the grid collapsed to show only the Generated-URL column;
+  "URLs were correct but I briefly thought my inputs vanished" (layout reads as data loss).
+Two related symptoms of the grid not sizing / not feeling finished. Worth fixing.
+- Folded in: **Tomás (9)** wants an explicit "shared data lives on our server behind this
+  secret link" note on the workspace/guide screen for company data. Small, accurate, add it.
 
-### Cause C — P2 COMPOSER POPOVER CLIPPED (Sam; single-persona, real CSS defect)
-- **Sam (P2):** "the 'Build name' composer popover opened directly under the cell but its body was clipped by the row boundary on my laptop — pickers cut off until I scrolled. On mobile this would be worse."
-Single persona but a concrete layout defect on the marquee interaction, worse at 375px. **UX owns**
-the surfacing fix (portal / overflow-visible / reposition).
+### 5. Single-persona / deprioritize-with-reason (not exit blockers)
+- **Priya** — CLI-speed keyboard-only single-link fast path. Out of scope (the app is a
+  grid). Deprioritize.
+- **Priya** — view-only guide still exposes one-click "Open editable workspace." Real, but a
+  design stance (secret link = access control). Note, don't block this round.
+- **Jules** — X/Mastodon presets; auto-fix should strip trailing punctuation ("!"). Small
+  reasonable enhancements; deprioritize past exit.
+- **Wen** — per-row diff/confirm on Auto-fix; export the lint violation report as CSV.
+  Power-user depth; deprioritize.
+- **Elena** — enforcement that BLOCKS bad entries. By design the guide is documentation and
+  Enforce already lints on home. Not a defect.
+- **Sam / Elena** — team branding / "ours, governed" guide (last-updated, enforced path).
+  Nice-to-have depth; deprioritize.
+- **Aisha / Rob** — busy toolbar / no clear "start here." Real-ish minor; light grouping
+  helps but not an exit blocker alone.
 
-### Cause D — P2 LOOSE ENFORCEMENT (Tomás; single-persona correctness)
-- **Tomás (P2):** "Apply/enforce accepts `_email_` (empty leading/trailing segments) as on-template; partial/empty segments should still warn."
-**Builder owns** (treat empty/blank segment tokens as off-template and warn).
-
-### Cause E — P2 COLUMN VISIBILITY (Marcus; single-persona, recurring app bug-class)
-- **Marcus (P2):** "with Enforce on + a long generated URL the desktop grid collapsed SOURCE/MEDIUM/CAMPAIGN columns, so the per-row off-template warning was in the DOM but not visible at the flagged cell."
-Same width-budget bug class this app has repeatedly hit. **Builder owns** (re-budget the
-bounded-internal-scroll so the flagged cell stays visible inline).
-
-### Cause F — P3 LABEL (from verify, not a tester)
-- An unnamed-but-tokened segment renders `segment "" must be one of:` — should fall back to
-  "segment N". **Builder owns** (label fallback).
-
-### Lower-priority single-persona nits (logged, not actioned this round)
-- Priya P3: composer fiddlier than typing once you know the convention (power users skip it) — acceptable; composer is for guided/team use.
-- Priya P3 / Rob P3: enforcing with no template defined gives a soft state; "+ Add segment" hint not right at the disabled toggle.
-- Wen P3: token-add "Add" button isn't an obvious commit affordance.
-- Tomás P3: no lint of imported / Paste-&-Audit CSV against the template on the way in — deferred.
-- Jules P3: per-platform presets not obvious from collapsed Presets bar — out of scope.
-- Aisha P3 / Rob P3: stacked teal elements in one cell read noisy; no autocorrect on messy values (by design, footer says "source cells left as typed").
+### NOT an app bug — bad TEST seed data
+Marcus & Dana flagged the seeded template channel segment (email/social/ppc) not matching
+utm_medium allowed values (email/paid_social/cpc) / utm_campaign lists. This is an
+inconsistency in the TEST seed data, not an app defect — fix the seed, don't re-architect
+the guide.
 
 ## Recurring vs single-persona
-- **Recurring (design out first):** Cause A (9/10, the dominant blocker), Cause A2 (Dana + Aisha).
-- **Single-persona but REAL (fix):** Cause B (P1, drove the 6), Cause C (popover clip), Cause D
-  (loose enforce), Cause E (column visibility), Cause F (label, from verify).
+- **Recurring (fix first):** 1 copy cue (Jules/Aisha/Sam), 2 layout (Marcus/Rob), 3 share
+  clarity (Priya/Tomás/Elena), 4 craft empty/short state (Aisha/Dana).
+- **Single-persona, deprioritize with reason:** all of group 5.
 
 ## Verdict
-Comprehension and value are solved. Highest-leverage fix: make the Naming Template entry point
-(panel + per-row composer) genuinely first-class and impossible to miss cold. Then the P1
-hydration bug (Wen → 6), then the popover clip, loose enforcement, column visibility, and label
-defects. UX owns surfacing (Cause A/A2) + the popover clip (Cause C); builder owns the functional
-bugs (Cause B, D, E, F).
+Comprehension and value are solved (10/10 Yes/Yes). The exit gap is craft. Fix 1 (copy cue)
++ Fix 2 (layout) flip Marcus, Jules, Aisha and reassure Sam; Fix 3 + Fix 4 remove the last
+drag on Priya and Rob. Land all four and the panel clears 9/10 at advocacy ≥9.

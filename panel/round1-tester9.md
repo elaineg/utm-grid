@@ -1,39 +1,25 @@
-# Elena — Engineering manager (8 reports), 30-sec patience, half the day in meetings
+{"name":"Elena","clarity":"Yes","value":"Yes","advocacy":9}
 
-I skimmed this because a report asked if our team should standardize on it. My bar: instantly
-obvious, zero setup, and it saves my reports time — or I don't recommend it.
+I'm Elena, EM with 8 reports and a 30-sec patience budget; a report asked if we should standardize on this.
 
-Cold open (30s): I got it immediately. Headline "Clean UTM links for your whole campaign — in
-one grid" + "Auto-fix messy casing and typos... Share one link anyone can open and reuse — no
-login." That's the whole pitch: a spreadsheet for tracking links that catches the typos that
-split GA reports.
+WHAT I DID
+- Cold-opened on laptop. Headline "Clean UTM links for your whole campaign — in one grid" + subhead told me what/who in ~5 sec. No login wall, no setup.
+- Jumped straight to the new Team Style Guide (the artifact I'd actually judge): /w/<id>/guide.
+- Tested it on my PHONE (375px) since I read everything between meetings.
+- Verified the "Share style guide" button on /w/<id>.
+- Ran the core flow my report does: typed messy "Newsletter / Email / Q1 Launch", hit Auto-fix.
 
-New feature — Campaign Naming Template: Discoverable. Right-rail panel "Campaign Naming
-Template" with copy "The STRUCTURE of utm_campaign — its parts and their order... DIFFERENT
-from Allowed Values, which sets allowed values." That one sentence answered "how is this not
-the other panel?" before I asked. I added segments quarter/channel/audience; the per-row teal
-"Build name" pill opened a composer that live-previewed "q3_newsletter_enterprise" and Apply
-dropped it straight into the cell. Toggled "Enforce naming template" (teal, visually separate
-from the purple "Enforce allowed values") against an off-template value → teal "1 cell
-off-template" badge in the header. Worked first try, no docs, no console errors.
+WHAT I SAW (all clean, zero console errors)
+- Style guide is genuinely sendable: WHY (data silently splits in GA — Newsletter vs newsletter), allowed values per field as chips, a 2-segment naming template WITH a worked example (q1_email), and 3 plain-English conventions. Read-only, "anyone with this secret link can view." This is the one-pager I'd forward to a report or agency without editing.
+- Renders perfectly on my phone — fully responsive, scannable in 20 seconds.
+- "Share style guide" copied the correct guide URL and the button explains it's read-only — no confusion vs "Copy share link."
+- Core flow: messy input → newsletter/email/q1_launch + a correct generated URL. Setup-free, instantly obvious.
 
-Regression: Auto-fix normalized "News Letter"→news_letter, Copy share link gave a real encoded
-URL, mobile loads clean. Nothing broke.
+FRICTION
+- Minor: on /w/<id> there are three similar share-ish actions (Share style guide, Copy share link, editable workspace link). I got it, but a busy person could fumble which to send. One sentence per button would remove all doubt.
+- Seeded values are example data; before I tell a report "standardize on this," I'd want to confirm WE can lock OUR allowed values and enforcement actually BLOCKS bad entries (saw Enforce toggles on home, didn't deep-test). Trusting they work given everything else did.
 
-Value vs today: my reports hand-build UTMs in a Google Sheet with CONCATENATE and still fight
-casing drift. This replaces the formula AND enforces a shared naming convention via one link —
-the part a sheet can't do. Real time saved for my reports.
+TO GET TO 10
+- Make the guide feel "ours, governed": show who/when last updated + a clear guide→enforced-workspace path so a teammate's bad value is rejected, not just documented. That turns "nice reference" into "enforced standard" — which is what makes me mandate it across reports.
 
-Holding back a 9: the naming-template power lives in a right-rail panel a hurried person can
-scroll past, and on my phone the grid (where Build name lives) is below a long fold — fine on
-laptop, fiddly between meetings.
-
-```json
-{ "name": "Elena", "clarity": "Yes", "value": "Yes", "advocacy": 8,
-  "likes": ["Headline made the job obvious in <10s", "Naming Template panel explicitly says it's DIFFERENT from Allowed Values — killed my confusion", "Build name composer live-previews and Apply lands the value in one click", "teal off-template badge distinct from purple allowed-values warning", "no setup/login, no console errors, no regression in auto-fix or share link"],
-  "frictions": [
-    {"severity":"P2","issue":"Naming Template + Allowed Values are right-rail panels a 30-sec skimmer may scroll past; the power features aren't above the fold"},
-    {"severity":"P3","issue":"On 375px mobile the grid and the Build name pill sit below a long intro fold; usable but not thumb-friendly between meetings"}
-  ],
-  "verdict_sentence": "Instantly legible, setup-free, and the naming template enforces a team convention my reports can't get from a Google Sheet — I'd recommend it, just shy of unprompted-rave territory." }
-```
+Verdict: legible, setup-free, and the style guide is a real artifact I'd send unprompted. Solid 9.

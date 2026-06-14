@@ -1313,6 +1313,8 @@ export function UtmGrid({
         >
           Export CSV
         </button>
+        {/* Fix 1 + Fix 3: "Copy share link" — sublabel disambiguates from "Create shared workspace".
+            Green fill + "Copied ✓" for 1.8s; ref-stable timer (shareCopyTimer); dedicated aria-live. */}
         <span className="inline-flex flex-col items-start gap-0.5">
           <button
             type="button"
@@ -1326,22 +1328,21 @@ export function UtmGrid({
           >
             {shareLinkCopied ? (
               <span className="inline-flex items-center gap-1">
-                <span>✓</span>{" "}
-                <span>Link copied!</span>
+                <span aria-hidden="true">✓</span>{" "}
+                <span>Copied ✓</span>
               </span>
             ) : (
               "Copy share link"
             )}
           </button>
-          {/* Fix B (bundled): aria-live region ensures "Link copied!" is announced on mobile
-              even when the button text swap itself might not be detected by screen readers */}
-          <span role="status" aria-live="polite" className="text-xs font-medium text-green-600 min-h-[1em]">
-            {shareLinkCopied ? "Link copied!" : ""}
+          {/* Dedicated aria-live — announces the copy even if button text change is missed */}
+          <span role="status" aria-live="polite" className="sr-only">
+            {shareLinkCopied ? "Share link copied!" : ""}
           </span>
-          {/* Fix 4: in workspace mode, clarify this is a frozen snapshot, not the workspace link */}
-          {isWorkspaceMode && !shareLinkCopied && (
+          {/* Fix 3: sublabel distinguishes snapshot vs. live workspace */}
+          {!shareLinkCopied && (
             <span className="text-[10px] text-gray-400 leading-tight max-w-[10rem]">
-              Frozen snapshot of the current grid
+              {isWorkspaceMode ? "frozen snapshot of current grid" : "snapshot, in the link"}
             </span>
           )}
           {shareEmptyWarning && (
@@ -1545,6 +1546,10 @@ export function UtmGrid({
             >
               {creatingWorkspace ? "Creating…" : "Create shared workspace"}
             </button>
+            {/* Fix 3: sublabel clarifies this is live/synced, distinct from "Copy share link" (snapshot) */}
+            <span className="text-[10px] text-blue-600 leading-tight">
+              live, synced for the team
+            </span>
             {createWorkspaceError && (
               <span role="alert" className="text-xs text-red-600">
                 {createWorkspaceError}
@@ -1656,34 +1661,31 @@ export function UtmGrid({
         />
       )}
 
-      {/* Main layout: grid + desktop sidebar side by side */}
-      <div className="flex gap-4 items-start">
-        {/* Grid container — holds BOTH table (≥640px) and card list (<640px).
-            Both are always in the DOM; visibility is controlled by pure CSS only
-            (no JS viewport detection — avoids SSR/hydration mismatch). */}
-        <div className="min-w-0 flex-1">
+      {/* Main layout: grid full-width (panels rendered BELOW the grid, not beside it).
+          Fix 2(a): at ≥1280px the right-rail sidebar was permanently squeezing the editable
+          grid to ~958px, causing sticky Generated-URL/Actions columns to overlap utm_term/
+          utm_content cells. Moving panels below gives the grid the full page width, so the
+          table's internal scroll has ~1232px available at 1280px (vs ~958px before) and
+          sticky columns no longer occlude editable cells. Same pattern workspace mode uses. */}
+      {/* Grid container — holds BOTH table (≥640px) and card list (<640px).
+          Both are always in the DOM; visibility is controlled by pure CSS only
+          (no JS viewport detection — avoids SSR/hydration mismatch). */}
+      <div className="w-full">
 
           {/* ── TABLE VIEW (sm and up) ──────────────────────────────────────── */}
-          {/* Bounded-internal-scroll design (round 4 fix):
-              The table has comfortable, readable column widths (UTM inputs ~120-130px each,
-              Generated URL ~250px, base URL ~160px) so Dana can scan values inline.
-              The table's natural width exceeds the ~960px available at 1280px+sidebar —
-              that's expected and fine. The page NEVER scrolls horizontally because this
-              overflow-x-auto container is bounded by the flex layout (proper sibling of
-              the Campaigns sidebar), so its right edge stops at the sidebar's left edge.
+          {/* Bounded-internal-scroll design (Fix 2a update):
+              Panels moved below the grid, so the overflow-x-auto container is bounded by the
+              FULL PAGE width (~1232px at 1280px minus padding). Table min-width 1140px fits
+              within the container at 1280px, so almost no horizontal scroll is needed.
               Generated URL (sticky right-[116px]) and Actions (sticky right-0) are
               pinned to THIS container's right edge with a solid opaque background and
-              z-index above the scrolling middle columns, so they remain fully visible
-              while the middle UTM columns scroll under them. The Actions column is
-              116px wide; sticky offset for Generated URL matches that exactly. */}
+              z-index above the scrolling middle columns — they no longer overlap editable cells
+              because the container is now ~274px wider than before the fix. */}
           <div ref={tableContainerRef} className="hidden sm:block overflow-x-auto rounded-lg border border-gray-200 bg-white">
-          {/* Table min-width: 1140px (sum of all fixed col widths).
+          {/* Table min-width: 1140px; w-full so it fills the container and no dead white-space shows.
               Fix 6: explicit min-width ensures UTM cols never collapse even when enforce warnings
-              and "Build name" buttons add height. The overflow-x-auto container handles scroll.
-              At 1280px, sidebar=192px, gap=16px, page-padding=48px → grid≈1024px available;
-              1140px table scrolls internally, UTM source/medium/campaign always visible
-              (224–584px from left; sticky Generated+Actions pinned at right edge). */}
-          <table className="border-collapse text-sm" style={{ minWidth: "1140px" }}>
+              and "Build name" buttons add height. The overflow-x-auto container handles scroll. */}
+          <table className="w-full border-collapse text-sm" style={{ minWidth: "1140px" }}>
             <thead>
               <tr className="border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase">
                 {/* Bulk-selection checkbox header
@@ -2317,20 +2319,37 @@ export function UtmGrid({
           </div>
           {/* ── END CARD VIEW ──────────────────────────────────────────────── */}
 
-        </div>
+      </div>
 
-        {/* Desktop sidebar — hidden in workspace mode (UTM Spec is below grid in workspace mode
-            to avoid squeezing source columns off-screen — Round 3 P0-2 fix).
-            In non-workspace mode: hidden on mobile (<900px); inline flex column at ≥900px.
-            Sidebar is w-48 (192px) at 900px–1535px and w-64 (256px) at ≥1536px.
-            At 1280px: sidebar 192px + gap 16px + page padding 48px = 256px overhead →
-            grid gets ~976px. Sticky cols 316px → 660px visible scroll area → all 3
-            primary UTM columns (224–584px) stay visible without horizontal scrolling.
-            Campaigns hidden in workspace mode (local-only). */}
-        {!isWorkspaceMode && (
-          <div className="hidden min-[900px]:flex flex-col w-48 min-[1536px]:w-64 shrink-0 gap-2">
-            {/* Campaign Naming Template panel — FIRST in sidebar (Fix 1: promote to top)
-                Visually separated from Allowed values & Campaigns by its teal border treatment */}
+      {/* Desktop panels — always BELOW the grid (never beside it) so the grid uses full page width.
+          Fix 2(a): removed the right-rail sidebar that was permanently squeezing the editable grid.
+          Both default and workspace mode use this below-grid layout.
+          Hidden on mobile (<900px) — mobile uses the disclosure sections above the grid. */}
+      <div className="hidden min-[900px]:block mt-2">
+        {isWorkspaceMode ? (
+          /* Workspace mode: NamingTemplate + UtmSpec in a 2-col row */
+          <div className="grid grid-cols-2 gap-4">
+            <NamingTemplatePanel
+              template={namingTemplate}
+              onChange={setNamingTemplate}
+              enforceTemplate={!!namingTemplate.enforceTemplate}
+              onEnforceTemplateChange={(v) =>
+                setNamingTemplate({ ...namingTemplate, enforceTemplate: v })
+              }
+              desktopOnly
+            />
+            <UtmSpecPanel
+              spec={spec}
+              onChange={setSpec}
+              workspaceMode={true}
+              syncStatus={specSyncStatus}
+              syncSavedAt={specSavedAt}
+              desktopOnly
+            />
+          </div>
+        ) : (
+          /* Default mode: NamingTemplate + Campaigns + UtmSpec in a 3-col row */
+          <div className="grid grid-cols-3 gap-4">
             <NamingTemplatePanel
               template={namingTemplate}
               onChange={setNamingTemplate}
@@ -2354,7 +2373,6 @@ export function UtmGrid({
               savedFlash={savedFlash}
               desktopOnly
             />
-            {/* UTM Spec panel (non-workspace mode) — beside the grid in the sidebar */}
             <UtmSpecPanel
               spec={spec}
               onChange={setSpec}
@@ -2367,32 +2385,6 @@ export function UtmGrid({
           </div>
         )}
       </div>
-
-      {/* Workspace mode: UTM Spec panel below the grid (not beside it) so source columns
-          always stay visible. Hidden on mobile (<900px) — mobile uses the disclosure above.
-          Round 3 P0-2 fix: opening the panel never squeezes utm_source/medium/campaign off-screen. */}
-      {isWorkspaceMode && (
-        <div className="hidden min-[900px]:block mt-2">
-          {/* Campaign Naming Template — FIRST in workspace mode too (Fix 1) */}
-          <NamingTemplatePanel
-            template={namingTemplate}
-            onChange={setNamingTemplate}
-            enforceTemplate={!!namingTemplate.enforceTemplate}
-            onEnforceTemplateChange={(v) =>
-              setNamingTemplate({ ...namingTemplate, enforceTemplate: v })
-            }
-            desktopOnly
-          />
-          <UtmSpecPanel
-            spec={spec}
-            onChange={setSpec}
-            workspaceMode={true}
-            syncStatus={specSyncStatus}
-            syncSavedAt={specSavedAt}
-            desktopOnly
-          />
-        </div>
-      )}
 
       {/* F: Trust note — mode-aware (Fix 1). */}
       {isWorkspaceMode ? (

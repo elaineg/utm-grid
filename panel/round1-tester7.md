@@ -1,51 +1,28 @@
-# utm-grid — Round 1, Tester 7 (Aisha, Product Designer)
+{"name":"Aisha","clarity":"Yes","value":"Yes","advocacy":8}
 
-A teammate shared this again. This round I judged the new **Campaign Naming Template** on
-craft — empty states, copy tone, lint affordances — and naturally touched the rest so a
-regression would show.
+# utm-grid — Round 1, Tester 7 (Aisha, Product Designer)
+A teammate shared this. I don't build UTMs often; I judge craft hard (empty states, copy tone, affordances) and advocate loudly only if it holds up. This round centers on the new **Team UTM Style Guide**.
+
+## What I did
+Cold-opened home, filled a row with messy values ("Email", "Spring Launch 2026") — inline lint flagged uppercase + spaces with quoted fixes, "Auto-fix naming" produced "email"/"spring_launch_2026" with a clean "Auto-fixed 2 cells — Undo" toast. Then opened the seeded /guide, opened /w/<id>, and tested "Share style guide".
 
 ## Clarity — Yes
-H1 ("Clean UTM links for your whole campaign — in one grid") + the casing/typos subline land
-in seconds. The Naming Template panel is the standout craft moment: it pre-empts the obvious
-"how is this different from Allowed values?" question with explicit copy — "The STRUCTURE of
-utm_campaign — its parts and their order... Different from Allowed Values, which sets allowed
-values." A considered author anticipated my exact confusion. The empty state gives a real
-example (quarter / channel / audience), not a hollow "nothing here yet."
+H1 + casing/typos subline land in seconds.
 
 ## Value — Yes
-Today I'd hand-type campaign names or paste a convention from a Notion doc and hope the team
-follows it. The Build-name composer (per-row popover: a tokened segment like QUARTER becomes
-a constrained dropdown of my values, CHANNEL/AUDIENCE free text, live `PREVIEW:
-q2_email_newusers`, Apply writes the cell) plus the enforce lint (`⚠ Off-template — segment
-"quarter" must be one of: q2`) is the guardrail a doc can't enforce. Verified end-to-end:
-defined a 3-segment template, added q2/q3 tokens, built `q2_email_newusers`, toggled enforce,
-typed an off-template value and got a precise teal warning + "1 cell off-template" badge.
-State persisted across reload.
+Today I'd paste a UTM convention into a Notion doc and hope the team/agency follows it. The Style Guide IS that doc, but live and link-shareable — genuinely better than my Notion page because the values come from the actual workspace.
 
-## Regression — none found
-Hero, presets, bulk edit, Campaigns, Allowed values, Team Workspace, Auto-fix (Undo appeared),
-share all rendered; required-field (amber) vs template (teal) warnings stay visually distinct.
-Zero console/page errors across every flow.
+## The Style Guide (this round) — the part that wins me
+Considered: centered reading column, gray caps eyebrows over dark body, monospace pills for allowed values, a tinted "WORKED EXAMPLE — q1_email" callout, green-check conventions, and a "WHY UTM TAGS MATTER" intro using an inline `Newsletter` vs `newletter` example to explain the stakes. "Anyone with this secret link can view this page" sets sharing expectations right. This reads like a real internal standard, not a tool screenshot — I would paste it into Slack for our agency. On /w, "Share style guide" sits beside "Copy workspace link" with microcopy distinguishing them ("a read-only page teammates can read without editing") — answers the exact question a teammate asks. Button DID copy the correct /guide URL.
 
-## Friction / nits
-- **P2 discoverability:** the Naming Template panel sits at the very bottom of the right rail,
-  below the fold and collapsed; the per-row "Build name" chip only appears AFTER a template
-  exists. A cold user may never realize the feature is there. (My Playwright click toggled it
-  shut/open before the popover rendered on a couple of attempts — it DOES open reliably via a
-  real click; just easy to miss.)
-- **P3 craft:** an enforce-flagged cell stacks teal border + teal "Build name" chip + teal
-  "N warnings · Fix" in one narrow column — legible but noisy; I'd lighten one element.
+## Friction (what holds it back from 9–10)
+1. **P2 — Share-guide button gives no visible confirmation.** Label stays "Share style guide" after click; it copies correctly and aria-live/"copied" nodes exist in the DOM, but I saw nothing on screen, so I'd click twice unsure. Flip label to "Copied ✓".
+2. **P2 — Workspace grid dead space.** A single data row renders ~200px tall with a large empty white block below the content — looks like an unhandled empty state / layout bug. First thing I notice in the editor; reads as unfinished. (Not on the guide page.)
+3. **P3 — Home toolbar is busy.** Add row / Auto-fix / Import / Paste&Audit / Export / Copy share link / Copy all URLs compete at equal weight; nothing says "start here."
 
-Advocacy 8: craft holds (consistent teal accent, live preview pill, separator picker,
-specific lint that names the segment and its allowed values). Held back from 9 only because
-the panel and its composer are easy to miss below the fold.
+## To reach 9–10
+Visible "Copied ✓" on the Share-guide button, fix the tall empty workspace row, lightly group secondary toolbar buttons. The Style Guide page itself is already 9-level craft; fix the surrounding affordances and I'd bring this up unprompted.
 
 ```json
-{ "name": "Aisha", "clarity": "Yes", "value": "Yes", "advocacy": 8,
-  "likes": ["Naming-template panel copy explicitly distinguishes itself from Allowed values — pre-empts the exact confusion", "Build-name composer: constrained dropdown for tokened segments + live PREVIEW pill, Apply writes the cell cleanly", "Lint message is specific — names the offending segment and its allowed values; teal vs amber warnings stay distinct", "Considered empty states with concrete examples; template + enforce state persist across reload; zero console errors"],
-  "frictions": [
-    {"severity":"P2","issue":"Discoverability: Naming Template panel sits below the fold at the bottom of the right rail, collapsed; the per-row 'Build name' chip only appears after a template exists, so cold users may never find the feature"},
-    {"severity":"P3","issue":"An enforce-flagged campaign cell stacks teal border + teal 'Build name' chip + teal 'N warnings · Fix' in one narrow cell — legible but visually noisy"}
-  ],
-  "verdict_sentence": "The Naming Template is genuinely considered — distinct from Allowed values, with a constrained composer and a specific lint message — and I'd recommend it, holding back from a 9 only because the panel and its per-row composer are easy to miss below the fold." }
+{"name":"Aisha","clarity":"Yes","value":"Yes","advocacy":8,"topComplaints":["Share style guide button gives no visible copied confirmation — label never flips","Workspace grid renders a ~200px-tall single row with dead empty space below — looks like an unhandled layout/empty state","Home toolbar buttons all compete at equal weight; no clear starting point"],"priorConcernsAddressed":"n/a"}
 ```
