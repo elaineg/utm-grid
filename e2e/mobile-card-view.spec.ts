@@ -320,7 +320,8 @@ test("375px: UTM Spec mobile toggle is visible and openable without horizontal s
   // Open the panel
   await specToggle.click();
   // After expanding, the spec add input for utm_source should appear
-  const addInput = page.locator('[data-testid="spec-add-input-utm_source"]').first();
+  // testid suffixed per breakpoint; use prefix match
+  const addInput = page.locator('[data-testid^="spec-add-input-utm_source"]').first();
   await expect(addInput).toBeVisible({ timeout: 5000 });
 
   await ctx.close();

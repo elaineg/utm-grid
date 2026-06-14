@@ -63,7 +63,8 @@ test("taxonomy-1: add allowed value via UI, autosave, reload, chip persists; GET
   }
 
   // Type a value and press Enter
-  const sourceInput = page.locator('[data-testid="spec-add-input-utm_source"]');
+  // testid suffixed per breakpoint (e.g. spec-add-input-utm_source-desktop); use prefix match
+  const sourceInput = page.locator('[data-testid^="spec-add-input-utm_source"]').first();
   await expect(sourceInput).toBeVisible({ timeout: 5000 });
   await sourceInput.fill("myvalue");
   await sourceInput.press("Enter");

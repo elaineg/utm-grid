@@ -37,11 +37,12 @@ async function expandMobileSpecAndAdd(page: Page, field: string, value: string) 
   if (expanded === "false" || expanded === null) {
     await toggle.click();
     // Wait for the add input to appear
+    // testid suffixed per breakpoint (e.g. spec-add-input-utm_source-mobile); use prefix match
     await expect(
-      page.locator(`[data-testid="spec-add-input-${field}"]`).first()
+      page.locator(`[data-testid^="spec-add-input-${field}"]`).first()
     ).toBeVisible({ timeout: 5000 });
   }
-  const input = page.locator(`[data-testid="spec-add-input-${field}"]`).first();
+  const input = page.locator(`[data-testid^="spec-add-input-${field}"]`).first();
   await input.fill(value);
   await input.press("Enter");
   // Wait for chip's remove button to confirm value was added

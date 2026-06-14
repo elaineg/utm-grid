@@ -47,12 +47,14 @@ async function expandSpecPanel(page: Page) {
     await toggle.click();
   }
   // Wait for the add-input for utm_source to be visible (indicates expansion)
-  await expect(page.locator('[data-testid="spec-add-input-utm_source"]').first()).toBeVisible();
+  // testid is now suffixed per breakpoint: spec-add-input-utm_source-desktop (etc.), use prefix match
+  await expect(page.locator('[data-testid^="spec-add-input-utm_source"]').first()).toBeVisible();
 }
 
 /** Add an allowed value for a UTM field via the spec panel. */
 async function addAllowedValue(page: Page, field: string, value: string) {
-  const input = page.locator(`[data-testid="spec-add-input-${field}"]`).first();
+  // testid suffixed per breakpoint (e.g. spec-add-input-utm_source-desktop); use prefix match
+  const input = page.locator(`[data-testid^="spec-add-input-${field}"]`).first();
   await input.fill(value);
   await input.press("Enter");
   // Wait for the remove button for this chip to appear (aria-label is stable and unique)

@@ -36,7 +36,7 @@ async function expandSpecPanel(page: Page) {
     await toggle.click();
   }
   await expect(
-    page.locator('[data-testid="spec-add-input-utm_source"]').first()
+    page.locator('[data-testid^="spec-add-input-utm_source"]').first()
   ).toBeVisible({ timeout: 5000 });
 }
 

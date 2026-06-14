@@ -245,17 +245,10 @@ test("H4 — non-destructive restore: restore version A, version B still in Hist
   expect(historyBefore[1].data).toContain("summer"); // oldest
 
   // Open History panel and restore the older (summer) version.
-  // P0-2 name-nudge: on fresh visit, the name input auto-opens and its onBlur intercepts
-  // the first history-toggle click, causing a re-render that drops the toggle state.
-  // Click the toggle twice when the name input was open (first click closes input, second opens panel).
-  const nameInputBeforeH4 = page.locator('[data-testid="editor-name-input"]');
-  const nameInputOpenH4 = await nameInputBeforeH4.isVisible();
+  // Round 3 fix: name-nudge auto-opens WITHOUT autofocus, so the first click on
+  // history-toggle lands cleanly (no onBlur swallow). Single click is sufficient.
+  await page.waitForTimeout(500); // allow pre-fetch history to resolve
   await page.locator('[data-testid="history-toggle"]').click();
-  if (nameInputOpenH4) {
-    // First click closed name input; the toggle state was absorbed. Click again to open history.
-    await page.waitForTimeout(200);
-    await page.locator('[data-testid="history-toggle"]').click();
-  }
   await expect(page.locator('[data-testid="history-panel"]')).toBeVisible({ timeout: 5000 });
   await page.waitForTimeout(1500); // allow history to load
 
@@ -325,14 +318,9 @@ test("H5 — Preview shows a version read-only; exiting Preview returns current 
   const countBefore = histBefore.length;
 
   // Open history, preview the first (oldest = h5_initial) version
-  // P0-2: if name input was auto-open, first click closes it; second opens history panel.
-  const h5NameInput = page.locator('[data-testid="editor-name-input"]');
-  const h5NameOpen = await h5NameInput.isVisible();
+  // Round 3 fix: single click opens the panel (no onBlur swallow).
+  await page.waitForTimeout(500); // allow pre-fetch history
   await page.locator('[data-testid="history-toggle"]').click();
-  if (h5NameOpen) {
-    await page.waitForTimeout(200);
-    await page.locator('[data-testid="history-toggle"]').click();
-  }
   await page.waitForTimeout(1500);
 
   const historyEntries = (await apiGet(`/api/workspace/${id}/history`)) as Array<{
@@ -421,14 +409,9 @@ test("H5b — Preview fix: previewed older version (summer) shows its actual row
   });
 
   // Open History panel and click Preview on the OLDER (summer) version
-  // P0-2: if name input was auto-open, first click closes it; second opens history panel.
-  const h5bNameInput = page.locator('[data-testid="editor-name-input"]');
-  const h5bNameOpen = await h5bNameInput.isVisible();
+  // Round 3 fix: single click opens the panel (no onBlur swallow).
+  await page.waitForTimeout(500); // allow pre-fetch history
   await page.locator('[data-testid="history-toggle"]').click();
-  if (h5bNameOpen) {
-    await page.waitForTimeout(200);
-    await page.locator('[data-testid="history-toggle"]').click();
-  }
   await expect(page.locator('[data-testid="history-panel"]')).toBeVisible({ timeout: 5000 });
   await page.waitForTimeout(1500); // allow history fetch
 
@@ -482,14 +465,9 @@ test("H6 — Restore confirmation 'Restored …' is durably visible for ~3s unde
   });
 
   // Open history, restore the oldest version.
-  // P0-2: if name input auto-open, first click closes it; click again to open panel.
-  const h6NameInput = page.locator('[data-testid="editor-name-input"]');
-  const h6NameOpen = await h6NameInput.isVisible();
+  // Round 3 fix: single click opens the panel (no onBlur swallow).
+  await page.waitForTimeout(500); // allow pre-fetch history
   await page.locator('[data-testid="history-toggle"]').click();
-  if (h6NameOpen) {
-    await page.waitForTimeout(200);
-    await page.locator('[data-testid="history-toggle"]').click();
-  }
   await expect(page.locator('[data-testid="history-panel"]')).toBeVisible({ timeout: 5000 });
   await page.waitForTimeout(1500);
 
@@ -700,18 +678,22 @@ test("H10 — display name persists across reload; no SSR hydration flash", asyn
   });
 
   // Set display name to "ReloadUser".
-  // P0-2 name-nudge: on fresh visit, the input auto-opens. Handle both states.
+  // Round 3 fix: name-nudge auto-opens the input WITHOUT autofocus on fresh visit.
+  // Wait briefly for the WorkspaceHistory component to mount and run its useEffect.
+  await page.waitForTimeout(500);
   const nameInputH10 = page.locator('[data-testid="editor-name-input"]');
   const nameInputOpenH10 = await nameInputH10.isVisible();
   if (nameInputOpenH10) {
-    // Auto-opened — type directly
+    // Auto-opened — type directly (fresh context, no stored name)
     await nameInputH10.fill("ReloadUser");
     await nameInputH10.press("Enter");
   } else {
-    // Button shown — click to open, then type
-    const editBtn = page.getByRole("button", { name: /Editing as:/i });
+    // Button shown — click to open, then type (returning user with name already set)
+    const editBtn = page.locator('[data-testid="editor-name-input"]').or(
+      page.getByRole("button", { name: /Editing as:/i })
+    ).first();
     await editBtn.click();
-    const nameInput = page.getByLabel("Your display name for this workspace");
+    const nameInput = page.locator('[data-testid="editor-name-input"]');
     await nameInput.fill("ReloadUser");
     await nameInput.press("Enter");
   }
