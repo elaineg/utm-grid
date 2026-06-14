@@ -1675,17 +1675,26 @@ export function UtmGrid({
           {/* ── TABLE VIEW (sm and up) ──────────────────────────────────────── */}
           {/* Bounded-internal-scroll design (Fix 2a update):
               Panels moved below the grid, so the overflow-x-auto container is bounded by the
-              FULL PAGE width (~1232px at 1280px minus padding). Table min-width 1140px fits
-              within the container at 1280px, so almost no horizontal scroll is needed.
+              FULL PAGE width (~1232px at 1280px minus padding). Table min-width 1180px fits
+              within the container at 1280px — all 6 editable columns visible with no scroll.
+              table-fixed prevents warning badges/chips from stretching td widths beyond header.
               Generated URL (sticky right-[116px]) and Actions (sticky right-0) are
               pinned to THIS container's right edge with a solid opaque background and
               z-index above the scrolling middle columns — they no longer overlap editable cells
               because the container is now ~274px wider than before the fix. */}
           <div ref={tableContainerRef} className="hidden sm:block overflow-x-auto rounded-lg border border-gray-200 bg-white">
-          {/* Table min-width: 1140px; w-full so it fills the container and no dead white-space shows.
-              Fix 6: explicit min-width ensures UTM cols never collapse even when enforce warnings
+          {/* Table min-width: 1180px (32+32+160+5×120+240+116); w-full fills wider containers.
+              table-fixed: column widths are set by headers, content cannot expand td width.
+              Fix 6: explicit widths ensure UTM cols never collapse even when enforce warnings
               and "Build name" buttons add height. The overflow-x-auto container handles scroll. */}
-          <table className="w-full border-collapse text-sm" style={{ minWidth: "1140px" }}>
+          {/* table-fixed: locks column widths to header-defined values; cell content
+              that overflows is clipped (inputs/outputs use w-full to fill, not expand).
+              This prevents warning badges / "Fix to" chips from stretching td widths and
+              pushing editable columns out of the 1280px viewport.
+              Column budget at 1280px (≈1217px container after padding+scrollbar):
+                checkbox 32 + row# 32 + baseUrl 160 + 5×utm 120 = 600 + genUrl 240 + actions 116 = 1180px
+              1180 < 1217 → all columns visible with no horizontal scroll. */}
+          <table className="w-full border-collapse text-sm table-fixed" style={{ minWidth: "1180px" }}>
             <thead>
               <tr className="border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase">
                 {/* Bulk-selection checkbox header
@@ -1693,19 +1702,19 @@ export function UtmGrid({
                     Generated-URL / Actions columns (z-10) on narrow/375px viewports.
                     With new layout sticky body cells are z-20, header sticky cells z-30 —
                     z-20 here is fine since this is in the thead (separate stacking layer). */}
-                <th className="relative z-20 w-8 px-2 py-2.5 text-center bg-gray-50" style={{ minWidth: "32px" }}>
+                <th className="relative z-20 w-8 px-2 py-2.5 text-center bg-gray-50" style={{ width: "32px" }}>
                   <SelectAllCheckbox
                     rows={rows}
                     selectedRowIds={selectedRowIds}
                     onToggleAll={toggleSelectAll}
                   />
                 </th>
-                <th className="w-8 px-2 py-2.5" style={{ minWidth: "32px" }} aria-label="Row number" />
+                <th className="w-8 px-2 py-2.5" style={{ width: "32px" }} aria-label="Row number" />
                 {COLUMNS.map((c) => (
                   <th
                     key={c}
                     className="px-2 py-2.5 whitespace-nowrap"
-                    style={{ minWidth: c === "baseUrl" ? "160px" : "120px" }}
+                    style={{ width: c === "baseUrl" ? "160px" : "120px" }}
                   >
                     {FIELD_LABELS[c]}
                     {settings.requiredParams &&
@@ -1717,15 +1726,15 @@ export function UtmGrid({
                   </th>
                 ))}
                 {/* Generated URL: sticky, pinned 116px from right (= Actions width).
-                    200px in workspace mode (no Campaigns sidebar = more visible space for source
-                    columns left of sticky), 250px in default mode.
+                    Capped at 240px — enough for a truncated URL preview; full value shown
+                    via title tooltip on hover and via the Copy button (copies full URL).
                     Solid bg (bg-gray-50) so scrolling middle columns slide under cleanly.
                     z-30 so header cells float above body sticky cells (z-20) + scrolling cells (z-[11]). */}
-                <th className="sticky right-[116px] z-30 bg-gray-50 px-2 py-2.5 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] whitespace-nowrap" style={{ minWidth: "200px", width: "200px" }}>
+                <th className="sticky right-[116px] z-30 bg-gray-50 px-2 py-2.5 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] whitespace-nowrap" style={{ width: "240px" }}>
                   Generated URL
                 </th>
                 {/* Actions: sticky right-0, 116px wide. z-30 same as Generated URL header. */}
-                <th className="sticky right-0 z-30 bg-gray-50 px-2 py-2.5 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] whitespace-nowrap" style={{ minWidth: "116px", width: "116px" }}>
+                <th className="sticky right-0 z-30 bg-gray-50 px-2 py-2.5 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] whitespace-nowrap" style={{ width: "116px" }}>
                   Actions
                 </th>
               </tr>
@@ -1814,7 +1823,7 @@ export function UtmGrid({
                            tappable on mobile at every horizontal scroll position.
                            Fix 6: overflow-visible (not overflow-hidden) so warning badges
                            and "Build name" buttons aren't clipped when enforce is on. */
-                        <td key={field} className="relative z-[11] px-2 py-2" style={{ minWidth: field === "baseUrl" ? "160px" : "120px" }}>
+                        <td key={field} className="relative z-[11] px-2 py-2" style={{ width: field === "baseUrl" ? "160px" : "120px" }}>
                           {/* Column width is set by the th minWidth above.
                               Inputs use w-full to fill the cell for readable display.
                               title attr shows full value on hover — cheap scan aid for Dana. */}
@@ -1957,12 +1966,13 @@ export function UtmGrid({
                         </td>
                       );
                     })}
-                    {/* Sticky Generated URL — narrower in workspace mode (200px) to keep source columns
-                        visible on first screenful; 250px in default mode for Dana's inline scan.
+                    {/* Sticky Generated URL — 240px wide, truncated with title tooltip for hover.
+                        Copy button (in Actions column) copies the FULL untruncated URL.
                         right-[116px] pins it 116px from the container's right edge (= Actions width).
                         bg-white (solid opaque) so scrolling middle columns slide cleanly under.
-                        z-20 so it floats above scrolling cells (z-[11]) but below the checkbox col (z-20 same level). */}
-                    <td className="sticky right-[116px] z-20 px-2 py-2 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] overflow-hidden bg-white" style={{ minWidth: "200px", width: "200px" }}>
+                        z-20 so it floats above scrolling cells (z-[11]) but below the checkbox col (z-20 same level).
+                        overflow-hidden + truncate on output: visual-only clipping, copy is unaffected. */}
+                    <td className="sticky right-[116px] z-20 px-2 py-2 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] overflow-hidden bg-white" style={{ width: "240px" }}>
                       <output
                         aria-label={`Generated URL row ${i + 1}`}
                         title={generated}
@@ -1975,7 +1985,7 @@ export function UtmGrid({
                     </td>
                     {/* Sticky Actions — 116px wide, right-0, solid opaque bg.
                         z-20 ensures it floats above scrolling cells. */}
-                    <td className="sticky right-0 z-20 px-3 py-2 whitespace-nowrap shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] bg-white" style={{ minWidth: "116px", width: "116px" }}>
+                    <td className="sticky right-0 z-20 px-3 py-2 whitespace-nowrap shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] bg-white" style={{ width: "116px" }}>
                       <span className="inline-flex flex-col gap-1">
                         <span className="inline-flex items-center gap-1.5">
                           <button

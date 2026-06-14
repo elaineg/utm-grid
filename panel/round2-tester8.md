@@ -1,39 +1,11 @@
-# Rob — Round 2 (Tester 8)
+{"name":"Rob","clarity":"Yes","value":"Yes","advocacy":9}
 
-**Who I am:** Freelance brand/visual designer, live in Figma/Photoshop, occasionally tag
-client campaign links and otherwise type query strings by hand. Medium tech, 1440px desktop.
+PRIOR BLOCKER (grid boxed in a ~958px overflow-x-auto sub-pane squeezed by the right rail, inner horizontal scroll on my 1680px monitor): RESOLVED. Config panels (Campaign Naming Template / Campaigns / Allowed values) now sit BELOW a full-width grid.
 
-**Re-check of my round-1 friction (P2: Naming Template buried at sidebar bottom):** FIXED.
-The Campaign Naming Template panel is now the FIRST item in the right rail (header top=0px,
-above the fold cold), with a distinct green grid icon and a "Define your campaign-name
-structure — its parts and their order" sub-label. It auto-expands cold, the disambiguation
-"Different from Allowed Values" is right there, and there's a "Define structure →" pointer
-on the toolbar Enforce toggle plus a "define structure below ↓ first" hint at the panel's
-own toggle. Right-rail order is now Template (top) → Campaigns (779) → Allowed values (1009).
-A cold first-timer setting up a client convention WILL find it now — I saw it without
-scrolling. My old P3 (no add-segment hint next to the disabled toggle) is also addressed.
+WIDE-VIEWPORT GRID-WIDTH RESULT: measured at 1280/1440/1680px — ZERO horizontal scroll containers anywhere (table scrollWidth == clientWidth; doc width == window width). All columns — BASE URL, UTM_SOURCE/MEDIUM/CAMPAIGN/TERM/CONTENT, GENERATED URL, ACTIONS — show in one row with no sideways scroll. The starved sub-pane is gone. Nuance: the table caps at ~1230px max-width and centers, so on 1680px there's ~225px margin each side — fits everything, just not full-bleed.
 
-**Column crowding (re-confirm at 1440px, sidebar open):** Still fine. All 8 grid columns
-present and inside the viewport — utm_campaign right=701, utm_term=821, utm_content=941,
-Generated URL=1011, within innerWidth 1440. No off-screen push. 0 page errors.
+FUNCTION: messy client row (Facebook / CPC / "Spring_Sale 2026") live-flagged uppercase + spaces inline; Auto-fix naming normalized to facebook / cpc / spring_sale_2026 and the Generated URL column shows the clean string. Beats hand-typing query strings; the client-shareable style guide already earned advocacy last round.
 
-**Clarity (Yes):** Headline + "Auto-fix messy casing and typos before they split your Google
-Analytics" tells me in 10s it's a grid that builds clean tracking links.
+WHAT MOVED ME 8→9: the only thing pinning me at 8 (cramped grid on my wide monitor) is fixed. Not a 10 because the toolbar is still busy cold (Paste & Audit, Presets, Bulk edit, Live workspace, naming rules) and the grid is capped at 1230px rather than truly full-width on a big monitor — minor nits, no blocker.
 
-**Value (Yes):** Today I type the UTM string by hand or copy last campaign's link and swap
-words — that's where I fumble casing and spaces. The casing/space lint, suggested fixes, the
-off-template guardrail for a client convention, and CSV export beat my "do it by hand in 4
-min" bar because the win is consistency across 10 links, not one.
-
-**Advocacy: 9** — The one thing keeping it off a 9 last round (buried template panel) is
-fixed and it's now genuinely discoverable. I'd bring this up unprompted to designer friends
-who tag client links. Not a 10 only because messy values still aren't auto-fixed inline (you
-click Fix/Auto-fix) — minor and intentional.
-
-## Frictions
-- P3: Messy source values aren't auto-corrected inline; you must click "Fix"/"Auto-fix
-  naming". Reasonable (footer says cells left as typed) but a first-timer may expect autocorrect.
-
-```json
-{ "name":"Rob", "clarity":"Yes", "value":"Yes", "advocacy":9, "prior_concerns_addressed":"Yes + Naming Template panel now pinned at top of the right rail, auto-expanded above the fold cold, with icon/sub-label/pointer; column crowding still fine at 1440px", "likes":["Naming Template panel now FIRST in the right rail, above the fold cold","Distinct green grid icon + 'Define your campaign-name structure' sub-label + 'Define structure →' pointer make it discoverable","Still clearly disambiguated from Allowed Values","Off-template segment guardrail is the exact client-convention check I need","Casing/space lint with suggested fixes","All 8 columns fit at 1440px with sidebar open — no crowding"], "frictions":[{"severity":"P3","issue":"Messy values aren't auto-fixed inline; you must click Fix/Auto-fix naming — first-timers may expect autocorrect"}], "verdict_sentence":"My only blocker from round 1 — the buried naming-template panel — is fixed: it's now pinned at the top of the right rail, auto-expanded and discoverable cold, with column crowding still resolved, which earns it a 9." }
-```
+REMAINING BLOCKER: none.

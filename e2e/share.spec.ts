@@ -124,12 +124,12 @@ test("Link copied! cue shows on button after click (transient but visible)", asy
   // Click using the stable testid
   await shareBtn(page).click();
 
-  // The button itself changes label to "Link copied!" — check it quickly
-  await expect(shareBtn(page)).toContainText("Link copied!", { timeout: 2000 });
+  // The button itself changes to green "Copied ✓" cue (round-2: was "Link copied!")
+  await expect(shareBtn(page)).toContainText("Copied", { timeout: 2000 });
 
   // Cue remains visible for ~1800ms per spec; after 2s it should be gone
   await page.waitForTimeout(2100);
-  await expect(shareBtn(page)).not.toContainText("Link copied!");
+  await expect(shareBtn(page)).not.toContainText("Copied ✓");
   await expect(shareBtn(page)).toHaveText("Copy share link");
 });
 
@@ -255,8 +255,8 @@ test("Link copied! cue survives a concurrent re-render triggered by editing", as
   // We type without awaiting the cue first, so the re-render races with the cue
   await cell(page, "utm_content", 1).fill("variant_a");
 
-  // Despite the re-render, the cue must still be visible
-  await expect(shareBtn(page)).toContainText("Link copied!", { timeout: 2000 });
+  // Despite the re-render, the cue must still be visible (round-2 text: "Copied ✓")
+  await expect(shareBtn(page)).toContainText("Copied", { timeout: 2000 });
 });
 
 // ── Test 8: P2 lock — share hash wins over pre-seeded localStorage ────────────
@@ -356,8 +356,8 @@ test("Link copied! cue shows even when navigator.clipboard is blocked (execComma
   // Click share — clipboard is blocked but the cue should still show
   await shareBtn(page).click();
 
-  // The button shows "Link copied!" regardless of clipboard success
-  await expect(shareBtn(page)).toContainText("Link copied!", { timeout: 2000 });
+  // The button shows "Copied ✓" regardless of clipboard success (round-2 text; was "Link copied!")
+  await expect(shareBtn(page)).toContainText("Copied", { timeout: 2000 });
 });
 
 // ── Test 10: P0-1 regression — share fragment wins even when localStorage is pre-populated ──

@@ -1,38 +1,9 @@
-# Dana — Demand-gen marketer — Round 2 (Campaign Naming Template, new preview)
+{"name":"Dana","clarity":"Yes","value":"Yes","advocacy":9}
 
-I tag 30+ links every Thursday and hand-police a q3_paid_linkedin convention. Came back to
-re-check my two round-1 nits, then re-judged fresh.
+I'm Dana, demand-gen marketer, 30+ links/week before Thursday, ruthless about time. Re-ran the sentinel.
 
-## Prior frictions — both VERIFIED FIXED
-- R1 #1 (subtle Build-name pill): NOW a solid teal **"⊞ Build name"** filled button right under
-  the utm_campaign cell — measured 106×44px, white text on saturated teal. Marquee feature finally
-  looks like one; I'd never miss it now.
-- R1 #2 (panel collapses/reads empty on reload): after reload the panel stays EXPANDED (▲) and my
-  segments restored — inputs read quarter/channel/audience in the structure editor AND reflected
-  per-row. No data-loss scare.
+FLAG (a) Auto-fix hid input columns — FIXED. Grid is now full-width with config panels (Naming Template / Campaigns / Allowed values) moved below it. Built a 3-channel messy campaign (LinkedIn/Paid_Social/"Q3 Launch", Newsletter/Email, Google/" CPC ") and hit Auto-fix: headers are byte-identical before and after (BASE URL, UTM_SOURCE, UTM_MEDIUM, UTM_CAMPAIGN... all stay), every input cell stays visible and now reads linkedin / paid_social / q3_launch / cpc. Nothing "vanished." Inline "Contains uppercase letters — use lowercase only ('linkedin'). Fix" hints are a nice bonus.
 
-## Fresh pass
-- Template panel is now at the TOP of the right rail, auto-expands cold, distinct grid icon, sub-
-  label "Define your campaign-name structure — its parts and their order", and "Different from
-  Allowed Values" inline. The Allowed-values/Campaigns panels sit clearly below — zero confusion.
-- Defined 3 segments + `_` separator; per-row Build name composer present on every row. No JS errors.
-- Density check (my thing): all editable columns (BASE URL/SOURCE/MEDIUM/CAMPAIGN/TERM/GENERATED/
-  ACTIONS) stayed on-screen at 1280px. The fixed right rail (~210px) still leaves BASE URL and
-  GENERATED URL cells a bit narrow, but nothing got pushed off — same as R1, no new crowding.
+FLAG (b) "Share style guide" undiscoverable — FIXED. After Create shared workspace, it's a prominent purple "Share style guide" button in the workspace header with the cue "read-only reference page" beneath it. The guide page (/w/<id>/guide) still renders as clean screenshot-to-team material: "Team UTM Tagging Standard", the Newsletter-vs-newsletter splitting argument I cited last round, a graceful "No custom taxonomy defined yet" state, 3 plain-English conventions, and an "Open the editable workspace" CTA. Zero console errors anywhere.
 
-## Verdict
-Both UX nits that kept me at 8 are gone, the headline feature is now obvious, and reload is
-trustworthy. This is the Thursday convention-grind automated. I'd screenshot it for the team channel.
-
-```json
-{ "name":"Dana", "clarity":"Yes", "value":"Yes", "advocacy":9,
-  "prior_concerns_addressed":"Yes — Build name is now a 106x44 solid teal button and reload restores the full template into an expanded panel; both verified.",
-  "likes":["Build name is now a prominent solid teal 44px button under utm_campaign — marquee feature finally legible",
-    "Reload keeps panel expanded and restores quarter/channel/audience segments — no data-loss scare",
-    "Naming Template moved to top of rail, auto-expands cold, distinct from Allowed Values via icon+sublabel+inline note",
-    "Per-row guided composer on every row; off-template enforcement toggle right in the panel",
-    "All editable grid columns stay visible at 1280px — no crowding from the panel"],
-  "frictions":[
-    {"severity":"P3","issue":"Fixed ~210px right rail still squeezes BASE URL and GENERATED URL cells narrow at 1280px — readable but tight for a data-dense user; a collapse-rail toggle would help"}],
-  "verdict_sentence":"Both round-1 nits are fixed — the Build-name button is now an unmissable solid teal 44px control and reload restores the full expanded template — so the convention-policing I do by hand every Thursday is now obvious and trustworthy, earning a 9." }
-```
+REMAINING FRICTION (why not 10): the guide is still only reachable after creating a workspace — a solo one-off tagger never sees it. And I still can't one-click promote THIS grid's values into the team allowed-list so the guide writes itself from my real campaign. Both flags fixed cleanly, no regression — holding 9.

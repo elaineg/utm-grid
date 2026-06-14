@@ -1,45 +1,20 @@
-# Round 2 — Tester 1 — Priya (Senior backend SWE, keyboard-first, skeptic, hates signups)
-## Re-test: Campaign Naming Template feature
+{"name":"Priya","clarity":"Yes","value":"Yes","advocacy":8}
 
-## Re-check of my round-1 frictions
-- **Discoverability (P2): FIXED.** The Campaign Naming Template panel is now the TOP card in the
-  right rail with a structure-blocks icon, sublabel "Define your campaign-name structure — its
-  parts and their order", a teal highlight border, and a "Define structure →" pointer under the
-  top toggle. "Allowed values" is collapsed BELOW it. Found it in <3s without hunting.
-- **Two near-identical "Enforce" toggles (P2): FIXED.** Now ~175px apart in the top rail
-  ("Enforce allowed values" purple vs "Enforce naming template" with the green Define-structure
-  pointer + structure icon), and the panel has its own in-panel toggle with "On — utm_campaign
-  values that don't match this structure will be flagged." Not conflatable now.
-- **Enforce-with-no-template (P3): FIXED.** Panel shows "Not enforcing — define structure below
-  first" until you add segments.
+I'm Priya — senior backend eng, keyboard-first, skeptic, hand-edit query strings. Re-tested cold on desktop 1440px.
 
-## Verified fresh (network-tab skeptic + reload)
-- Zero third-party hosts after load, 0 console errors — trust intact.
-- Built quarter_channel, enforced, typed `holidaysale` → row shows "⚠ Off-template — expected 2
-  segments, found 1" + header badge "1 cell off-template"; editable utm_source cell stays visible
-  beside the warning (old gripe gone).
-- Reloaded: segments, separator, enforce state, AND the campaign value all restored from
-  localStorage. Reload-loses-template is fixed.
-- "Build name" is now a solid teal filled button, distinct from Copy/Dup/Delete.
+RE-CHECKED MY ROUND-1 FRICTION (the thing that held me at 8)
+- Share disambiguation: FIXED. The three actions now carry plain one-line sublabels I read at a glance, no squinting at gray helper text: "Copy share link → snapshot, in the link", "Create shared workspace / Copy workspace link → live, synced for the team", "Share style guide → read-only reference page". Inside a workspace the last two sit side-by-side, so the set finally reads as coherent rather than feature-creep.
 
-## Clarity — Yes | Value — Yes
-Same strong h1 + "no login, nothing leaves your browser." Template still survives reload so a
-teammate convention actually persists; catches casing/spaces AND off-pattern names live. Beats my
-hand-edited query strings / Notes file for a launch post.
+VERIFIED FRESH
+- Core flow still excellent: base + Twitter/Social/Launch Day, Auto-fix produced exactly `https://myproject.dev/launch?utm_source=twitter&utm_medium=social&utm_campaign=launch_day` — what I'd hand-type, minus typos.
+- Created my own Team Workspace (got a real /w/Bfi8QYTsx4ZfEofnADOTTAAA URL). "Share style guide" copied the correct /guide link (clipboard read confirmed). The guide renders cleanly — "Read-only reference", graceful "No custom taxonomy defined yet" empty state since I didn't set allowed values. Zero console errors anywhere.
 
-## Advocacy — 9/10
-Up from 8. The buried-panel + conflatable-toggle issues that capped me are genuinely resolved; I'd
-send this to our growth person unprompted as "the UTM spreadsheet killer." Remaining: I tag links
-rarely (recurrence is the marketer's, not mine) and the per-row Build-name composer is still slower
-than typing the name once I know the convention — taste, not a defect.
+WHAT STILL KEEPS ME BELOW 9 (both are accepted scope calls, not defects)
+- No CLI-speed single-link fast path. For my actual job — an occasional one-off launch post — the workspace/team/guide machinery is more surface than I need; I want paste-base + 3 fields + keyboard-only + instant copy. Known out of scope, so not penalized as a bug — but it's the one thing that'd make me reach for this over hand-editing every time.
+- "Open editable workspace" on the read-only guide still exposes edit to anyone with the link. I now accept this is the intentional on-ramp, so I withdraw it as a bug; it just means I personally wouldn't send the guide as a locked team standard.
+
+VERDICT: The fix landed cleanly — share clarity went from "loses skimmers" to genuinely clear. Clarity Yes, Value Yes. Stays an honest 8: nothing is broken, but my use is occasional and there's no fast single-link mode, so I'd recommend it to a teammate who tags links weekly but won't bring it up unprompted. Up in confidence from round 1.
 
 ```json
-{ "name":"Priya", "clarity":"Yes", "value":"Yes", "advocacy":9,
-  "prior_concerns_addressed":"Yes + template panel moved to top with distinct icon/sublabel/pointer, toggles separated, reload restores full template, editable cols stay visible with warning",
-  "likes":["Naming Template panel now top of rail with structure icon + 'Define structure →' pointer — found it instantly","Two enforce toggles clearly separated and labeled; no longer conflatable","Reload restored segments+separator+enforce+campaign value (verified)","Off-template warning 'expected 2 segments, found 1' + solid teal 'Build name' button; editable cells stay visible","Still zero third-party network calls + 0 console errors"],
-  "frictions":[
-    {"severity":"P3","issue":"Per-row Build-name composer is still slower than typing the campaign once you know the convention; power users will skip it"},
-    {"severity":"P3","issue":"Enforce-template appears as both a top-rail toggle and an in-panel checkbox — fine, but a momentary 'which is canonical' beat"}
-  ],
-  "verdict_sentence":"Every round-1 friction I named is genuinely fixed — the template panel is now front-and-center, the toggles are unmistakable, and reload persists the whole structure — so this clears my 9 as a real spreadsheet replacement." }
+{"tester": 1, "round": 2, "clarity": "Yes", "value": "Yes", "advocacy": 8, "topComplaints": ["No CLI-speed single-link fast path for occasional one-off use (known out of scope)", "Read-only guide still has an Open-editable-workspace path, so it isn't a locked team standard (intentional on-ramp)"], "priorConcernsAddressed": "all"}
 ```

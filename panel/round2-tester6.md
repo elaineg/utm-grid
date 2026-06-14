@@ -1,19 +1,27 @@
-# Round 2 — Tester 6 (Jules, content & community marketer)
+{"name":"Jules","clarity":"Yes","value":"Yes","advocacy":9}
 
-Re-tested cold, desktop + mobile (I'm 50/50). My R1 friction was the buried Naming Template.
-Now it auto-expands at the TOP of the right rail with a structure-blocks icon, the sub-label
-"Define your campaign-name structure — its parts and their order", a self-contained explainer
-("Defines the STRUCTURE of utm_campaign … Different from Allowed Values, which sets allowed
-field values"), and a "Define structure →" pointer right under the top Enforce toggle that
-expands it. Campaigns + Allowed values now sit clearly BELOW and apart. I found it in under
-5s and never confused the three "naming" surfaces — fully fixed. Build-name composer is a
-solid teal ≥44px button; reload restored my quarter/channel/audience segments; 0 console
-errors on any run, desktop or 375px mobile (where the template is one tap from the toggle).
+# Jules — Content & community marketer (mobile 390px, allergic to logins)
 
-```json
-{ "name":"Jules", "clarity":"Yes", "value":"Yes", "advocacy":9,
-  "prior_concerns_addressed":"Yes — template auto-expands at top of rail with distinct icon, sub-label, 'Different from Allowed Values' explainer, and a 'Define structure →' pointer; no longer buried or confusable.",
-  "likes":["No-login bulk grid I'd bookmark — H1 sells it in <10s","Naming Template now front-and-center, auto-expanded, with clear 'different from Allowed Values' copy that kills the disambiguation problem","Solid teal Build-name composer builds consistent names from my segments/tokens","Reload restored my full template — switching cost I actually want","Template reachable one tap from the mobile toggle too"],
-  "frictions":[{"severity":"P3","issue":"In-grid 'Build name' composer only surfaces once a template exists / utm_campaign is empty — first-timers may not see it before defining segments; a persistent hint would help."},{"severity":"P3","issue":"Per-platform presets (X/LinkedIn/Mastodon one-click) still hidden behind a collapsed 'Presets' bar — the thing I personally want most isn't obvious."}],
-  "verdict_sentence":"The template panel is now exactly where it should be — discoverable, auto-expanded, and clearly distinct from Allowed Values — turning a tool I'd bookmark into one I'd actually recommend to other multi-platform marketers." }
-```
+## Round-1 blocker re-check: FIXED
+Built a real X link (twitter/social/spring_launch_2026), created my OWN Team Workspace
+(/w/dSeU…), clicked "Share style guide". The button now fills bright GREEN and the label
+flips to "✓ Copied ✓" for ~2s, then reverts — plus a polite aria-live "Style guide link
+copied!" and the correct /guide URL on my clipboard. Last round it was dead silent and I'd
+click 3x; now the confirmation is unmissable. Verified live, not an env artifact.
+
+## Guide as a sendable artifact: yes
+The /guide page is genuinely send-ready — "Why UTM tags matter" (Newsletter vs newsletter),
+required-field + lowercase + no-spaces conventions, read-only, no login. I'd drop this link
+to a guest poster instead of writing my own "please tag links like this" note.
+
+## Core flow: still clean
+Zero login anywhere, mobile renders well, create-workspace gates sensibly ("add at least
+one row"), 0 console errors.
+
+## What still keeps me a hair below 10 (minor, not blockers)
+- My platforms are X and Mastodon; preset lineup still feels LinkedIn/Google/Email-centric
+  for a tool pitched as "presets per platform." I can type them, but native X/Mastodon
+  presets would make me recommend it with zero caveat.
+- Auto-fix still didn't strip trailing punctuation last round (casing/spaces only).
+Neither holds the score — the silent-copy bug that capped me at 8 is gone, so I'm
+comfortable at 9 and would bring this up unprompted in my marketing Discord.
