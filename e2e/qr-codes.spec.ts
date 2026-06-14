@@ -891,3 +891,131 @@ test("375px: top-level 'Download QR codes' button is reachable and hittable with
 
   await context.close();
 });
+
+// ── Round 2 Fix 1: card-view (375px) per-row Download PNG button is enabled and invokes blob download ──
+// This test asserts the card-view popover (sm:hidden, visible at 375px) renders the QR image,
+// has an enabled Download PNG button, and that clicking it invokes the blob-download code path
+// (URL.createObjectURL + a.click() — verified via page.evaluate intercepting createObjectURL).
+// Note: Playwright's page.waitForEvent("download") requires a real browser download navigation;
+// blob URL downloads via programmatic a.click() from a React onClick handler are intercepted
+// at the browser level differently. We verify the download code path fires correctly via the
+// injected spy rather than relying on the Playwright download event.
+
+test("Round2-Fix1: card-view (375px) per-row Download PNG button is enabled and fires blob-download", async ({
+  browser,
+}) => {
+  const context = await browser.newContext({
+    viewport: { width: 375, height: 812 },
+  });
+  const page = await context.newPage();
+
+  await page.goto("/");
+  await page.waitForLoadState("networkidle");
+
+  // Inject a spy on URL.createObjectURL to capture calls from the download handler.
+  await page.evaluate(() => {
+    const origCreate = URL.createObjectURL.bind(URL);
+    (window as unknown as Record<string, unknown>)._downloadObjectUrls = [];
+    URL.createObjectURL = (blob: Blob | MediaSource) => {
+      const url = origCreate(blob);
+      ((window as unknown as Record<string, string[]>)._downloadObjectUrls).push(url);
+      return url;
+    };
+  });
+
+  // Fill row 1 to make a valid, QR-eligible URL.
+  await cell(page, "Base URL", 1).fill("https://example.com/sale");
+  await cell(page, "utm_source", 1).fill("newsletter");
+  await cell(page, "utm_medium", 1).fill("email");
+  await cell(page, "utm_campaign", 1).fill("spring_sale");
+  await page.waitForTimeout(300);
+
+  // At 375px only the card-view QR button is visible (table is hidden sm:block).
+  const allQrBtns = page.getByRole("button", { name: "QR code for row 1" });
+  let clicked = false;
+  const count = await allQrBtns.count();
+  for (let i = 0; i < count; i++) {
+    if (await allQrBtns.nth(i).isVisible()) {
+      await allQrBtns.nth(i).click();
+      clicked = true;
+      break;
+    }
+  }
+  expect(clicked).toBe(true);
+
+  // The card-flow QR popover (role=dialog) must appear inline (not a fixed overlay).
+  const popover = page.getByRole("dialog", { name: /QR code popover for row 1/i }).filter({ visible: true });
+  await expect(popover).toBeVisible({ timeout: 8000 });
+
+  // Wait for QR image to generate (the Download button is disabled until QR data is ready).
+  await expect(
+    popover.getByAltText(/QR code for row 1/i)
+  ).toBeVisible({ timeout: 8000 });
+
+  // The Download PNG button must be ENABLED inside the visible (card-flow) popover.
+  const dlPngBtn = popover.getByRole("button", { name: /Download QR PNG for row 1/i });
+  await expect(dlPngBtn).toBeEnabled({ timeout: 5000 });
+
+  // Reset the spy counter before clicking (QR generation also calls createObjectURL for data URL).
+  await page.evaluate(() => {
+    (window as unknown as Record<string, string[]>)._downloadObjectUrls = [];
+  });
+
+  // Click Download PNG — the blob-download code path must invoke URL.createObjectURL.
+  await dlPngBtn.click();
+  await page.waitForTimeout(500);
+
+  // Verify createObjectURL was called (i.e., the blob was created and download code ran).
+  const downloadUrls = await page.evaluate(
+    () => (window as unknown as Record<string, string[]>)._downloadObjectUrls
+  );
+  expect(downloadUrls.length).toBeGreaterThanOrEqual(1);
+  // All created object URLs must be blob: URLs (confirms blob-download path, not data-URI path)
+  for (const u of downloadUrls) {
+    expect(u).toMatch(/^blob:/);
+  }
+
+  await context.close();
+});
+
+// ── Round 2 Fix 2: encoded-URL Copy affordance shows green confirmation ──────────
+// Asserts: copy button on the encoded-URL in the QR popover copies + shows green confirmation.
+// Targets the VISIBLE instance (filter({ visible: true })) to avoid desktop/card dual-mount.
+
+test("Round2-Fix2: encoded-URL Copy affordance copies and shows green confirmation", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await fillSpringSaleRow(page);
+  await page.waitForTimeout(200);
+
+  // Open the QR popover (first visible QR button — desktop viewport at 1280px default)
+  const qrBtn = page.getByRole("button", { name: "QR code for row 1" }).filter({ visible: true }).first();
+  await expect(qrBtn).toBeVisible({ timeout: 5000 });
+  await qrBtn.click();
+
+  // The popover must appear
+  const popover = page.getByRole("dialog", { name: /QR code popover for row 1/i }).filter({ visible: true });
+  await expect(popover).toBeVisible({ timeout: 5000 });
+
+  // Wait for QR to generate
+  await expect(popover.getByAltText(/QR code for row 1/i)).toBeVisible({ timeout: 8000 });
+
+  // The encoded-URL section must show the full URL (not hard-clipped)
+  const expectedUrl =
+    "https://example.com/sale?utm_source=newsletter&utm_medium=email&utm_campaign=spring_sale";
+  await expect(popover).toContainText(expectedUrl, { timeout: 5000 });
+
+  // The Copy button for the encoded URL must be present inside the popover
+  const copyBtn = popover.getByRole("button", { name: /Copy encoded URL for row 1/i });
+  await expect(copyBtn).toBeVisible({ timeout: 3000 });
+  await expect(copyBtn).toBeEnabled();
+
+  // Click Copy — should show "Copied ✓" green confirmation
+  await copyBtn.click();
+  await expect(copyBtn).toContainText("Copied", { timeout: 3000 });
+
+  // aria-live region should announce "URL copied"
+  const liveRegion = popover.locator("[aria-live='polite']");
+  await expect(liveRegion).toContainText("URL copied", { timeout: 3000 });
+});

@@ -91,7 +91,9 @@ test("CSV export -> import round-trips the grid exactly", async ({ page }) => {
   const download = await downloadPromise;
   const path = await download.path();
   const csv = await fs.readFile(path, "utf8");
-  expect(csv.split("\n")[0]).toBe(
+  // Strip UTF-8 BOM (﻿) before header comparison; the app adds BOM for Excel compatibility.
+  const firstLine = csv.split("\n")[0].replace(/^﻿/, "");
+  expect(firstLine).toBe(
     "base_url,utm_source,utm_medium,utm_campaign,utm_term,utm_content,generated_url"
   );
 
