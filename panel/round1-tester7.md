@@ -1,18 +1,43 @@
-# Round 1 — Tester 7 (Rob, freelance brand/visual designer, medium-tech, price-sensitive)
+# utm-grid — Round 1, Tester 7 (Aisha, Product Designer)
 
-I tag client campaign links a few times a month and otherwise hand-type query strings; my bar is "I could do this in 4 minutes by hand." Cold open was instantly legible: "Clean UTM links for your whole campaign — in one grid," auto-fix messy casing/typos, CSV in/out, no login. I typed a sloppy source/medium ("CPC ", spaces); Auto-fix naming lowercased + trimmed them ("Auto-fixed 2 cells — Undo" toast) and the generated URL was clean. For one link that's marginal vs. doing it by hand; for a multi-row campaign sheet the grid clearly wins.
+I gave this a 10 last round. Came back to judge the new "Paste & Audit URLs" feature on craft,
+not just utility. It holds.
 
-Team Workspace is the standout. "Create shared workspace" gave a /w/ link; the page reads "Team Workspace — synced · All changes saved", an "Editing as:" field I set to "Rob," and a History button. History panel: "Every save is kept. Restoring brings a version back without losing the current one" — timestamped snapshots (just now / 6s / 2m), each "by [name]." Preview shows a yellow "Previewing version from 2m ago — read-only" banner, swaps the grid to that snapshot, and offers "Restore this version" / "Back to current." Restore is non-destructive (current stays its own entry). That makes a shared grid feel like a real source-of-truth a client can't silently wreck. No console errors, no broken buttons.
+## 1. Discoverability — Yes
+Noticed it in the first 5 seconds: violet chip with a search glyph, parked right after "Import CSV"
+where my eye already was. The one-line subhead under it — "Already have tagged links? Paste them to
+find every inconsistency at once" — instantly told me this is the *opposite* of build-new (audit
+existing vs. create). Purpose vs. build-new is unambiguous. No hunting.
 
-I specifically re-checked the privacy copy: on the synced /w/ page it now correctly says "Synced to a private server workspace — changes save automatically" and NO longer claims "nothing is sent to any server." Good — that would've been a trust-killer.
+## 2. Using it — Yes
+Pasted 5 lines: 3 clean URLs, two of which differed ONLY by casing (newsletter/Newsletter,
+email/Email), plus a facebook URL missing utm_medium, plus one garbage line.
+- Parse: correct. Base URL split out (https://acme.com), utm_* mapped into the right columns,
+  casing preserved verbatim (lowercase row vs Title-Case row).
+- Inconsistencies surfaced — the part I love: row 1 reads "Inconsistent utm_source across rows:
+  'newsletter' vs 'Newsletter' — these will split campaign data in GA4." It names the *consequence*,
+  not a generic "warning." Same for medium. Row 2 collapses to a tidy "2 warnings · Fix" pill with
+  an actionable Fix link.
+- Missing param: facebook row flags "utm_medium is required" with an amber cell.
+- Malformed line: skipped. Status reads "Audited 4 URLs — 12 cells flagged · 1 line skipped. Undo."
+  Clear accounting + an Undo right there.
+This is genuinely faster than what I do today (eyeballing a campaign sheet or pasting links into a
+GA debugger one at a time). I'd reach for it whenever a teammate hands me inherited links to QA.
 
-Friction (minor): "Editing as" name is per-browser localStorage, so a fresh session shows entries "by Anonymous" instead of my name; in a real freelance/client handoff, attribution won't carry unless each person sets it, which softens the "who changed what" audit trail. Not a blocker.
+## 3. Prior value / regression — none found
+Build-new flow, generated-URL cell, base-URL validation ("Not a valid http(s) URL"), presets,
+bulk edit, workspace, Allowed values — all intact. Zero console errors across every flow.
 
-CLARITY: Yes
-VALUE: Yes
-ADVOCACY: 8/10
-REASON: Real time-saver on multi-row campaigns, and History/Restore makes a shared team grid genuinely trustworthy — I'd recommend it to other freelancers and the PMs I work with. Not a 9 only because per-session "Editing as" attribution doesn't persist across people, so the audit trail is softer than the History UI implies.
+## Friction / nits (minor, none blocking)
+- Submit-count counts RAW lines, not parseable ones. Typed two pure-garbage lines and the button
+  said "Audit 2 URLs" (enabled). On submit it correctly skips them, but the pre-submit label
+  oversells. I'd label by parseable count (or "Audit up to N"). Copy nit, not a bug.
+- (Test-env note, not the app: my driver script mis-indexed a column once due to the row checkbox;
+  the app's own validation behaved correctly.)
+
+The audit copy is human, explains *why* an inconsistency matters, and pairs every flag with a Fix
+or Undo. That's a considered tool. I'd bring it up unprompted to anyone QA-ing campaign links.
 
 ```json
-{"tester":7,"name":"Rob","clarity":"Yes","value":"Yes","advocacy":8,"top_problems":["'Editing as' name is per-browser localStorage; fresh sessions log entries as 'by Anonymous', weakening the who-changed-what audit trail in a real multi-person handoff","Auto-fix value is marginal for single-link tagging vs. hand-typing — payoff only shows on multi-row grids"],"likes":["History panel is trustworthy: timestamped snapshots, read-only Preview with clear yellow banner, non-destructive Restore that keeps the current version","Workspace privacy copy now correct — synced page says 'synced to a private server', no contradictory 'nothing leaves your browser' text","Auto-fix naming with reversible 'Undo' toast and clean generated URLs"]}
+{"name":"Aisha","clarity":"Yes","value":"Yes","advocacy":10}
 ```

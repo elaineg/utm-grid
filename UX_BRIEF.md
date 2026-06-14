@@ -1258,3 +1258,80 @@ its sub-caption naming the inbound QA job; on 375px it's a full-label accent but
 bar. Opening it shows a pre-focused textarea with three example tagged URLs (one deliberately
 inconsistent), a live **"Audit N URLs"** CTA, a **"N parsed · M skipped"** summary, and a default-Append
 (vs guarded-Replace) commit that lands the rows and lints them on the spot.
+
+### Paste & Audit — Round 2 fixes (panel R1: 3/10 pass, 7 at advocacy 7–8) — added 2026-06-13
+
+Clarity 10/10 Yes, Value 10/10 Yes — the feature is clear and wanted; the entire gap is post-audit
+friction polish. This is craft on a shipped, loved feature, NOT a redesign. Do NOT touch the
+headline, subhead, lint toggles, the audit entry chip/dialog/textarea, the existing per-cell warning
+colors (amber case/space, violet off-spec, cross-row), Auto-fix, "Fix to <value>", or the toolbar
+order. Each fix maps to a synthesis cause. Fix 1 is the biggest lever and subsumes Causes 2 and 3.
+
+**Fix 1 — GROUPED POST-AUDIT SUMMARY panel makes the payoff legible without horizontal scroll (P0;
+Cause 1: Priya, Tomás, Rob t8 LOWEST, Elena — biggest theme; also resolves Causes 2 & 3).** On a
+successful audit, render a **results summary panel in normal document flow directly ABOVE the grid /
+card list** (cool-neutral tinted strip, full-width, pushing the grid down — never an overlay, never a
+sticky column). It is the primary post-audit readout; the per-cell flags stay but become secondary.
+Header line: **"Audited N URLs — M issues across K fields. Undo"** (ref-stable ~persistent status,
+`aria-live="polite"`, with the existing Undo inline). Below it, issues GROUPED BY FIELD, one line per
+field+conflict — never one line per row:
+- **Inconsistent casing/variants:** **"utm_source: 'Facebook' vs 'facebook' (2 rows) — will split
+  campaign data in GA4"**, with a scoped **"Fix this field"** action that lowercases/normalizes just
+  that field's flagged cells (reuses Auto-fix engine, folds into Undo, flashes the changed cells
+  green). One line per conflicting field, naming the variants + the row count.
+- **Missing required:** **"utm_medium: missing on 1 row"** (names the field + count).
+- **Off-spec (when Enforce is on):** **"utm_campaign: 'spring sale' off-spec — nearest allowed:
+  spring-sale (1 row)"** in the violet off-spec color, with the existing **"Fix to <value>"** scoped
+  to that field.
+- **Skipped lines (Cause 3, see Fix 2):** listed here by line number + reason.
+The grouped lines are the de-dupe: the full GA4 sentence appears ONCE per field, not once per row.
+A **"Clear summary"** × dismisses it (the per-cell flags remain). On mobile (375px) it spans full
+width above the card list, in flow, ≥44px tap-targets, nothing occluded — verify with elementFromPoint.
+
+**Fix 1b — utm_* columns must be REACHABLE after audit, not collapsed behind the sticky URL +
+sidebar (P0; Cause 1, Rob's 1800px report — the prior width fix is insufficient with the sidebar
+open).** Two changes so the editable flagged columns aren't off-screen-right at common laptop widths:
+- On a successful audit, **auto-scroll the grid's inner `overflow-x-auto` container to the first
+  flagged utm_* column** (not its default left edge), so the user lands on a flagged value, not on
+  BASE URL + a wide GENERATED URL. Clicking a summary line (Fix 1) also scrolls the grid to that
+  field's first flagged cell.
+- Revisit the width budget when the Campaigns/UTM-Spec sidebar is OPEN: at ≤1800px with the sidebar
+  open, the GENERATED URL sticky column + sidebar must NOT collapse utm_source/medium/campaign to a
+  sliver. Cap the GENERATED URL sticky column narrower in this state (or let the sidebar yield width)
+  so at least Base URL + utm_source + utm_medium + utm_campaign read at usable widths within the
+  bounded-internal-scroll container — verify utm_source is never squeezed to ~40px/"Fac…" at 1500px or
+  1800px with the sidebar open. (Page never scrolls sideways; this is the existing
+  bounded-internal-scroll, just re-budgeted.) The summary panel (Fix 1) is the safety net regardless.
+
+**Fix 2 — Name the skipped line(s) in the summary (P0/P1; Cause 3: Marcus, Dana, Tomás, Jules, Sam —
+5 testers, the most-named).** The audit summary (Fix 1) must list every skipped line concretely so a
+user can fix a typo'd URL: **"Line 4: not a valid URL — skipped: `htps://acme.com/sale?utm_…`"**
+(line number + truncated offending text + reason), one line per skipped input. This is critical at
+30–50-line real pastes where a fat-fingered real URL could silently drop. Never just a bare count.
+
+**Fix 3 — Live flag counter after a fix (P2; Cause 4: Elena, single-persona quirk).** After
+"Auto-fix naming" / a scoped "Fix this field" / "Fix to <value>" clears flagged cells, **recompute
+and update the summary header's issue/cell count live** (e.g. "M issues" drops, and a field whose
+issues are all resolved disappears from the grouped list) — never leave a stale "N cells flagged"
+record-of-run. When all issues clear, the summary reads **"All audited URLs are clean."**
+
+**Fix 4 — Minor copy nits (optional, cheap; don't over-engineer).** (a) The pre-submit CTA should
+count PARSEABLE lines, not raw lines — label it **"Audit N URLs"** by parseable count (or **"Audit up
+to N"**) so pure-garbage lines don't inflate the count before submit (Aisha). (b) The parsed Base-URL
+cell already truncates with a `title` tooltip for the full value — leave as-is, it's working; only
+widen if free (Marcus).
+
+**Risk the builder must heed (Round 2).** (1) The summary panel and Fix 1b auto-scroll must NOT
+regress the zero-network privacy prop, the cold-open grid-hero, or the existing per-cell warning
+colors — three warning classes (amber case/space, violet off-spec, cross-row) must stay tellable
+apart in BOTH the per-cell flags and the grouped summary lines. (2) On 375px the summary renders in
+flow above the card list, never over a card field/checkbox/row control/Fix chip — re-verify the
+recurring occlusion bug class with elementFromPoint. (3) The scoped "Fix this field" / "Fix to
+<value>" actions in the summary must fold into the SAME shared Undo as the toolbar Auto-fix.
+
+### 5-second check (Paste & Audit Round 2 — unchanged above the fold)
+Cold visitor still sees the unchanged hero. After an audit the FIRST thing read is the in-flow grouped
+summary — **"Audited N URLs — M issues across K fields"** with one line per field
+("utm_source: 'Facebook' vs 'facebook' (2 rows)…"), the named skipped lines, and scoped one-tap fixes
+— no horizontal scroll needed to see the payoff; the grid auto-scrolls to the first flagged utm_*
+column beneath it, and the issue count updates live as fixes are applied.

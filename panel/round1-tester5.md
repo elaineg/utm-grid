@@ -1,13 +1,45 @@
-# Round 1 — Tester 5 (Jules, content/community marketer, medium-tech, 50/50 desktop+mobile)
+# Dana — Demand-gen marketer — Round 1 (Paste & Audit URLs)
 
-Cold open nailed my #1 itch: "no login, nothing leaves your browser" — I'd bookmark this for slinging links across X/LinkedIn/Mastodon/Buffer. Presets exist (saw Email, "Paid Social – LinkedIn"). Created a workspace in one click → /w/ link, "Anyone with this secret link can edit." Set "Editing as: Jules" via an inline name field; my edit then showed "last edited by Jules" + a "by Jules / current" version with the old "by Anonymous" one kept. History → Preview gave a clear read-only banner ("Previewing version from 1m ago (by Anonymous) — read-only") with Restore/Back-to-current; Restore was non-destructive (History 1→2). That makes a shared grid feel safe as a team source-of-truth. Mobile cold open also clean/responsive.
-Friction: in the synced workspace the table collapses to GENERATED URL + ACTIONS, so it looks copy-only — the editable source cells (base/source/medium/campaign) are off-screen-left and not obvious; I only found them by digging. A "link can edit" model where the edit fields are hard to see is a small trust wobble.
+I tag 30+ links every week before Thursday. The casing-typo problem this fixes is the exact
+thing that quietly splits my GA4 reports into "LinkedIn" vs "linkedin" garbage. I came in
+skeptical but motivated.
 
-CLARITY: Yes
-VALUE: Yes
-ADVOCACY: 8/10
-REASON: No-login bulk UTM with per-platform presets plus non-destructive History/Restore and clear edit attribution is genuinely shareable to peers; held back from 9 because the workspace grid hides the editable source columns, so it reads as copy-only at first glance.
+## 1. Discoverability — did I notice it?
+Yes, instantly. The violet **"Paste & Audit URLs"** chip sits in the top toolbar next to Import
+CSV, with a magnifier icon and subtext "Already have tagged links? Paste them to find every
+inconsistency at once." In one scroll I knew it was for *auditing existing* links, not building
+new ones. No hunting — a real one-scroll win for someone who bounces fast.
+
+## 2. Using it — does it actually work?
+Pasted 5 lines: two LinkedIn URLs differing only by casing (LinkedIn/social vs linkedin/Social),
+a clean newsletter one, a google one missing utm_medium, and junk "this is not a url".
+
+It nailed everything:
+- Parsed each valid URL back into a row (base URL split from utm_* columns). Correct.
+- Toolbar summary: **"Audited 4 URLs — 7 cells flagged · 1 line skipped · Undo"**. It told me the
+  junk line was skipped instead of crashing or silently eating it. That transparency earns trust.
+- Cross-row casing flags: ⚠ "Inconsistent utm_source across rows: 'LinkedIn' vs 'linkedin' — these
+  will split campaign data in GA4." Same for social/Social. That sentence is *literally* my value
+  prop in my language. It also caught per-cell uppercase and the missing required utm_medium.
+- Undo sits right in the toolbar, and the dialog promised it up front. Safe to try on real data.
+
+Beats my real workflow (eyeballing a Google Sheet column, or pasting URLs into GA4's checker one at
+a time). 30 links audited in seconds vs ~15 min of squinting. I'd use this every single week.
+
+## 3. Regression on prior value?
+None found. Typed a fresh row → generated URL assembled correctly; "Copy all URLs" copied the clean
+link to clipboard. Core build-new grid still works.
+
+## Friction / nits (minor)
+- "1 line skipped" doesn't say *which* line or *why*. For a QA tool handling 50 links I'd want to see
+  what got dropped, so I trust it didn't silently lose a real URL.
+- Append is the default and adds to the existing empty row; I had to consciously pick Replace. A
+  first-timer could end up with a stray blank row.
+
+## Verdict
+Clear, fast, speaks GA4. This is the feature that turns the app from "nice builder" into "thing I
+screenshot for the team channel." The skipped-line opacity is the one thing keeping it off a 10.
 
 ```json
-{"tester":5,"name":"Jules","clarity":"Yes","value":"Yes","advocacy":8,"top_problems":["In a synced workspace the grid collapses to GENERATED URL + ACTIONS; the editable source cells (base/source/medium/campaign) are off to the left and easy to miss, so a 'link can edit' workspace looks copy-only at first glance"],"likes":["Editing-as attribution + per-version 'by <name>' history is clear and trustworthy","Preview shows an unmistakable yellow read-only banner; Restore is non-destructive (history count went 1→2)","Per-platform presets (Email, Paid Social – LinkedIn) + 'no login' matches my multi-platform daily link grind"]}
+{"name":"Dana","clarity":"Yes","value":"Yes","advocacy":9}
 ```

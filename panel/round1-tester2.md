@@ -1,25 +1,49 @@
-# Round 1 — Tester 2 (Wen, marketing data analyst; GA4/BigQuery/Sheets, distrusts invisible transforms)
+# Round 1 — Marcus (frontend eng, 2yr, Chrome+devtools open)
 
-Cold open nails my pain: "Auto-fix messy casing and typos before they split your Google Analytics" + Import/Export CSV.
-Auto-fix collapsed Google/CPC/Summer_Sale and google/cpc/"summer sale" into one identical lowercased row — that
-dedupe IS my dashboard problem. CSV out is clean: proper headers, lowercased values, generated_url column. Lint
-flags casing/space/uppercase. Created /w/ workspace instantly; "Editing as: Wen" propagates into the synced banner
-AND each History entry ("just now by Wen [current]", "1m ago by Anonymous"). Preview shows a clear yellow
-"...read-only" banner with Back-to-current; a real user can't edit it (cell click intercepted, keyboard typing
-ignored, edits never persist server-side). Restore copy + history confirm non-destructive ("brings a version back
-without losing the current one"). Per-author audit trail + restore = genuinely trustworthy as a team source-of-truth.
+Came back to utm-grid mid product-launch. I tag announcement links across email, Twitter, and the
+blog, and I already advocate this over hand-editing query params. New "Paste & Audit URLs" feature
+this round — honest read.
 
-Friction/bugs: (1) Preview cells lack a readonly/disabled attribute — protection is pointer-blocking only; safe for
-real users but a power user could mutate via devtools, and as someone who distrusts invisible transforms I'd want the
-hard attribute. (2) Lint only catches casing on manual Auto-fix — Import CSV should reject or auto-clean dirty casing
-on ingest, not leave it to a button I might forget. No console errors anywhere.
+## 1. Discoverability (cold open)
+Noticed it without hunting. Violet chip with a magnifier icon sits right next to "Import CSV", and
+the subtext spells out the job: "Already have tagged links? Paste them to find every inconsistency
+at once." Clearly distinct from the build-new grid — one builds fresh links, this ingests links I
+already have. Zero confusion.
 
-CLARITY: Yes
-VALUE: Yes
-ADVOCACY: 8/10
-REASON: Strict CSV in/out, casing dedupe, and a per-author History/Restore audit trail make this the first shared UTM
-tool I'd trust as source-of-truth; not a 9 only because lint isn't enforced at CSV-import time yet.
+## 2. The audit flow — the good part
+Pasted 5 lines: two acme.com/launch URLs differing ONLY by casing (Twitter/twitter, social/Social,
+spring_launch/Spring_Launch), a clean blog URL, a promo URL missing utm_medium, and a garbage non-URL.
+
+Result header: "Audited 4 URLs · 12 cells flagged · 1 line skipped · Undo". Spot on:
+- Garbage line skipped cleanly, no crash, 0 console errors (devtools open the whole time).
+- Base URLs split correctly (/launch, /blog, /promo); source/medium/campaign parsed into cells.
+- ALL THREE cross-row casing inconsistencies caught — utm_source "Twitter" vs "twitter", utm_medium
+  "social" vs "Social", utm_campaign "spring_launch" vs "Spring_Launch" — each with
+  "these will split campaign data in GA4." That's the exact sentence I'd put in Slack.
+- Missing field flagged: "utm_medium is required."
+- One-click "Lowercase + normalize all flagged cells" — it FIXES, doesn't just nag. Plus Undo and an
+  Append/Replace toggle so I won't wipe my current grid by accident.
+
+Use it more than once in my real job? Yes, unprompted. QA-ing an inherited campaign sheet — pasting
+30 links and instantly seeing which fragment GA4 — is a recurring chore I do today by eyeballing a
+spreadsheet. This is faster and catches what I'd miss.
+
+## 3. Regression check
+Build-new flow intact. Typed messy "Twitter/Social/Spring Launch", hit Auto-fix naming, got clean
+`utm_source=twitter&utm_medium=social&utm_campaign=spring_launch`. Copy fires, no page errors. The
+thing that made me advocate before still works.
+
+## Friction / nits (minor, none blocking)
+- Cosmetic: parsed base-URL cell truncates to "https://acme.cc…"; full value only via tooltip. A
+  wider column would read cleaner.
+- "1 line skipped" doesn't tell me WHICH line — if it was a typo'd URL I'd want to see/fix it rather
+  than guess. Small.
+- No CSS jank; dialog + spacing are clean. I notice that stuff and it passes.
+
+Verdict: the kind of thing I'd drop in team Slack with "this catches GA4 casing splits for you." It
+meaningfully extends an already-good tool. A 9, not 10, only for the skipped-line opacity and the
+truncated base-URL cell.
 
 ```json
-{"tester": 2, "round": 1, "clarity": "Yes", "value": "Yes", "advocacy": 8, "topComplaints": ["Import CSV does not enforce/auto-clean casing on ingest — lint only fires on manual Auto-fix", "Preview inputs rely on pointer-blocking, not a readonly/disabled attribute"], "priorConcernsAddressed": "n/a"}
+{"name":"Marcus","clarity":"Yes","value":"Yes","advocacy":9}
 ```

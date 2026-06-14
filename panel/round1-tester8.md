@@ -1,20 +1,54 @@
-# Round (re-test) — Tester 8 (Rob, freelance brand/visual designer, desktop)
+# Round (new feature: Paste & Audit URLs) — Tester 8 (Rob, freelance brand/visual designer, desktop)
 
-PRIOR CONCERNS (mine, last round):
-1. "Footer on the synced /w/ page still says 'no server, saved in localStorage' — contradicts the 'Team Workspace — synced' banner." FIXED. The /w/ page footer now consistently reads "Synced to a private server workspace — anyone with the secret link can view and edit. Changes save automatically." No localStorage/"no server" line anywhere on the workspace page. The trust contradiction is gone.
-2. "Workspaces have no name, so juggling several client grids I can't tell two /w/ links apart." NOT addressed. Still no name field on the /w/ page — just the secret URL. For 3 client grids open in tabs I still can't tell them apart.
+I tag client campaign links a few times a month; otherwise I hand-type query strings or QA links
+someone else dropped into a sheet. "Paste links I already have, tell me what's wrong" is exactly
+the chore I'd hand off, so I went straight at the new feature.
 
-FRESH PASS:
-**Clarity — Yes.** ~3s, headline + grid still read as a freelancer's link tagger, not governance.
-**Value — Yes.** Lint + Auto-fix normalized casing in one click, CSV exports clean for a client deliverable; beats my 4-min-by-hand and I'd ship clean data.
-**New History/Editing-as — earns trust.** History panel shows every autosave timestamped, attributed ("by Elena (EM)" / "by Anonymous"), with a "current" badge; explainer "Restoring brings a version back without losing the current one." Verified Preview is read-only and Restore is non-destructive (rows stayed editable). That's exactly what makes a client-shared grid feel safe to hand off — if a client wrecks it, I can roll back and see who touched what. "Editing as: [name]" sets attribution in one click. Both are real upgrades over my Sheet.
-**Holds it back:** no way to NAME a workspace — my one repeat complaint — and the grid is wide enough that a non-technical client could miss the right-edge columns.
+PRIOR-FEATURE NOTE: still no way to NAME a workspace (my standing complaint) — unchanged. Not the
+focus this round.
+
+## 1. Discoverability — Yes
+Spotted it cold in ~5s: violet "Paste & Audit URLs" chip next to Import CSV, subline "Already have
+tagged links? Paste them to find every inconsistency at once." That line cleanly separates it from
+the build-new flow. No hunting.
+
+## 2. Used it
+Pasted 5 lines: two URLs identical except casing (Newsletter/Email/Spring_Sale vs all-lowercase),
+one half-tagged (no campaign), one garbage "this is not a url at all", one twitter row.
+- Button live-counted "Audit 5 URLs" as I typed. Dialog explains parse + flag plainly. Append/Replace
+  toggle with "you can Undo immediately after auditing." Reassuring.
+- Result: "Audited 4 URLs — 12 cells flagged · 1 line skipped. Undo." Garbage line correctly SKIPPED;
+  4 real ones parsed into rows with base URL split out from utm_* params. Casing dupes both preserved
+  as separate correct values (NOT silently merged). Flagged cells get an amber highlight + triangle.
+- Best bit: hovered a flag, got one-click "Lowercase + normalize all flagged cells." Clicked it — all
+  4 Newsletter/newsletter cells went lowercase, 0 uppercase remained. That's the exact QA fix I want,
+  and Undo sits right there. This beats me eyeballing a column of links in a Sheet. Saves real time.
+
+## Friction / bugs
+- LAYOUT: after auditing, the editable UTM_SOURCE/MEDIUM/CAMPAIGN cells get shoved into a horizontally
+  -scrollable strip and collapse to a sliver labeled "U" between BASE URL and the wide GENERATED URL
+  column — the Campaigns sidebar eats the width even at 1500–1800px. The inputs aren't deleted (DOM
+  shows full 104px cells, they scroll into view), but on first glance it reads like my parsed values
+  vanished. Repro: paste 2 URLs → Audit → look at grid at ≤1500px; UTM columns are off-screen-right
+  behind the generated URL. For someone who pasted links specifically to SEE/FIX per-param values,
+  that's a rough first impression. Fix: auto-scroll/reveal those columns post-audit, or shrink the
+  generated-URL column.
+- The amber flag says WHAT (cell is off) but never plainly says WHY ("these rows differ only by
+  casing"). I had to infer it. A plain-language note would land better with non-technical designers.
+
+## 3. Regression check — none
+Built a fresh row from scratch: generated URL correct
+(`...?utm_source=google&utm_medium=cpc&utm_campaign=summer`), zero console errors anywhere across
+all tests. Row "Copy" copies share-link state not the single URL — existing behavior, not new
+breakage, but it briefly tripped me. (Clipboard read worked in my env.)
 
 CLARITY: Yes
 VALUE: Yes
-ADVOCACY: 8/10
-REASON: Footer contradiction fixed and History/Restore adds real handoff safety, so I'd bring it up to other freelancers; held off 9 only because workspaces still can't be named/labeled, which bites the moment you run more than one client grid.
+ADVOCACY: 7/10
+REASON: The audit job genuinely works and the one-click normalize is the thing I'd reach for every
+few weeks. Held below an 8 because the grid layout swallows the parsed UTM columns right when I most
+need to read/fix them, and the flags explain what's wrong but not why.
 
 ```json
-{"tester":8,"round":2,"clarity":"Yes","value":"Yes","advocacy":8,"topComplaints":["Workspaces still have no name/label — can't tell two /w/ client grids apart (unaddressed prior concern)","Grid is wide; a non-technical client could miss right-edge columns on the shared /w/ page"],"priorConcernsAddressed":"some"}
+{"tester":8,"round":1,"clarity":"Yes","value":"Yes","advocacy":7,"topComplaints":["Post-audit, the editable UTM_SOURCE/MEDIUM/CAMPAIGN columns collapse off-screen-right behind the wide GENERATED URL column (Campaigns sidebar eats width even at 1800px) — looks like parsed values vanished","Flag highlights show WHAT is off but never plainly state WHY (e.g. 'these rows differ only by casing')"],"priorConcernsAddressed":"n/a"}
 ```

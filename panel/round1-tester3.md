@@ -1,20 +1,50 @@
-# Re-test — Tester 3 (Wen, marketing data analyst)
+# Round 1 — Wen (Marketing data analyst, GA4 reporting, lives in data hygiene)
+# Focus: NEW "Paste & Audit URLs" feature
 
-## Prior concerns re-checked
-- **#1 "Helper copy contradicts sync (no server / localStorage)"** — FIXED. Copy is now context-aware: cold builder still says "nothing leaves your browser / saved in localStorage" (accurate there); inside /w/ it reads "Synced to a private server workspace... Changes are synced to the server workspace automatically." No contradiction.
-- **#2 "Allowed-values taxonomy doesn't sync to the team"** — PARTIALLY. The card now lives IN the workspace as "Shared UTM taxonomy — Synced to this workspace, enforced on every cell," with per-field Add + "Paste a list — define once, reuse every week, share it to your team." Great intent — BUT it does NOT actually persist (bug below).
+## Discoverability — Yes
+Cold open, desktop. Headline "Clean UTM links for your whole campaign — in one grid" + subhead
+"Auto-fix messy casing and typos before they split your Google Analytics" told me in <10s this
+is for me. The **Paste & Audit URLs** violet chip sits right by Import CSV with its own subtext:
+"Already have tagged links? Paste them to find every inconsistency at once." Noticed it WITHOUT
+hunting; audit-existing vs Add-row (build-new) was immediately distinct.
 
-## New blocking bug — taxonomy values don't survive sync (repro)
-Create workspace → expand Shared UTM taxonomy → under UTM_SOURCE type "newsletter" + Enter (chip "newsletter ×" appears). Then reload the SAME creator tab: chip is gone. A clean-browser teammate on the /w/ link: chip absent. Grid rows DO sync (verified: rows a/b/c appear for teammate), so it's specifically the taxonomy that isn't written server-side — directly contradicting "Synced to this workspace, enforced on every cell." For my job this is the whole point: a team can't enforce one naming standard if the list evaporates.
+## Using it
+Dialog: "Paste your existing tagged URLs — One full URL per line. We'll parse each back into the
+grid and flag every inconsistency." Append/Replace toggle + "Either way you can Undo immediately
+after auditing" — the reassurance a transform-paranoid analyst wants.
 
-## What's genuinely excellent
-Cold lint named my exact GA4 pain: "Inconsistent utm_source across rows: 'Google' vs 'google' — these will split campaign data in GA4." Auto-fix normalized casing/spaces with an UNDO toast; footer says source cells left as typed, only trailing spaces trimmed — answers my distrust of invisible transforms. CSV export lossless, standard headers, round-trips. History (autosave snapshots, Preview read-only, "Restore brings a version back without losing the current one" — verified non-destructive) + "Editing as: Wen" flowing into the banner AND per-entry attribution ("by Wen" vs "by Anonymous") make the shared grid auditable and trustworthy.
+Pasted 5 lines: two differing only by casing (Facebook/facebook, spring_2026/Spring_2026), cpc
+vs CPC on medium, one missing utm_medium, one garbage non-URL.
+- Live count "Audit 5 URLs" → after submit: "Audited 4 URLs — 13 cells flagged · 1 line skipped.
+  Undo". Transparent about the dropped line — no silent swallow.
+- Parse is EXACT, verified per-column via inputValue: row3's missing utm_medium came in as a
+  BLANK cell, not a guess; Facebook stays Facebook. No invisible transforms. This is the exact
+  thing I distrust other tools for, and it passed.
+- Lint speaks MY language: "Inconsistent utm_source across rows: 'Facebook' vs 'facebook' —
+  these will split campaign data in GA4." Same for cpc/CPC and spring_2026/Spring_2026.
+- Malformed line skipped + counted, not parsed into junk. 0 console errors the whole flow.
 
-CLARITY: Yes
-VALUE: Yes
-ADVOCACY: 7/10
-REASON: The grid, lint, lossless CSV, and attributed non-destructive History are exactly the trustworthy source-of-truth I want and I'd happily share it — but the headline team feature, the Shared UTM taxonomy, doesn't actually persist (gone on the creator's own reload, never reaches a teammate) while claiming "enforced on every cell," which is precisely the data-integrity promise I'd be recommending it for; fix that and it's a 9.
+## Prior concern re-check (I remember this app)
+Last round I flagged Shared UTM taxonomy not persisting server-side. Did NOT re-deep-test sync
+this round (out of scope for the audit feature) — leaving that open; not re-verified fixed.
+
+## Value — Yes
+Today I dump inherited links into a Sheet, split on &, and write LOWER()/COUNTUNIQUE checks to
+catch splits pre-launch. This does it in one paste and speaks GA4. I'd use it for pre-launch QA
+more than once a week.
+
+## Friction (not blockers)
+- Warning list REPEATS the same pair once per offending row instead of one grouped "Facebook vs
+  facebook (2 rows)". With 50 inherited links this gets noisy.
+- I want a one-click "normalize / pick canonical" straight FROM a lint warning. Auto-fix naming
+  exists separately; tying it to the flagged cells would close the loop.
+- CSV in/out present (require it); prior build-new value intact, no regression seen this pass.
+
+clarity: Yes
+value: Yes
+advocacy: 8 — genuinely good, I'd bring it up to other GA4 owners. Off 9 by repetitive
+non-grouped warnings + no one-click fix from the lint itself.
 
 ```json
-{"tester":3,"round":1,"clarity":"Yes","value":"Yes","advocacy":7,"topComplaints":["Shared UTM taxonomy values do NOT persist server-side: 'newsletter' chip added under UTM_SOURCE in a workspace disappears on the creator's own reload and never reaches a teammate, despite the panel claiming 'Synced to this workspace, enforced on every cell' (grid rows DO sync, so it's taxonomy-specific)","Taxonomy/allowed-values card is still collapsed by default and easy to miss"],"priorConcernsAddressed":"some"}
+{"name":"Wen","clarity":"Yes","value":"Yes","advocacy":8}
 ```

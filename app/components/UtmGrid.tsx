@@ -28,7 +28,8 @@ import { buildUtmUrl } from "../../lib/utm";
 import { useLocalStorage } from "../../lib/useLocalStorage";
 import { ImportDialog, type ImportMode, type PendingImport } from "./ImportDialog";
 import { AuditDialog, type AuditMode } from "./AuditDialog";
-import { parseUtmUrls } from "../../lib/utm";
+import { AuditSummaryPanel } from "./AuditSummaryPanel";
+import { parseUtmUrls, type ParsedLine } from "../../lib/utm";
 import { PresetsBar } from "./PresetsBar";
 import { CampaignsSidebar } from "./CampaignsSidebar";
 import { BulkEditBar, type BulkColumn } from "./BulkEditBar";
@@ -125,6 +126,14 @@ export function UtmGrid({
   const [auditDialogOpen, setAuditDialogOpen] = useState(false);
   const [auditStatus, setAuditStatus] = useState<string | null>(null);
   const auditStatusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Fix 1/2/3/4: persistent post-audit summary (grouped warnings + skipped lines)
+  const [auditSummaryInfo, setAuditSummaryInfo] = useState<{
+    parsedCount: number;
+    auditedRowIds: Set<string>;
+    skipped: ParsedLine[];
+  } | null>(null);
+  // Ref for the table container — used to auto-scroll to the first utm_* column after audit
+  const tableContainerRef = useRef<HTMLDivElement | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -761,21 +770,18 @@ export function UtmGrid({
 
     setAuditDialogOpen(false);
 
-    // Peripherally-unmissable confirmation (ref-stable timer).
-    const flaggedCount = Array.from(
-      groupWarnings(lintRows(
-        mode === "append"
-          ? [...rows.filter((r) => r.baseUrl.trim() || UTM_FIELDS.some((f) => r[f].trim())), ...parsed]
-          : parsed,
-        settings,
-        spec
-      )).values()
-    ).flat().length;
+    // Fix 1/2/3/4: set persistent summary panel data.
+    // auditedRowIds drives the live grouped summary + skipped-line list.
+    // The live flagged count is derived from current `warnings` on each render (Fix 4).
+    const auditedRowIds = new Set(parsed.map((r) => r.id));
+    setAuditSummaryInfo({ parsedCount: parsed.length, auditedRowIds, skipped });
 
+    // Brief peripherally-unmissable toolbar status (auto-clears after 5s).
+    // Flagged count is now shown live in the summary panel, so this just confirms the action.
     const skippedNote = skipped.length > 0
       ? ` · ${skipped.length} line${skipped.length === 1 ? "" : "s"} skipped`
       : "";
-    const msg = `Audited ${parsed.length} URL${parsed.length === 1 ? "" : "s"} — ${flaggedCount} cell${flaggedCount === 1 ? "" : "s"} flagged${skippedNote}. Undo`;
+    const msg = `Audited ${parsed.length} URL${parsed.length === 1 ? "" : "s"}${skippedNote} — see summary above. Undo`;
 
     if (auditStatusTimer.current) clearTimeout(auditStatusTimer.current);
     setAuditStatus(msg);
@@ -783,6 +789,17 @@ export function UtmGrid({
       setAuditStatus(null);
       auditStatusTimer.current = null;
     }, 5000);
+
+    // Fix 1: auto-scroll the table container so the first utm_* column (utm_source) is visible.
+    // Deferred to next paint so the DOM reflects the new rows first.
+    requestAnimationFrame(() => {
+      const container = tableContainerRef.current;
+      if (!container) return;
+      // Base URL col (160px) + checkbox col (32px) + row-num col (32px) = ~224px from left.
+      // Scrolling to 0 shows Base URL; scrolling to ~164px puts utm_source into view cleanly.
+      // We scroll just past the base URL column so utm_source is the first visible UTM column.
+      container.scrollLeft = 200;
+    });
   };
 
   const applyPresetToSelected = (presetId: string) => {
@@ -1471,6 +1488,21 @@ export function UtmGrid({
         ) : null
       )}
 
+      {/* Fix 1/2/3/4: Post-audit grouped summary — above grid, full-width, in normal flow.
+          NOT a side panel (side panels steal grid width per the lesson). The summary
+          is persistent (not auto-clearing) so the payoff is legible without horizontal
+          scroll. Live flagged count is derived from current `warnings` on each render
+          so it updates after Auto-fix naming (Fix 4). */}
+      {auditSummaryInfo && (
+        <AuditSummaryPanel
+          parsedCount={auditSummaryInfo.parsedCount}
+          liveWarnings={Array.from(warnings.values()).flat()}
+          auditedRowIds={auditSummaryInfo.auditedRowIds}
+          skipped={auditSummaryInfo.skipped}
+          onDismiss={() => setAuditSummaryInfo(null)}
+        />
+      )}
+
       {/* Main layout: grid + desktop sidebar side by side */}
       <div className="flex gap-4 items-start">
         {/* Grid container — holds BOTH table (≥640px) and card list (<640px).
@@ -1491,7 +1523,7 @@ export function UtmGrid({
               z-index above the scrolling middle columns, so they remain fully visible
               while the middle UTM columns scroll under them. The Actions column is
               116px wide; sticky offset for Generated URL matches that exactly. */}
-          <div className="hidden sm:block overflow-x-auto rounded-lg border border-gray-200 bg-white">
+          <div ref={tableContainerRef} className="hidden sm:block overflow-x-auto rounded-lg border border-gray-200 bg-white">
           {/* Table min-width: 1050px. Generated URL is 200px in both modes.
               At 1280px, sidebar=192px (w-48), gap=16px, page-padding=48px → grid≈976px.
               Sticky cols: 200px+116px=316px. Visible scroll area≈660px.
