@@ -1,22 +1,13 @@
-{
-  "name": "Aisha",
-  "clarity": "Yes",
-  "clarity_reason": "Still strong. Headline 'Clean UTM links for your whole campaign — in one grid' + subhead about auto-fixing casing/typos says exactly what and who in seconds. On the workspace, the 'REVIEW STATUS' roll-up with colored dots and the 'All approved — ready to launch' pill makes the review feature self-explanatory.",
-  "value": "Yes",
-  "value_reason": "Same job as r1 — a teammate sharing a link for sign-off, replacing the Slack-thread / Notion-table ritual. Now that the approval actually carries the reviewer's name, the /review doc is a real, citable sign-off artifact, which is the thing that makes it worth opening instead of pinging people. No-signup keeps adoption friction near zero.",
-  "advocacy": 9,
-  "advocacy_reason": "Both r1 bugs are genuinely fixed and I verified each. (1) The popover opens FIRST-CLICK even right after using the 'Your name' header field — portaled, pre-fills 'Reviewing as: Aisha', with a reassuring 'Name is optional — your device only' helper. (2) In a realistic single-session flow (set name, then approve) the /review doc reads 'Approved by Aisha' with my note in quotes — zero 'Anonymous'. The Share menu is the considered consolidation I asked for: four labeled, icon'd items in one tidy dropdown. Roll-up and sign-off doc are still delightful. Held off a 10 by one craft seam below.",
-  "prior_concern_addressed": "all",
-  "top_issues": [
-    "PARTIAL consolidation seam: the 'Share ▾' menu (top-right) cleanly holds Copy workspace link / Share style guide / Copy compliance report / Share review summary — but the grid toolbar below STILL has standalone 'Copy share link' (sublabel 'frozen snapshot of current grid') AND 'Copy all URLs'. A live 'Copy workspace link' inside Share sitting near a separate frozen 'Copy share link' is exactly the near-duplicate that makes me pause and ask 'which link do I send my team?' Fold those into Share ▾ (or relabel) and this is a 10.",
-    "Identity is device-local only: reviewer name lives in localStorage, not synced to the workspace, so opening the same /w link on a clean browser shows an empty 'Your name' and a fresh approval there stamps 'Anonymous'. Fine for the solo path, but for true multi-device/teammate review the name won't follow you — worth a 'set once' prompt or note."
-  ],
-  "liked": [
-    "Review popover opens first-click after the name field, portaled, 'Reviewing as: Aisha' pre-filled, optional-name helper copy is precise and reassuring.",
-    "Attribution fixed: /review shows 'Approved by Aisha' with the note in quotes — a real sign-off record now.",
-    "Share menu: one dropdown, four clearly-labeled icon'd actions — the considered consolidation I wanted; cuts r1 button clutter.",
-    "Roll-up panel + 'All approved — ready to launch' pill + progress bar is still rewarding craft.",
-    "/review reads as a polished centered sign-off document with per-link cards, badge, reviewer, note.",
-    "Copy tone stays human and exact; 'Editing as: Aisha' + 'History (1)' in the header are nice touches."
-  ]
-}
+```json
+{"name":"Aisha","clarity":"Yes","value":"No","advocacy":7,"priorConcernsAddressed":"some","top_issues":["Landing is STILL crowded above the fold: toolbar + PRE-LAUNCH QA banner + LIVE TEAM WORKSPACE banner + Presets + Bulk Edit all sit before you reach My Workspaces and the grid. The panel moved up relative to the grid but the two big banners still own the fold — hierarchy improved in code, not yet in felt experience.","Rename affordance is too quiet: it's a low-contrast gray 'Rename' chip (plus a duplicate ✏ that looks like a separate control). I clicked it twice before I trusted it did anything; the inline edit field is nicely styled once it appears, but discovery is weak. Make the whole name click-to-edit, or give Rename more contrast and drop the redundant pencil.","Easy to create near-duplicate workspaces (two 'black-friday-2026' rows, 'just now' + '7s ago') with no merge/dedupe hint — for the heavy user this list will get noisy fast."],"loved":["Friendly default naming is genuinely well-judged: campaign name first ('spring-sale-2026'), domain fallback when campaign is blank ('acme.com'), relative time underneath. This is the exact detail that broke my trust last round and it's fixed.","Inline rename is real and persists: pre-filled with the current name, 120-char cap, blue focus ring, commits on Enter, survives reload. Considered.","Search now matches friendly names — typing 'black' filtered to the right workspace. The Search box is no longer pointless.","Honest empty/persistence copy and 44px touch targets carried over; mobile toolbar stacks cleanly."]}
+```
+
+I'm Aisha, a product designer re-testing because round 1's craft-breaker was the raw machine-ID workspace names that made the Search box useless and broke my trust in the polish.
+
+**Prior concerns — some addressed.** (1) The naming dealbreaker is FIXED, and fixed thoughtfully: workspaces now default to the campaign name, fall back to the domain when campaign is empty, and show relative time. Rename is a real inline edit that persists across reload, and Search now actually matches names. That's the right fix, done with taste. (2) The crowded landing is only partly addressed — the panel was reordered above the grid, but the two full-width banners (PRE-LAUNCH QA, LIVE TEAM WORKSPACE) still dominate the fold, so on first load I still don't see the grid or my workspaces without scrolling. Better in code, not yet in feel.
+
+**Clarity — Yes.** Unchanged and good: the H1 + subhead tell me it's a spreadsheet-style UTM builder that lints tags and shares one reusable link. No confusion.
+
+**Value — No (for me personally).** I make a handful of UTMs a year; Notion still covers that for me. For a marketer running many campaigns weekly the value is now real because the workspace list is finally navigable — but I rate my own recurring use, and it doesn't earn a slot next to Figma/Notion.
+
+**Advocacy — 7 (was 6).** The fix that mattered landed and it's well-crafted, so I bumped it — but a 7 is not a pass and I won't inflate it. Three things hold it back from a 9: the fold is still banner-heavy so the considered hierarchy doesn't *land* on first paint; the Rename control is too quiet (a faint gray 'Rename' chip plus a redundant ✏ — I clicked twice before believing it worked, and "Rename" should ideally just be click-the-name); and it's easy to spawn near-duplicate workspaces with no dedupe cue, which will make a power user's list noisy fast. Tighten the fold, make rename obviously clickable, and this is the 8–9 I wanted to give it.

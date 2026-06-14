@@ -1388,6 +1388,10 @@ export function UtmGrid({
 
   // P1: collapsible panel state — collapsed by default on cold open
   const [lintRulesExpanded, setLintRulesExpanded] = useState(false);
+  // FIX B (My Workspaces Round 3): secondary feature panels collapsed by default
+  // so the editable grid sits near the top of the first screenful.
+  const [launchCheckExpanded, setLaunchCheckExpanded] = useState(false);
+  const [teamWorkspaceExpanded, setTeamWorkspaceExpanded] = useState(false);
 
 
   const toggle = (settingKey: keyof LintSettings, label: string) => (
@@ -1624,7 +1628,8 @@ export function UtmGrid({
           )}
         </span>
 
-        {/* Fix 1 + Fix 3: "Copy share link" — sublabel disambiguates from "Create shared workspace".
+        {/* Fix 1 + Fix 3 + FIX E: "Copy share link — frozen snapshot, no server"
+            sublabel makes this distinct from "Create shared workspace — live, synced".
             Green fill + "Copied ✓" for 1.8s; ref-stable timer (shareCopyTimer); dedicated aria-live. */}
         <span className="inline-flex flex-col items-start gap-0.5">
           <button
@@ -1650,10 +1655,10 @@ export function UtmGrid({
           <span role="status" aria-live="polite" className="sr-only">
             {shareLinkCopied ? "Share link copied!" : ""}
           </span>
-          {/* Fix 3: sublabel distinguishes snapshot vs. live workspace */}
+          {/* FIX E: sublabel distinguishes snapshot vs. live workspace at a glance */}
           {!shareLinkCopied && (
-            <span className="text-[10px] text-gray-400 leading-tight max-w-[10rem]">
-              {isWorkspaceMode ? "frozen snapshot of current grid" : "snapshot, in the link"}
+            <span className="text-[10px] text-gray-400 leading-tight max-w-[12rem]">
+              {isWorkspaceMode ? "frozen snapshot of current grid" : "frozen snapshot — no server"}
             </span>
           )}
           {shareEmptyWarning && (
@@ -1828,94 +1833,156 @@ export function UtmGrid({
       )}
 
       {/* ── Pre-launch QA group ─────────────────────────────────────────────────
-          F4: holds ONLY "Run Launch Check". "Audit URLs" lives exclusively in the
-          toolbar above as "Paste & Audit URLs" — the single audit entry point.
-          R2-3: placed in DOM BEFORE create-workspace-strip so on mobile (≤640px)
-          "Run Launch Check" appears HIGH on the page — reachable without scrolling
-          past the 209px create-workspace panel. Desktop order is also fine here
-          (Pre-launch QA naturally precedes team workspace creation). */}
-      <div
-        data-testid="prelaunch-qa-strip"
-        className="flex flex-col sm:flex-row sm:items-center gap-3 rounded-lg border border-teal-100 bg-teal-50/60 px-4 py-3"
-      >
-        <div className="min-w-0 flex-1">
-          <span className="text-xs font-semibold text-teal-900 uppercase tracking-wide">
-            Pre-launch QA
-          </span>
-          <p className="mt-0.5 text-xs text-teal-700">
-            <strong>Launch Check</strong> — Check every link in this batch against your naming rules before you launch.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2 shrink-0">
-          {/* "Run Launch Check" — the sole action in this band (F4: Audit URLs removed) */}
+          FIX B (My Workspaces Round 3): collapsed by default on main builder `/`
+          so the grid sits near the top of the first screenful. One click to expand.
+          In workspace mode, keep expanded/always-visible (not a landing-density issue there).
+          data-testid="prelaunch-qa-strip" kept for e2e test compatibility. */}
+      {!isWorkspaceMode ? (
+        <div data-testid="prelaunch-qa-strip">
           <button
             type="button"
-            data-testid="run-launch-check-btn"
-            onClick={runLaunchCheck}
-            className="min-h-[44px] inline-flex items-center gap-2 rounded-md bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700 active:bg-teal-800"
+            onClick={() => setLaunchCheckExpanded((v) => !v)}
+            aria-expanded={launchCheckExpanded}
+            className="w-full flex items-center justify-between gap-3 rounded-lg border border-teal-100 bg-teal-50/60 px-4 py-3 text-left hover:bg-teal-50 transition-colors"
           >
-            {/* Shield/checklist icon — distinct from magnifying-glass (Audit URLs) */}
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              aria-hidden="true"
-              className="w-4 h-4 shrink-0"
-            >
-              <path
-                fillRule="evenodd"
-                d="M16.403 12.652a3 3 0 000-5.304 3 3 0 00-3.75-3.751 3 3 0 00-5.305 0 3 3 0 00-3.751 3.75 3 3 0 000 5.305 3 3 0 003.75 3.751 3 3 0 005.305 0 3 3 0 003.751-3.75zm-2.546-4.46a.75.75 0 00-1.214-.883l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
-                clipRule="evenodd"
-              />
-            </svg>
-            Run Launch Check
+            <span className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-teal-900 uppercase tracking-wide">
+                Launch Check / Pre-launch QA
+              </span>
+              <span className="text-[10px] text-teal-600">
+                — Check every link against naming rules before launch
+              </span>
+            </span>
+            <span className="text-teal-400 text-[10px] shrink-0">{launchCheckExpanded ? "▲" : "▼"}</span>
           </button>
+          {launchCheckExpanded && (
+            <div className="mt-1 flex flex-col sm:flex-row sm:items-center gap-3 rounded-lg border border-teal-100 bg-teal-50/60 px-4 py-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs text-teal-700">
+                  <strong>Launch Check</strong> — Check every link in this batch against your naming rules before you launch.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2 shrink-0">
+                <button
+                  type="button"
+                  data-testid="run-launch-check-btn"
+                  onClick={runLaunchCheck}
+                  className="min-h-[44px] inline-flex items-center gap-2 rounded-md bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700 active:bg-teal-800"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                    aria-hidden="true"
+                    className="w-4 h-4 shrink-0"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M16.403 12.652a3 3 0 000-5.304 3 3 0 00-3.75-3.751 3 3 0 00-5.305 0 3 3 0 00-3.751 3.75 3 3 0 000 5.305 3 3 0 003.75 3.751 3 3 0 005.305 0 3 3 0 003.751-3.75zm-2.546-4.46a.75.75 0 00-1.214-.883l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  Run Launch Check
+                </button>
+              </div>
+            </div>
+          )}
         </div>
-      </div>
-
-      {/* "Create shared workspace" accent strip — always visible in flow above the grid.
-          Shown only in default (non-workspace) mode per UX brief §1.
-          Placement: its own labeled strip, NOT adjacent to "Copy share link" toolbar button,
-          so the two share rungs never read as duplicate controls.
-          Mobile: stacks as full-label accent button. */}
-      {!isWorkspaceMode && (
+      ) : (
+        /* Workspace mode: Pre-launch QA always visible (not a landing-density issue there) */
         <div
-          data-testid="create-workspace-strip"
-          className="flex flex-col sm:flex-row sm:items-center gap-3 rounded-lg border border-blue-100 bg-blue-50/60 px-4 py-3"
+          data-testid="prelaunch-qa-strip"
+          className="flex flex-col sm:flex-row sm:items-center gap-3 rounded-lg border border-teal-100 bg-teal-50/60 px-4 py-3"
         >
           <div className="min-w-0 flex-1">
-            <span className="text-xs font-semibold text-blue-900 uppercase tracking-wide">
-              Live team workspace
+            <span className="text-xs font-semibold text-teal-900 uppercase tracking-wide">
+              Pre-launch QA
             </span>
-            <p className="mt-0.5 text-xs text-blue-700">
-              A live workspace your team edits together — changes save to a private link and sync across devices.{" "}
-              <span className="text-gray-400">(Different from &ldquo;Copy share link&rdquo;, which sends a frozen snapshot.)</span>
+            <p className="mt-0.5 text-xs text-teal-700">
+              <strong>Launch Check</strong> — Check every link in this batch against your naming rules before you launch.
             </p>
           </div>
-          <div className="flex flex-col items-start sm:items-end gap-1 shrink-0">
+          <div className="flex flex-wrap gap-2 shrink-0">
             <button
               type="button"
-              data-testid="create-shared-workspace-btn"
-              onClick={() => void createSharedWorkspace()}
-              disabled={creatingWorkspace || gridIsEmpty}
-              aria-label="Create shared workspace"
-              className="rounded-md bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 min-h-[44px]"
+              data-testid="run-launch-check-btn"
+              onClick={runLaunchCheck}
+              className="min-h-[44px] inline-flex items-center gap-2 rounded-md bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700 active:bg-teal-800"
             >
-              {creatingWorkspace ? "Creating…" : "Create shared workspace"}
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                aria-hidden="true"
+                className="w-4 h-4 shrink-0"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M16.403 12.652a3 3 0 000-5.304 3 3 0 00-3.75-3.751 3 3 0 00-5.305 0 3 3 0 00-3.751 3.75 3 3 0 000 5.305 3 3 0 003.75 3.751 3 3 0 005.305 0 3 3 0 003.751-3.75zm-2.546-4.46a.75.75 0 00-1.214-.883l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              Run Launch Check
             </button>
-            {/* Fix 3: sublabel clarifies this is live/synced, distinct from "Copy share link" (snapshot) */}
-            <span className="text-[10px] text-blue-600 leading-tight">
-              live, synced for the team
-            </span>
-            {createWorkspaceError && (
-              <span role="alert" className="text-xs text-red-600">
-                {createWorkspaceError}
-              </span>
-            )}
-            {gridIsEmpty && (
-              <span className="text-xs text-gray-400">Add at least one row to create a workspace.</span>
-            )}
           </div>
+        </div>
+      )}
+
+      {/* "Create shared workspace" accent strip — FIX B: collapsed by default on cold open.
+          FIX E: label and descriptor clarify this is live/synced vs frozen snapshot.
+          Shown only in default (non-workspace) mode per UX brief §1. */}
+      {!isWorkspaceMode && (
+        <div data-testid="create-workspace-strip">
+          <button
+            type="button"
+            onClick={() => setTeamWorkspaceExpanded((v) => !v)}
+            aria-expanded={teamWorkspaceExpanded}
+            className="w-full flex items-center justify-between gap-3 rounded-lg border border-blue-100 bg-blue-50/60 px-4 py-3 text-left hover:bg-blue-50 transition-colors"
+          >
+            <span className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs font-semibold text-blue-900 uppercase tracking-wide">
+                Create shared workspace
+              </span>
+              {/* FIX E: one-line descriptor distinguishes live/synced from frozen snapshot */}
+              <span className="text-[10px] text-blue-600">
+                — live, synced via secret link
+              </span>
+            </span>
+            <span className="text-blue-400 text-[10px] shrink-0">{teamWorkspaceExpanded ? "▲" : "▼"}</span>
+          </button>
+          {teamWorkspaceExpanded && (
+            <div className="mt-1 flex flex-col sm:flex-row sm:items-center gap-3 rounded-lg border border-blue-100 bg-blue-50/60 px-4 py-3">
+              <div className="min-w-0 flex-1">
+                <p className="mt-0.5 text-xs text-blue-700">
+                  A live workspace your team edits together — changes save to a private link and sync across devices.{" "}
+                  <span className="text-gray-400">(Different from &ldquo;Copy share link&rdquo;, which sends a frozen snapshot — no server.)</span>
+                </p>
+              </div>
+              <div className="flex flex-col items-start sm:items-end gap-1 shrink-0">
+                <button
+                  type="button"
+                  data-testid="create-shared-workspace-btn"
+                  onClick={() => void createSharedWorkspace()}
+                  disabled={creatingWorkspace || gridIsEmpty}
+                  aria-label="Create shared workspace"
+                  className="rounded-md bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 min-h-[44px]"
+                >
+                  {creatingWorkspace ? "Creating…" : "Create shared workspace"}
+                </button>
+                <span className="text-[10px] text-blue-600 leading-tight">
+                  live, synced for the team
+                </span>
+                {createWorkspaceError && (
+                  <span role="alert" className="text-xs text-red-600">
+                    {createWorkspaceError}
+                  </span>
+                )}
+                {gridIsEmpty && (
+                  <span className="text-xs text-gray-400">Add at least one row to create a workspace.</span>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -1941,10 +2008,10 @@ export function UtmGrid({
           My Workspaces only in default mode (not workspace/preview mode).
           Campaigns hidden in workspace mode (local-only). UTM Spec shown in all modes. */}
       <div className="min-[900px]:hidden flex flex-col gap-1">
-        {/* My Workspaces mobile disclosure — FIRST, auto-expanded, default mode only */}
-        {!isWorkspaceMode && (
-          <MyWorkspacesPanel mobileOnly />
-        )}
+        {/* FIX C-1 (My Workspaces Round 3): MyWorkspacesPanel is now a SINGLE responsive
+            instance rendered once above the grid (not here). Removed to avoid dual-mount.
+            The single instance is placed above the grid (desktop+mobile), visible only when
+            count ≥ 1 (FIX A). */}
         {/* Campaign Naming Template mobile disclosure — shown below My Workspaces */}
         <NamingTemplatePanel
           template={namingTemplate}
@@ -2038,13 +2105,12 @@ export function UtmGrid({
         />
       )}
 
-      {/* FIX B (My Workspaces Round 2): My Workspaces panel appears HIGH — ABOVE the grid,
-          not buried below it. Desktop only (min-[900px]); mobile already has it above grid
-          in the mobile disclosures section. Only in default mode (not workspace / preview).
-          Compact: capped at 3 entries with "Show all (N)" so it never pushes the grid far
-          below the fold. No horizontal page overflow at 1280px. */}
+      {/* FIX C-1 + FIX A (My Workspaces Round 3): SINGLE responsive instance.
+          Renders at all widths (no desktopOnly/mobileOnly split).
+          Returns null automatically when count === 0 (FIX A — empty state must
+          not push the grid down for first-timers). Only in default mode. */}
       {!isWorkspaceMode && (
-        <MyWorkspacesPanel desktopOnly />
+        <MyWorkspacesPanel />
       )}
 
       {/* Main layout: grid full-width (panels rendered BELOW the grid, not beside it).

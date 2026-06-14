@@ -2408,3 +2408,129 @@ duplicate-DOM-render smell (Priya) since it matches the recorded `dual-render-gl
   **readable name** (user-given, else first-row utm_campaign / domain / dated default — never the raw
   id), with **Open · Copy link · Rename · Remove from list** (≥44px on mobile) and a search box that
   **matches the name** — typing "acme"/"spring" surfaces the right workspace, never 0 results.
+
+## My Workspaces — Round 3 fixes (panel R2: 6/10 pass — Marcus 9, Wen 9, Tomás 9, Jules 9, Rob 9, Sam 10) — added 2026-06-14
+
+Clarity 10/10 Yes; Value 8/10 Yes (Aisha & Elena = No). Advocacy ≥9 = **6/10**. The R2 naming
+work (friendly defaults, inline rename, search-by-name, X/Mastodon presets, 44px targets,
+share sublines) all LANDED and tested well — do NOT regress any of it. The gap is now the
+LANDING-DENSITY debt finally biting + two craft bugs. **Target the three reachable flips:
+Dana (9→8, regressed), Priya (8), Elena (6)** — these get us to 9/10. **Aisha's value=No is
+persona-rooted (she makes a handful of UTMs/year, out of the recurrence ICP) and is the
+accepted 1 fail.** Additive / CSS / layout-tuck / copy / small-logic only — do NOT touch the
+headline, subhead, lint toggles, or the cold-open grid's role as the hero (it must be MORE the
+hero after this, not less). Six fixes, A–F, A+B are the dominant levers. Each maps to a R2
+synthesis cause.
+
+**Fix A — Empty My Workspaces must NOT occupy prime above-grid space (P0; Cause 1, the
+regression — Dana 9→8; also helps Aisha/Elena).** Moving My Workspaces above the grid pushed
+the editable grid DOWN (utm_source header 816px vs R1's 668px), and on a first-timer's cold
+open the empty "No workspaces yet" panel reads as "one more banner" between the hero and the
+grid. Fix the EMPTY-state behavior so the grid is the hero again:
+- **When the list has 0 entries, do NOT render My Workspaces in prime above-grid space.** Either
+  hide the panel entirely on a true cold open, OR render only a **tiny, unobtrusive hint** (a
+  single muted one-liner that does NOT push the grid down — e.g. a quiet inline note, not a
+  full section card). The empty-state copy still teaches the loop, but it must not consume the
+  first screenful.
+- **Only float the compact My Workspaces panel into above-grid space once the list has ≥1
+  entry** (a returning user with real workspaces). For them the panel high up is the payoff;
+  for a first-timer it must not exist above the grid.
+- **First-timer landing order (verbatim intent):** hero (short) → editable grid visible HIGH →
+  secondary banners/panels below. The grid is the hero. Verify at 1280–1440px AND 375px that on
+  a cold (zero-entry) open the editable example grid's first row/card sits in the first
+  screenful, not pushed below an empty panel + banner stack.
+
+**Fix B — Landing de-densification: collapse the secondary feature banners (P0; Cause 1, the
+gating debt — Elena value-No/6, Aisha 7, Dana).** The editable grid sits behind a stack of
+full-width banners so a skim-budget user never finds the primary action ("above the grid" but
+the 6th block down). This is the previously-DEFERRED landing pass; it now gates the 9-bar, so
+do a BOUNDED version — NOT a redesign, NO feature removal:
+- **Collapse the SECONDARY feature panels/banners into COLLAPSED-BY-DEFAULT disclosures** so the
+  editable grid + its core toolbar sit near the top of the first screenful. The surfaces to
+  collapse: **Launch Check / Pre-launch QA**, the **Live Team Workspace** banner, **Presets**,
+  **Bulk Edit**, **UTM Spec**, **Naming Template**. Each becomes a clearly-LABELED expander
+  (its label names its payoff so it's still discoverable in the 5-second skim) — collapsed by
+  default on cold open.
+- **Do NOT remove any feature** — only collapse/tuck them behind labeled expanders; every
+  feature stays exactly ONE click away.
+- **Keep the hero copy short** (already compact — do not lengthen it).
+- **Must NOT regress the 6 passing testers' ability to reach those features** — Launch Check,
+  Team Workspace, Presets, Bulk Edit, UTM Spec, Naming Template all stay reachable in one click
+  from their labeled expanders. Verify: a cold visitor lands and the editable grid is the
+  prominent first read; each collapsed surface is found and opened in one click.
+
+**Fix C — Single responsive My Workspaces instance + auto-fix strips trailing punctuation (P0;
+Cause 2 + Cause 3 — flips Priya 8).** Two parts:
+1. **Render My Workspaces as a SINGLE responsive instance, not two mounted twins.** Today the
+   panel renders as TWO DOM instances (desktopOnly + mobileOnly), so an engineer with devtools
+   open sees **duplicate "My Workspaces" headings + duplicate search inputs** (one at 36px < the
+   44px target) — a trust-nicking smell. Render it as **ONE component, CSS-responsive
+   internally** (e.g. internal Tailwind responsive classes), so there is exactly one heading,
+   one search input, in the DOM at a time. **No JavaScript viewport detection** (no
+   `window.innerWidth`/matchMedia/useMediaQuery swap) — it must stay SSR-safe with no hydration
+   mismatch. (Heed the recorded dual-render-global-listener lesson.) After this, the single
+   search input is ≥44px at every width.
+2. **Auto-fix/normalize must strip characters invalid in clean UTM values.** Today auto-fix
+   leaves trailing punctuation: "Launch Day!" → "launch_day!" (the "!" survives). The
+   auto-fix/normalize step must also **strip leading/trailing non-alphanumeric punctuation**
+   (like "!") so **"Launch Day!" → "launch_day"**. Keep this CONSERVATIVE — strip only
+   leading/trailing junk punctuation; do NOT mangle valid values (internal separators, the
+   chosen `_`/`-` join, alphanumerics all preserved). Order: existing whitespace-trim first,
+   then internal-space → separator, then strip leading/trailing invalid punctuation.
+
+**Fix D — Friendly default label PREFERS the first row's utm_campaign (P1; Cause 4 — Marcus,
+Wen, Jules, Tomás, all passing but flagged; improves distinguishability for everyone).** Today
+the default label uses date/domain, so two same-day or same-domain workspaces collide
+("Workspace — Jun 14" / "example.com") until manually renamed. Change the derivation ORDER for
+the friendly default to PREFER campaign:
+- **(a)** the workspace's **first grid row's `utm_campaign`** if non-empty (e.g. "blackfriday2026");
+- **(b)** else the **base-URL domain** (e.g. "acme.com");
+- **(c)** else the **dated form** ("Workspace — Jun 14").
+This makes two same-day workspaces distinguishable by campaign without a manual rename. (Note:
+this aligns the implementation with the priority already specified in R2 Fix A.2 — the build
+was using date first; correct it to campaign-first. A tiny muted `…id` slice MAY still appear
+as secondary meta to disambiguate identical-named entries.)
+
+**Fix E — Share-action disambiguation, labeling only (P1; Cause 5, recurring ~5 testers —
+Marcus, Jules, Tomás, Elena, Sam).** "Copy share link" (frozen snapshot) and "Create shared
+workspace" (live synced link) still read as confusingly similar — a first-timer must read the
+fine print to pick. **Labeling only, NO behavior change:**
+- Give the two distinct labels + a one-line descriptor each, e.g. **"Copy share link — frozen
+  snapshot"** vs **"Create shared workspace — live, synced"**, and/or **group them** so the
+  difference is legible at a glance.
+- This is pure copy/grouping — do not change what either action does.
+
+**Fix F — Make Rename discoverable (P2; Cause 6 — Aisha 7; cheap, may nudge Aisha, helps
+everyone).** The Rename affordance is a low-contrast gray chip Aisha clicked twice before
+trusting (plus a redundant ✏ that read as a separate control). Make rename obviously
+discoverable:
+- **Clicking the workspace NAME itself enters rename** (the bold label text is the rename
+  trigger), AND/OR give the Rename control **higher contrast**. Drop the redundant duplicate
+  pencil so there is ONE clear rename affordance.
+- Keep Open as its own distinct target so name-click = rename and the Open button = open are
+  unambiguous (resolve the ambiguity the R2 build left, per R2 Fix A.1).
+
+**PROTECT — do NOT regress (all must still pass / all existing tests green):** the 6 passing
+testers' surfaces — grid / lint / CSV / Audit / Launch Check, workspace create/sync, Review &
+Approval, Copy share link, mobile card view, the rename/search/friendly-name feature, ≥44px
+mobile targets, the copy "Copied!" green cue (ref-stable, survives re-render), no React #185,
+no enforceSpec crash. Fixes A+B reorder/collapse the LANDING only — they must keep every
+feature one click away and must not break any existing flow or test.
+
+**Out of scope (do NOT build):** cross-device/team sync (needs accounts + server, blocked on
+credential, regresses zero-network prop — Aisha/Elena's structural ask; Aisha is the accepted
+out-of-ICP value-No holdout); read-only/view-only share mode (needs a permissions model);
+near-duplicate-workspace dedupe (Aisha nit, BACKLOG).
+
+### 5-second check (My Workspaces Round 3 — the grid is MORE the hero)
+- **Cold visitor (`/`):** short hero → the editable example grid row/card visible HIGH in the
+  first screenful (no empty My Workspaces panel or banner stack shoving it down) → secondary
+  surfaces (Launch Check / Team Workspace / Presets / Bulk Edit / UTM Spec / Naming Template) as
+  collapsed, clearly-labeled, one-click expanders below. Same headline/subhead + pre-filled
+  example row with live Generated URL + Copy.
+- **Returning visitor (`/`):** same short hero; the compact **My Workspaces (N)** panel floats
+  above the grid (only because it now has ≥1 entry), listing workspaces by a campaign-first
+  friendly name, with one clear **Rename** (click the name), **Open · Copy link · Remove from
+  list**, and search-by-name. The two share actions read as distinct, grouped, labeled
+  ("Copy share link — frozen snapshot" vs "Create shared workspace — live, synced"). Exactly one
+  My Workspaces heading + one ≥44px search input in the DOM; auto-fix yields "launch_day", no "!".

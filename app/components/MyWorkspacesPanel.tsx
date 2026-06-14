@@ -4,10 +4,14 @@
  * My Workspaces panel — device-local index of every Team Workspace this browser
  * has CREATED or OPENED.
  *
- * Lives in the RIGHT-RAIL sidebar on desktop (≥900px), FIRST item ABOVE Campaigns.
- * Auto-expanded by default (the only side section that is).
- * On mobile (<900px): first disclosure ABOVE Campaigns, expanded by default with
- * count, capped at 3 visible entries + "Show all (N)" expander.
+ * FIX C-1 (My Workspaces Round 3): SINGLE responsive instance — ONE mounted
+ * component that adapts via CSS (Tailwind responsive classes). NO JavaScript
+ * viewport detection / window.matchMedia in render. Result: exactly ONE
+ * "My Workspaces" heading and ONE search input in the DOM at all times.
+ *
+ * FIX F (My Workspaces Round 3): clicking the workspace NAME itself enters
+ * inline rename. The Open button is visually distinct (labeled "Open") so
+ * name-click = rename, Open button = navigate, are unambiguous.
  *
  * 100% localStorage, zero network, no accounts.
  *
@@ -19,14 +23,6 @@
  * copy-confirmation-survives-tick-rerender (LESSON):
  * - copyTimers is a ref-map (not state) so the green "Copied!" cue persists
  *   through list re-renders driven by the tick timer.
- *
- * My Workspaces Round 2 fixes:
- * - FIX A-1: inline rename per entry (pencil + inline input, Enter/Esc/blur commit)
- * - FIX A-2: display name = user `name` ?? friendly `label` (never the raw id)
- * - FIX A-3: search matches the resolved display name (name ?? label)
- * - FIX B: cap desktop to ~3 with "Show all (N)" expander (same as mobile)
- * - FIX D: ≥44px tap targets on mobile actions
- * - Verb set: Open · Copy link · Rename · Remove from list
  */
 
 import { useCallback, useEffect, useRef, useSyncExternalStore, useState } from "react";
@@ -114,18 +110,9 @@ function relativeTime(ts: number): string {
   return new Date(ts).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
-// ── Props ─────────────────────────────────────────────────────────────────────
-
-interface Props {
-  /** Render only on desktop (≥900px). Mutually exclusive with mobileOnly. */
-  desktopOnly?: boolean;
-  /** Render only on mobile (<900px). Mutually exclusive with desktopOnly. */
-  mobileOnly?: boolean;
-}
-
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function MyWorkspacesPanel({ desktopOnly, mobileOnly }: Props) {
+export function MyWorkspacesPanel() {
   // ── SSR-safe localStorage subscription ──────────────────────────────────────
   // Server snapshot: empty array (safe, no localStorage on server).
   // Client snapshot: read from localStorage on first render.
@@ -145,7 +132,7 @@ export function MyWorkspacesPanel({ desktopOnly, mobileOnly }: Props) {
   // ── Search / filter ──────────────────────────────────────────────────────────
   const [query, setQuery] = useState("");
 
-  // ── "Show all" expander — shared by both desktop and mobile ──────────────────
+  // ── "Show all" expander ──────────────────────────────────────────────────────
   const PREVIEW_COUNT = 3;
   const [showAll, setShowAll] = useState(false);
 
@@ -230,13 +217,6 @@ export function MyWorkspacesPanel({ desktopOnly, mobileOnly }: Props) {
   const filtered = filterMyWorkspaces(entries, query);
   const count = entries.length;
 
-  // ── Wrapper class (desktop-only / mobile-only) ───────────────────────────────
-  const wrapperClass = desktopOnly
-    ? "hidden min-[900px]:block"
-    : mobileOnly
-    ? "min-[900px]:hidden"
-    : "";
-
   // ── Render one entry card ─────────────────────────────────────────────────────
   function renderEntry(entry: MyWorkspaceEntry) {
     const isCopied = copiedIds.has(entry.id);
@@ -267,11 +247,15 @@ export function MyWorkspacesPanel({ desktopOnly, mobileOnly }: Props) {
               onBlur={() => commitRename(entry.id, renameValue)}
             />
           ) : (
+            /* FIX F: clicking the workspace NAME itself enters inline rename.
+               The "Open" button is a distinct action below so name-click = rename
+               and Open = navigate are unambiguous. */
             <button
               type="button"
-              onClick={() => { window.location.href = `/w/${entry.id}`; }}
-              aria-label={`Open workspace: ${displayName}`}
-              className="font-semibold text-sm text-gray-900 truncate hover:text-blue-700 text-left min-w-0"
+              onClick={() => startRename(entry)}
+              aria-label={`Rename workspace: ${displayName}. Click to rename, or use the Open button to navigate.`}
+              title="Click to rename"
+              className="font-semibold text-sm text-gray-900 truncate hover:text-blue-700 text-left min-w-0 underline-offset-2 hover:underline cursor-text"
             >
               {displayName}
             </button>
@@ -324,19 +308,6 @@ export function MyWorkspacesPanel({ desktopOnly, mobileOnly }: Props) {
             {isCopied ? `Link copied for ${displayName}` : ""}
           </span>
 
-          {/* Rename button — FIX A-1: always visible pencil affordance */}
-          <button
-            type="button"
-            onClick={() => isRenaming ? cancelRename() : startRename(entry)}
-            aria-label={`Rename workspace ${displayName}`}
-            title="Rename"
-            data-testid={`rename-btn-${entry.id}`}
-            className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 min-h-[44px] sm:min-h-[32px]"
-          >
-            <span aria-hidden="true">✏</span>{" "}
-            <span>Rename</span>
-          </button>
-
           {/* Remove from list — FIX A-4: "Remove from list" verb makes local-only clear */}
           <button
             type="button"
@@ -359,7 +330,7 @@ export function MyWorkspacesPanel({ desktopOnly, mobileOnly }: Props) {
   }
 
   // ── Shared list renderer (capped with "Show all") ─────────────────────────────
-  function renderList(isMobile: boolean) {
+  function renderList() {
     const visibleEntries = showAll ? filtered : filtered.slice(0, PREVIEW_COUNT);
     const hasMore = filtered.length > PREVIEW_COUNT && !showAll;
 
@@ -374,7 +345,7 @@ export function MyWorkspacesPanel({ desktopOnly, mobileOnly }: Props) {
     }
 
     return (
-      <div className={`flex flex-col ${isMobile ? "gap-2" : "gap-1.5"}`}>
+      <div className="flex flex-col gap-1.5">
         {visibleEntries.map(renderEntry)}
         {hasMore && (
           <button
@@ -389,79 +360,44 @@ export function MyWorkspacesPanel({ desktopOnly, mobileOnly }: Props) {
     );
   }
 
-  // ── Desktop render ────────────────────────────────────────────────────────────
-  function renderDesktop() {
-    return (
-      <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
-        {/* Header */}
-        <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
-          <h2 className="text-sm font-semibold text-gray-800">
-            My Workspaces{count > 0 ? ` (${count})` : ""}
-          </h2>
-          <p className="mt-0.5 text-[10px] text-gray-400 leading-snug">
-            Workspaces you create or open are saved on THIS device only — not synced. Keep
-            the workspace link to access it elsewhere.{" "}
-            <span className="italic">Sign-in to sync across devices is coming.</span>
-          </p>
-        </div>
+  // FIX A (My Workspaces Round 3): do NOT render in prime above-grid space when empty.
+  // A first-timer's cold open must not see an empty panel above the grid.
+  // When count === 0, return nothing — the grid is the hero.
+  if (count === 0) return null;
 
-        <div className="px-3 py-3 flex flex-col gap-2">
-          {/* Search — only when list is non-empty */}
-          {count > 0 && (
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search workspaces"
-              aria-label="Search workspaces"
-              className="w-full rounded border border-gray-200 px-2 py-1.5 text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-400 min-h-[36px]"
-            />
-          )}
-
-          {/* List or empty state — capped at 3 on desktop too (FIX B) */}
-          {renderList(false)}
-        </div>
-      </div>
-    );
-  }
-
-  // ── Mobile render ─────────────────────────────────────────────────────────────
-  function renderMobile() {
-    return (
-      <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
-        {/* Header — always expanded on mobile (the only section that is) */}
-        <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
-          <h2 className="text-sm font-semibold text-gray-800">
-            My Workspaces{count > 0 ? ` (${count})` : ""}
-          </h2>
-          <p className="mt-0.5 text-[10px] text-gray-400 leading-snug">
-            Saved on this device only — not synced.
-          </p>
-        </div>
-
-        <div className="px-3 py-3 flex flex-col gap-2">
-          {/* Search — only when list is non-empty */}
-          {count > 0 && (
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search workspaces"
-              aria-label="Search workspaces"
-              className="w-full rounded border border-gray-200 px-2 py-1.5 text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-400 min-h-[44px]"
-            />
-          )}
-
-          {/* List — capped at 3 with "Show all (N)" */}
-          {renderList(true)}
-        </div>
-      </div>
-    );
-  }
-
+  // FIX C-1: SINGLE responsive instance — CSS breakpoints only, no JS viewport detection.
+  // The panel renders identically on desktop and mobile; Tailwind classes handle any
+  // responsive differences. No desktopOnly/mobileOnly branches — only ONE "My Workspaces"
+  // heading and ONE search input exist in the DOM at any time.
   return (
-    <div className={wrapperClass} data-testid="my-workspaces-panel">
-      {mobileOnly ? renderMobile() : renderDesktop()}
+    <div data-testid="my-workspaces-panel" className="rounded-lg border border-gray-200 bg-white overflow-hidden">
+      {/* Header */}
+      <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
+        <h2 className="text-sm font-semibold text-gray-800" data-testid="my-workspaces-heading">
+          My Workspaces{count > 0 ? ` (${count})` : ""}
+        </h2>
+        <p className="mt-0.5 text-[10px] text-gray-400 leading-snug">
+          Saved on this device only. Keep the workspace link to access it elsewhere.
+        </p>
+      </div>
+
+      <div className="px-3 py-3 flex flex-col gap-2">
+        {/* Search — only when list is non-empty; ≥44px on all viewports (FIX C-1) */}
+        {count > 0 && (
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search workspaces"
+            aria-label="Search workspaces"
+            data-testid="my-workspaces-search"
+            className="w-full rounded border border-gray-200 px-2 py-1.5 text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-400 min-h-[44px]"
+          />
+        )}
+
+        {/* List or empty state — capped at 3 with "Show all (N)" */}
+        {renderList()}
+      </div>
     </div>
   );
 }

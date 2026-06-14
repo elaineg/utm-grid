@@ -1,31 +1,13 @@
-# Round 2 — Tester 8 (Rob, freelance brand/visual designer) — unified-identity + density re-test
-
-Device: desktop, color-calibrated monitor. Tech: medium. Benchmark: hand-typed query
-strings + a per-client Google Sheet; I'm the density sentinel who spots overflow instantly.
-
-## Re-check of my round-1 blocker (dual-identity: approval logged "by Anonymous") — FIXED
-There is now ONE identity. I set "Your name" = Rob (it collapses to an "Editing as: Rob"
-chip after blur). I then signed off rows in the /w/<id> workspace:
-- Row 1 → Approve, Row 2 → "Needs changes". BOTH carried my name: review-cell tooltips read
-  "Needs changes by Rob", body shows "last edited by Rob", and there is ZERO "Anonymous"
-  anywhere on the page (verified text scan). No separate hidden "Reviewing as" identity exists.
-- Persisted across a full reload: still "Editing as: Rob", still no "Anonymous".
-The exact concern that capped me at 8 is closed.
-
-## Density / overflow re-check at 1280px AND 1440px — CLEAN, no regression
-Measured, not eyeballed: at both widths document scrollWidth == clientWidth (no page-level
-horizontal scrollbar). Every column lands inside the viewport — REVIEW, BASE URL, all 5 UTM
-fields, GENERATED URL, and ACTIONS; columns-past-viewport-edge = NONE at 1280 and 1440.
-The new "Changes" chip (renamed from "needs changes") sits amber in the REVIEW column without
-widening it or cramping the editable cells. No overflow, no cut-off Generated URL.
-
-## CLARITY: Yes — same instantly-legible H1 + subhead; review layer reads clearly.
-## VALUE: Yes — grid + auto-fix + CSV beats hand-typing, and the sign-off log is now usable
-for client/teammate approval because attribution finally carries the reviewer's real name.
-## ADVOCACY: 9 — blocker gone, layout verified clean as the density sentinel. Short of 10:
-attribution surfaces only on hover (tooltip) not inline, and the name field collapses to a
-label with no obvious re-edit affordance.
-
 ```json
-{"name":"Rob","clarity":"Yes","clarity_reason":"Cold-open is unchanged and instantly legible — H1 'Clean UTM links for your whole campaign — in one grid' + no-login/in-browser subhead; the team layer reads clearly via 'Mark each link Approved or Needs changes to sign off before launch.'","value":"Yes","value_reason":"Grid + auto-fix-casing + Export CSV beats my hand-typed query strings / one-link builder for a 3-5 link client campaign, and the review sign-off is now trustworthy because my approve AND needs-changes both logged 'by Rob' and match the roll-up (0 approved · 1 needs changes · 1 unreviewed). Weekly use for me.","advocacy":9,"advocacy_reason":"Up from 8. The 'by Anonymous' attribution bug that blocked me is fixed and the grid stayed overflow-free at 1280/1440, so I'd recommend it unprompted to freelancers juggling client UTMs. Held off 10: per-row attribution only shows on hover (tooltip 'Needs changes by Rob') instead of inline, and 'Your name' collapses into an 'Editing as: Rob' label with no obvious way to re-edit.","prior_concern_addressed":"all","top_issues":["Reviewer attribution surfaces only in a hover tooltip ('Needs changes by Rob') rather than an inline, always-visible sign-off log — a client-facing approval trail would read better shown, not hovered.","'Your name' input collapses to an 'Editing as: Rob' label after blur; re-editing the name later isn't an obvious click."],"liked":["FIXED: unified identity — single 'Your name'/'Editing as: Rob' drives review attribution; approve AND needs-changes both logged 'by Rob', zero 'Anonymous' anywhere, persisted across reload.","DENSITY PASS: zero horizontal page overflow at 1280px AND 1440px (scrollWidth==clientWidth); every column REVIEW → all UTM fields → GENERATED URL → ACTIONS fully inside the viewport, none cut off.","The 'Changes' chip rename is clean — amber chip in the REVIEW column without widening it or cramping editable cells.","Frictionless team flow: filled grid → 'Create shared workspace' → /w/<id>, set name, signed off rows, all server-synced with no signup."]}
+{"name":"Rob","clarity":"Yes","value":"Yes","advocacy":9,"priorConcernsAddressed":"all","top_issues":["'Save as campaign' / Campaigns / Allowed values / Naming Template / Launch Check are several overlapping save-and-reuse boxes — as a solo freelancer I'm not sure which one remembers my client setup vs. a one-off","Workspaces are 'THIS device only — not synced'; the 'Sign-in to sync is coming' note means switching to my laptop loses my client list"],"loved":["Workspaces now show FRIENDLY names — created two and they auto-labeled 'acme.com'/'zenith.io' from the URL instead of gibberish IDs","Inline ✏ Rename works: renamed them to 'Acme' and 'Zenith' in two clicks, names stuck","Search 'acme' now FINDS Acme and hides Zenith — case-insensitive — the exact thing that returned zero last round","Auto-fix casing + inconsistent-campaign warning still the core reason I'd use it over hand-typing"]}
 ```
+
+I'm Rob, freelance brand designer; I tag client links a few times a month and benchmark everything against "I could hand-type this in 4 minutes."
+
+**Prior concern re-checked (my round-1 blocker):** FIXED, all three parts. I created two workspaces — instead of "Workspace HbqwUjvW" they came up as friendly names derived from the base URL ("acme.com", "zenith.io"). Each row has a clear "✏ Rename" button (proper label, not a faint "+"); I renamed them to "Acme" and "Zenith" and the names persisted. Then I searched "acme" (lowercase) and it returned exactly the Acme workspace and hid Zenith — last round this returned ZERO. That is the multi-client findability I needed.
+
+**Clarity — Yes.** "Clean UTM links for your whole campaign — in one grid" + "Auto-fix messy casing and typos before they split your Google Analytics" still lands in under 10s. I'd tell a friend: "a spreadsheet for building tracking links that auto-fixes sloppy capitalization and remembers each client."
+
+**Value — Yes.** Auto-fix + the inconsistent-campaign warning beats my hand-typing (where I get Facebook in one link, facebook in another, and GA splits them). Now that My Workspaces is navigable by client name, it also beats my Chrome "Clients" bookmarks folder for re-finding a campaign next month.
+
+**Advocacy — 9 (real, not polite).** They shipped exactly what I asked, so it jumps 7 to 9. Held off a 10 by two things: (1) the page has several overlapping "save/reuse" surfaces — Save as campaign, Campaigns, Allowed values, Campaign Naming Template, Launch Check — and as a solo freelancer I can't immediately tell which one remembers a client vs. a one-off, so I'd fumble the first time. (2) Workspaces are "THIS device only — not synced," and "Sign-in to sync is coming" means switching to my laptop loses my client list. Fix those and it's a 10.

@@ -235,6 +235,30 @@ describe("deriveWorkspaceLabel", () => {
   it("trims the server name", () => {
     expect(deriveWorkspaceLabel("  Trimmed  ", "abc12345")).toBe("Trimmed");
   });
+
+  // FIX D (My Workspaces Round 3): utm_campaign-first ensures two same-day workspaces
+  // with different campaigns get different default names.
+  it("FIX D: two same-day workspaces with different campaigns get different labels", () => {
+    const ts = Date.now(); // same timestamp for both
+    const label1 = deriveWorkspaceLabel(undefined, "id1", "blackfriday2026", "https://acme.com", ts);
+    const label2 = deriveWorkspaceLabel(undefined, "id2", "cybermonday2026", "https://acme.com", ts);
+    // Must be distinct — campaign differs so labels must differ
+    expect(label1).toBe("blackfriday2026");
+    expect(label2).toBe("cybermonday2026");
+    expect(label1).not.toBe(label2);
+  });
+
+  it("FIX D: utm_campaign takes priority over base URL domain", () => {
+    expect(
+      deriveWorkspaceLabel(undefined, "id1", "summer_launch", "https://acme.com")
+    ).toBe("summer_launch");
+  });
+
+  it("FIX D: base URL domain used when utm_campaign is empty", () => {
+    expect(
+      deriveWorkspaceLabel(undefined, "id1", "", "https://acme.com")
+    ).toBe("acme.com");
+  });
 });
 
 // ── renameMyWorkspace ─────────────────────────────────────────────────────────

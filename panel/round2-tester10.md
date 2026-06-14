@@ -1,42 +1,14 @@
-# Round 2 — Tester 10 (Sam, PM, mobile-heavy)
-
-## Re-check of MY round-1 complaints
-1. ATTRIBUTION (was BROKEN): FIXED. Top bar reads "Editing as: Sam Rivera"; the per-row
-   Review popover shows "Reviewing as: Sam Rivera"; the approval/needs-changes on /review
-   reads "by Sam Rivera". I never saw "Anonymous" once across workspace or /review. The
-   sign-off now has an owner — that's the whole point.
-2. MOBILE /review COLLISION (was BUG): FIXED. Tested the exact case (Needs-changes + long
-   note + long URL) at 375px. Card stacks cleanly: status badge → full URL (wraps to 2
-   lines, NO "h." truncation) → source · medium · campaign → note in italics. Measured
-   scrollWidth == clientWidth == 375, zero horizontal overflow. Nothing mashes.
-
-## CLARITY — Yes
-Same as R1: H1 + "share one link, no login" + workspace-vs-snapshot explainer land in <30s.
-The new "Share ▾" menu (Copy workspace link / Share style guide / Copy compliance report /
-Share review summary) is clearer than the old scatter of copy buttons.
-
-## VALUE — Yes
-Replaces my Google Sheet + Slack approval thread. /review is now a genuinely paste-ready
-sign-off: "0 of 1 approved", per-link status "Needs changes by Sam Rivera", and the note
-quoted underneath. WOULD I paste it in Slack as "campaign signed off"? Yes — and it makes
-me look organized because it names who approved and why something's blocked.
-
-## ADVOCACY — 9/10
-Both bugs that capped me at 6 are gone and verified on mobile. Share review summary copies
-the /review link with a visible "✓ Copied!" cue (clipboard contents confirmed = the /review
-URL). Knocked off the last point only because per-row sign-off still needs opening a
-"Review" popover (no inline one-tap Approve on the card), and "Share review summary" lives
-in the workspace Share menu, not on the /review page itself — a teammate viewing /review
-can't re-share it from there. Minor, but real on mobile. Otherwise I'd bring this up
-unprompted to other PMs.
-
-## priorConcernsAddressed: all
-
 ```json
-{"tester": 10, "round": 2, "clarity": "Yes", "value": "Yes", "advocacy": 9, "topComplaints": ["Per-row sign-off needs opening a Review popover; no inline one-tap Approve on the mobile card", "Share review summary lives in the workspace Share menu, not on the /review page a viewer lands on"], "priorConcernsAddressed": "all"}
+{"name":"Sam","clarity":"Yes","value":"Yes","advocacy":10,"priorConcernsAddressed":"all","top_issues":["Two share concepts still coexist ('Copy share link' frozen snapshot vs 'Create shared workspace' live link) — clear once read but one beat of which-do-I-want","Workspace auto-name defaults to the utm_campaign value, so a blank/multi-campaign grid could default to something generic — but I can now rename, so minor"],"loved":["Workspace auto-names to the friendly utm_campaign ('Summer Sale 2026'), not 'Workspace 35YOkiga' — and inline RENAME works: tap Rename, field pre-fills, 'Enter to save · Esc to cancel', persisted across reload as 'Acme Q3 Product Launch'","My Workspaces action buttons measure exactly 44px tall; Open/Copy link/Rename share one row, 'Remove from list' demoted to its own row in red — no accidental-delete-next-to-Open","X / Twitter and Mastodon presets added; panel (Presets, My Workspaces, Campaign Naming Template) now sits ABOVE the grid so I configure before scrolling into rows","New Search workspaces box — how I'll stay organized once I have several launches saved"]}
 ```
 
-<!-- machine block for parent -->
-```json
-{"name":"Sam","clarity":"Yes","clarity_reason":"H1 + 'share one link, no login' + workspace-vs-snapshot explainer clear in <30s; new consolidated 'Share ▾' menu is clearer than R1's scattered copy buttons","value":"Yes","value_reason":"replaces Google Sheet + Slack approval thread; /review is now a paste-ready sign-off naming WHO approved ('by Sam Rivera') and WHY a link is blocked (quoted note) — makes me look organized","advocacy":9,"advocacy_reason":"both R1 blockers verified fixed on mobile: attribution attaches my name (no Anonymous anywhere) and /review stacks cleanly at 375px with zero overflow, full URL not truncated to 'h.'; Share review summary shows '✓ Copied!' and clipboard confirmed = /review URL. -1 for per-row Review popover instead of inline one-tap approve, and share-summary not being on the /review page itself","prior_concern_addressed":"all","top_issues":["Per-row sign-off requires opening a 'Review' popover; no inline one-tap Approve on the mobile row card","'Share review summary' is in the workspace Share menu, not on the /review page a teammate lands on — they can't re-share from there"],"liked":["Attribution fixed: 'Editing as / Reviewing as / by Sam Rivera' everywhere, no Anonymous","Mobile /review fixed: clean stacking, full URL, note in italics, no collision/overflow at 375px","Consolidated 'Share ▾' menu with visible '✓ Copied!' cue; clipboard verified to hold the /review link","Live rollup '0 approved · 1 needs changes · 0 unreviewed' + server-synced status"]}
-```
+## Re-checking my two round-1 nits (on my phone, 375px)
+- "Auto-named 'Workspace 35YOkiga' with no rename" — FIXED, better than I asked. A new workspace is named after the campaign ("Summer Sale 2026"). The Rename button turns the title into a pre-filled inline field with "Enter to save · Esc to cancel"; I renamed to "Acme Q3 Product Launch", reloaded, and it held. Naming is what makes me look organized, so this is the whole game.
+- "Row buttons ~36px, cramped, Remove next to Open" — FIXED. Every action button measures 44px tall (verified). Open / Copy link / Rename share one comfortable row; "Remove from list" moved to its own row below in red, so my thumb won't nuke a workspace by accident.
+
+## Fresh take (Sam, PM, between meetings)
+CLARITY Yes — H1 "Clean UTM links for your whole campaign — in one grid" + "no login, nothing leaves your browser" lands in seconds: bulk UTM builder where the team edits one shared link and signs off.
+
+VALUE Yes — replaces my Google Sheet + Slack approval thread. I batch-build, the team edits a live /w link, and I get a named, searchable workspace I can find later. The new X/Mastodon presets match where we actually post now.
+
+ADVOCACY 10 — both things holding me at 9 are gone, and they were exactly the "look organized" details that decide whether I share a tool unprompted. Named, renameable workspaces + safe 44px tap targets + presets above the grid make this feel made-for-mobile-PM. I'd drop it in our launch channel today. Only lingering nit (not a blocker): "Copy share link" (snapshot) vs "Create shared workspace" (live) still costs one beat of thought.

@@ -1,20 +1,15 @@
-{
-  "name": "Priya",
-  "clarity": "Yes",
-  "clarity_reason": "Unchanged from r1 and still strong: headline 'Clean UTM links for your whole campaign — in one grid' + 'no login, nothing leaves your browser' lands the what/who in ~5s. On the live workspace the 'REVIEW STATUS' roll-up, per-row 'Review' badge, and 'Editing as: Priya' chip make the approval loop self-explanatory. The one consolidation the brief claimed — a single 'Share ▾' menu — exists ONLY on /w/<id>, and even there it sits NEXT TO leftover 'Copy share link' + 'Copy all URLs' toolbar buttons; the landing page still has 'Copy share link', 'Copy all URLs', 'Download QR codes' as separate buttons. So the share clutter I flagged in r1 is reduced on the workspace but not actually eliminated.",
-  "value": "Yes",
-  "value_reason": "Same as r1: beats hand-editing query strings in neovim/spreadsheet. Live lint caught 'Twitter' casing and 'Social vs social' inconsistency across rows, auto-fix + trim is faster than eyeballing. The no-signup review handoff (teammate gets a link, approves/needs-changes per row, server-synced) is a real Slack-thread replacement. Verified server persistence: an approve survived a full reload and showed on the read-only /w/<id>/review page. Borderline-weekly for me, clearly recurring for a marketer.",
-  "advocacy": 8,
-  "advocacy_reason": "Still an 8 — the fix is real but incomplete, so it doesn't earn the 9 I promised. PROVEN FIXED: the unified name works WITHIN a session — I typed 'Priya' once in the header, it flowed into the popover's 'Reviewing as' field and the row badge tooltip read 'Approved by Priya', and /review showed '#1 Approved by Priya'. The popover opens reliably and has the inline 'Reviewing as' field as promised. NOT FIXED: the name does NOT persist across reload/new session. On a fresh load both the header 'Your name' field and the popover field come up EMPTY (no name/identity key in localStorage — only rows/lint/template/spec are stored). I reproduced the exact r1 bug: in a second session where I hadn't re-typed my name, my 'Needs changes' on row 2 logged 'by Anonymous' — and that 'by Anonymous' now sits permanently on the public /review summary next to my named approval. Attribution is sticky to the RECORD but the name INPUT is not sticky to ME, so the audit trail still silently fills with Anonymous the moment someone reloads before reviewing. Persist the name to localStorage (and ideally prompt before the first review action) and this is a clean 9.",
-  "prior_concern_addressed": "Partial — Unified name + reliable popover + 'Reviewing as' field all confirmed, and a named approval ('by Priya') now attaches and survives reload. BUT the name input is not persisted across reload/session (no localStorage identity key), so a fresh session reverts to Anonymous: I reproduced 'Needs changes by Anonymous' on the live /review page. The core complaint (Anonymous undercutting the audit trail) is mitigated within a session but not eliminated across sessions.",
-  "top_issues": [
-    "Name not persisted across reload/session: header + popover name fields load EMPTY (no localStorage identity key), so reviewing after a reload silently logs 'by Anonymous' — reproduced live as '#2 Needs changes by Anonymous' permanently on the public /review summary. Same r1 audit-trail hole, one step further down.",
-    "Share consolidation is partial: the single 'Share ▾' menu exists only on /w/<id> and still sits beside leftover 'Copy share link' + 'Copy all URLs' toolbar buttons; the landing page still has 3+ separate copy/QR buttons.",
-    "No prompt to set a name BEFORE a review action — nothing stops an anonymous approval from entering the record."
-  ],
-  "liked": [
-    "Within-session attribution now works end-to-end: 'Editing as: Priya' chip, popover 'Reviewing as: Priya', badge tooltip 'Approved by Priya', and '#1 Approved by Priya' on /review.",
-    "Review popover opens reliably with inline name + Approve / Needs changes / Clear review; review state is genuinely server-persisted (survived full reload).",
-    "'Share ▾' menu works with a real 'Copied!' cue and verified clipboard payload (workspace link), cleaning up the workspace toolbar somewhat."
-  ]
-}
+```json
+{"name":"Priya","clarity":"Yes","value":"Yes","advocacy":8,"priorConcernsAddressed":"some","top_issues":["Dual-render DOM smell is STILL there — the grid AND the My Workspaces panel each render twice (hidden duplicate): 2 'My Workspaces' nodes, 2 search boxes, duplicate hidden grid inputs (idx 13-18 mirror 5-10). Same code-review red flag from r1, now spread wider.","Auto-fix still leaves punctuation: 'Launch Day!' -> 'launch_day!' (the '!' survives). Casing is now genuinely fixed, but the headline sells 'clean' and a clean utm_campaign shouldn't carry '!'.","Toolbar above an empty grid is even denser now (Auto-fix / Import / Paste & Audit / Export / Download QR / Copy share link / Copy all URLs / Naming rules / Launch Check / Create workspace) before I've typed a row."],"loved":["Auto-fix now lowercases ALL fields uniformly incl utm_source (Google->google, CPC->cpc) — exactly the r1 ask, fixed.","Workspaces show a FRIENDLY name (campaign 'Spring Sale') instead of the raw secret id.","Inline RENAME works — pencil opens an edit field pre-filled with the friendly name, persists, and panel SEARCH filters by that name.","My Workspaces panel moved ABOVE the grid; mobile tap targets are big and well-spaced at 375px."]}
+```
+
+## Priya — Senior backend engineer, keyboard-first, hates signups
+
+**Prior concerns, re-checked:**
+- (a) Auto-fix capitalization — FIXED. `Google`->`google`, `CPC`->`cpc`; utm_source is no longer special-cased, everything lowercases uniformly. The punctuation half is still open: `Launch Day!` -> `launch_day!`, the `!` stays.
+- (b) Dual-render DOM smell — NOT FIXED, and wider now. DOM inspection shows two `My Workspaces` headings (node 0 hidden, node 1 visible), two search inputs, and a hidden duplicate of the entire grid row (inputs 13-18 mirror 5-10). Works for the user; still the sloppiness I'd block in review.
+
+**1. Clarity — Yes.** Same strong headline + "no login, nothing leaves your browser." Network tab quiet. Unchanged from r1.
+
+**2. Value — Yes.** Still beats hand-editing query strings in neovim/gists. The new wins are real: friendly workspace names + inline rename + name-search make a saved list of campaigns actually navigable instead of a wall of opaque ids — the difference between "saved once" and "I come back." Encoding still correct.
+
+**3. Advocacy — 8.** Held at 8, not raised, and honestly so. The persona-facing fixes (lowercase-all, friendly names, rename, search, panel position, mobile targets) all landed and are genuinely good. But the **dual-render is still present and now spans two components** — the exact trust-nicking smell I named last round, unaddressed — so I can't give a 9. Strip punctuation in auto-fix (or warn) and kill the duplicate render and this is a 9 I'd bring up unprompted.

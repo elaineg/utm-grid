@@ -1,43 +1,16 @@
-# Round 2 — Tester 5 (Dana, demand-gen marketer)
-
-PRIOR CONCERN (round-1 advocacy 7): I typed my name but approvals showed "by Anonymous" —
-"Your name" only set "Editing as", not review attribution. RESOLVED. One "Your name" field
-now drives everything: top bar reads "Editing as: Dana Reyes", the review popover has an
-inline "Reviewing as" field, and after I approved row 1 the row shows "✓ Approved by Dana
-Reyes" with my note "Approved for Thursday launch — Dana". No "Anonymous" anywhere. Best
-part: I opened /w/<id>/review in a FRESH browser (the colleague's view, no name set) and it
-still rendered "Approved by Dana Reyes" + "Needs changes by Dana Reyes" with both notes and
-"1 of 2 approved" — server-persisted, so a sign-off I forward actually names who signed it.
-
-The /review page is exactly the Slack-paste I wanted before a Thursday launch: "Review
-Summary" header, "1 of 2 approved" pill, roll-up + progress bar, per-link cards each with
-status badge, "by <name>", the URL, the utm tags, and the reviewer's note in quotes. Clean
-at 375px so I can screenshot it from my phone between meetings.
-
-My round-1 secondary asks: the two confusing identity labels are unified now (one source).
-Still no one-click "filter to just Needs-changes rows" to action them fast before launch —
-minor, the roll-up count + per-row badges get me most of the way.
-
 ```json
-{
-  "name": "Dana",
-  "clarity": "Yes",
-  "clarity_reason": "Headline + grid + 'Create shared workspace' make the job obvious in one scroll; REVIEW STATUS roll-up and per-row Review badges are self-explanatory.",
-  "value": "Yes",
-  "value_reason": "I tag 30+ links/week and chase sign-off in Slack/email threads. Per-link Approve/Needs-changes with attached reviewer name + a server-persisted, screenshot-ready /review page that names who signed off replaces the back-and-forth. With attribution fixed it now does the one thing the sign-off page is for.",
-  "advocacy": 9,
-  "advocacy_reason": "The attribution bug that capped me at 7 is gone and verified persistent across a fresh browser — approvals carry the reviewer's name on the row and the shareable /review page. Real loop, zero signup, mobile-clean share. Not a 10 only because there's no 'filter to Needs-changes rows' to action fast, and the review popover toggles closed if you click it twice (minor). I'd post this in my team channel.",
-  "prior_concern_addressed": "yes",
-  "top_issues": [
-    "No one-click filter to show only 'Needs changes' rows to action them before launch (carried from R1, minor)",
-    "Review popover toggles shut on a second click / can feel finicky to reopen — easy to think it 'didn't open'"
-  ],
-  "liked": [
-    "Approval now reads 'Approved by Dana Reyes' on the row AND on /review — Anonymous gone",
-    "/review attribution is server-persisted: a fresh colleague browser still shows who signed off",
-    "/review page is genuinely Slack-paste/screenshot ready and clean at 375px",
-    "Unified 'Your name' drives both 'Editing as' and 'Reviewing as' — no more confusing dual labels",
-    "Whole approval loop with zero signup on a synced shared link"
-  ]
-}
+{"name":"Dana","clarity":"Yes","value":"Yes","advocacy":8,"priorConcernsAddressed":"some","top_issues":["My Workspaces moved up, but the GRID I came to use is now DEEPER: utm_source header sits at 816px vs round-1's 668px. On my 13\" MacBook I land on a wall of four banners (Pre-Launch QA, Live Team Workspace, Presets, Bulk Edit) + an empty My Workspaces card and must scroll past ALL of it before one input cell appears.","Half-fix: you fixed WHERE the panel sits relative to the grid, but my real round-1 complaint was 'the table is below the fold' — that got WORSE. On a cold open My Workspaces is an empty 'No workspaces yet' card, so for a first-timer it's just one more banner between hero and grid. Order should be hero -> grid -> banners/panels.","Couldn't confirm the compact 3-cap/Show all/rename: after Add row + 'Create shared workspace', My Workspaces still read 'No workspaces yet', so no saved entry ever appeared in one pass to exercise the new panel."],"loved":["X / Twitter and Mastodon presets are here now, one-click Apply alongside Email/Paid Social-LinkedIn/Google CPC/Organic Social — exactly my weekly channels.","Mobile targets are genuinely bigger and well-spaced — Add row, Auto-fix naming, Paste & Audit all comfortable thumb targets at 375px.","Honest empty-state copy: 'saved on THIS device only — not synced... Sign-in to sync coming' — no false promise."]}
 ```
+Re-test of my round-1 blockers, point by point:
+
+1) "Grid sits below the fold behind feature banners" — NOT fixed, regressed. utm_source header is now at 816px (was 668px). The banner stack is unchanged AND My Workspaces was inserted above the grid, so the table I came for is the LAST thing on the page. For a value-in-one-scroll user this is the wrong trade.
+
+2) "My Workspaces renders below the grid" — fixed literally (now ~711px, above the grid). But on cold open it's an empty "No workspaces yet" card, so for a NEW visitor it's a placeholder sitting between me and the grid, not a win. It only pays off on return visits.
+
+3) "Three overlapping share concepts" — eased: "Different from Copy share link, which sends a frozen snapshot" clarifies it. Good copy.
+
+Clarity: Yes. Hero + auto-fix subhead still nail what it is and who it's for in 2 seconds.
+
+Value: Yes, unchanged — auto-fix naming + Export CSV + Copy all URLs still kill my HubSpot+spreadsheet casing-drift grind, and the new X/Mastodon presets match my channels.
+
+Advocacy: 8, down from 9. Honest drop: my one concrete round-1 ask — surface the GRID higher — went the wrong direction; the table is now buried under five stacked cards and a first-timer scrolls a screen-and-a-half before typing a URL. The grind-killer + presets are still great so I'd share it. Put the grid right under the hero, collapse the banners, only show My Workspaces above the grid once it has entries, and this is back to 9-10.

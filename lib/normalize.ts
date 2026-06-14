@@ -16,6 +16,11 @@ export function normalizeValue(value: string, settings: Pick<LintSettings, "lowe
   let v = value.trim();
   if (settings.lowercaseOnly) v = v.toLowerCase();
   if (settings.noSpaces) v = v.replace(/[\s\-]+/g, "_");
+  // FIX C-2 (My Workspaces Round 3): strip leading/trailing non-alphanumeric punctuation
+  // so e.g. "Launch Day!" → "launch_day" (the "!" is stripped).
+  // Conservative: only trim edge characters that are not alphanumeric, underscore, or hyphen.
+  // Mid-value characters (internal separators, alphanumerics) are preserved.
+  v = v.replace(/^[^a-zA-Z0-9_-]+|[^a-zA-Z0-9_-]+$/g, "");
   return v;
 }
 

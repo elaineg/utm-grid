@@ -53,6 +53,32 @@ describe("normalizeValue", () => {
   it("trims both leading and trailing spaces, then normalizes internal spaces (Spring Sale  → spring_sale)", () => {
     expect(normalizeValue(" Spring Sale ", DEFAULT_LINT_SETTINGS)).toBe("spring_sale");
   });
+
+  // FIX C-2 (My Workspaces Round 3): strip trailing/leading non-alphanumeric punctuation.
+  it("strips trailing punctuation: 'Launch Day!' → 'launch_day'", () => {
+    expect(normalizeValue("Launch Day!", DEFAULT_LINT_SETTINGS)).toBe("launch_day");
+  });
+
+  it("strips leading punctuation: '!spring_sale' → 'spring_sale'", () => {
+    expect(normalizeValue("!spring_sale", DEFAULT_LINT_SETTINGS)).toBe("spring_sale");
+  });
+
+  it("strips both leading and trailing punctuation: '!Launch Day!' → 'launch_day'", () => {
+    expect(normalizeValue("!Launch Day!", DEFAULT_LINT_SETTINGS)).toBe("launch_day");
+  });
+
+  it("preserves internal underscores and hyphens: 'spring_sale' stays 'spring_sale'", () => {
+    expect(normalizeValue("spring_sale", DEFAULT_LINT_SETTINGS)).toBe("spring_sale");
+  });
+
+  it("does not mangle valid mid-value punctuation after normalization", () => {
+    // "Q3-Campaign" → noSpaces converts hyphen to _ → "q3_campaign" (no trailing punct)
+    expect(normalizeValue("Q3-Campaign", DEFAULT_LINT_SETTINGS)).toBe("q3_campaign");
+  });
+
+  it("handles value that is only punctuation: '!!!' → ''", () => {
+    expect(normalizeValue("!!!", DEFAULT_LINT_SETTINGS)).toBe("");
+  });
 });
 
 describe("isCellFixable", () => {
