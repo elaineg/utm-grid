@@ -59,7 +59,8 @@ export interface Preset {
   seeded?: boolean;
 }
 
-/** Four built-in channel presets shipped with the app. */
+/** Six built-in channel presets shipped with the app.
+ *  FIX E (My Workspaces Round 2): added X/Twitter and Mastodon presets (Jules). */
 export const SEEDED_PRESETS: Preset[] = [
   {
     id: "seeded-email",
@@ -83,6 +84,18 @@ export const SEEDED_PRESETS: Preset[] = [
     id: "seeded-organic-social",
     name: "Organic Social",
     values: { utm_source: "organic_social", utm_medium: "social" },
+    seeded: true,
+  },
+  {
+    id: "seeded-twitter",
+    name: "X / Twitter",
+    values: { utm_source: "twitter", utm_medium: "social" },
+    seeded: true,
+  },
+  {
+    id: "seeded-mastodon",
+    name: "Mastodon",
+    values: { utm_source: "mastodon", utm_medium: "social" },
     seeded: true,
   },
 ];

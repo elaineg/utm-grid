@@ -115,4 +115,27 @@ describe("normalizeAllRows", () => {
     expect(result.rows).toBe(rows);
     expect(result.count).toBe(0);
   });
+
+  // FIX C (My Workspaces Round 2): uniform lowercase across ALL utm_* fields.
+  // Wen's failure: utm_source "Google" left capitalized while medium/campaign were fixed.
+  it("lowercases ALL utm_* fields uniformly including utm_source (GROUP C fix)", () => {
+    const rows = [
+      {
+        ...emptyRow("r1"),
+        utm_source: "Google",   // must become "google"
+        utm_medium: "CPC",      // must become "cpc"
+        utm_campaign: "Summer Sale", // must become "summer_sale"
+        utm_term: "Brand",      // must become "brand"
+        utm_content: "Hero Ad", // must become "hero_ad"
+      },
+    ];
+    const result = normalizeAllRows(rows, DEFAULT_LINT_SETTINGS);
+    expect(result.rows[0].utm_source).toBe("google");
+    expect(result.rows[0].utm_medium).toBe("cpc");
+    expect(result.rows[0].utm_campaign).toBe("summer_sale");
+    expect(result.rows[0].utm_term).toBe("brand");
+    expect(result.rows[0].utm_content).toBe("hero_ad");
+    // All 5 fields changed
+    expect(result.count).toBe(5);
+  });
 });

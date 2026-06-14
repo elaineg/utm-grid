@@ -347,10 +347,36 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
     if (didRecordMyWorkspace.current) return;
     didRecordMyWorkspace.current = true;
 
-    // Determine label from the loaded payload's name field.
+    // Determine label from the loaded payload — friendly default, NEVER the raw id.
     // We read workspaceNameRef directly (it's a ref, not closured state) to avoid
     // the effect-closure staleness bug described in the SSR rules.
-    const label = deriveWorkspaceLabel(workspaceNameRef.current || undefined, id);
+    // For utm_campaign and baseUrl, read directly from window.localStorage via the
+    // prefixed key (ws:<id>:utm-grid:rows) to avoid closure-staleness (SSR rule §2).
+    let utmCampaign: string | undefined;
+    let baseUrl: string | undefined;
+    try {
+      const rowsRaw = window.localStorage.getItem(`ws:${id}:utm-grid:rows`);
+      if (rowsRaw) {
+        const parsed = JSON.parse(rowsRaw) as unknown;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const firstRow = parsed[0] as Record<string, unknown>;
+          if (typeof firstRow.utm_campaign === "string" && firstRow.utm_campaign.trim()) {
+            utmCampaign = firstRow.utm_campaign.trim();
+          }
+          if (typeof firstRow.baseUrl === "string" && firstRow.baseUrl.trim()) {
+            baseUrl = firstRow.baseUrl.trim();
+          }
+        }
+      }
+    } catch {
+      // localStorage unavailable or unparseable — skip
+    }
+    const label = deriveWorkspaceLabel(
+      workspaceNameRef.current || undefined,
+      id,
+      utmCampaign,
+      baseUrl
+    );
 
     // Determine role: "owner" if this browser created the workspace (sessionStorage signal).
     let role: "owner" | "visited" = "visited";

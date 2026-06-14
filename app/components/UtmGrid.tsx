@@ -2038,6 +2038,15 @@ export function UtmGrid({
         />
       )}
 
+      {/* FIX B (My Workspaces Round 2): My Workspaces panel appears HIGH — ABOVE the grid,
+          not buried below it. Desktop only (min-[900px]); mobile already has it above grid
+          in the mobile disclosures section. Only in default mode (not workspace / preview).
+          Compact: capped at 3 entries with "Show all (N)" so it never pushes the grid far
+          below the fold. No horizontal page overflow at 1280px. */}
+      {!isWorkspaceMode && (
+        <MyWorkspacesPanel desktopOnly />
+      )}
+
       {/* Main layout: grid full-width (panels rendered BELOW the grid, not beside it).
           Fix 2(a): at ≥1280px the right-rail sidebar was permanently squeezing the editable
           grid to ~958px, causing sticky Generated-URL/Actions columns to overlap utm_term/
@@ -2896,11 +2905,9 @@ export function UtmGrid({
             />
           </div>
         ) : (
-          /* Default mode: My Workspaces (full-width, first) + 3-col row below */
+          /* Default mode: NamingTemplate + Campaigns + UtmSpec in a 3-col row.
+             My Workspaces has been moved ABOVE the grid (FIX B — My Workspaces Round 2). */
           <div className="flex flex-col gap-4">
-            {/* My Workspaces — FIRST, top-most, auto-expanded (UX brief My Workspaces §1) */}
-            <MyWorkspacesPanel desktopOnly />
-            {/* NamingTemplate + Campaigns + UtmSpec in a 3-col row */}
           <div className="grid grid-cols-3 gap-4">
             <NamingTemplatePanel
               template={namingTemplate}

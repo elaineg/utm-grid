@@ -1,42 +1,13 @@
-# Round 1 — Tester 6 (Jules, Content & community marketer, 50/50 mobile)
-
-## CLARITY — Yes
-Within 30s the H1 "Clean UTM links for your whole campaign — in one grid" plus "no login,
-nothing leaves your browser" told me exactly what it is: a bulk UTM builder I don't have to
-sign into. The grid + "Presets — fill source/medium in one click" sealed it. This is the
-no-account bulk UTM builder I'd bookmark. Zero confusion.
-
-## VALUE — Yes
-Today I hand-paste UTMs or keep a Notion table + Buffer link doc, retyping
-utm_source/medium per platform every campaign — tedious and typo-prone. This grids it and
-auto-fixes casing. The Team Workspace + Review/Approval is genuinely new for me: drop a /w
-link in Discord, a teammate marks each link Approved / Needs changes with a note before we
-schedule in Buffer. Live roll-up + the read-only /review summary page is exactly the
-sign-off step I do by hand in DMs today. Real recurring job (multiple times/week).
-
-## ADVOCACY — 7 (would be 9 without the name bug)
-Core review flow WORKS, including on mobile (375px): per-row "Review" control is tappable,
-popover is 256px wide and NOT cut off (right edge 297<375), Approve/Needs-changes are big
-230x40 targets, roll-up updates live ("2 approved · 0 need changes · 0 unreviewed"), state
-persists on reload, and the mobile /review page is genuinely nice (big "All 2 links
-approved" badge + per-link cards with notes).
-
-What holds it back: the promised "Reviewing as: <name>" never works. I typed "Jules" into
-the "Your name" field (input value confirmed "Jules") and BOTH the header and the review
-popover still said "Reviewing as: Anonymous"; every approval logged "by Anonymous." That
-name field only drives "Editing as: Jules" for grid edits — it is disconnected from review
-attribution, and there is no name input inside the review popover. For a team approval
-feature, "who approved this" is the whole point. Minor: on DESKTOP the popover opens below
-the row and falls under the fold (Approve at y~1036 on a 900px viewport) so you must scroll.
-
 ```json
-{"name": "Jules",
- "clarity": "Yes",
- "clarity_reason": "H1 'Clean UTM links for your whole campaign — in one grid' + 'no login, nothing leaves your browser' + Presets made the bulk no-account UTM builder obvious in under 30s.",
- "value": "Yes",
- "value_reason": "Replaces my Notion UTM table + manual retyping per platform; Team Workspace review/approval with notes and a /review summary is the sign-off step I do by hand in Discord/DMs today. Recurring, multiple times/week.",
- "advocacy": 7,
- "advocacy_reason": "Review flow works and is fully usable on mobile (tappable control, popover not occluded, live roll-up, persisted, clean /review page) — but the feature's headline 'Reviewing as: <name>' never attaches: typing a name in 'Your name' leaves review attribution stuck on 'by Anonymous', so you can't tell who approved. Fix that and it's a 9.",
- "top_issues": ["'Reviewing as' stays 'Anonymous' even after typing a name in the 'Your name' field (value confirmed 'Jules'); the name field only feeds 'Editing as' for grid edits, not review attribution, and there's NO name input inside the review popover — every approval logs 'by Anonymous'", "Desktop: review popover opens below the trigger row and falls under the fold (Approve button at ~y1036 on a 900px-tall viewport); you must scroll to reach Approve/Needs-changes. Mobile's stacked layout handles this better."],
- "liked": ["Per-row review control is tappable at 375px and the popover is NOT cut off (256px wide, right edge 297<375) with big 230x40 Approve/Needs-changes targets", "Live roll-up 'N approved · N need changes · N unreviewed' updates instantly and persists on reload", "Mobile /review summary page is genuinely good: 'All 2 links approved' badge, progress bar, per-link cards with notes and CTA back to workspace", "Whole thing is no-login and the /w/<id> + /review secret-link sharing fits dropping a link in Discord exactly how I'd use it"]}
+{"name":"Jules","clarity":"Yes","value":"Yes","advocacy":8,"top_issues":["Only 4 presets (Email, Paid Social–LinkedIn, Google/CPC, Organic Social) — no X/Twitter or Mastodon, my two most-posted platforms, so I still hand-type those","Saved workspace shows the raw ID 'Workspace xGqAdErm' — meaningless once I have several; can't name/rename it","Two near-identical share paths up top ('Copy share link' = snapshot vs 'Create shared workspace' = live) take a careful read to tell apart","My Workspaces Open/Copy/Remove buttons are 36px tall — tappable but a hair under a comfy thumb target"],"loved":["No login for a real job — instantly bookmark-worthy for me","Per-platform presets fill source+medium in one click; LinkedIn gave utm_source=linkedin&utm_medium=paid_social cleanly","My Workspaces panel remembers what I open with working Copy link + green 'Copied!' and NO horizontal scroll at 375px","'catch typos before they split your analytics' / Auto-fix naming speaks straight to my GA pain"]}
 ```
+
+# Round 1 — Tester 6 (Jules, content & community marketer, tested mostly at 375px mobile)
+
+**Clarity — Yes.** Cold open nailed it: "Clean UTM links for your whole campaign — in one grid… no login, nothing leaves your browser." I knew what it was and that it was for me in under 10 seconds. The grid + "Presets — fill source/medium in one click" sealed it. Only fog: the two share options at the top — "Copy share link (snapshot, in the link)" vs "Create shared workspace (live, synced for the team)." I got it from the fine print, but a first-timer will fumble which to use.
+
+**Value — Yes.** Today I hand-type UTMs or keep a messy Notion table, and the values drift (linkedin vs Linkedin, paid_social vs paidsocial), which splits my GA reports. Bulk grid + presets + auto-fix is a genuine save over that. Caveat that costs it the 9: presets cover LinkedIn/Google/Email/Organic but NOT X/Twitter or Mastodon — exactly where I post most — so I still type those by hand.
+
+**Workspace-sharing flow (mobile 375px).** Filled a row, applied the LinkedIn preset, tapped "Create shared workspace" — got a /w/ link in one go; page reads "Team Workspace — synced · saved just now" with Share, a name field, and History. Back home, My Workspaces remembered it: a clean card "Workspace xGqAdErm · Visited · just now" with Open / Copy link / Remove all on one row — no occlusion, no horizontal scroll (docW=vw=375), and Copy link genuinely put the /w/ URL on my clipboard with a green "Copied!" confirm. Good mobile craft. Nits: the label is the raw ID (a list of these would be unusable — let me name them), and the action buttons are 36px tall.
+
+**Advocacy — 8.** I'd bring this up unprompted in my marketing Discord. Held back from 9 only by the two things that'd make it stick for someone living in this daily: X/Mastodon presets, and nameable saved workspaces. No console/page errors anywhere I clicked.

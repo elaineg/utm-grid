@@ -1,85 +1,105 @@
-# Workspace Review & Approval — Panel Round 1 Synthesis
+# My Workspaces — Panel Round 1 Synthesis
 
-Feature under test: **Workspace Review & Approval** on `/w/<id>` (per-row Approve / Needs-changes
-+ note, a reviewer name, a live roll-up, and a read-only `/w/<id>/review` summary).
-
-## Result
-**0/10 reached the advocacy ≥9 bar.** Clarity and value are near-unanimous **Yes** (Elena is the lone
-**Partially** on clarity — review pitch invisible on cold `/`). The ceiling is driven by ONE dominant
-blocker (reviewer identity logs "by Anonymous") plus a handful of real secondary craft bugs. **No
-tester fully passed → round 2 re-tests all 10 (no carry-forward).**
+Feature under test: **My Workspaces** (device-local index of every `/w/<id>` workspace this
+device created/opened, on the main builder `/`).
 
 ## Score table
 
-| Tester | Persona                      | Clarity   | Value | Advocacy |
-|--------|------------------------------|-----------|-------|----------|
-| Priya  | Engineer                     | Yes       | Yes   | 8        |
-| Marcus | Frontend engineer (desktop)  | Yes       | Yes   | 8        |
-| Wen    | Marketing data analyst       | Yes       | Yes   | 6        |
-| Tomás  | Ops analyst (Edge)           | Yes       | Yes   | 8        |
-| Dana   | Demand-gen marketer          | Yes       | Yes   | 7        |
-| Jules  | Content marketer (50/50 mob) | Yes       | Yes   | 7        |
-| Aisha  | Design-ops                   | Yes       | Yes   | 7        |
-| Rob    | Designer                     | Yes       | Yes   | 8        |
-| Elena  | Eng manager (mobile)         | Partially | Yes   | 7        |
-| Sam    | Product manager (mobile)     | Yes       | Yes   | 6        |
+| # | Name   | Clarity | Value | Advocacy |
+|---|--------|---------|-------|----------|
+| 1 | Priya  | Yes     | Yes   | 8        |
+| 2 | Marcus | Yes     | Yes   | 8        |
+| 3 | Wen    | Yes     | Yes   | 8        |
+| 4 | Tomás  | Yes     | Yes   | 8        |
+| 5 | Dana   | Yes     | Yes   | 9        |
+| 6 | Jules  | Yes     | Yes   | 8        |
+| 7 | Aisha  | Yes     | No    | 6        |
+| 8 | Rob    | Yes     | Yes   | 7        |
+| 9 | Elena  | Yes     | No    | 5        |
+| 10| Sam    | Yes     | Yes   | 9        |
+
+**Clarity: 10/10 Yes. Value: 8/10 Yes** (Aisha & Elena = No, both self-declared out-of-ICP:
+Aisha makes a handful of UTMs/year, Elena rates her own recurring use rather than a
+marketer's). **Advocacy mean ≈ 7.6.**
+
+**Passing testers (advocacy ≥9 AND clarity=Yes AND value=Yes): Dana (9), Sam (9) = 2/10.**
+
+The feature WORKS end-to-end for everyone — every tester confirmed create → return → panel
+remembers it → Open round-trips data → Copy link puts the exact `/w/<id>` URL on the
+clipboard → Remove drops it. Zero console errors reported. The gap is craft, not function.
 
 ## Complaints grouped by cause
 
-### CAUSE A — DOMINANT BLOCKER: reviewer identity logs "by Anonymous" (RECURS — 9/10)
-Priya, Wen, Tomás, Dana, Jules, Aisha, Rob, Elena, Sam. The user sets a visible "Your name" /
-"Editing as" identity, but review attribution uses a SEPARATE hidden "Reviewing as" identity that
-(a) is confusing as a second identity (Dana, Aisha, Rob explicitly call out two labels), (b) doesn't
-persist across reload (Priya, Wen, Sam saw it revert to Anonymous; Wen saw it flicker "Editing as:
-Wen" then revert — worse), and (c) never attaches to the approval — so every approval reads "by
-Anonymous" on `/w/<id>` and `/w/<id>/review`. For a sign-off/audit feature this defeats the entire
-point ("who approved this?"). This single cause is the named reason behind every sub-9 score.
+### Cause A — Workspaces are labeled by the raw secret ID; no way to NAME them; search matches only the gibberish ID. (8/10 — REAL, the dominant blocker)
+Testers: **Marcus, Wen, Tomás, Jules, Aisha, Rob, Elena, Sam.**
+- Entries render as "Workspace HbqwUjvW" / "Workspace gGDwcfNTIB" / "Workspace 2_deQGNL" etc.
+  — meaningless once a user has more than one (agency/multi-campaign users hit it hardest:
+  Rob, Wen, Tomás, Elena).
+- **No working rename.** Rob hunted and found only a faint "+" by the workspace title that
+  "doesn't read as rename and produced no name field" — so rename is absent or undiscoverable.
+- **Search is actively harmful (Rob):** the panel ships a Search box that matches only the
+  random ID, so typing a real client name ("acme"/"zenith") returns 0 results — it HIDES the
+  very thing the user wants. Aisha independently called the search "pointless when every item
+  is gibberish."
+- Surfacing the secret-id prefix as the visible label "feels wrong for a secret-link feature"
+  (Marcus, Tomás).
+- This is the SINGLE named blocker for Marcus, Wen, Rob, Sam ("let me name it and it's a 9")
+  and a top-two for the rest. **Highest-leverage fix by far.**
 
-### CAUSE B — Note persistence unreliable (RECURS — 2 testers)
-Wen (primary), Sam (partial). The "Needs changes" NOTE has no save button (only "✓ Approve"), and
-blur+reload drops it everywhere including `/review`. The note is the actionable reason for a
-rejection; losing it makes "Needs changes" meaningless to whoever must fix it.
+### Cause B — Landing discoverability: My Workspaces renders BELOW the grid / grid buried behind banners. (4/10 — REAL)
+Testers: **Dana, Aisha, Elena, Marcus.**
+- Dana & Elena: the panel "sits at the very bottom under the grid, Presets, and Bulk Edit" —
+  a skim-budget user (Dana tags 30+ links/wk; Elena reads between meetings) never scrolls
+  that far. Dana: "pull My Workspaces up and it's a 10."
+- Compounding: the editable grid itself sits ~668px down behind stacked feature banners (Dana
+  measured; Aisha & Elena echo "over-stuffed / ~10 controls"). The grid-buried-behind-banners
+  debt is broader than this feature.
+- NOTE: the current brief §1 ALREADY specifies the panel as the top-most, auto-expanded
+  section of the right rail — testers still saw it below the grid, so either the build
+  regressed the spec or the rail stacks below the grid at their width. Must be re-verified
+  high + above/beside the grid.
 
-### CAUSE C — Review popover interaction bugs (RECURS — 2 testers)
-Aisha + Jules. (1) The popover won't open if you FIRST interact with the "Your name" field — a
-first-click-swallowed / focus-blur race (Aisha; and the UI nudges you to set a name first, so most
-users hit it). (2) On desktop the popover opens BELOW THE FOLD (Jules: Approve at ~y1036 on a 900px
-viewport; Rob also: "feels like the click did nothing") requiring a scroll.
+### Cause C — "Auto-fix naming" is incomplete: it skips utm_source and leaves trailing punctuation. (2/10 — REAL, two independent personas)
+Testers: **Wen, Priya.**
+- Wen (the exact pain she came to kill): Auto-fix lowercased utm_medium (CPC→cpc) and
+  utm_campaign (Summer Sale→summer_sale) but **left utm_source "Google" capitalized** — the
+  cross-field casing split that fragments GA4 survived the one-click marquee fix.
+- Priya: Auto-fix left a trailing "!" in "Launch Day!" → "launch_day!" — URL-safe but the
+  headline sells "clean".
+- Real because it defeats the headline promise; Wen's is the higher-severity (a UTM field
+  skipped entirely by the fix).
 
-### CAUSE D — `/review` mobile layout collision at 375px (single-persona, real bug)
-Sam. The Needs-changes note text collides with the URL/medium and the URL truncates to "h." — looks
-sloppy to paste in Slack. (Dana/Jules/Elena confirmed `/review` renders clean at 375px otherwise, so
-this is a note+long-URL row-mash edge, not a wholesale mobile failure.)
+### Cause D — Mobile tap targets on My Workspaces row actions are ~36px and cramped. (2/10 — REAL)
+Testers: **Jules, Sam (both tested at 375px).**
+- Open / Copy link / Remove are ~36px tall, under the 44px comfortable thumb target; Sam:
+  "Remove sits right next to Open" (mis-tap risk on a destructive action). Otherwise good
+  mobile craft (no horizontal scroll, green "Copied!" both verified).
 
-### CAUSE E — Per-row review chip label truncates at 1280px (single-persona, real bug)
-Marcus. The chip truncates to "Needs cha…" at 1280px — janky. (Rob confirmed NO horizontal overflow
-at 1280/1440px, so this is a chip-width/label issue, not a column-overflow regression — fix without
-re-introducing overflow.)
+### Cause E — No X/Twitter or Mastodon channel preset. (1/10 — single-persona, on-ICP)
+Tester: **Jules** (content & community marketer). Presets cover LinkedIn/Google/Email/Organic
+but not the two platforms she posts to most, so she still hand-types them. Single persona, but
+squarely in the target ICP and a cheap additive win.
 
-### CAUSE F — Share-button noise in workspace header (RECURS — craft, P2)
-Marcus (5 overlapping Copy/Share buttons), Priya (3 share-ish affordances), Aisha (4 similar
-blue/purple buttons, distinctions blur). The new "Share review summary" is lost in the cluster.
+### Single-persona / out-of-scope items (noted, NOT fixed this round)
+- **Duplicate DOM render of the panel** (Priya — two "Open" elements, one hidden). Code smell
+  that nicks an engineer's trust; matches the recorded `dual-render-global-listener` friction.
+  Route to builder as a quick cleanup verify; single-persona.
+- **Crowded toolbar / "share-verb soup"** ("Copy share link" vs "Create shared workspace" vs
+  "Copy all URLs"): named by Priya, Marcus, Tomás, Dana, Jules, Aisha, Elena — RECURRING and
+  real, but it's the broader landing/share-disambiguation debt, not the My Workspaces feature
+  under test. Log to BACKLOG, do not redesign this run.
+- **Read-only / view-only share mode** (Tomás — "anyone with the link can edit" worries him
+  for company data). Single-persona, needs a permissions model; backlog.
+- **Cross-device / team sync** (Elena's path to value): needs accounts + server, blocked on a
+  missing credential, would regress the zero-network prop. Accepted structural holdout — Elena
+  is the lone out-of-ICP non-pass; ceiling for this round is 9/10.
+- **Aisha value=No / Elena value=No**: both self-declared out-of-ICP (rare/infrequent UTM
+  authors). Not addressable by craft; the panel ceiling is 9/10, not 10/10.
 
-### CAUSE G — Review value not discoverable on cold `/` (RECURS — P2, intentional-by-design)
-Elena (drove her "Partially" clarity), Jules (secondary). A teammate sent a bare `/w/<id>` (or `/`)
-link sees just a UTM builder. Review is `/w/<id>`-only BY DESIGN (do NOT add a review surface to cold
-`/`); fix is to make the above-grid roll-up copy make the sign-off purpose obvious at a glance.
-
-### Single-persona observations (noted, NOT this round's fixes)
-- Tomás, Priya: no view-only/approver role — anyone with the secret link can approve as anyone. (Out
-  of scope: needs accounts; honest disclosure already present and praised.)
-- Dana: no filter to "needs changes" rows. (Deferred.)
-- Sam: per-row "Review" needs a popover (one extra tap, "but fine on mobile"). (Accepted.)
-
-### Confirmed-good (do NOT regress)
-BOM CSV fix (Tomás, prior gripe resolved); no horizontal overflow at 1280/1440px (Rob); mobile
-tappable popover not occluded at 375px (Jules); live/correct roll-up + server-persistence across
-reload + fresh teammate (Wen, Tomás, Rob); honest server-persistence disclosure (Tomás); graceful
-`/review` empty state (Aisha); distinct Review/Approve/Needs-changes verbs + indigo accent (Aisha);
-green-fill "Copied ✓" cue (Sam, Dana).
-
-## Round 2 plan
-Re-test all 10 (no carry-forward). Fixes specified in UX_BRIEF.md section
-"Workspace Review & Approval — Round 1 panel fixes": one unified identity (P0, the blocker),
-reliable note persistence + popover-open + popover-position + `/review` 375px + chip label (P1),
-share-cluster consolidation + roll-up cold-link copy (P2). Ceiling target 9/10.
+## Fix priority (recurrence-ranked)
+1. **A (8/10)** — name workspaces (inline rename) + friendly default label + search-by-name.
+   Flips Marcus, Wen, Rob, Sam and lifts the rest. Biggest lever.
+2. **B (4/10)** — surface the panel high/discoverable, compact, not below the grid.
+3. **C (2/10)** — uniform lowercase across ALL utm_* fields (utm_source included).
+4. **D (2/10)** — ≥44px mobile tap targets with spacing so Remove isn't crammed on Open.
+5. **E (1/10, on-ICP)** — add X/Twitter + Mastodon presets.

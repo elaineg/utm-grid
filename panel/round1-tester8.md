@@ -1,20 +1,13 @@
-{
-  "name": "Rob",
-  "clarity": "Yes",
-  "clarity_reason": "Headline 'Clean UTM links for your whole campaign — in one grid' plus 'Auto-fix messy casing and typos... no login, nothing leaves your browser' told me exactly what it is and that it's free/no-signup within ~10s. As a designer who occasionally tags client links, I got it immediately: a bulk query-string builder with a CSV export.",
-  "value": "Yes",
-  "value_reason": "Today I hand-type query strings or paste into a generic single-link UTM builder one URL at a time — tedious for a 3-5 link campaign. The grid + auto-fix-casing (it caught my 'Google'/'CPC'/'Spring Sale 2026' uppercase+space errors with a one-click Fix) + Export CSV genuinely beats my Photoshop-in-4-min reflex because this is text work, not pixel work. The warnings catching analytics-splitting typos is the real time-saver, not the typing itself. Recurring: I tag links most weeks, so yes.",
-  "advocacy": 8,
-  "advocacy_reason": "Strong build. Grid is clean, generated URLs populate live, CSV export is there, and the NEW review column did NOT cause overflow — at both 1280px and 1440px ALL editable columns (campaign/term/content) plus Generated URL and Actions fit fully on screen (table ~1258px, no horizontal scroll). The recurring overflow problem this app has had is NOT present. Held back from 9: (1) two confusing identity fields — I set my name once and it became 'Editing as: Rob', but my approval still logged 'by Anonymous' because there's a SEPARATE hidden 'Reviewing as' identity I never found a control to set. As a reviewer I want my approval to carry my name without hunting. (2) Review dialog opens below the fold on a tall page, so it's easy to think the click did nothing.",
-  "top_issues": [
-    "Dual identity confusion: 'Editing as: Rob' and 'Reviewing as: Anonymous' are separate; my approval showed 'by Anonymous' even after I entered my name once — no obvious way to set the reviewer name from the review dialog.",
-    "Review dialog opens below the fold (no scroll-to / no visible anchor), making the click feel unresponsive on a long workspace page.",
-    "Minor: the review summary's 'by Anonymous' attribution undermines the whole point of a team approval log."
-  ],
-  "liked": [
-    "No horizontal overflow at 1280px or 1440px — every editable column + Generated URL + Actions fully visible; the new REVIEW column added no cramping.",
-    "Auto-fix naming caught my uppercase/space UTM errors with one-click Fix — the actual value over hand-typing.",
-    "Live roll-up ('1 approved · 0 need changes · 2 unreviewed') updated instantly and matched the read-only /review page.",
-    "Frictionless: built a grid, created a synced /w/<id> workspace, and got a shareable read-only review page with zero signup."
-  ]
-}
+```json
+{"name":"Rob","clarity":"Yes","value":"Yes","advocacy":7,"top_issues":["My Workspaces lists entries as random IDs ('Workspace HbqwUjvW', 'Workspace bH-hmPOt') — as a freelancer with multiple clients I can't tell Acme from Zenith at a glance","No usable rename: the only naming affordance is a faint '+' next to the workspace title that doesn't read as 'rename' and produced no name field for me","Search box in My Workspaces matches only the random name, so typing my real client name ('acme','zenith') filters every result OUT — it hides exactly what I'm looking for"],"loved":["Auto-fix naming: Facebook→facebook, CPC→cpc, 'Spring Sale 2026'→spring_sale_2026 in one click","Inline 'Inconsistent utm_campaign across rows' warning catches the exact GA-splitting mistake I make by hand","Single clean identity field now ('Add your name so teammates see who changed what') — my old dual-identity complaint is fixed"],"priorConcernsAddressed":"some"}
+```
+
+I'm Rob, freelance brand designer; I tag client links a few times a month and benchmark everything against "I could hand-type this in 4 minutes."
+
+**Prior concerns re-checked:** (1) Dual-identity confusion ('Editing as' vs separate 'Reviewing as: Anonymous') — FIXED. There's now one identity field, "Add your name so teammates see who changed what"; the "by Anonymous" / "Reviewing as" wording is gone. (2) Review dialog below the fold — I didn't re-exercise the review approval flow this round, so not re-verified. Net: some.
+
+**Clarity — Yes.** Headline "Clean UTM links for your whole campaign — in one grid" + "Auto-fix messy casing and typos before they split your Google Analytics" landed in under 10 seconds. I'd tell a friend: "a spreadsheet for building tracking links that auto-fixes your sloppy capitalization."
+
+**Value — Yes.** Auto-fix earns it. Hand-typing, I end up with Facebook in one link and facebook in another and GA splits them; this normalized casing across rows in one click and flagged inconsistent campaign names inline. Real save over my manual habit even at low volume. CSV export and per-row Copy are clean.
+
+**Advocacy — 7 (a real 7, not polite).** The builder is genuinely good and I'd use it. What blocks a 9 is the exact thing I was asked to judge: multi-client workspace memory. I made two client workspaces (Acme, Zenith); My Workspaces remembered both but labeled them "Workspace HbqwUjvW" and "Workspace bH-hmPOt." I can't find a client by name, and the search box only matches those gibberish IDs — searching "acme" or "zenith" returns nothing, actively hiding what I want. I found no working rename (the lone "+" by the title gave me no name field). So vs. a Chrome bookmarks "Clients" folder where I write "Acme Spring Sale" myself, this is WORSE for findability. Open / Copy link / Remove all work mechanically; clipboard copy verified. Let me name a workspace and have search match the name + base URL, and this jumps to 9.

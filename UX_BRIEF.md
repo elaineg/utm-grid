@@ -2302,3 +2302,109 @@ panel open.
 - **Returning visitor (`/`):** same hero; **"My Workspaces (N)"** at the top of the rail lists their
   real workspaces (label, Owner/Visited badge, relative time) with **Open / Copy link / Remove** on
   each and a search box — the workspace they "lost the link to" is right there, this device only.
+
+## My Workspaces — Round 2 fixes (panel R1: 2/10 pass — Dana 9, Sam 9; ceiling 9/10) — added 2026-06-14
+
+Clarity 10/10 Yes; Value 8/10 Yes (Aisha & Elena are self-declared out-of-ICP No — the accepted
+structural ceiling, target is 9/10 not 10/10). The feature works end-to-end for everyone — the gap
+is craft. Five fixes, each mapped to a synthesis cause. Additive/copy/CSS only — do NOT regress the
+zero-network privacy prop, the cold-open grid-hero, the headline/subhead/lint toggles, toolbar order,
+or any other panel. Fix A is the dominant lever (8/10 testers) and the whole reason 8 testers sit at
+7–8 instead of 9.
+
+**Fix A — NAME a workspace + a friendly default label + search-by-NAME (P0; Cause A, 8/10:
+Marcus, Wen, Tomás, Jules, Aisha, Rob, Elena, Sam). The blocker. Three parts, all required:**
+
+1. **Inline RENAME on every entry — a real, discoverable affordance (not a faint "+").** Each entry
+   card gets an explicit **rename affordance: a pencil icon + tooltip "Rename"** in the entry's action
+   cluster (always visible on desktop, ≥44px in the mobile icon+label row — never hover-gated). The
+   workspace **name itself is also click-to-rename** (clicking the bold label text enters rename mode;
+   a single click on the label's separate **Open** target still opens — so make Open its own button,
+   and the label-text its rename trigger, OR keep label-click = Open and rely on the pencil for rename;
+   pick ONE and make it unambiguous — Rob's failure was an affordance that "didn't read as rename").
+   On activate, the label becomes a **pre-focused inline text field** (text pre-selected) with the
+   current name; **Enter commits, Esc cancels, blur commits.** No modal. The committed name is stored
+   in the entry's localStorage record as a **`name` field** — NO server call, anonymous-first,
+   free-tier. On commit the card label updates immediately and the entry's relative position is
+   unchanged. (This `name` is purely device-local, separate from any optional server-side workspace
+   name; renaming here never PUTs to the server.)
+
+2. **A FRIENDLY DEFAULT label — NEVER the raw secret-id prefix.** When an entry has no user-given
+   `name`, derive a readable default from the workspace content, in this priority order, and store/show
+   that as the label:
+   - (a) the workspace's **first row's `utm_campaign`** if non-empty (e.g. "spring_launch");
+   - (b) else the **base URL's domain** (e.g. "acme.com");
+   - (c) else a dated fallback **"Workspace — Jun 14"** (short date of first record).
+   The visible label MUST NEVER be the "Workspace HbqwUjvW" raw-id form. (A tiny muted `…8b23` id
+   slice MAY appear as secondary meta to disambiguate same-named entries, but it is never the primary
+   label.) The default is computed at record time; if the underlying campaign/domain is unavailable
+   (e.g. a Visited workspace whose content isn't known locally), fall back to the dated form, never
+   the raw id.
+
+3. **SEARCH matches the NAME (and the friendly default), case-insensitively — not the raw id.** The
+   panel search filters entries by **the user-given name AND the friendly-default label**, lowercased
+   substring match, live as you type. Typing "acme" or "zenith" or "spring" must surface the matching
+   workspace — Rob's exact 0-results failure must be impossible. Search must NOT match (only) the
+   secret id. (If a user renames an entry "Acme Spring", searching "acme" or "spring" both hit.)
+
+4. **Verb set stays distinct from the other panels (same-verb-collision guard).** This entry's actions
+   are exactly: **Open · Copy link · Rename · Remove from list.** (Relabel the existing "Remove" to
+   **"Remove from list"** so it's unmistakable it only drops the device-local entry, never the server
+   workspace — keep the §4 confirm copy.) These verbs must stay distinct from the Campaigns library
+   verbs (Open / Duplicate campaign / Delete campaign) and the grid-row verbs (Duplicate row / Delete
+   row). Never a bare "Delete" or "Duplicate" here.
+
+**Fix B — Surface the panel HIGH and discoverable, never below the grid (P1; Cause B, 4/10: Dana,
+Aisha, Elena, Marcus). BOUNDED — do NOT attempt a full landing redesign this run.** Brief §1 already
+specifies My Workspaces as the top-most auto-expanded rail section, but testers still found it BELOW
+the grid — so the build must be corrected to match:
+- On `/`, the My Workspaces panel must render in the **first screenful, ABOVE or immediately BESIDE
+  the grid** — it must NOT sit below the grid, and it must NOT push the editable example grid far below
+  the fold.
+- Keep it **compact so it earns its position:** cap the visible list to **~3 entries with a "Show all
+  (N)" expander on desktop too** (not just mobile); the search input + helper line stay above the
+  capped list. A long list never displaces the grid.
+- Verify at a typical laptop width (1280–1440px) AND at 375px that BOTH the My Workspaces panel and
+  the editable grid's first row/card are reachable in the first screenful (the panel high, the grid not
+  shoved far down). If the right-rail visually stacks below the grid at the tester's width, move the
+  panel into the first-screenful flow above/beside the grid instead.
+- The broader "grid buried ~668px behind stacked banners" debt is **logged to BACKLOG**, not fixed
+  here — this fix is only about the My Workspaces panel's position + compactness.
+
+**Fix C — Auto-fix naming must lowercase ALL utm_* fields, utm_source included (P1; Cause C, 2/10:
+Wen, Priya).** The "Auto-fix naming" action must apply the lowercase rule uniformly to **every** utm_*
+field — utm_source, utm_medium, utm_campaign, utm_term, utm_content — so no field is skipped. Wen's
+exact failure (utm_source "Google" left capitalized while medium/campaign were lowercased) must be
+impossible: after Auto-fix, no utm_* cell retains an uppercase letter. (Trailing punctuation such as
+Priya's "!" — if the active lint rules don't flag it, leave it; do NOT add new stripping rules this
+round. The required guarantee is that **case normalization is uniform across every utm field**, with
+the existing leading/trailing-whitespace trim still applied first.)
+
+**Fix D — ≥44px mobile tap targets on the entry actions (P2; Cause D, 2/10: Jules, Sam).** On narrow
+viewports (375px) the entry actions **Open · Copy link · Rename · Remove from list** must each be
+**≥44px tap-targets with adequate spacing** between them, so the destructive **Remove from list**
+isn't crammed against **Open** (mis-tap risk). Keep the persistent icon+label row layout; just enlarge
+the targets and add gap. No horizontal scroll, nothing occluded.
+
+**Fix E — Add X/Twitter and Mastodon channel presets (P2; Cause E, 1/10 on-ICP: Jules).** Add two
+built-in channel presets alongside the existing LinkedIn / Google / Email / Organic:
+- **X / Twitter:** `utm_source=twitter`, `utm_medium=social`.
+- **Mastodon:** `utm_source=mastodon`, `utm_medium=social`.
+Purely additive to the Presets dropdown; all other preset behavior (apply-to-selected-row, flash green)
+unchanged.
+
+**Out of scope (do NOT build this round):** share-verb-soup toolbar consolidation (recurring but it's
+the broader landing/share-disambiguation debt — BACKLOG), read-only/view-only share mode (needs a
+permissions model), cross-device/team sync (needs accounts + server, blocked on credential, regresses
+the zero-network prop — Elena is the accepted out-of-ICP holdout). Builder may quickly verify the
+duplicate-DOM-render smell (Priya) since it matches the recorded `dual-render-global-listener` lesson.
+
+### 5-second check (My Workspaces Round 2 — unchanged above the fold)
+- **Cold visitor (`/`):** unchanged hero (headline + subhead + the pre-filled example grid row with a
+  live Generated URL + Copy). **My Workspaces** is auto-expanded HIGH in the first screenful (above/
+  beside the grid, never below it) with its honest empty state — present, compact, never burying the
+  grid.
+- **Returning visitor (`/`):** same hero; **My Workspaces (N)** at the top lists their workspaces by a
+  **readable name** (user-given, else first-row utm_campaign / domain / dated default — never the raw
+  id), with **Open · Copy link · Rename · Remove from list** (≥44px on mobile) and a search box that
+  **matches the name** — typing "acme"/"spring" surfaces the right workspace, never 0 results.

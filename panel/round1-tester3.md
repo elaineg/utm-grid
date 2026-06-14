@@ -1,29 +1,11 @@
-# Round 1 — Tester 3 (Wen, Marketing data analyst)
-
-Persona: data-hygiene obsessed; wants strict CSV in/out + lint that catches casing splits; distrusts tools that transform data invisibly. Cares that roll-up counts are TRUSTWORTHY and review state is reliable.
-
-## What I tested
-Cold open -> filled 2 rows with a casing collision (Google/google, CPC/cpc, Summer_Sale/summer_sale) -> lint -> Auto-fix -> Create shared workspace (/w/zdu1B50Am0sleApBxNDNRgAA) -> mark rows Approved / Needs-changes -> verify roll-up -> reload -> fresh-teammate context -> /w/<id>/review.
-
-## Findings
-- LINT IS EXCELLENT: verbatim "Inconsistent utm_source across rows: 'Google' vs 'google' — these will split campaign data in GA4." Exact pain I open tools for. Per-cell warnings + per-issue Fix.
-- Auto-fix normalized both rows to `google` visibly (not silent) — good for a transform-distruster.
-- ROLL-UP COUNTS ARE TRUSTWORTHY: 0/0/2 -> Approve r1 -> 1/0/1 -> Needs-changes r2 -> "1 approved · 1 needs changes · 0 unreviewed" with split green/orange bar. Counts matched the grid, survived reload, and a FRESH teammate browser + /review page showed identical 1/1/0 (server-persisted confirmed). Math always equaled row count.
-- /review Summary page clean: "1 of 2 approved", per-link status, source·medium·campaign shown.
-
-## BUGS that hurt trust (this round's feature is sign-off, so these matter)
-1. The "Needs changes" NOTE does not persist. Typed in popover textarea (placeholder "e.g. fix campaign casing"), NO save button (only "✓ Approve"), blur+reload -> note GONE everywhere incl. /review. The note is the actionable reason for a rejection; losing it makes "Needs changes" meaningless to whoever must fix it.
-2. Reviewer name doesn't stick. Filled "Your name"=Wen, pressed Enter/clicked away -> banner stays "Reviewing as: Anonymous"; /review attributes every approval "by Anonymous". One run briefly showed "Editing as: Wen" then reverted — flaky, which is worse. No reliable audit trail = not a real sign-off.
-
-## Answers
-- CLARITY: Yes — H1 + "Auto-fix messy casing... before they split your Google Analytics" told me what+who in ~5s.
-- VALUE: Yes — dirty UTMs splitting GA4 campaigns is my weekly pain; today I catch it post-hoc in BigQuery. Pre-launch lint in a shared grid w/ CSV in+out is faster.
-- ADVOCACY: 6 — builder+lint I'd recommend today, but the review feature (this round's pitch) can't be trusted for sign-off until the note and reviewer name reliably persist. Fix both -> 9.
-
 ```json
-{"tester": 3, "round": 1, "clarity": "Yes", "value": "Yes", "advocacy": 6, "topComplaints": ["Needs-changes NOTE does not persist (no save; empty on reload; absent on /review) — actionable reason lost", "Reviewer name won't stick (stays Anonymous on banner + /review) — no audit trail for sign-off"], "priorConcernsAddressed": "n/a"}
+{"name":"Wen","clarity":"Yes","value":"Yes","advocacy":8,"top_issues":["'Auto-fix naming' lowercased utm_medium (CPC->cpc) and utm_campaign (Summer Sale->summer_sale) but left utm_source 'Google' capitalized — the exact cross-field casing inconsistency that splits my GA4 campaigns survived the marquee one-click fix","My Workspaces lists entries by raw ID ('Workspace gGDwcfNTIB') with no rename/label — useless for telling 'Q3 Paid Social' from 'Summer Sale' when I juggle many campaigns","No delimiter/encoding control or explicit import round-trip guarantee shown — as a data-hygiene skeptic I want to KNOW my exported headers re-import 1:1"],"loved":["Per-field inline lint with the exact reason ('Contains uppercase letters — use lowercase only (\"cpc\")') + missing-required + bad-URL, each with a one-click Fix link","CSV export ships a UTF-8 BOM, clean snake_case headers incl. generated_url, opens in BigQuery/Sheets with no invisible transform","Create shared workspace returned a real /w/<id> link instantly; My Workspaces remembered it on return with working Open / Copy link / Remove and an honest 'this device only, sign-in coming' note + clear empty state"]}
 ```
 
-```json
-{"name":"Wen","clarity":"Yes","clarity_reason":"H1 + subhead explained what and who within ~5s.","value":"Yes","value_reason":"Inconsistent UTMs splitting GA4 campaigns is my weekly pain; today I catch it post-hoc in BigQuery. Pre-launch lint in a shared grid with CSV in/out is meaningfully faster.","advocacy":6,"advocacy_reason":"Lint is best-in-class and roll-up counts are trustworthy, but the new review feature fails for sign-off: the rejection note and the reviewer name both fail to persist. Fix both -> 9.","top_issues":["Needs-changes note does not persist (no Save, empty after reload, absent on /review)","Reviewer name does not stick — all approvals show 'by Anonymous', no audit trail","Note popover has only '✓ Approve' button, no explicit save for the note"],"liked":["Lint names the exact casing collision and says it will split GA4 data","Auto-fix is visible, not silent","Roll-up counts accurate, update live, persist across reload + fresh teammate + /review (server-side)","CSV import and export both present","Clean read-only /review summary with per-link status"]}
-```
+I'm Wen — I own GA4 campaign reporting and I distrust any tool that touches my data silently. Cold open: the H1 "Clean UTM links for your whole campaign — in one grid" plus "Auto-fix messy casing and typos before they split your Google Analytics" told me exactly what this is and who it's for in about five seconds; "nothing leaves your browser" earned trust immediately. Clarity: Yes.
+
+Value: Yes. Today I lint UTM casing with a tangle of Sheets LOWER/SUBSTITUTE formulas and a dbt staging model, and I still find "Google" vs "google" in GA4 after the fact. Here the inline lint flagged uppercase, a missing required utm_campaign, and a bad base URL — each with a Fix link. The BOM'd snake_case CSV (verified: `base_url,utm_source,...,generated_url`) means I can pipe straight to BigQuery without a re-encode dance. That beats my current workflow.
+
+Workspace flow: discoverable and it works. "Create shared workspace" gave me /w/h2Hyrt4kOcNM6zucf11mtwAA, the link landed in my clipboard, and back home "My Workspaces (1)" showed it with Open/Copy-link/Remove all functional (Copy link returned the /w/ URL — clipboard read worked in my env). The "frozen snapshot vs live workspace" distinction is spelled out, which I appreciate.
+
+What holds it at 8, not 9: the "Auto-fix naming" button — the headline promise — lowercased medium and campaign but left utm_source "Google" capitalized. That single inconsistency is the exact thing I came to kill. And My Workspaces names entries by raw ID; I manage a dozen campaigns and "Workspace gGDwcfNTIB" tells me nothing — give me a rename. Fix the source casing and add workspace labels and this is a 9 I'd drop in our analytics Slack unprompted.

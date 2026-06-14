@@ -26,6 +26,17 @@ import {
 const BASE_URL = process.env.BASE_URL ?? "http://localhost:3811";
 const MY_WORKSPACES_KEY = "utm-grid:my-workspaces";
 
+/**
+ * The app renders TWO [data-testid="my-workspaces-panel"] elements — one mobile-only
+ * (class=min-[900px]:hidden) and one desktop-only (class=hidden min-[900px]:block).
+ * At the default desktop test viewport (≥900px) the first one is HIDDEN.
+ * Use this helper to always get the visible panel for the current viewport.
+ * At 375px the first (mobile) panel is visible and the desktop one is hidden.
+ */
+function visiblePanel(page: Page) {
+  return page.locator('[data-testid="my-workspaces-panel"]').filter({ visible: true }).first();
+}
+
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
 async function createWorkspaceViaApi(): Promise<string> {
@@ -83,8 +94,9 @@ test("MW-1: empty localStorage → panel is visible with empty-state hint", asyn
   await page.goto("/");
   await page.waitForLoadState("networkidle");
 
-  // Panel must exist in DOM (data-testid)
-  const panel = page.locator('[data-testid="my-workspaces-panel"]').first();
+  // Panel must exist in DOM — use visiblePanel() to get the visible instance at
+  // this viewport (desktop=panel[1], mobile=panel[0]).
+  const panel = visiblePanel(page);
   await expect(panel).toBeVisible({ timeout: 10_000 });
 
   // Empty-state hint text must be present (panel is not gated on non-empty list)
@@ -128,7 +140,7 @@ test("MW-2: create workspace from `/` → return → panel shows Owner badge + r
   await page.waitForLoadState("networkidle");
 
   // My Workspaces panel must show the entry with Owner badge
-  const panel = page.locator('[data-testid="my-workspaces-panel"]').first();
+  const panel = visiblePanel(page);
   await expect(panel).toBeVisible({ timeout: 5_000 });
   await expect(panel).toContainText("Owner");
   // Time should be "just now" or "0s ago" / "<1m"
@@ -163,7 +175,7 @@ test("MW-3: open /w/<id> as visitor → go to `/` → Visited badge", async ({
   await page.goto("/");
   await page.waitForLoadState("networkidle");
 
-  const panel = page.locator('[data-testid="my-workspaces-panel"]').first();
+  const panel = visiblePanel(page);
   await expect(panel).toBeVisible({ timeout: 5_000 });
 
   // Must show "Visited" role badge (NOT "Owner" — this browser didn't create it)
@@ -192,7 +204,7 @@ test("MW-4: reload `/` — My Workspaces list persists", async ({ browser }) => 
   await page.reload();
   await page.waitForLoadState("networkidle");
 
-  const panel = page.locator('[data-testid="my-workspaces-panel"]').first();
+  const panel = visiblePanel(page);
   await expect(panel).toBeVisible({ timeout: 5_000 });
   await expect(panel).toContainText("Persist Test Workspace");
 
@@ -217,7 +229,7 @@ test("MW-5: Copy link shows 'Copied!' that survives a re-render tick", async ({
   await page.reload();
   await page.waitForLoadState("networkidle");
 
-  const panel = page.locator('[data-testid="my-workspaces-panel"]').first();
+  const panel = visiblePanel(page);
   await expect(panel).toBeVisible({ timeout: 5_000 });
 
   // Override clipboard to track what was copied (not block)
@@ -241,24 +253,28 @@ test("MW-5: Copy link shows 'Copied!' that survives a re-render tick", async ({
     }
   });
 
-  // Click Copy link
-  const copyBtn = panel.getByRole("button", { name: /copy link/i }).first();
+  // Click Copy link — use aria-label attribute selector because the accessible name
+  // changes from "Copy link for workspace X" → "Link for X copied!" after click,
+  // making getByRole(name:/copy link/i) stale. We find by attribute and then check
+  // the button's text content via the panel (which locates all buttons including the
+  // post-click "Copied!" state button).
+  const copyBtn = panel.locator('button[aria-label*="Copy link"]').first();
   await expect(copyBtn).toBeVisible();
   await copyBtn.click();
 
-  // "Copied!" must appear on the button immediately
-  await expect(copyBtn).toContainText(/copied!/i, { timeout: 2_000 });
+  // After click, the button's aria-label changes to "Link for X copied!" — find the
+  // new state by looking for "Copied!" text anywhere in the panel.
+  await expect(panel.locator('button', { hasText: /copied!/i }).first()).toBeVisible({ timeout: 2_000 });
 
   // Wait past 500ms to simulate a timer tick that could clobber the cue
   await page.waitForTimeout(600);
 
   // "Copied!" must STILL be present (timer is 1800ms, well past 600ms)
-  await expect(copyBtn).toContainText(/copied!/i);
+  await expect(panel.locator('button', { hasText: /copied!/i }).first()).toBeVisible();
 
-  // Verify the copied URL is the full /w/<id> URL
-  // We check the button's aria-label which changes when copied
-  const ariaLabel = await copyBtn.getAttribute("aria-label");
-  expect(ariaLabel).toMatch(/copied|copy link/i);
+  // Verify the clicked button's aria-label now reflects copied state
+  const copiedBtn = panel.locator('button[aria-label*="copied"]').first();
+  await expect(copiedBtn).toBeVisible();
 
   await ctx.close();
 });
@@ -303,13 +319,15 @@ test("MW-5b: Copy link copies the full /w/<id> URL (blocked clipboard test)", as
   await page.reload();
   await page.waitForLoadState("networkidle");
 
-  const panel = page.locator('[data-testid="my-workspaces-panel"]').first();
-  const copyBtn = panel.getByRole("button", { name: /copy link/i }).first();
+  const panel = visiblePanel(page);
+  // Use aria-label attribute selector — the name changes after click from
+  // "Copy link for workspace X" → "Link for X copied!" so getByRole(name) goes stale.
+  const copyBtn = panel.locator('button[aria-label*="Copy link"]').first();
   await expect(copyBtn).toBeVisible({ timeout: 5_000 });
   await copyBtn.click();
 
   // Even with blocked clipboard the "Copied!" cue should appear
-  await expect(copyBtn).toContainText(/copied!/i, { timeout: 2_000 });
+  await expect(panel.locator('button', { hasText: /copied!/i }).first()).toBeVisible({ timeout: 2_000 });
 
   await ctx.close();
 });
@@ -331,23 +349,30 @@ test("MW-6: Remove from list (confirm) — removed locally, persists across relo
   await page.reload();
   await page.waitForLoadState("networkidle");
 
-  const panel = page.locator('[data-testid="my-workspaces-panel"]').first();
+  const panel = visiblePanel(page);
   await expect(panel).toContainText("Remove Me Workspace", { timeout: 5_000 });
 
   // Accept the confirm dialog
   page.once("dialog", (dialog) => void dialog.accept());
 
-  const removeBtn = panel.getByRole("button", { name: /remove/i }).first();
+  // Use aria-label attribute selector — getByRole(name:/remove/i) can hit the wrong
+  // element due to ambiguous accessible name resolution at certain viewport positions.
+  // The Remove button always has aria-label="Remove workspace <label> from this list".
+  const removeBtn = panel.locator('button[aria-label*="Remove workspace"]').first();
   await expect(removeBtn).toBeVisible();
+  await removeBtn.scrollIntoViewIfNeeded();
   await removeBtn.click();
 
-  // Entry should disappear from panel
-  await expect(panel).not.toContainText("Remove Me Workspace", { timeout: 3_000 });
+  // After confirm+remove, the entry disappears. The panel may temporarily go to
+  // empty-state rendering. Use a fresh visiblePanel locator after the state update.
+  // Also wait for the empty-state (the panel shows "No workspaces yet" when empty).
+  await expect(page.locator('[data-testid="my-workspaces-panel"]').filter({visible:true}).first()).toContainText(/no workspaces yet|No workspaces match/i, { timeout: 5_000 });
 
-  // Reload to verify removal persists
+  // Reload to verify removal persists (localStorage was updated)
   await page.reload();
   await page.waitForLoadState("networkidle");
-  await expect(panel).not.toContainText("Remove Me Workspace");
+  // After reload, panel shows empty state — does NOT show removed label
+  await expect(visiblePanel(page)).not.toContainText("Remove Me Workspace");
 
   // Verify /w/<id> still resolves (workspace NOT deleted server-side)
   await page.goto(`/w/${id}`);
@@ -358,7 +383,7 @@ test("MW-6: Remove from list (confirm) — removed locally, persists across relo
   await page.goto("/");
   await page.waitForLoadState("networkidle");
   // After re-open, the entry should be back
-  await expect(panel).toContainText(/workspace|Visited/i, { timeout: 5_000 });
+  await expect(visiblePanel(page)).toContainText(/workspace|Visited/i, { timeout: 5_000 });
 
   await ctx.close();
 });
@@ -407,7 +432,7 @@ test("MW-8: label search filters case-insensitively", async ({ browser }) => {
   await page.reload();
   await page.waitForLoadState("networkidle");
 
-  const panel = page.locator('[data-testid="my-workspaces-panel"]').first();
+  const panel = visiblePanel(page);
   await expect(panel).toBeVisible({ timeout: 5_000 });
 
   // Search input is visible (list is non-empty)
@@ -654,7 +679,7 @@ test("MW-14: pre-populated localStorage seeds panel correctly on navigation (ret
   await page.goto("/");
   await page.waitForLoadState("networkidle");
 
-  const panel = page.locator('[data-testid="my-workspaces-panel"]').first();
+  const panel = visiblePanel(page);
   await expect(panel).toBeVisible({ timeout: 5_000 });
 
   // Both entries must appear (newest-first)
@@ -688,33 +713,41 @@ test("MW-15: 'Copied!' cue survives a live tick re-render on the panel", async (
   await page.reload();
   await page.waitForLoadState("networkidle");
 
-  const panel = page.locator('[data-testid="my-workspaces-panel"]').first();
+  const panel = visiblePanel(page);
   await expect(panel).toBeVisible({ timeout: 5_000 });
 
   // Manually trigger a state change that mimics a tick by forcing setTick via
   // a small helper. Since we can't directly invoke React internals, we instead
   // verify that after clicking Copy, the Copied! cue is present at 100ms, 500ms,
   // and 1000ms — all BEFORE the 1800ms expiry timer — thus surviving re-renders.
-  const copyBtn = panel.getByRole("button", { name: /copy link/i }).first();
+  //
+  // NOTE: After clicking, the button's aria-label changes from "Copy link for workspace X"
+  // → "Link for X copied!", so getByRole(name:/copy link/i) goes stale after click.
+  // Use an aria-label attribute selector to find the button pre-click, then check by
+  // "Copied!" text in the panel for post-click assertions.
+  const copyBtn = panel.locator('button[aria-label*="Copy link"]').first();
   await expect(copyBtn).toBeVisible();
   await copyBtn.click();
 
+  // The Copied! cue locator — finds "Copied!" text on any button in the panel
+  const copiedCue = panel.locator('button', { hasText: /copied!/i }).first();
+
   // Confirm cue at 100ms (just after click)
   await page.waitForTimeout(100);
-  await expect(copyBtn).toContainText(/copied!/i);
+  await expect(copiedCue).toBeVisible();
 
   // Confirm still present at 500ms
   await page.waitForTimeout(400);
-  await expect(copyBtn).toContainText(/copied!/i);
+  await expect(copiedCue).toBeVisible();
 
   // Confirm still present at 1000ms (panel tick is every 10s, but copy timer is 1800ms)
   await page.waitForTimeout(500);
-  await expect(copyBtn).toContainText(/copied!/i);
+  await expect(copiedCue).toBeVisible();
 
   // Confirm it eventually disappears (after 1800ms from click — we're at ~1100ms + overhead)
   await page.waitForTimeout(1000);
   // By now > 1800ms has elapsed since click — cue should be gone
-  await expect(copyBtn).not.toContainText(/copied!/i, { timeout: 3_000 });
+  await expect(copiedCue).not.toBeVisible({ timeout: 3_000 });
 
   await ctx.close();
 });

@@ -12,6 +12,8 @@ import {
   MY_WORKSPACES_KEY,
   readMyWorkspacesFromStorage,
   removeMyWorkspace,
+  renameMyWorkspace,
+  resolveEntryDisplayName,
   serializeMyWorkspaces,
   upsertMyWorkspace,
   upsertMyWorkspaceInStorage,
@@ -191,22 +193,158 @@ describe("filterMyWorkspaces", () => {
 });
 
 // ── deriveWorkspaceLabel ──────────────────────────────────────────────────────
+// FIX A-2 (My Workspaces Round 2): friendly default — NEVER raw id.
 
 describe("deriveWorkspaceLabel", () => {
-  it("returns the workspace name when set", () => {
+  it("returns the server workspace name when set", () => {
     expect(deriveWorkspaceLabel("My Q3 Campaign", "abc12345")).toBe("My Q3 Campaign");
   });
 
-  it("falls back to Workspace <first-8-chars> when name is empty", () => {
-    expect(deriveWorkspaceLabel("", "abc12345xyz")).toBe("Workspace abc12345");
+  it("falls back to utm_campaign when server name is empty", () => {
+    expect(deriveWorkspaceLabel("", "abc12345xyz", "spring_launch")).toBe("spring_launch");
   });
 
-  it("falls back when name is undefined", () => {
-    expect(deriveWorkspaceLabel(undefined, "abc12345xyz")).toBe("Workspace abc12345");
+  it("falls back to utm_campaign when server name is undefined", () => {
+    expect(deriveWorkspaceLabel(undefined, "abc12345xyz", "summer_sale")).toBe("summer_sale");
   });
 
-  it("trims the name", () => {
+  it("falls back to base URL domain when utm_campaign is empty", () => {
+    expect(deriveWorkspaceLabel(undefined, "abc", "", "https://acme.com/sale")).toBe("acme.com");
+  });
+
+  it("falls back to dated form when no name, campaign, or parseable URL", () => {
+    // Provide a fixed timestamp: use a local date to avoid timezone-crossing
+    const d = new Date(2026, 0, 14); // Jan 14, 2026 in local time
+    const ts = d.getTime();
+    const label = deriveWorkspaceLabel(undefined, "abc", "", "", ts);
+    expect(label).toMatch(/^Workspace — /);
+    // Month and day should both appear (exact format may vary by locale)
+    expect(label).toMatch(/\d+/); // contains at least one number (the day)
+  });
+
+  it("NEVER returns raw id as the primary label", () => {
+    const id = "HbqwUjvW";
+    const label = deriveWorkspaceLabel(undefined, id, "", "", Date.now());
+    // The label must not be the raw id
+    expect(label).not.toBe(id);
+    expect(label).not.toBe(`Workspace ${id.slice(0, 8)}`);
+    // It should be the dated fallback form
+    expect(label).toMatch(/^Workspace — /);
+  });
+
+  it("trims the server name", () => {
     expect(deriveWorkspaceLabel("  Trimmed  ", "abc12345")).toBe("Trimmed");
+  });
+});
+
+// ── renameMyWorkspace ─────────────────────────────────────────────────────────
+// FIX A-1 (My Workspaces Round 2): device-local rename with no server call.
+
+describe("renameMyWorkspace", () => {
+  it("sets the name field on the matching entry", () => {
+    const entries: MyWorkspaceEntry[] = [
+      makeEntry({ id: "ws1", label: "spring_launch" }),
+      makeEntry({ id: "ws2", label: "acme.com" }),
+    ];
+    const result = renameMyWorkspace(entries, "ws1", "Acme Spring");
+    expect(result[0].name).toBe("Acme Spring");
+    expect(result[1].name).toBeUndefined();
+  });
+
+  it("trims whitespace from the new name", () => {
+    const entries: MyWorkspaceEntry[] = [makeEntry({ id: "ws1" })];
+    const result = renameMyWorkspace(entries, "ws1", "  Trimmed  ");
+    expect(result[0].name).toBe("Trimmed");
+  });
+
+  it("clears the name (undefined) when new name is empty string", () => {
+    const entries: MyWorkspaceEntry[] = [makeEntry({ id: "ws1", name: "Old Name" })];
+    const result = renameMyWorkspace(entries, "ws1", "");
+    expect(result[0].name).toBeUndefined();
+  });
+
+  it("does not mutate the original array", () => {
+    const entries: MyWorkspaceEntry[] = [makeEntry({ id: "ws1" })];
+    renameMyWorkspace(entries, "ws1", "New Name");
+    expect(entries[0].name).toBeUndefined();
+  });
+
+  it("returns entries unchanged when id not found", () => {
+    const entries: MyWorkspaceEntry[] = [makeEntry({ id: "ws1" })];
+    const result = renameMyWorkspace(entries, "nonexistent", "X");
+    expect(result).toEqual(entries);
+  });
+});
+
+// ── resolveEntryDisplayName ───────────────────────────────────────────────────
+// FIX A-2: display name = name ?? label, never raw id.
+
+describe("resolveEntryDisplayName", () => {
+  it("returns user-given name when set", () => {
+    const entry = makeEntry({ label: "spring_launch", name: "Acme Campaign" });
+    expect(resolveEntryDisplayName(entry)).toBe("Acme Campaign");
+  });
+
+  it("returns friendly label when name is not set", () => {
+    const entry = makeEntry({ label: "acme.com", name: undefined });
+    expect(resolveEntryDisplayName(entry)).toBe("acme.com");
+  });
+
+  it("returns label when name is empty string (treated as absent)", () => {
+    // renameMyWorkspace stores undefined for empty; but guard here too
+    const entry = makeEntry({ label: "acme.com", name: "" });
+    expect(resolveEntryDisplayName(entry)).toBe("acme.com");
+  });
+});
+
+// ── filterMyWorkspaces — FIX A-3 ─────────────────────────────────────────────
+// Search must match on the RESOLVED DISPLAY NAME (name ?? label), not the raw id.
+
+describe("filterMyWorkspaces — search by display name", () => {
+  it("finds an entry by user-given name ('acme' finds entry named 'Acme Spring')", () => {
+    const entries: MyWorkspaceEntry[] = [
+      makeEntry({ id: "ws1", label: "spring_launch", name: "Acme Spring" }),
+      makeEntry({ id: "ws2", label: "zenith.com" }),
+    ];
+    const result = filterMyWorkspaces(entries, "acme");
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe("ws1");
+  });
+
+  it("finds an entry by friendly label when no user name is set", () => {
+    const entries: MyWorkspaceEntry[] = [
+      makeEntry({ id: "ws1", label: "zenith.com" }),
+      makeEntry({ id: "ws2", label: "acme.com" }),
+    ];
+    const result = filterMyWorkspaces(entries, "zenith");
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe("ws1");
+  });
+
+  it("does NOT match on the raw workspace id (Rob's failure must be impossible)", () => {
+    const entries: MyWorkspaceEntry[] = [
+      makeEntry({ id: "HbqwUjvW", label: "acme.com" }),
+    ];
+    // Searching by raw id should NOT match (label is "acme.com", not the id)
+    expect(filterMyWorkspaces(entries, "HbqwUjvW")).toHaveLength(0);
+    // But the friendly label still matches
+    expect(filterMyWorkspaces(entries, "acme")).toHaveLength(1);
+  });
+
+  it("is case-insensitive on the display name", () => {
+    const entries: MyWorkspaceEntry[] = [
+      makeEntry({ id: "ws1", label: "spring_launch", name: "Acme Spring" }),
+    ];
+    expect(filterMyWorkspaces(entries, "ACME")).toHaveLength(1);
+    expect(filterMyWorkspaces(entries, "acme")).toHaveLength(1);
+    expect(filterMyWorkspaces(entries, "spring")).toHaveLength(1);
+  });
+
+  it("backward compat: old entries without name field match on label", () => {
+    // Simulate a pre-Round-2 entry: no name field at all
+    const oldEntry = { id: "ws1", label: "Q3 Paid Social", role: "owner", lastOpened: 1000, link: "https://example.com/w/ws1" } as MyWorkspaceEntry;
+    expect(filterMyWorkspaces([oldEntry], "q3 paid")).toHaveLength(1);
+    expect(filterMyWorkspaces([oldEntry], "Q3")).toHaveLength(1);
   });
 });
 

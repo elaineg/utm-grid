@@ -1,44 +1,14 @@
-# Round 1 — Tester 10 (Sam, Product manager, mobile-heavy)
-
-## CLARITY — Yes
-Within 30s the H1 "Clean UTM links for your whole campaign — in one grid" plus the
-sub-line "Share one link anyone can open and reuse — no login" told me exactly what it
-is and that I won't have to debug logins. I'd tell a friend: "bulk UTM builder where the
-team can all edit one shared link and sign off on the URLs." The "Create shared workspace"
-explainer ("live workspace your team edits together... different from Copy share link, a
-frozen snapshot") cleared up the one thing that usually confuses me.
-
-## VALUE — Yes
-Today I wrangle UTMs in a Google Sheet and chase sign-off in Slack threads — messy and
-nobody knows who approved what. Building 2 rows, getting a /w/ link, and a /review page
-that says "1 of 2 approved" with per-link notes is genuinely faster and makes me look
-organized. The /review summary is the artifact I'd actually paste in Slack: "campaign
-review — 1 of 2 approved, pricing link needs source lowercased." That's the win.
-
-## ADVOCACY — 6/10
-The flow that matters to me works (roll-up, notes, server-synced status, shareable
-read-only /review, clear "✓ Copied!" cue). But the headline feature of THIS update — 
-"Reviewing as: <name>" — is broken, and that's exactly the part a sharer cares about.
-I typed my name in "Your name", pressed Enter, reloaded — "Reviewing as:" stayed
-"Anonymous" forever, and every approval on the /review page reads "by Anonymous." The
-whole point of attribution is so the team sees WHO signed off; an all-"Anonymous" sign-off
-sheet doesn't make me look organized, it looks like nobody owns it. As a non-debugger I'd
-call it broken and not trust the feature. To raise to 9: make the name actually stick and
-attribute approvals to it, and fix the mobile /review note collision.
-
-## Flags
-- BROKEN: "Your name" never updates "Reviewing as:" (stays Anonymous); approvals attribute
-  "by Anonymous" even with name typed + Enter + reload. Core of this round's feature.
-- MOBILE BUG: on /review (375px) the Needs-changes note overlaps the URL/medium text — 
-  "twitter" and the note string mash together; URL truncates to "h." Looks sloppy to paste.
-- Good: "Share review summary" copies the /review link and shows "✓ Copied!" — obvious.
-- Minor: per-row "Review" button (no inline Approve) is one extra tap, but fine on mobile.
-
 ```json
-{"tester": 10, "round": 1, "clarity": "Yes", "value": "Yes", "advocacy": 6, "topComplaints": ["Reviewing-as/Your-name never sticks — all approvals say 'by Anonymous', defeating the new feature", "Mobile /review note text collides with URL/medium, looks sloppy to paste in Slack"], "priorConcernsAddressed": "n/a"}
+{"name":"Sam","clarity":"Yes","value":"Yes","advocacy":9,"top_issues":["Auto-named 'Workspace 35YOkiga' with no rename — with two launches open I can't tell which is which in My Workspaces","My Workspaces row buttons (Open/Copy link/Remove) are ~36px tall and tightly packed at 375px — under the 44px tap zone, Remove sits right next to Open","Two share concepts ('Copy share link' frozen snapshot vs 'Create shared workspace' live link) — clear once read, but a beat of which-do-I-want"],"loved":["My prior bug is FIXED: name now persists as 'Editing as: Sam PM', approval shows green 'Approved' + 'last edited by Sam PM', no more 'Anonymous'","Review Status sign-off ('1 approved · 0 need changes · All approved — ready to launch') is exactly my launch-coordination job","Mobile grid is clean stacked cards, zero horizontal scroll; Launch Check report ('1 link · 1 with issues') reads great at 375px with no text collision","My Workspaces remembered my secret /w link (Owner badge, 'saved now') with working Open/Copy link/Remove; Remove confirm says 'only removes from this list'"]}
 ```
 
-<!-- machine block for parent -->
-```json
-{"name":"Sam","clarity":"Yes","clarity_reason":"H1 + 'share one link, no login' + the workspace-vs-snapshot explainer made the job clear in <30s","value":"Yes","value_reason":"replaces a Google Sheet + Slack approval thread; /review page is a paste-ready 'X of Y approved' sign-off artifact","advocacy":6,"advocacy_reason":"core sharing/roll-up/copy flow works, but THIS round's marquee 'Reviewing as: <name>' is broken — name never applies, all approvals show 'by Anonymous', so the sign-off sheet has no owner; mobile /review note overlaps URL text","top_issues":["'Your name' never updates 'Reviewing as:' — stays Anonymous after type/Enter/reload; approvals attributed 'by Anonymous'","Mobile (375px) /review: Needs-changes note collides with URL/medium text; URL truncates to 'h.'","Per-row sign-off needs opening a 'Review' popover (no inline approve), minor extra tap"],"liked":["'Share review summary' copies /review link with clear '✓ Copied!' cue","Live roll-up 'N approved · N need changes · N unreviewed' updates instantly","Read-only /review page with '1 of 2 approved' + per-link notes is paste-into-Slack quality","No login, workspace auto-saves/syncs, clear snapshot-vs-workspace explainer"]}
-```
+## Re-checking my prior complaints (round 1, old build)
+- "Your name never sticks / approvals say 'by Anonymous'" — FIXED. Typed "Sam PM", hit Enter, reloaded: it held as "Editing as: Sam PM", and approving a row showed a green "Approved" badge with "last edited by Sam PM". That was the whole point and it now works.
+- "Mobile /review note collides with URL/medium, URL truncates to 'h.'" — FIXED. The validation note ("Contains spaces — use '_' or '-'") sits on its own line in the row card; Launch Check report is clean at 375px, no overlap, no horizontal scroll anywhere I went.
+
+## Fresh take (Sam, PM, on my phone)
+CLARITY Yes — H1 "Clean UTM links for your whole campaign — in one grid" + "no login, nothing leaves your browser" told me the job in seconds. I'd tell a teammate: "bulk UTM builder where the team edits one shared link and signs off before launch."
+
+VALUE Yes — today this is a Google Sheet with a formula column plus Slack threads chasing "is the casing consistent / did you approve it?" Here I built a batch, auto-fixed "Newsletter/Email" to lowercase in one tap, made a live /w link the team edits, and got an approve/needs-changes sign-off with my name on it. That replaces the Sheet AND the approval thread. Copy link put the real /w URL on my clipboard (verified).
+
+ADVOCACY 9 — the feature that was broken for me is fixed and the sign-off loop is genuinely my workflow, so I'd drop this in the launch channel unprompted. Held back from 10 only by the cryptic auto-name with no rename — the thing that makes me "look organized" is naming, and "Workspace 35YOkiga" doesn't. Let me name it on create (or default to the utm_campaign) and bump the My Workspaces tap targets, and it's a 10.

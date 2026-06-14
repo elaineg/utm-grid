@@ -1,19 +1,17 @@
-{
-  "name": "Priya",
-  "clarity": "Yes",
-  "clarity_reason": "Headline 'Clean UTM links for your whole campaign — in one grid' plus 'no login, nothing leaves your browser' told me exactly what it is in ~5s, which is what I care about (no signup wall). The grid is self-explanatory: paste base URL, fill source/medium/campaign columns, generated URL shows live with lint warnings. The review feature was discoverable: on /w/<id> the 'REVIEW STATUS: 0 approved · 0 need changes · 2 unreviewed' roll-up sits right above the grid and each row has a 'Review' button — clicking it reveals '✓ Approve / ⚠ Needs changes' + a note field inline. /w/<id>/review is a clean read-only summary. The one thing that needed a beat: 'Copy share link' (frozen snapshot) vs 'Create shared workspace' (live synced) vs 'Share review summary' — three share-ish affordances; the inline subtext disambiguates them but it's a lot of share buttons.",
-  "value": "Yes",
-  "value_reason": "Today I hand-edit query strings in neovim or maybe a one-off spreadsheet — both error-prone (a trailing space in 'Social ' silently splits GA, casing drift). This caught 'utm_campaign required' and flagged a non-http base URL live, and auto-fix naming + trimming is genuinely faster than eyeballing 10 query strings. For a launch post with a handful of UTMs it's a clear win over hand-editing, and it's keyboard-tabbable. The review/approval loop is real: instead of pasting a list in Slack asking 'these UTMs ok?', a teammate gets a link, approves/needs-changes per row with a note, server-synced, no signup. A legit handoff I'd use once or twice a month for launches — borderline recurrence for me personally, clearly recurring for a marketer.",
-  "advocacy": 8,
-  "advocacy_reason": "Solid 8. Fast, no-signup, keyboard-friendly, lint/auto-fix is the actual value, and the review feature works end-to-end and is server-persisted (verified: an approve from one session showed up on a fresh load; clipboard copy of the /review link verified). What holds it back from 9-10: (1) attribution gap — I typed reviewer name 'Priya' but after a normal page load it reverted to 'Anonymous' and my approval logged 'by Anonymous' with no nudge to set a name BEFORE reviewing; for an approval audit trail, anonymous approvals undercut the point. (2) Three overlapping share affordances (Copy share link / Create shared workspace / Share review summary) is cognitively noisy on first contact. (3) No identity means anyone with the secret link can approve as anyone — fine for a trusted team, but I'd want the name sticky and ideally required before a review action. Make the reviewer name sticky+required and I'm at 9.",
-  "top_issues": [
-    "Reviewer name doesn't persist across a page load and isn't required before approving — my review was attributed 'by Anonymous', which weakens the approval audit trail this feature is selling.",
-    "Three share buttons (Copy share link / Create shared workspace / Share review summary) with similar labels create momentary confusion about which produces a live vs frozen vs review-only link.",
-    "Anyone with the secret link can approve under any name (no identity); acceptable for trusted teams but means approvals aren't trustworthy as a record."
-  ],
-  "liked": [
-    "Cold-open core flow with zero signup and 'nothing leaves your browser' — exactly what makes me not bounce.",
-    "Live lint (caught 'utm_campaign required' and non-http base URL) + auto-fix naming/trim — the real time-saver over hand-editing query strings.",
-    "Review feature is genuinely discoverable and works: roll-up above the grid, per-row Review -> Approve/Needs-changes + note, server-synced with no account, clean read-only /review page with per-link status and a working 'Share review summary' copy."
-  ]
-}
+```json
+{"name":"Priya","clarity":"Yes","value":"Yes","advocacy":8,"top_issues":["Auto-fix lowercases + underscores spaces but leaves punctuation like '!' in utm_campaign ('Launch Day!' -> launch_day!) — the headline promises 'clean' but doesn't strip risky chars or warn","My Workspaces panel renders twice in the DOM (one hidden copy): two 'Open' buttons, only one visible — a duplicate-render smell I'd flag in code review","Toolbar above the grid is crowded on an empty grid (Launch Check / Create shared workspace / Copy share link / presets / bulk edit) before I've typed one row"],"loved":["No signup, runs in-browser, network tab stays quiet — exactly what I wanted","Auto-fix toast with one-click Undo","My Workspaces flow actually persists: create -> return home -> panel remembers it -> Copy link and Open both work, opened ws had my data","Query encoding is correct for spaces & ampersands (spring%20sale%20%26%20more)"]}
+```
+
+## Priya — Senior backend engineer, keyboard-first, hates signups
+
+**1. Clarity — Yes.** Headline "Clean UTM links for your whole campaign — in one grid" + subline "no login, nothing leaves your browser" told me what it is in ~5 seconds. I'd tell a teammate: "spreadsheet-style grid that builds and sanitizes UTM links in bulk, client-side, with a shareable team link, no account." The "Shareable link is built in your browser — nothing is sent to any server" line is why I didn't bother with the network tab. I checked anyway; it's quiet.
+
+**2. Value — Yes.** Today I hand-edit query strings in neovim or a throwaway gist; for a launch post that's 3-4 fiddly links. This is faster: one grid, a column per param, auto-fix casing, copy the row. I tested the case that always bites me — spaces and `&` in a campaign name — and it encoded correctly (`spring%20sale%20%26%20more`). That's a real tool, not a toy. Never making an account is the reason I'd keep the tab open.
+
+**My Workspaces flow (the focus):** Works. I filled a row, clicked **Create shared workspace** -> landed on `/w/<id>`. Returned to home and the **My Workspaces (1)** panel had remembered it on this device. **Copy link** copied the exact `/w/<id>` URL (verified via clipboard). **Open** navigated back to the right workspace and my data (`email` source) was intact. **Remove** dropped it from the list. Discoverable enough — it sits below the grid with a clear "saved on THIS device only — not synced" note, which I appreciate (no false promise of cross-device).
+
+**3. Advocacy — 8.** I'd mention it unprompted to the marketer on my team, and to a dev with the no-login/client-side pitch. Not 9 because: (a) **Auto-fix isn't fully clean** — "Launch Day!" became `launch_day!`, keeping the `!`. It's URL-safe so nothing breaks, but the headline sells "clean" and a clean utm_campaign shouldn't carry punctuation; strip it or warn. (b) The **My Workspaces panel is rendered twice in the DOM** (two "Open" elements, one hidden off-screen). Works for the user, but that duplicate-render is exactly the sloppiness I'd catch in review, and it nicks my trust in the rest.
+
+**Friction:** crowded toolbar on an empty grid; two share concepts ("Create shared workspace" live vs "Copy share link" frozen) to parse even though the inline text explains them.
+
+**Loved:** zero-signup, real client-side privacy, the auto-fix Undo toast, and that the workspace persisted on-device and reopened with my data.

@@ -18,8 +18,18 @@ export type WorkspaceRole = "owner" | "visited";
 
 export interface MyWorkspaceEntry {
   id: string;
-  /** Display name — workspace editor label or derived fallback ("Workspace <short-id>"). */
+  /**
+   * Friendly default label — computed at record time from workspace content.
+   * Derivation order: utm_campaign of first row → domain of base URL → "Workspace — Mon DD".
+   * NEVER the raw id string.
+   */
   label: string;
+  /**
+   * User-given name (device-local, stored here in localStorage).
+   * When set, takes precedence over `label` for display and search.
+   * NO server call — anonymous-first, free-tier.
+   */
+  name?: string;
   /** "owner" = this device created it; "visited" = this device opened it. */
   role: WorkspaceRole;
   /** Unix ms timestamp of most recent open on this device. */
@@ -56,6 +66,7 @@ function isMyWorkspaceEntry(v: unknown): v is MyWorkspaceEntry {
     (e.role === "owner" || e.role === "visited") &&
     typeof e.lastOpened === "number" &&
     typeof e.link === "string"
+    // `name` is optional — backward compat with entries that predate this field
   );
 }
 
@@ -107,8 +118,11 @@ function sortByLastOpened(entries: MyWorkspaceEntry[]): MyWorkspaceEntry[] {
 }
 
 /**
- * Filter entries by label substring, case-insensitively.
+ * Filter entries by the RESOLVED DISPLAY NAME (user `name` ?? friendly `label`),
+ * case-insensitively. Also matches the base URL fragment in `label`.
  * Returns all entries when query is empty/whitespace.
+ *
+ * FIX A-3 (My Workspaces Round 2): must match on name/friendly-default, NOT the raw id.
  */
 export function filterMyWorkspaces(
   entries: MyWorkspaceEntry[],
@@ -116,16 +130,89 @@ export function filterMyWorkspaces(
 ): MyWorkspaceEntry[] {
   const q = query.trim().toLowerCase();
   if (!q) return entries;
-  return entries.filter((e) => e.label.toLowerCase().includes(q));
+  return entries.filter((e) => {
+    // Resolved display name: user-given name takes priority, then friendly label
+    const displayName = (e.name ?? e.label).toLowerCase();
+    return displayName.includes(q);
+  });
 }
 
 /**
- * Derive a human-readable label from a workspace payload's name field.
- * Falls back to "Workspace <first-8-chars-of-id>" when no name is set.
+ * Returns the resolved display name for an entry:
+ * user-given `name` (if set), otherwise the friendly `label`.
+ * This is what gets shown in the panel and matched by search.
  */
-export function deriveWorkspaceLabel(name: string | undefined, id: string): string {
-  const trimmed = (name ?? "").trim();
-  return trimmed || `Workspace ${id.slice(0, 8)}`;
+export function resolveEntryDisplayName(entry: MyWorkspaceEntry): string {
+  return entry.name?.trim() || entry.label;
+}
+
+/**
+ * Derive a human-readable FRIENDLY label for a workspace entry.
+ *
+ * FIX A-2 (My Workspaces Round 2): NEVER expose the raw secret id as the primary label.
+ * Derivation order (per UX brief):
+ *   (a) workspace name if non-empty (server-side optional name from the payload)
+ *   (b) first row's utm_campaign if non-empty
+ *   (c) base URL's domain/host if parseable
+ *   (d) dated fallback "Workspace — Mon DD" using the given timestamp
+ *
+ * @param serverName - the workspace's optional server-side name (from payload.name)
+ * @param id         - the workspace id (kept for backward compat but NEVER used as label)
+ * @param utmCampaign - first row's utm_campaign value, if known
+ * @param baseUrl     - first row's base URL, if known
+ * @param timestamp   - Unix ms, used for the dated fallback (defaults to Date.now())
+ */
+export function deriveWorkspaceLabel(
+  serverName: string | undefined,
+  id: string,
+  utmCampaign?: string,
+  baseUrl?: string,
+  timestamp?: number
+): string {
+  // (a) Server-given workspace name
+  const name = (serverName ?? "").trim();
+  if (name) return name;
+
+  // (b) First row utm_campaign
+  const campaign = (utmCampaign ?? "").trim();
+  if (campaign) return campaign;
+
+  // (c) Domain of the base URL
+  if (baseUrl) {
+    try {
+      const url = new URL(baseUrl.trim());
+      const host = url.hostname;
+      if (host) return host;
+    } catch {
+      // URL unparseable — fall through
+    }
+  }
+
+  // (d) Dated fallback "Workspace — Mon DD"
+  const date = new Date(timestamp ?? Date.now());
+  const monthShort = date.toLocaleString("en-US", { month: "short" });
+  const day = date.getDate();
+  return `Workspace — ${monthShort} ${day}`;
+}
+
+/**
+ * Rename a workspace entry by id (device-local only — NO server call).
+ * Stores the user-given name in the entry's `name` field.
+ * Trimmed; empty string clears the user name (reverts to friendly default).
+ * Returns a new array (pure — no mutation).
+ *
+ * FIX A-1 (My Workspaces Round 2): inline rename, no server call.
+ */
+export function renameMyWorkspace(
+  entries: MyWorkspaceEntry[],
+  id: string,
+  newName: string
+): MyWorkspaceEntry[] {
+  return entries.map((e) =>
+    e.id === id
+      ? { ...e, name: newName.trim() || undefined }
+      : e
+  );
 }
 
 // ── localStorage read/write helpers (for effects — NOT for render/useState) ────
