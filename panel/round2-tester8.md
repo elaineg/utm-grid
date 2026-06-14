@@ -1,37 +1,31 @@
-# Round 2 — Tester 8 (Rob, freelance brand/visual designer) — QR invalid-row fix re-test
+# Round 2 — Tester 8 (Rob, freelance brand/visual designer) — unified-identity + density re-test
 
-Device: desktop, color-calibrated monitor. Tech: medium. Benchmark: "I'd type query
-strings by hand in ~4 min" + per-client Google Sheet; for QR I'd otherwise paste each URL
-into a free QR site one-by-one or trace one in Illustrator.
+Device: desktop, color-calibrated monitor. Tech: medium. Benchmark: hand-typed query
+strings + a per-client Google Sheet; I'm the density sentinel who spots overflow instantly.
 
-## Re-check of my round-1 blocker (invalid-row QR leak) — FIXED
-Repro exactly as before: row 1 valid (acme spring-sale, newsletter/email), added row 2 with
-ONLY a base URL `https://acme.com/no-utm`, no UTMs (flagged invalid in-grid). Then:
-- Per-row QR button on the invalid row is now DISABLED (verified `isDisabled() == true`).
-- "Download QR codes" reported: "1 QR code generated, 1 skipped — incomplete or invalid URL".
-- ZIP contained ONLY `01-spring-sale-newsletter-email.png` + `contact-sheet.png`. No
-  `no-utm` file anywhere (grep found zero matches), no `03.png`.
-- Contact sheet shows only `01 · spring-sale · newsletter/email` — the bare untracked URL is
-  gone from the sheet entirely.
-No untracked QR can reach a client now. The exact liability I flagged is closed.
+## Re-check of my round-1 blocker (dual-identity: approval logged "by Anonymous") — FIXED
+There is now ONE identity. I set "Your name" = Rob (it collapses to an "Editing as: Rob"
+chip after blur). I then signed off rows in the /w/<id> workspace:
+- Row 1 → Approve, Row 2 → "Needs changes". BOTH carried my name: review-cell tooltips read
+  "Needs changes by Rob", body shows "last edited by Rob", and there is ZERO "Anonymous"
+  anywhere on the page (verified text scan). No separate hidden "Reviewing as" identity exists.
+- Persisted across a full reload: still "Editing as: Rob", still no "Anonymous".
+The exact concern that capped me at 8 is closed.
 
-## SVG still the print-ready vector I liked — confirmed intact
-Re-pulled the per-row SVG: `viewBox="0 0 43 43"`, `crispEdges`, QR drawn as `<path>`, ZERO
-embedded raster. Encoded URL fully tagged
-(`...?utm_source=newsletter&utm_medium=email&utm_campaign=spring-sale`). Drops straight into
-Illustrator and prints razor-sharp at any size.
+## Density / overflow re-check at 1280px AND 1440px — CLEAN, no regression
+Measured, not eyeballed: at both widths document scrollWidth == clientWidth (no page-level
+horizontal scrollbar). Every column lands inside the viewport — REVIEW, BASE URL, all 5 UTM
+fields, GENERATED URL, and ACTIONS; columns-past-viewport-edge = NONE at 1280 and 1440.
+The new "Changes" chip (renamed from "needs changes") sits amber in the REVIEW column without
+widening it or cramping the editable cells. No overflow, no cut-off Generated URL.
 
-## Still open (acknowledged out of scope this round)
-PNG resolution — no DPI/size option; bulk/contact PNGs are still screen-res, so if a client
-grabs the PNG for a flyer instead of the SVG it's too small at 300dpi. Not a blocker since
-the SVG covers real print, but it's the one thing between this and a 10.
-
-## CLARITY: Yes — same instantly-legible H1 + subhead.
-## VALUE: Yes — bulk QR + true vector from the same grid beats one-by-one QR-site pasting,
-and I can now TRUST the bulk output blind because invalid rows are skipped with a clear count.
-## ADVOCACY: 9 — blocker that capped me at 8 is gone, output is trustworthy, SVG is the real
-deal. Held short of 10 only by the screen-res PNG with no DPI choice.
+## CLARITY: Yes — same instantly-legible H1 + subhead; review layer reads clearly.
+## VALUE: Yes — grid + auto-fix + CSV beats hand-typing, and the sign-off log is now usable
+for client/teammate approval because attribution finally carries the reviewer's real name.
+## ADVOCACY: 9 — blocker gone, layout verified clean as the density sentinel. Short of 10:
+attribution surfaces only on hover (tooltip) not inline, and the name field collapses to a
+label with no obvious re-edit affordance.
 
 ```json
-{"name":"Rob","clarity":"Yes","value":"Yes","advocacy":9,"qr_reaction":"The invalid-row leak is fully fixed — per-row QR is disabled on the incomplete row and bulk Download QR codes skips it with a clear '1 skipped — incomplete or invalid URL' note, so no untracked QR lands in the ZIP or contact sheet. The SVG is still a true print-ready vector (path-based, crispEdges, viewBox, zero raster) that drops straight into Illustrator.","prior_concerns_addressed":"fixed — invalid-row QR leak closed (verified ZIP + contact sheet contain only the valid row); PNG DPI still open but acknowledged out of scope this round","likes":["Invalid rows are now skipped from bulk QR with an explicit skipped count, and the per-row QR button is disabled — I can trust the output blind","SVG export is a genuine scalable vector (viewBox 0 0 43 43, crispEdges, <path>, no embedded raster) — prints razor-sharp at any size in Illustrator","Per-row popover shows the exact fully-tagged encoded URL so I can verify before downloading","Auto-named files (01-spring-sale-newsletter-email.png) + contact sheet kill the one-by-one grunt work"],"complaints":["PNG resolution still low with no DPI/size option — if a client grabs the bulk/contact PNG for print instead of the SVG it's too small at 300dpi (acknowledged out of scope this round)"],"verdict_summary":"The blocker that capped me at 8 is genuinely gone — I added a base-URL-only row, hit Download QR codes, and it skipped it with a clear '1 skipped' note; the ZIP and contact sheet only show the tracked row. Combined with the true-vector SVG, this is now the grunt-work killer I wanted and I'd trust it in front of a client. One DPI option on the PNGs is all that's between this and a 10."}
+{"name":"Rob","clarity":"Yes","clarity_reason":"Cold-open is unchanged and instantly legible — H1 'Clean UTM links for your whole campaign — in one grid' + no-login/in-browser subhead; the team layer reads clearly via 'Mark each link Approved or Needs changes to sign off before launch.'","value":"Yes","value_reason":"Grid + auto-fix-casing + Export CSV beats my hand-typed query strings / one-link builder for a 3-5 link client campaign, and the review sign-off is now trustworthy because my approve AND needs-changes both logged 'by Rob' and match the roll-up (0 approved · 1 needs changes · 1 unreviewed). Weekly use for me.","advocacy":9,"advocacy_reason":"Up from 8. The 'by Anonymous' attribution bug that blocked me is fixed and the grid stayed overflow-free at 1280/1440, so I'd recommend it unprompted to freelancers juggling client UTMs. Held off 10: per-row attribution only shows on hover (tooltip 'Needs changes by Rob') instead of inline, and 'Your name' collapses into an 'Editing as: Rob' label with no obvious way to re-edit.","prior_concern_addressed":"all","top_issues":["Reviewer attribution surfaces only in a hover tooltip ('Needs changes by Rob') rather than an inline, always-visible sign-off log — a client-facing approval trail would read better shown, not hovered.","'Your name' input collapses to an 'Editing as: Rob' label after blur; re-editing the name later isn't an obvious click."],"liked":["FIXED: unified identity — single 'Your name'/'Editing as: Rob' drives review attribution; approve AND needs-changes both logged 'by Rob', zero 'Anonymous' anywhere, persisted across reload.","DENSITY PASS: zero horizontal page overflow at 1280px AND 1440px (scrollWidth==clientWidth); every column REVIEW → all UTM fields → GENERATED URL → ACTIONS fully inside the viewport, none cut off.","The 'Changes' chip rename is clean — amber chip in the REVIEW column without widening it or cramping editable cells.","Frictionless team flow: filled grid → 'Create shared workspace' → /w/<id>, set name, signed off rows, all server-synced with no signup."]}
 ```

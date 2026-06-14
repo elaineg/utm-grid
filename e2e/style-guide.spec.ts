@@ -218,15 +218,19 @@ test("Check 7 — Share style guide button exists, labeled, shows Copied! cue on
   // Grant clipboard permissions (needed in Chromium for navigator.clipboard)
   await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
 
-  // Click the button
+  // Click the button — dropdown closes, menu item disappears from DOM.
+  // "Copied!" cue is shown on the TRIGGER button (share-menu-btn), not the menu item.
   await btn.click();
 
-  // The button should show "Copied!" confirmation within ~2s
-  await expect(btn).toContainText(/copied/i, { timeout: 3000 });
+  // Dropdown closes
+  await expect(page.locator('[role="menu"]')).not.toBeVisible({ timeout: 2_000 });
 
-  // The button label/cue must still be visible after a re-render tick (not wiped by a tick)
+  // Trigger button shows "Copied!" confirmation within ~2s
+  await expect(shareMenuBtn).toContainText(/copied/i, { timeout: 3000 });
+
+  // The cue must still be visible after a re-render tick (not wiped by a tick)
   await page.waitForTimeout(400);
-  await expect(btn).toContainText(/copied/i, { timeout: 1000 });
+  await expect(shareMenuBtn).toContainText(/copied/i, { timeout: 1000 });
 });
 
 // ─── Check 7b: "Share style guide" button copies URL ending in /guide ─────────
@@ -369,12 +373,17 @@ test("Check 10 — Share style guide Copied! cue survives during live autosave t
   await shareMenuBtn.click();
 
   const btn = page.locator('[data-testid="share-style-guide-btn"]').first();
+  // Click — dropdown closes (menu item disappears). Cue shows on trigger button.
   await btn.click();
 
-  // Even with clipboard blocked, the "Copied!" cue should appear (state-driven, not clipboard-gated)
-  await expect(btn).toContainText(/copied/i, { timeout: 3000 });
+  // Dropdown closes
+  await expect(page.locator('[role="menu"]')).not.toBeVisible({ timeout: 2_000 });
 
-  // Still showing ~500ms later (survives re-render)
+  // Even with clipboard blocked, the "Copied!" cue should appear on the TRIGGER button
+  // (state-driven, not clipboard-gated — the app calls flashShareTrigger() regardless).
+  await expect(shareMenuBtn).toContainText(/copied/i, { timeout: 3000 });
+
+  // Still showing ~500ms later (survives re-render / autosave tick)
   await page.waitForTimeout(500);
-  await expect(btn).toContainText(/copied/i);
+  await expect(shareMenuBtn).toContainText(/copied/i);
 });

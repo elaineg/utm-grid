@@ -1,20 +1,42 @@
+# Round 2 — Tester 6 (Jules, Content & community marketer, 50/50 mobile)
+
+## Prior concerns — BOTH RESOLVED
+1. Attribution: typed "Jules" in "Your name" → header shows "Editing as: Jules", the review
+   popover now has a "Reviewing as" field PREFILLED with Jules, the approval logs
+   "✓ Approved by Jules", and /review shows "✓ Approved by Jules". Zero "Anonymous" anywhere
+   (DOM-confirmed on desktop AND 375px mobile). Fixed.
+2. Desktop popover position: portaled + clamped. Approve button at y=649 on a 900px viewport
+   — fully visible, no scroll. Fixed.
+
+## CLARITY — Yes
+Same strong H1 + "no login, nothing leaves your browser." Workspace copy is clear:
+"A live workspace your team edits together — changes save to a private link and sync across
+devices" vs "Copy share link… a frozen snapshot." One-breath pitch: bulk UTM builder with a
+no-login shared workspace where teammates approve/reject each link.
+
+## VALUE — Yes
+Replaces my Notion UTM table + retyping per platform AND my hand sign-off in Discord DMs.
+Now I can actually tell WHO approved (the whole point of sign-off) — drop the /w link in
+Discord, teammate sets their name, marks rows, and /review is clean read-only proof
+"All 1 link approved · by Jules." Recurring multi-times/week, no-login, bookmarkable.
+
+## ADVOCACY — 9
+Up from 7. The name bug that gutted the feature is gone, the desktop popover is fixed, and
+mobile is genuinely good (status button → portaled popover fully on-screen, name attaches,
+/review crisp). Held back from 10 by one inconsistency: the promised "Share ▾" menu exists
+in the workspace HEADER, but the toolbar below STILL shows separate "Copy share link" +
+"Copy all URLs" buttons — consolidation is half-done, so there are now two share entry
+points. Minor, not a blocker, but the only thing off a clean 10.
+
 ```json
-{
- "name":"Jules",
+{"name":"Jules",
  "clarity":"Yes",
+ "clarity_reason":"H1 + 'no login, nothing leaves your browser' + the live-workspace vs frozen-snapshot copy make the no-account bulk UTM builder with team sign-off legible in <30s.",
  "value":"Yes",
+ "value_reason":"Replaces my Notion UTM table + manual Discord DM sign-off; with attribution fixed I can finally prove WHO approved each link via /review. Recurring multi-times/week, no-login, bookmarkable.",
  "advocacy":9,
- "qr_reaction":"Both my QR gripes are gone. The per-row popover now opens right beside its trigger and fully on-screen (desktop download btn at y~172 of 900; mobile renders as a clean card under the row, single tap), and the QR files + contact sheet finally carry the channel — three same-campaign rows unzipped as 01-spring-linkedin-social.png / 02-spring-x-social.png / 03-spring-mastodon-social.png, contact sheet labeled '01 · spring · linkedin/social' etc. Exactly the distinction I needed.",
- "prior_concerns_addressed":"fixed: QR/contact-sheet labels now include source+medium so same-campaign rows across platforms are distinguishable; popover is anchored beside its trigger and clamped to the viewport on BOTH desktop and 375px mobile (no longer below the fold, no longer feels broken on first click); mobile per-row QR came up on a single tap this round.",
- "likes":[
-   "No login, runs entirely in the browser — my exact allergy; I'd bookmark this for tagging links across X/LinkedIn/Mastodon",
-   "QR files are now source-named and the printable contact sheet labels each code by campaign · source/medium — distinguishable at a glance for Discord/event drops",
-   "Per-row QR popover is anchored and fully visible on desktop AND mobile; mobile is a proper stacked card with big tap targets + Copy URL",
-   "Auto-fix naming + inline lint still catch the casing/typo mess that splits my GA"
- ],
- "complaints":[
-   "Presets are still the generic four (Email / Paid Social–LinkedIn / Google/CPC / Organic Social) — no built-in X, Mastodon, or Buffer. There's a 'Save preset…' so I can DIY, but the per-platform-preset pitch still isn't delivered out of the box for the platforms I actually post to."
- ],
- "verdict_summary":"This is now the no-account bulk UTM builder I'd bring up unprompted — fast, private, lints my mess, and the QR codes are genuinely useful for Discord and print. Both things that made it feel broken last round are cleanly fixed on desktop and mobile. The only thing keeping it off a 10 is that the platform presets still don't ship X/Mastodon/Buffer — give me those out of the box and I'm tweeting about it."
-}
+ "advocacy_reason":"Both round-1 blockers fixed: approvals attach 'by Jules' (no Anonymous) on desktop+mobile, and desktop popover is portaled and fully visible (Approve y649/900, no scroll). Mobile popover + /review clean. Only -1: new 'Share ▾' menu lives in the header but the toolbar still keeps separate 'Copy share link' + 'Copy all URLs' buttons — share consolidation is half-done.",
+ "prior_concern_addressed":"all",
+ "top_issues":["Share consolidation is partial: 'Share ▾' menu in the workspace header coexists with separate 'Copy share link' + 'Copy all URLs' buttons in the toolbar — two share entry points, mildly confusing"],
+ "liked":["Approval attribution works end-to-end: 'Reviewing as' prefilled with my name, '✓ Approved by Jules' in popover, row, AND /review; zero 'Anonymous'","Desktop review popover portaled + clamped — Approve fully visible at y649 on 900px, no scrolling","Mobile (375px): row status button opens a fully-visible popover with name+Note+Approve/Needs/Clear; review state synced from my desktop approval instantly","/review page is a clean read-only audit trail: 'All 1 link approved' badge, roll-up, per-link 'Approved by Jules' card — exactly the Discord sign-off proof I do by hand today","Still fully no-login and secret-link shareable — fits dropping a /w link in Discord"]}
 ```

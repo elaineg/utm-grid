@@ -1,30 +1,42 @@
-Sam (Product manager, mobile-heavy) — round 2
+# Round 2 — Tester 10 (Sam, PM, mobile-heavy)
 
-PRIOR-CONCERN RE-CHECK (my 3 round-1 complaints), all on my phone (375px):
-1. Per-row "Download PNG"/"Download SVG" fired no file on mobile — STILL OPEN on mobile.
-   The card-view QR popover renders a real scannable code + Download PNG/SVG buttons, but
-   tapping Download PNG produced NO download 3/3 tries (no file, no error, no console error).
-   I checked the same button on a wide/laptop layout and it DID save qr-row-1.png — so the
-   fix landed for the desktop table view but NOT the mobile card popover, which is exactly
-   where I live. Changelog said this was fixed; on my phone it isn't.
-2. Bulk QR only skipped blank-base-URL rows — FIXED. I added an untagged row (real URL,
-   zero utm tags); bulk "Download QR codes" showed "1 QR code generated, 1 skipped —
-   incomplete or invalid URL" and the ZIP held only the tagged PNG + contact-sheet. No
-   untagged link slips into the handoff now.
-3. Launch Check "Copy summary" gave no confirmation — FIXED. On mobile the button flips to
-   a green "✓ Copied!" and the clipboard fills (180 chars). Two rounds of nagging, resolved.
+## Re-check of MY round-1 complaints
+1. ATTRIBUTION (was BROKEN): FIXED. Top bar reads "Editing as: Sam Rivera"; the per-row
+   Review popover shows "Reviewing as: Sam Rivera"; the approval/needs-changes on /review
+   reads "by Sam Rivera". I never saw "Anonymous" once across workspace or /review. The
+   sign-off now has an owner — that's the whole point.
+2. MOBILE /review COLLISION (was BUG): FIXED. Tested the exact case (Needs-changes + long
+   note + long URL) at 375px. Card stacks cleanly: status badge → full URL (wraps to 2
+   lines, NO "h." truncation) → source · medium · campaign → note in italics. Measured
+   scrollWidth == clientWidth == 375, zero horizontal overflow. Nothing mashes.
 
-Fresh pass: tagged launch link built, auto-fix naming cleans casing, Launch Check sits near
-the top with a green "All 1 link pass" Compliance Report + Download report (CSV) — my exact
-look-organized handoff. 0 console errors all session, no signup.
+## CLARITY — Yes
+Same as R1: H1 + "share one link, no login" + workspace-vs-snapshot explainer land in <30s.
+The new "Share ▾" menu (Copy workspace link / Share style guide / Copy compliance report /
+Share review summary) is clearer than the old scatter of copy buttons.
+
+## VALUE — Yes
+Replaces my Google Sheet + Slack approval thread. /review is now a genuinely paste-ready
+sign-off: "0 of 1 approved", per-link status "Needs changes by Sam Rivera", and the note
+quoted underneath. WOULD I paste it in Slack as "campaign signed off"? Yes — and it makes
+me look organized because it names who approved and why something's blocked.
+
+## ADVOCACY — 9/10
+Both bugs that capped me at 6 are gone and verified on mobile. Share review summary copies
+the /review link with a visible "✓ Copied!" cue (clipboard contents confirmed = the /review
+URL). Knocked off the last point only because per-row sign-off still needs opening a
+"Review" popover (no inline one-tap Approve on the card), and "Share review summary" lives
+in the workspace Share menu, not on the /review page itself — a teammate viewing /review
+can't re-share it from there. Minor, but real on mobile. Otherwise I'd bring this up
+unprompted to other PMs.
+
+## priorConcernsAddressed: all
 
 ```json
-{
- "name":"Sam","clarity":"Yes","value":"Yes","advocacy":8,
- "qr_reaction":"Bulk QR now correctly skips untagged rows and tells me so, and per-row codes render a real scannable QR with the tagged URL — but on my phone the per-row Download PNG/SVG STILL does nothing while it works on desktop, so my single-link QR export is broken on the device I actually use.",
- "prior_concerns_addressed":"2 of 3 fixed (bulk-skip and Copy-summary green confirmation both verified fixed on mobile); per-row Download PNG/SVG still fires no file in the mobile card popover even though it works on desktop — still open",
- "likes":["Bulk QR skips untagged rows and tells me ('1 skipped — incomplete or invalid URL') — no bad link in my handoff","Launch Check 'Copy summary' finally shows green '✓ Copied!' on mobile — my two-round gripe is gone","Compliance Report + Download report (CSV) is a tidy launch-doc artifact","Auto-fix naming + clean CSV export, zero re-entry, no signup","Whole flow works on my phone, 0 console errors"],
- "complaints":["Per-row 'Download PNG'/'Download SVG' in the QR popover STILL fire no file on mobile (0/3 attempts, no error) even though the identical button works on desktop — single-link QR export is dead on the device I use, and this was claimed fixed","Works-on-laptop-not-phone inconsistency is the kind of thing that quietly erodes my trust before a team handoff — I'd hand a teammate a button that does nothing and not know why"],
- "verdict_summary":"Two of my three round-1 gripes are genuinely fixed and verified on my phone — the untagged-row skip and the green Copied confirmation — and the batch/auto-fix/CSV/Launch-Check flow is exactly the organized launch handoff I want with no login. But the per-row PNG/SVG QR download is STILL dead in the mobile card view (it works on desktop), and it was reported fixed, so I'm holding at 8: I'd recommend it to other PMs but I'd warn them the single-link QR export only works on a laptop."
-}
+{"tester": 10, "round": 2, "clarity": "Yes", "value": "Yes", "advocacy": 9, "topComplaints": ["Per-row sign-off needs opening a Review popover; no inline one-tap Approve on the mobile card", "Share review summary lives in the workspace Share menu, not on the /review page a viewer lands on"], "priorConcernsAddressed": "all"}
+```
+
+<!-- machine block for parent -->
+```json
+{"name":"Sam","clarity":"Yes","clarity_reason":"H1 + 'share one link, no login' + workspace-vs-snapshot explainer clear in <30s; new consolidated 'Share ▾' menu is clearer than R1's scattered copy buttons","value":"Yes","value_reason":"replaces Google Sheet + Slack approval thread; /review is now a paste-ready sign-off naming WHO approved ('by Sam Rivera') and WHY a link is blocked (quoted note) — makes me look organized","advocacy":9,"advocacy_reason":"both R1 blockers verified fixed on mobile: attribution attaches my name (no Anonymous anywhere) and /review stacks cleanly at 375px with zero overflow, full URL not truncated to 'h.'; Share review summary shows '✓ Copied!' and clipboard confirmed = /review URL. -1 for per-row Review popover instead of inline one-tap approve, and share-summary not being on the /review page itself","prior_concern_addressed":"all","top_issues":["Per-row sign-off requires opening a 'Review' popover; no inline one-tap Approve on the mobile row card","'Share review summary' is in the workspace Share menu, not on the /review page a teammate lands on — they can't re-share from there"],"liked":["Attribution fixed: 'Editing as / Reviewing as / by Sam Rivera' everywhere, no Anonymous","Mobile /review fixed: clean stacking, full URL, note in italics, no collision/overflow at 375px","Consolidated 'Share ▾' menu with visible '✓ Copied!' cue; clipboard verified to hold the /review link","Live rollup '0 approved · 1 needs changes · 0 unreviewed' + server-synced status"]}
 ```

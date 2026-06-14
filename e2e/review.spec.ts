@@ -405,8 +405,11 @@ test("R9 — Share review summary: button shows Copied! cue, copied URL ends in 
   await expect(shareBtn).toBeVisible({ timeout: 5_000 });
   await shareBtn.click();
 
-  // Button shows Copied! cue
-  await expect(shareBtn).toContainText("Copied!", { timeout: 3_000 });
+  // Dropdown closes after click (menu item disappears) — "Copied!" cue is on the
+  // TRIGGER button (share-menu-btn), not on the menu item (which is gone from DOM).
+  // R18 tests this more directly; here we assert the trigger and the clipboard URL.
+  await expect(page.locator('[role="menu"]')).not.toBeVisible({ timeout: 2_000 });
+  await expect(shareMenuBtn).toContainText("Copied!", { timeout: 3_000 });
 
   // Clipboard contains URL ending in /review
   const clipboardText = await page.evaluate(() => navigator.clipboard.readText());
@@ -751,6 +754,154 @@ test("R16 — FIX B: Needs-changes note persists across reload and renders on /r
   const row0 = page.locator('[data-testid="review-summary-row-0"]');
   await expect(row0).toBeVisible({ timeout: 8_000 });
   await expect(row0).toContainText("fix campaign casing before launch");
+
+  await ctx.close();
+});
+
+// ─── R19: Portal fix for Approve button (elementFromPoint check) ──────────────
+// Regression guard: Approve button in table-view popover must also be clickable —
+// the portal fix applies to the whole popover, not just Needs-changes.
+
+test("R19 — desktop 1280px: Approve button is clickable via portal (elementFromPoint confirms)", async ({
+  browser,
+}) => {
+  const id = await createWorkspace();
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+  const page = await ctx.newPage();
+
+  await page.goto(`/w/${id}`);
+  await expect(page.locator('[data-testid="workspace-banner"]')).toBeVisible({ timeout: 12_000 });
+
+  const badge = page.locator('[data-testid="review-badge-btn-row-0-table"]');
+  await expect(badge).toBeVisible({ timeout: 8_000 });
+  await badge.click();
+
+  const popover = page.locator('[data-testid="review-popover-row-0-table"]');
+  await expect(popover).toBeVisible({ timeout: 5_000 });
+
+  const approveBtn = page.locator('[data-testid="review-approve-btn-row-0-table"]');
+  await expect(approveBtn).toBeVisible({ timeout: 3_000 });
+
+  // elementFromPoint at Approve button center must be the button (not a TH/TD intercepting)
+  const isButtonAtCenter = await page.evaluate(() => {
+    const btn = document.querySelector('[data-testid="review-approve-btn-row-0-table"]');
+    if (!btn) return false;
+    const rect = btn.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const el = document.elementFromPoint(cx, cy);
+    return el !== null && (el === btn || btn.contains(el));
+  });
+  expect(isButtonAtCenter).toBe(true);
+
+  // Click it — row flips to Approved
+  await approveBtn.click();
+  await expect(popover).not.toBeVisible({ timeout: 3_000 });
+  await expect(badge).toContainText("Approved", { timeout: 5_000 });
+
+  await ctx.close();
+});
+
+// ─── R20: Mobile (375px) popover buttons are clickable ────────────────────────
+// Regression guard: at 375px, the mobile card view popover must be clickable —
+// buttons not occluded by any sticky/overlay element.
+
+test("R20 — 375px mobile: review popover Approve button is clickable (not occluded)", async ({
+  browser,
+}) => {
+  const id = await createWorkspace();
+  const ctx = await browser.newContext({
+    viewport: { width: 375, height: 812 },
+    userAgent:
+      "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1",
+  });
+  const page = await ctx.newPage();
+
+  await page.goto(`/w/${id}`);
+  await expect(page.locator('[data-testid="workspace-banner"]')).toBeVisible({ timeout: 12_000 });
+
+  // Card view at 375px — use -card suffix
+  const badge0 = page.locator('[data-testid="review-badge-btn-row-0-card"]');
+  await expect(badge0).toBeVisible({ timeout: 8_000 });
+  await badge0.click();
+
+  const popover = page.locator('[data-testid="review-popover-row-0-card"]');
+  await expect(popover).toBeVisible({ timeout: 5_000 });
+
+  // Approve button must be visible and clickable (not occluded)
+  const approveBtn = page.locator('[data-testid="review-approve-btn-row-0-card"]');
+  await expect(approveBtn).toBeVisible({ timeout: 3_000 });
+
+  // elementFromPoint at Approve button center must be the button (not obscured)
+  const isClickable = await page.evaluate(() => {
+    const btn = document.querySelector('[data-testid="review-approve-btn-row-0-card"]');
+    if (!btn) return false;
+    const rect = btn.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const el = document.elementFromPoint(cx, cy);
+    return el !== null && (el === btn || btn.contains(el));
+  });
+  expect(isClickable).toBe(true);
+
+  await approveBtn.click();
+  await expect(popover).not.toBeVisible({ timeout: 3_000 });
+  await expect(badge0).toContainText("Approved", { timeout: 5_000 });
+
+  // No horizontal scroll at 375px
+  const hasHScroll = await page.evaluate(() => {
+    return document.documentElement.scrollWidth > document.documentElement.clientWidth;
+  });
+  expect(hasHScroll).toBe(false);
+
+  await ctx.close();
+});
+
+// ─── R21: Share trigger shows "Copied!" for multiple share actions ─────────────
+// Regression guard: the trigger button "Copied!" cue must appear after EACH copy
+// action in the dropdown — not just "Share review summary".
+
+test("R21 — Share trigger shows 'Copied!' for both 'Copy workspace link' and 'Share review summary'", async ({
+  browser,
+}) => {
+  const id = await createWorkspace();
+  const ctx = await browser.newContext({
+    viewport: { width: 1280, height: 800 },
+    permissions: ["clipboard-read", "clipboard-write"],
+  });
+  const page = await ctx.newPage();
+
+  await page.goto(`/w/${id}`);
+  await expect(page.locator('[data-testid="workspace-banner"]')).toBeVisible({ timeout: 12_000 });
+
+  const shareMenuBtn = page.locator('[data-testid="share-menu-btn"]');
+  await expect(shareMenuBtn).toBeVisible({ timeout: 8_000 });
+
+  // --- Action 1: Copy workspace link ---
+  await shareMenuBtn.click();
+  await expect(page.locator('[role="menu"]')).toBeVisible({ timeout: 3_000 });
+  await page.locator('[data-testid="copy-workspace-link"]').click();
+
+  // Dropdown closes, trigger shows "Copied!"
+  await expect(page.locator('[role="menu"]')).not.toBeVisible({ timeout: 2_000 });
+  await expect(shareMenuBtn).toContainText("Copied!", { timeout: 2_000 });
+
+  // Wait for the cue to reset (1.5s)
+  await page.waitForTimeout(2000);
+  await expect(shareMenuBtn).not.toContainText("Copied!", { timeout: 1_000 });
+
+  // --- Action 2: Share review summary ---
+  await shareMenuBtn.click();
+  await expect(page.locator('[role="menu"]')).toBeVisible({ timeout: 3_000 });
+  await page.locator('[data-testid="share-review-summary-btn"]').click();
+
+  // Dropdown closes, trigger shows "Copied!" again
+  await expect(page.locator('[role="menu"]')).not.toBeVisible({ timeout: 2_000 });
+  await expect(shareMenuBtn).toContainText("Copied!", { timeout: 2_000 });
+
+  // Clipboard ends in /review
+  const clip = await page.evaluate(() => navigator.clipboard.readText());
+  expect(clip).toMatch(/\/review$/);
 
   await ctx.close();
 });
