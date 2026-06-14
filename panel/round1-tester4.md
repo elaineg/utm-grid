@@ -1,17 +1,48 @@
-{"name":"Tomás","clarity":"Yes","value":"Yes","advocacy":9}
+# Round 1 (re-test) — Tester 4 (Tomás, Ops analyst, Edge on corporate laptop)
 
-I'm Tomás, ops analyst on a locked-down Windows/Edge laptop — I build tagged links in Excel because IT blocks installs, and I'm wary of pasting company data into random sites.
+I remember this app (last round I was a 9). This round I went straight for the
+batch-checker + its CSV report, the thing my job lives on.
 
-WHAT I DID
-- Cold open: hero "Clean UTM links for your whole campaign — in one grid" + "no login, nothing leaves your browser" answered my two biggest questions in 5 seconds.
-- Filled a grid with my kind of messy Excel data ("Google", "CPC", "Summer Sale 2026", a base URL with an existing ?id=5 param). Auto-fix naming correctly lowercased and turned spaces into underscores; it did NOT touch my domain/path.
-- The ?id=5 link generated as ...?id=5&utm_source=... — appended with & instead of overwriting. That's the "won't mangle my data" test, and it passed.
-- Export CSV → re-imported the same file. Got a "Map CSV columns" dialog: auto-mapped every header, said "2 data rows", offered Append/Replace + "you can Undo immediately." Imported back identical, including the ?id=5 row. Clean round-trip — this slots straight into my Excel workflow.
-- Style guide (/w/.../guide): legible, well-structured — Why tags matter, Allowed values per field (chips), naming template with ordered segments, a WORKED EXAMPLE (q1_email), ✓ conventions. "Share style guide" on /w/ copied the /guide link (label flipped to "Copied!"; clipboard verified = the guide URL; one empty read earlier was a test-env timing artifact, not a bug). I'd genuinely paste this into Teams for our agency.
+## Prior concerns: priorConcernsAddressed = all
+My R5/R6 cap (no in-place Rename) was fixed last round and there's still zero
+data-carrying network traffic — re-confirmed: NON-GET REQUESTS = [] across a full
+build + Launch Check + CSV download session. Safe for company campaign data.
 
-FRICTION
-- Four share-ish actions: "Copy share link", "Create shared workspace", "Copy workspace link", "Share style guide". The inline note helps, but it took a beat to know which freezes a snapshot vs syncs vs sends the read-only guide.
-- Privacy claim is for the local grid; the moment I create a shared workspace or share a guide, my taxonomy lives on a server behind a secret link. For company data I'd want that distinction explicit on the workspace screen.
-- Guide is read-only and pretty but no "Download CSV/PDF" — my agency works outside this tool, so a copyable allowed-values table beats a link I hope they keep.
+## 1. CLARITY — Yes (<5s)
+"Build/clean a whole batch of UTM links in a grid, catch the mistakes before launch,
+round-trip to CSV — nothing leaves the browser." H1 + "PRE-LAUNCH QA / Run Launch Check"
+spell it out. I'd pitch it to an ops peer in one line.
 
-TO GET TO 10: one-line privacy note on the workspace/guide ("shared data lives on our server behind this secret link"), an export of the allowed-values table, and consolidating/labeling the four share buttons so a non-power-user picks the right one first try.
+## 2. VALUE — Yes
+Today I do this in Excel: hand-built CONCAT formula + manual eyeballing for casing/space
+typos, which always leaks a "LinkedIn" vs "linkedin" that splits GA4. "Run Launch Check"
+is the feature I wanted. I fed 3 messy rows; it caught ALL of it: per-field lowercase +
+no-spaces flags, a Missing-required on the blank utm_medium, AND two cross-row consistency
+warnings ("linkedin" vs "LinkedIn", "june_ops" vs "June Ops" — these will split campaign
+data in GA4). My spreadsheet does not catch cross-row inconsistency. That's the win.
+
+## CSV report — well-formed, genuinely Excel-ready
+"Download report (CSV)" -> `utm-launch-check.csv`. I read the raw bytes:
+- Header: `row #,base URL,field,value,issue type,message` — named, sensible columns.
+- One row PER ISSUE (11 rows for 3 grid rows) — correct normalized shape; I can AutoFilter
+  on `issue type` (inconsistent/lowercase/no-spaces/required) or pivot by field. Exactly how
+  I'd triage.
+- RFC-4180 quoting is textbook: messages with commas are quoted, embedded quotes doubled
+  (`""june_ops""`). Blank value renders as an empty cell (`,,required`), not "undefined".
+  Nothing mangled. This is the part lesser tools burn me on; it's clean here.
+
+## 3. ADVOCACY — 9
+Same as last round, now earned on MY core use case, not just rename polish. It does the one
+thing I'd switch for (cross-row + casing audit) and exports a CSV I drop into Excel without
+cleanup. Strong, specific peer recommend.
+
+### Single biggest thing holding it down (the half-point, honest)
+The report CSV has **no UTF-8 BOM**. Messages use an em-dash (—); on Edge/Windows a
+double-click open in Excel can guess the wrong codepage and show mojibake, forcing
+Data > From Text/CSV. A leading BOM would make double-click "just work" for the exact
+Windows-Excel user this tool courts. (LF-only line endings are fine on modern Excel — minor.)
+Not a data-mangle, purely an open-experience nit — but it's what sits between 9 and 10 for me.
+
+```json
+{"tester": 4, "round": 1, "clarity": "Yes", "value": "Yes", "advocacy": 9, "topComplaints": ["Report CSV lacks a UTF-8 BOM, so em-dashes in messages can render as mojibake when double-clicked into Excel on Edge/Windows", "Single-purpose tool I reach for 2-4x/month, not an everyone-needs-this daily driver"], "priorConcernsAddressed": "all"}
+```

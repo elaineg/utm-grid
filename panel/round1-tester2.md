@@ -1,53 +1,19 @@
-{"name":"Marcus","clarity":"Yes","value":"Yes","advocacy":7}
+# Round 1 — Tester 2 (Marcus, frontend engineer, 2yr, Chrome+devtools, desktop)
 
-# Marcus — Frontend engineer (Chrome desktop, devtools open)
+Task: tag a product-launch announcement across email/Twitter/blog; wanted a way to QA a whole batch of links before launch. Remembered this app and previously flagged grid-width overflow.
 
-## What I did
-Cold-opened on desktop @1280px. H1 "Clean UTM links for your whole campaign — in one grid"
-told me instantly what it is. Built one row for my launch: base URL + Twitter/Social-Paid/
-long campaign/term, flipped on **Enforce allowed values**, watched the inline lint fire,
-then opened the seeded Team Style Guide and tested the Share button.
+## 1. CLARITY — Yes
+H1 "Clean UTM links for your whole campaign — in one grid." plus subline ("Auto-fix messy casing and typos before they split your Google Analytics") told me in ~3s what it is and who it's for. Grid with UTM_SOURCE/MEDIUM/CAMPAIGN headers + a "PRE-LAUNCH QA" band confirmed it. No ambiguity.
 
-## Clarity — Yes
-Subhead ("Auto-fix messy casing and typos before they split your Google Analytics. Share
-one link... no login, nothing leaves your browser") nails who/what/why in 30s. The grid,
-presets, and "Enforce allowed values" toggle are self-explanatory. No confusion.
+## 2. VALUE — Yes
+Today I hand-build query strings or copy last quarter's links and edit them — easy to ship `Social` vs `social` or "spring launch" with a space and split GA4 data. I filled 3 messy rows (Email/Twitter/blog launch); it flagged uppercase source/medium, a space in campaign, inconsistent campaign casing across rows, and a missing `https://`. The Launch Check is real batch QA: "3 links checked / 0 passing / 3 with issues", grouped by issue type with row refs and GA4-impact text. Beats hand-fiddling clearly.
 
-## Value — Yes
-Today I hand-edit query strings or copy a teammate's old link and tweak it — error-prone.
-The grid + lint catching `Twitter` → "use lowercase only" is real time saved, and the style
-guide is something I'd actually paste in our launch Slack channel.
+## 3. ADVOCACY — 8/10
+I'd share this in team Slack unprompted for a launch — the Launch Check + CSV is the killer feature for "don't ship broken UTMs."
+- Found the batch check easily: PRE-LAUNCH QA band → "Run Launch Check" → Compliance Report. CSV download works (`utm-launch-check.csv`; columns: row #, base URL, field, value, issue type, message — paste-ready into a launch ticket). Copy button also present.
+- Prior complaint FIXED: no horizontal overflow at any desktop width. Measured docScrollWidth == clientWidth at 1280/1440/1680; table right edge 1255/1335/1455 px, always inside viewport. No column squeeze/overlap, chips wrap cleanly. 0 console errors.
+- Holds at 8 not 9: top toolbar is BUSY — Add row / Auto-fix naming / Import CSV / Paste & Audit URLs / Export CSV / Copy share link / Copy all URLs, then a SEPARATE "Audit URLs" AND "Run Launch Check" in the QA band. "Paste & Audit URLs" (top) vs "Audit URLs" (QA band) read as the same action; I had to stop and figure out which to use. Consolidate/relabel the two audit entry points and thin the toolbar → 9.
 
-## 1280px overflow re-check — PARTIALLY fixed
-PAGE horizontal scroll is GONE: documentElement.scrollWidth == innerWidth == 1280, no body
-overflow. That specific bug is fixed. BUT the fix introduced new jank: table content is
-2335px inside a ~1022px container (right sidebar eats width), so editable UTM columns now
-sit behind STICKY columns. Verified via CSS: "Generated URL" th is position:sticky x=301
-w=630 and "Actions" sticky x=904 — they OVERLAP static utm_term (x=621) and utm_content
-(x=741). Result: when the inner table is scrolled left to reach source/medium/campaign
-cells, the lint warning ("⚠ Contains uppercase... ('twitter') Fix") is partially clipped/
-covered by the sticky Generated-URL cell. The warnings EXIST and read well (10 colored
-cells detected) but at 1280px + Enforce on + a long URL they are NOT cleanly reachable — I
-fight in-table horizontal scroll and they're occluded. A FE notices this instantly.
-
-## Style Guide — strong, would share
-/guide renders clean: "WHY UTM TAGS MATTER" with the Newsletter-vs-newsletter example,
-allowed values as chips, naming template with worked example `q1_email`, ✓ conventions.
-"Share style guide" copied the correct /guide link; label confirmed the action.
-Seam I noticed: template channel segment (email/social/ppc) doesn't match allowed
-utm_medium (email/paid_social/cpc) or utm_campaign (spring_sale/black_friday/onboarding) —
-so worked example q1_email wouldn't pass the allowed-values check it sits next to. Minor
-but a careful reader catches it.
-
-## Friction points
-1. 1280px: editable cells + lint warnings occluded by sticky Generated-URL/Actions columns;
-   requires in-table horizontal scroll. (main blocker)
-2. Sidebar steals table width even on a wide screen, forcing the squeeze. On 1280 it should
-   collapse or the table should get the room.
-3. Style guide internal inconsistency between template channel vocab and allowed-value lists.
-
-## What raises me to 9-10
-Make the grid fit at 1280 without occlusion: don't make Generated URL sticky over the
-inputs, give the table full width (collapse/float the sidebar < ~1440px), or truncate the
-generated URL cell so editable columns + lint stay visible. Get the inline warnings fully
-readable at 1280 with no in-table scroll and I'll bring this up unprompted in Slack.
+```json
+{"tester": 2, "round": 1, "clarity": "Yes", "value": "Yes", "advocacy": 8, "topComplaints": ["Two near-identical audit entry points ('Paste & Audit URLs' toolbar vs 'Audit URLs' QA band) are confusing", "Top toolbar crams 7 buttons — hierarchy unclear for a first-timer"], "priorConcernsAddressed": "all"}
+```

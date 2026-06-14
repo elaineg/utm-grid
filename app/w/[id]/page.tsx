@@ -172,6 +172,10 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
   const [styleGuideCopied, setStyleGuideCopied] = useState(false);
   const styleGuideCopyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // F6: Copy compliance report link state — /w/<id>/check
+  const [reportLinkCopied, setReportLinkCopied] = useState(false);
+  const reportLinkCopyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Mount the workspace link copied state on entry (if we just navigated from "Create shared workspace")
   // Check sessionStorage for a pending copy-on-load signal
   const didMountCopyCheck = useRef(false);
@@ -381,10 +385,11 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
     }
     if (copyTimer.current) clearTimeout(copyTimer.current);
     setWorkspaceLinkCopied(true);
+    // F1: 2s hold — peripherally unmissable
     copyTimer.current = setTimeout(() => {
       setWorkspaceLinkCopied(false);
       copyTimer.current = null;
-    }, 1800);
+    }, 2000);
   }, [id]);
 
   const copyStyleGuideLink = useCallback(async () => {
@@ -397,10 +402,29 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
     }
     if (styleGuideCopyTimer.current) clearTimeout(styleGuideCopyTimer.current);
     setStyleGuideCopied(true);
+    // F1: 2s hold — same as Copy summary / other copy cues, unmissable
     styleGuideCopyTimer.current = setTimeout(() => {
       setStyleGuideCopied(false);
       styleGuideCopyTimer.current = null;
-    }, 1800);
+    }, 2000);
+  }, [id]);
+
+  // F6: Copy compliance report link — /w/<id>/check (read-only shareable report)
+  const copyReportLink = useCallback(async () => {
+    if (!id) return;
+    const url = `${window.location.origin}/w/${id}/check`;
+    try {
+      await writeClipboard(url);
+    } catch {
+      // execCommand fallback already tried inside writeClipboard
+    }
+    if (reportLinkCopyTimer.current) clearTimeout(reportLinkCopyTimer.current);
+    setReportLinkCopied(true);
+    // F1: 2s hold — same unmissable green cue as other copy buttons
+    reportLinkCopyTimer.current = setTimeout(() => {
+      setReportLinkCopied(false);
+      reportLinkCopyTimer.current = null;
+    }, 2000);
   }, [id]);
 
   // ── Preview handler ────────────────────────────────────────────────────────
@@ -664,7 +688,7 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
                   {workspaceLinkCopied ? (
                     <span className="inline-flex items-center gap-1.5">
                       <span aria-hidden="true">✓</span>{" "}
-                      <span>Copied ✓</span>
+                      <span>Copied!</span>
                     </span>
                   ) : (
                     "Copy workspace link"
@@ -695,7 +719,7 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
                   {styleGuideCopied ? (
                     <span className="inline-flex items-center gap-1.5">
                       <span aria-hidden="true">✓</span>{" "}
-                      <span>Copied ✓</span>
+                      <span>Copied!</span>
                     </span>
                   ) : (
                     "Share style guide"
@@ -707,6 +731,37 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
                 {/* Dedicated aria-live for style-guide copy */}
                 <span role="status" aria-live="polite" className="sr-only">
                   {styleGuideCopied ? "Style guide link copied!" : ""}
+                </span>
+              </div>
+
+              {/* F6: Share compliance report — /w/<id>/check, distinctly labeled */}
+              <div className="flex flex-col items-start gap-0.5">
+                <button
+                  type="button"
+                  data-testid="share-report-link-btn"
+                  aria-label="Copy compliance report link"
+                  onClick={() => void copyReportLink()}
+                  className={`w-full sm:w-auto rounded-md border px-4 py-2 text-sm font-medium transition-colors duration-200 min-h-[44px] ${
+                    reportLinkCopied
+                      ? "border-green-500 bg-green-500 text-white"
+                      : "border-teal-400 bg-teal-50 text-teal-700 hover:bg-teal-100"
+                  }`}
+                >
+                  {reportLinkCopied ? (
+                    <span className="inline-flex items-center gap-1.5">
+                      <span aria-hidden="true">✓</span>{" "}
+                      <span>Copied!</span>
+                    </span>
+                  ) : (
+                    "Copy report link"
+                  )}
+                </button>
+                <span className="text-[10px] text-teal-600 leading-tight">
+                  shareable compliance report
+                </span>
+                {/* Dedicated aria-live for report-link copy */}
+                <span role="status" aria-live="polite" className="sr-only">
+                  {reportLinkCopied ? "Compliance report link copied!" : ""}
                 </span>
               </div>
             </div>

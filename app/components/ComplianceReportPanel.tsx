@@ -13,7 +13,7 @@
  * NO SSR read: the report is held in state initialized in the parent's event handler.
  */
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { writeClipboard } from "../../lib/share";
 import {
   buildLaunchCheckCsv,
@@ -78,9 +78,16 @@ export function ComplianceReportPanel({
 }: ComplianceReportPanelProps) {
   const allPass = summary.violations.length === 0;
 
-  // "Copy summary" — ref-stable timer that survives re-render (spec requirement).
+  // "Copy summary" — ref-stable timer (2s hold), solid green fill + Copied! (F1 spec).
   const [copySummaryState, setCopySummaryState] = useState<"idle" | "copied">("idle");
   const copySummaryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Clear timer on unmount to avoid setting state on an unmounted component.
+  useEffect(() => {
+    return () => {
+      if (copySummaryTimer.current) clearTimeout(copySummaryTimer.current);
+    };
+  }, []);
 
   const handleCopySummary = async () => {
     const text = buildLaunchCheckTextSummary(summary, isWorkspaceMode);
@@ -94,7 +101,7 @@ export function ComplianceReportPanel({
     copySummaryTimer.current = setTimeout(() => {
       setCopySummaryState("idle");
       copySummaryTimer.current = null;
-    }, 1800);
+    }, 2000);
   };
 
   const handleDownloadCsv = () => {
@@ -109,6 +116,49 @@ export function ComplianceReportPanel({
     ? Math.round((summary.passingCount / summary.totalLinks) * 100)
     : 100;
 
+  // F1: peripherally unmissable green button styles (solid fill, ≥44px, 2s hold).
+  const copySummaryClass = `min-h-[44px] rounded-md border px-4 py-2 text-sm font-medium transition-colors duration-150 ${
+    copySummaryState === "copied"
+      ? "border-green-600 bg-green-500 text-white"
+      : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50 active:bg-slate-100"
+  }`;
+
+  // F2: action buttons — rendered in BOTH header (primary) and bottom (secondary).
+  const actionButtons = (
+    <>
+      <button
+        type="button"
+        data-testid="compliance-download-csv"
+        onClick={handleDownloadCsv}
+        className="min-h-[44px] rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 active:bg-slate-100"
+      >
+        Download report (CSV)
+      </button>
+
+      {/* "Copy summary" — F1: solid-green fill + check + Copied! for 2s, ref-stable timer */}
+      <button
+        type="button"
+        data-testid="compliance-copy-summary"
+        aria-label="copy-summary"
+        onClick={() => void handleCopySummary()}
+        className={copySummaryClass}
+      >
+        {copySummaryState === "copied" ? (
+          <span className="inline-flex items-center gap-1">
+            <span aria-hidden="true">✓</span>{" "}
+            <span>Copied!</span>
+          </span>
+        ) : (
+          "Copy summary"
+        )}
+      </button>
+      {/* aria-live region for screenreader announcement of copy */}
+      <span role="status" aria-live="polite" className="sr-only">
+        {copySummaryState === "copied" ? "Summary copied to clipboard!" : ""}
+      </span>
+    </>
+  );
+
   return (
     <div
       role="status"
@@ -116,8 +166,9 @@ export function ComplianceReportPanel({
       data-testid="compliance-report-panel"
       className="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-4"
     >
-      {/* Header row */}
-      <div className="flex items-start justify-between gap-3">
+      {/* F2: Header row — title + PRIMARY action buttons + dismiss.
+          Buttons at the TOP so they're visible the moment the report opens. */}
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             {/* Shield/checklist glyph — teal, distinct from violet AuditSummaryPanel */}
@@ -133,15 +184,19 @@ export function ComplianceReportPanel({
               : "Checked in your browser — nothing sent to any server."}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={onDismiss}
-          aria-label="Dismiss compliance report"
-          data-testid="compliance-report-dismiss"
-          className="shrink-0 text-slate-400 hover:text-slate-600 text-lg leading-none"
-        >
-          ×
-        </button>
+        {/* F2: Primary action buttons in the header — always visible on report open */}
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
+          {actionButtons}
+          <button
+            type="button"
+            onClick={onDismiss}
+            aria-label="Dismiss compliance report"
+            data-testid="compliance-report-dismiss"
+            className="shrink-0 text-slate-400 hover:text-slate-600 text-lg leading-none ml-1"
+          >
+            ×
+          </button>
+        </div>
       </div>
 
       {/* Scorecard */}
@@ -239,42 +294,9 @@ export function ComplianceReportPanel({
         </div>
       )}
 
-      {/* Actions row */}
+      {/* F2: Secondary action buttons at bottom — additional access point after scrolling the report */}
       <div className="mt-4 flex flex-wrap gap-3">
-        <button
-          type="button"
-          data-testid="compliance-download-csv"
-          onClick={handleDownloadCsv}
-          className="min-h-[44px] rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 active:bg-slate-100"
-        >
-          Download report (CSV)
-        </button>
-
-        {/* "Copy summary" — ref-stable green fill + label flip + aria-live (spec requirement) */}
-        <button
-          type="button"
-          data-testid="compliance-copy-summary"
-          aria-label="copy-summary"
-          onClick={() => void handleCopySummary()}
-          className={`min-h-[44px] rounded-md border px-4 py-2 text-sm font-medium transition-colors duration-200 ${
-            copySummaryState === "copied"
-              ? "border-green-500 bg-green-500 text-white"
-              : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50 active:bg-slate-100"
-          }`}
-        >
-          {copySummaryState === "copied" ? (
-            <span className="inline-flex items-center gap-1">
-              <span aria-hidden="true">✓</span>{" "}
-              <span>Copied!</span>
-            </span>
-          ) : (
-            "Copy summary"
-          )}
-        </button>
-        {/* aria-live region for screenreader announcement of copy */}
-        <span role="status" aria-live="polite" className="sr-only">
-          {copySummaryState === "copied" ? "Summary copied to clipboard!" : ""}
-        </span>
+        {actionButtons}
       </div>
     </div>
   );

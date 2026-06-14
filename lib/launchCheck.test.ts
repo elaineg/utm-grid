@@ -8,6 +8,9 @@ import {
 import { lintRows } from "./lint";
 import { DEFAULT_LINT_SETTINGS, emptyRow, type UtmRow } from "./types";
 
+// UTF-8 BOM character (F5 spec requirement)
+const BOM = "﻿";
+
 function row(id: string, overrides: Partial<UtmRow>): UtmRow {
   return { ...emptyRow(id), ...overrides };
 }
@@ -103,21 +106,34 @@ describe("computeLaunchCheckSummary: passing count", () => {
 // ── buildLaunchCheckCsv ────────────────────────────────────────────────────────
 
 describe("buildLaunchCheckCsv", () => {
-  it("outputs header + one all-clear row on a clean grid", () => {
+  it("outputs UTF-8 BOM at the start of the CSV (F5)", () => {
+    const rows = [fullRow("r1"), fullRow("r2")];
+    const warnings = lintRows(rows, DEFAULT_LINT_SETTINGS);
+    const summary = computeLaunchCheckSummary(rows, warnings);
+    const csv = buildLaunchCheckCsv(summary);
+    // BOM must be the very first character
+    expect(csv.charCodeAt(0)).toBe(0xfeff);
+    expect(csv.startsWith(BOM)).toBe(true);
+  });
+
+  it("outputs header + one all-clear row on a clean grid (F5: 7-column header + BOM)", () => {
     const rows = [fullRow("r1"), fullRow("r2")];
     const warnings = lintRows(rows, DEFAULT_LINT_SETTINGS);
     const summary = computeLaunchCheckSummary(rows, warnings);
     const csv = buildLaunchCheckCsv(summary);
 
-    const lines = csv.trim().split("\n");
-    expect(lines[0]).toBe("row #,base URL,field,value,issue type,message");
+    // Strip BOM for line-splitting
+    const csvNoBom = csv.slice(1);
+    const lines = csvNoBom.trim().split("\n");
+    // F5: new 7-column header (base URL + full URL)
+    expect(lines[0]).toBe("row #,base URL,full URL,field,value,issue type,message");
     expect(lines[1]).toContain("all-clear");
     expect(lines[1]).toContain("All 2 links pass");
     // Exactly two lines (header + all-clear).
     expect(lines).toHaveLength(2);
   });
 
-  it("outputs one row per violation on a dirty grid", () => {
+  it("outputs one row per violation on a dirty grid (F5: includes full URL column)", () => {
     const rows = [
       fullRow("r1"),
       fullRow("r2", { utm_medium: "" }),
@@ -127,11 +143,12 @@ describe("buildLaunchCheckCsv", () => {
     const summary = computeLaunchCheckSummary(rows, warnings);
     const csv = buildLaunchCheckCsv(summary);
 
-    const lines = csv.trim().split("\n");
+    const csvNoBom = csv.slice(1);
+    const lines = csvNoBom.trim().split("\n");
     // header + one row per violation
     expect(lines.length).toBeGreaterThan(2);
-    // header must be exact
-    expect(lines[0]).toBe("row #,base URL,field,value,issue type,message");
+    // F5: header must include full URL column
+    expect(lines[0]).toBe("row #,base URL,full URL,field,value,issue type,message");
     // No all-clear row when there are violations
     expect(csv).not.toContain("all-clear");
   });
@@ -149,6 +166,26 @@ describe("buildLaunchCheckCsv", () => {
     expect(csv).toContain("2,");
     expect(csv).toContain("utm_medium");
     expect(csv).toContain("required");
+  });
+
+  it("includes the full tagged URL in violation rows (F5)", () => {
+    const rows = [
+      fullRow("r1"),
+      fullRow("r2", { utm_medium: "" }),
+    ];
+    const warnings = lintRows(rows, DEFAULT_LINT_SETTINGS);
+    const summary = computeLaunchCheckSummary(rows, warnings);
+
+    // Verify violation has fullUrl set
+    const violation = summary.violations[0];
+    expect(violation.fullUrl).toBeTruthy();
+    expect(typeof violation.fullUrl).toBe("string");
+    // The full URL should contain the base URL
+    expect(violation.fullUrl).toContain(violation.baseUrl);
+
+    const csv = buildLaunchCheckCsv(summary);
+    // Full URL column should appear in the CSV data (utm params or at least base url)
+    expect(csv).toContain("https://example.com");
   });
 
   it("escapes commas in message column", () => {

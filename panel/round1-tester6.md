@@ -2,40 +2,36 @@
 
 # Jules — Content & community marketer (50/50 desktop/mobile, allergic to logins)
 
-## What I did
-Cold-opened on mobile (390px). Built a real link: base myblog.com/spring-launch, source
-"LinkedIn", medium "Social", campaign "Spring Launch 2026!". Hit Auto-fix naming, copied
-the generated URL. Then opened the seeded Team UTM Style Guide on desktop AND mobile, and
-tested the "Share style guide" button on /w/<id>.
+## Re-check of MY prior complaint (silent copy buttons) — FIXED
+Last round "Share style guide" / copy buttons gave NO visible confirmation. This round every
+copy button I tested flips to a solid GREEN "✓ Copied!" pill that holds ~0.7s: Copy share
+link, Copy all URLs, AND the new Launch Check "Copy summary". A hurried person sees it.
+(Clipboard read succeeded — 1306 chars on Copy summary — so the copy genuinely fired.) Done.
 
-## What I saw (good)
-- Zero login anywhere — home, workspace, guide all open cold. This is THE thing for me. I'd
-  bookmark this for daily X/LinkedIn/Mastodon link tagging.
-- Auto-fix nailed it: "LinkedIn"→linkedin, "Social"→social, "Spring Launch 2026!"→
-  spring_launch_2026 — lowercased + snake_cased in one click. Copy URL put the real link on
-  my clipboard.
-- The Style Guide is genuinely excellent: "Why UTM tags matter" with a Newsletter vs
-  newsletter example, allowed-values chips per field, a 2-segment naming template with a
-  WORKED EXAMPLE (q1_email), and a clean conventions checklist. Renders perfectly on mobile.
-  First thing here I'd actually paste into a Notion doc or send to a guest poster/agency
-  instead of writing my own "please tag links like this" note. Big value.
-- Presets exist (Email, Paid Social–LinkedIn, Google/CPC, Organic Social).
+## This round's task — batch link check before launch
+1. CLARITY — Yes. H1 "Clean UTM links for your whole campaign — in one grid" + "no login,
+   nothing leaves your browser" told me in ~3s. Exactly the no-account bulk tool I bookmark.
+2. VALUE — Yes. Today I hand-edit UTMs in Notion and eyeball casing — which is how I get
+   "social" vs "Social" splitting my GA4. I built a dirty 3-row launch (twitter/linkedin/
+   mastodon) and hit **Run Launch Check** (green button in the PRE-LAUNCH QA strip — found it
+   without hunting; discoverable). It caught everything: inconsistent utm_campaign/utm_medium
+   across rows, uppercase, spaces, missing https://, each with "these will split campaign data
+   in GA4." That's the silent mistake nothing else free flags. Real time saved.
+   **Download report (CSV)** delivered a clean, usable file (row#, field, value, issue type,
+   message) — I'd attach it when handing a launch to a teammate.
 
-## Friction (honest)
-1. "Share style guide" copies the correct /guide URL (verified on clipboard) but gives NO
-   confirmation — no "Copied!" label flip, no toast. I clicked and had no idea it worked; I'd
-   click 3x. Add a "Copied ✓" state. NOT an env artifact — clipboard read succeeded, the UI
-   is just silent.
-2. Auto-fix left the trailing "!" (spring_launch_2026!). Convention says no spaces but it
-   doesn't strip punctuation, so a "clean" link can still carry a stray "!" that splits GA.
-3. My platforms are X and Mastodon; presets cover LinkedIn/Google/Email but not X or
-   Mastodon. I can type them, but the whole pitch is "presets per platform," so missing the
-   two I post to most is a letdown.
-4. Style Guide is keyed to a *workspace* (a team thing). As a solo marketer I'd want a guide
-   off my plain localStorage grid too without first thinking "is this a team link?"
+## ADVOCACY — 8
+The Launch Check is the feature that makes me bookmark this. Buttons are now honest. What
+holds it at 8, not 9–10:
+1. The grid ALSO shows per-row "3 warnings / Fix" chips, and it's not obvious they're the
+   same engine as the big Launch Check report — I briefly thought I needed both. One source of
+   truth (or "see full Launch Check" tying them together) closes it.
+2. No one-click jump from a report finding back to the offending grid cell to fix it — I have
+   to eyeball-match row numbers. A "Fix in grid" link per finding gets me to 9.
+3. Still no X(twitter)/Mastodon presets — the two platforms I post to most. The pitch is
+   "presets per platform"; I type them by hand. Add those and I recommend it unprompted in my
+   marketing Discord.
 
-## What raises me to 9–10
-- Visible "Copied ✓" feedback on Share style guide.
-- X (twitter) and Mastodon presets out of the box.
-- Auto-fix strips/replaces stray punctuation, not just casing/spaces.
-Get those and I'm recommending this unprompted in my marketing Discord.
+```json
+{"tester": 6, "round": 1, "clarity": "Yes", "value": "Yes", "advocacy": 8, "topComplaints": ["Per-row 'N warnings/Fix' chips feel disconnected from the big Launch Check report — unclear it's the same check", "No one-click 'fix in grid' jump from a report finding to the offending cell", "Still no X(twitter)/Mastodon presets despite the 'presets per platform' pitch"], "priorConcernsAddressed": "all"}
+```

@@ -18,6 +18,8 @@ type RowIndex = Map<string, { baseUrl: string; rowNumber: number }>;
 export interface ViolationRow {
   rowNumber: number;
   baseUrl: string;
+  /** Full tagged URL including utm_* params (the generated link for this row). */
+  fullUrl: string;
   field: string;
   value: string;
   issueType: string;
@@ -71,9 +73,13 @@ export function computeLaunchCheckSummary(
     if (!meta) continue;
     const row = rows.find((r) => r.id === w.rowId);
     const value = row ? (row[w.field as keyof UtmRow] as string) ?? "" : "";
+    // F5: include full tagged URL (base + utm_* params) so the violation row
+    // can be joined back to the exact original link.
+    const fullUrl = row ? buildUtmUrl(row) : meta.baseUrl;
     violations.push({
       rowNumber: meta.rowNumber,
       baseUrl: meta.baseUrl,
+      fullUrl,
       field: w.field,
       value,
       issueType: w.rule,
@@ -104,20 +110,30 @@ export function escapeCsvCell(value: string): string {
   return value;
 }
 
-/** CSV header columns (spec-exact). */
-const CSV_HEADERS = ["row #", "base URL", "field", "value", "issue type", "message"];
+/**
+ * CSV header columns.
+ * F5: added "full URL" column (complete tagged URL incl. utm_* params) so a failing
+ * row can be joined back to the exact original link. "base URL" remains for the
+ * stripped base URL.
+ */
+const CSV_HEADERS = ["row #", "base URL", "full URL", "field", "value", "issue type", "message"];
 
 /**
  * Generate the CSV report string.
+ * - F5: UTF-8 BOM prepended so double-clicking into Excel on Windows doesn't mojibake em-dashes.
+ * - F5: "full URL" column carries the complete tagged URL (base + utm_* params).
  * - One row per violation (spec requirement).
  * - When clean: one all-clear row (spec requirement).
  */
 export function buildLaunchCheckCsv(summary: LaunchCheckSummary): string {
+  // F5: UTF-8 BOM — tells Excel this file is UTF-8 (prevents mojibake on double-click)
+  const BOM = "﻿";
   const headerLine = CSV_HEADERS.map(escapeCsvCell).join(",");
 
   if (summary.violations.length === 0) {
-    // All-clear row
+    // All-clear row — 7 columns to match updated header
     const allClearRow = [
+      "—",
       "—",
       "—",
       "—",
@@ -127,13 +143,14 @@ export function buildLaunchCheckCsv(summary: LaunchCheckSummary): string {
     ]
       .map(escapeCsvCell)
       .join(",");
-    return `${headerLine}\n${allClearRow}\n`;
+    return `${BOM}${headerLine}\n${allClearRow}\n`;
   }
 
   const dataLines = summary.violations.map((v) =>
     [
       String(v.rowNumber),
       v.baseUrl,
+      v.fullUrl,
       v.field,
       v.value,
       v.issueType,
@@ -143,7 +160,7 @@ export function buildLaunchCheckCsv(summary: LaunchCheckSummary): string {
       .join(",")
   );
 
-  return `${headerLine}\n${dataLines.join("\n")}\n`;
+  return `${BOM}${headerLine}\n${dataLines.join("\n")}\n`;
 }
 
 /**

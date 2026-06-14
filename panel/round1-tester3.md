@@ -1,46 +1,47 @@
-{"name":"Wen","clarity":"Yes","value":"Yes","advocacy":9}
+# Round (re-test) — Tester 3 (Wen, marketing data analyst)
 
-# Wen — Marketing data analyst (GA4 / BigQuery / Sheets / dbt). Re-test round.
+## Prior complaints — re-checked first
+1. "No CSV export of lint violations (one row per violation: row#, URL, field, value, issue, message)."
+   FIXED. "Run Launch Check" produces a Compliance Report with **Download report (CSV)**. CSV header is
+   literally `row #,base URL,field,value,issue type,message` — one row per violation, properly quoted
+   (embedded quotes doubled, em-dash messages intact). 14 violation rows for my 5-URL dirty batch.
+   This is exactly the schema I asked for. (saved: validator-workspace/round1-tester3/dl-utm-launch-check.csv)
+2. "No bulk Fix-all; fixing lint per-cell is tedious on a large import." FIXED. **Auto-fix naming**
+   normalized every row in one click (LinkedIn→linkedin, Paid_Social→paid_social, "Summer Sale 2026"→
+   summer_sale_2026) — zero uppercase/space dirt left afterward.
+3. "Campaigns localStorage-only, can't sync/share." ADDRESSED. New **Live Team Workspace** ("changes save
+   to a private link and sync across devices") is the cross-device path I wanted.
 
-## Prior-concern re-check (my P1 last round)
-LAST ROUND I docked from 9 to 6 because the naming template silently failed to hydrate on
-reload: localStorage saved segments but on load only the enforce toggle restored, leaving an
-empty template enforcing against nothing. **FIXED — verified.** Defined segments quarter +
-channel, set separator "_", enabled enforce, reloaded: segment inputs hydrated to
-["quarter","channel"] AND the panel reads "Enforce naming template — On". LS holds
-`{"segments":[{quarter},{channel}],"separator":"_","enforceTemplate":true}` and it now renders
-back correctly. "Define once, reuse next week" finally holds. This was the one thing blocking me.
-P3 (Add-token affordance) not re-tested in depth; minor.
+## Long-value integrity — the thing I distrust most
+PASS. My 96-char utm_campaign (`summer_sale_2026_...holdout_control_group`) survived verbatim through:
+paste→audit→grid, Export CSV (grep confirms full 96 chars, untruncated), generated_url, and after
+Auto-fix. It is correctly ABSENT from the violation CSV because row 1 is the canonical clean value —
+that's right behavior, not data loss. No silent transforms anywhere; raw cells preserved (`Facebook`
+stays `Facebook` until I fix). 0 console/page errors across every flow.
 
-## What I did this round (fresh)
-Pasted 4 dirty URLs (Facebook/facebook/FaceBook, CPC/cpc/Cpc, Summer_Sale/summer_sale/Summer-Sale,
-"email " w/ trailing space) via Paste & Audit. Ran Auto-fix, Exported CSV. Imported a 2-row CSV.
-Opened the seeded Style Guide and tested "Share style guide".
+## Batch checker — does it catch what wrecks my GA4 dashboards?
+Yes, and it names the failure mode: `Inconsistent utm_campaign across rows: "summer_sale_2026" vs
+"Summer Sale 2026" — these will split campaign data in GA4.` Grouped by field, severity counts
+(8 failing / 6 warnings), row #, offending value, message. This is a pre-launch QA report I'd
+actually attach in Slack before a campaign goes live.
 
-## What I saw (nails my pain)
-- Audit lint is exactly right: "Inconsistent utm_source across rows: 'Facebook' vs 'facebook' vs
-  'FaceBook' — these will split campaign data in GA4." That is the dashboard-wrecking bug, named.
-- Auto-fix collapsed all 3 casing variants to one `summer_sale`. Export CSV: clean lowercase GA4
-  headers `base_url,utm_source,...,generated_url`, lossless — I'd pipe it straight into a dbt seed.
-- Import CSV opens a column-MAPPING modal (pre-mapped headers, per-column override, Append/Replace,
-  "Either way you can Undo"). That transparency is what I distrust most tools for lacking. Trust earned.
-- "Generated URLs are trimmed of trailing spaces; your source cells are left as typed." No invisible
-  transforms — my #1 requirement.
-- NEW Style Guide: legible, real artifact. Allowed values per field, naming template with ORDERED
-  segments + worked example (q1_email), 3 conventions, "why" in my own words. "Share style guide"
-  copied the correct /w/<id>/guide link, label → "✓ Copied!". This is something I'd send an agency
-  instead of the stale Google Doc nobody reads. Zero console errors across every flow.
+## 1. CLARITY — Yes
+Headline + "Auto-fix messy casing and typos before they split your Google Analytics" = my exact pain in 5s.
 
-## What would raise me to 10
-- Per-row diff/confirm on Auto-fix (it changed Summer-Sale's separator in bulk; I want to approve
-  edge cases like an intended hyphen — lint flags it first, so not invisible, but no per-row control).
-- Export the lint VIOLATION report itself as CSV, so I can attach it to a ticket/Slack thread.
-- A guide default/empty-state hint, and a "copy as TSV/Sheets" option for where my taxonomy lives.
+## 2. VALUE — Yes
+Today I eyeball a Sheet + a broken VLOOKUP and only catch casing splits after GA4 shows two rows. This
+catches cross-row inconsistency before publish, and the violation CSV drops straight into BigQuery/Sheets
+as an audit log. Strict CSV in/out + per-violation export is the data-hygiene loop I demand. I'd run it weekly.
 
-Today: hand-kept Google Sheet of allowed values + a BigQuery lint, and dirty names still split rows
-in Looker. This caught every inconsistency in one pass, persists my template, and gives a shareable
-standard. Saves real time and prevents the exact bug I babysit. I'd raise it in my team channel.
+## 3. ADVOCACY — 9
+Both my blockers are gone and the violation CSV is exactly to spec — I'll bring this up unprompted in my
+marketing-ops Slack. Single thing holding it from 10: the violation report's `base URL` column strips the
+UTM params (shows clean base only), so for a paste-audit batch I can't pivot the CSV back to the exact
+original tagged URL that failed — I'd want the full original URL as a column alongside the clean base. Minor,
+but for an analyst that's the join key. Everything else is best-in-class for a free tool.
 
 ```json
-{"tester": 3, "round": 1, "clarity": "Yes", "value": "Yes", "advocacy": 9, "topComplaints": ["Auto-fix applies separator/casing changes in bulk with no per-row diff/confirm", "Can't export the lint violation report itself to attach to a ticket/Slack"], "priorConcernsAddressed": "all"}
+{"tester": 3, "round": 1, "clarity": "Yes", "value": "Yes", "advocacy": 9,
+ "topComplaints": ["Violation CSV 'base URL' column strips UTM params — no full original tagged URL as a join key for the failing row", "Live Team Workspace exists but I didn't pressure-test multi-device sync this round"],
+ "priorConcernsAddressed": "all"}
 ```

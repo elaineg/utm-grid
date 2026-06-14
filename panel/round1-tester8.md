@@ -1,13 +1,43 @@
-{"name":"Rob","clarity":"Yes","value":"Yes","advocacy":8}
+# Round 1 (re-test) — Tester 8 (Rob, freelance brand/visual designer)
 
-I'm Rob, freelance brand designer who occasionally tags client links and otherwise types query strings by hand.
+Device: desktop, color-calibrated monitor. Tech: medium. Benchmark: "I'd type query strings by
+hand in ~4 min" + my per-client Google Sheet. I remember this app from prior rounds.
 
-PRIOR CONCERN RE-CHECK (column crowding): PARTIALLY fixed. The PAGE no longer scrolls sideways at 1280/1440/1680 — good. BUT the grid lives in an overflow-x-auto box that the right-rail panels (Template/Campaigns/Allowed values) squeeze down to ~958px even on a 1680px monitor; the table needs ~1745px, so the editable cells + Generated URL still scroll horizontally INSIDE that sub-pane while a third of the viewport sits under the side rail. So my gripe shifted from "page scrolls" to "the grid sub-pane scrolls and is starved for width."
+## My prior complaint: grid squeezed on wide monitors — ADDRESSED
+Tested a 3-row batch with the Launch Check report OPEN at 1280 / 1440 / 1680px (measured DOM).
+- documentElement.scrollWidth == innerWidth at all three widths — ZERO horizontal scroll.
+- No element overflows the viewport (overflowW = 0). No squeezed/overlapping columns.
+- Table caps at 1230px centered in a max-width container; at 1680 that's whitespace margins, not
+  clipping. Clean centered layout, not the cramped squeeze I flagged before. Resolved.
 
-WHAT I DID: Cold-opened the grid. Headline + subhead ("Auto-fix messy casing and typos before they split your Google Analytics") told me what it is in ~5s. Typed a real client link with messy values: Facebook / CPC / "Spring_Sale 2026". Grid live-flagged uppercase + spaces with inline Fix links. "Auto-fix naming" normalized to facebook / cpc / spring_sale_2026 with an Undo toast. Row Copy put a clean correct URL on my clipboard. That genuinely beats hand-typing — casing/space drift is exactly what silently splits GA and I'd never catch it by eye.
+## The batch-check feature (this round's focus) — WORKS, and it's the best part
+"PRE-LAUNCH QA → Run Launch Check". Built linkedin/social/spring_sale (good), then
+LinkedIn/Social Media/Spring Sale (messy), then a row with no protocol + blank campaign/medium.
+One click gave "Launch Check — Compliance Report: 7 links checked, 4 passing, 3 with issues" with
+a progress bar, then issues GROUPED by type with exact row numbers + fixes:
+- Cross-row inconsistency: "linkedin" vs "LinkedIn", "spring_sale" vs "Spring Sale" — "these will
+  split campaign data in GA4". My Sheet can NOT catch this.
+- Uppercase / spaces per cell with the corrected suggestion ("spring sale", "Spring_Sale").
+- Invalid URL: "acme.com/no-protocol → Not a valid http(s) URL". Caught it.
+- "Download report (CSV)" + "Copy summary" present — I can hand a client a clean QA receipt.
+Zero console errors across every run.
 
-NEW STYLE GUIDE: Loaded /w/.../guide — it renders fully and is legible. As Rob I'd ACTUALLY send this to a client/agency: clear title, a "why it matters" with the concrete Newsletter-vs-newsletter example, allowed values as clean pills per field, a naming template with a worked example (q1_email), and a 3-point conventions checklist with a CTA into the editable workspace. "Share style guide" on /w/<id> copies the correct /guide link (label → "Copied!"). It's a real artifact, not filler — best part of this round.
+## CLARITY: Yes (under 5s)
+H1 "Clean UTM links for your whole campaign — in one grid" + subhead about casing/typos splitting
+Analytics. I'd tell a friend: "batch-build and QA all your campaign tracking links, catches the
+casing/typo mistakes that fragment your GA reports, exports CSV, no login."
 
-FRICTION: (1) grid sub-pane starved for width / inner horizontal scroll on a wide monitor; (2) top toolbar is busy (Paste & Audit, Presets, Bulk edit, Live workspace, naming rules) — slightly overwhelming cold; (3) messy values aren't auto-corrected until you click Fix/Auto-fix (reasonable but a first-timer may expect autocorrect).
+## VALUE: Yes
+For recurring client link-tagging this beats my Sheet and hand-typing. Launch Check catching
+cross-row inconsistency before launch is something I'd otherwise miss until the client's GA report
+is already split. Build-and-QA a batch is ~30s vs my 4-min hand job with no QA at all.
 
-TO REACH 9-10: give the grid the full page width (collapse/float the right rail so the Generated-URL column is visible without inner scroll). The style guide already earns advocacy on its own; the only thing holding me at 8 is the grid still feels cramped on the wide monitor I work on all day.
+## ADVOCACY: 9
+Does one job cleanly, the pre-launch batch QA is exactly what a designer shipping client links
+needs, wide-monitor layout no longer squeezes, no errors. I'd bring it up unprompted.
+Single biggest thing holding it from 10: still localStorage-only — saved clients/campaigns won't
+follow me to my laptop. The optional cross-device account would make it a 10.
+
+```json
+{"tester": 8, "round": 1, "clarity": "Yes", "value": "Yes", "advocacy": 9, "topComplaints": ["localStorage-only: saved clients/campaigns don't sync to a second machine — caps it at 9 not 10", "Grid centers at ~1230px max-width, so a 1680px monitor shows wide whitespace margins — no scroll/defect, just doesn't use the extra width"], "priorConcernsAddressed": "all"}
+```
