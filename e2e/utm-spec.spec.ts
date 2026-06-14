@@ -27,8 +27,9 @@ import { expect, test, type Page } from "@playwright/test";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+// Both table and card layouts are always in DOM; use .first() to avoid strict-mode violations.
 const cell = (page: Page, field: string, rowNum: number) =>
-  page.getByLabel(`${field} row ${rowNum}`, { exact: true });
+  page.getByLabel(`${field} row ${rowNum}`, { exact: true }).first();
 
 /** Use a wide viewport to ensure the desktop UTM Spec sidebar is rendered. */
 async function gotoWide(page: Page) {
@@ -407,11 +408,12 @@ test("(f) share link carries UTM Spec; fresh context shows off-spec warning", as
   // Off-spec warning on row 1's utm_medium cell
   // The Fix to button will name "email" or "paid_social" (nearest to "sms")
   // "email" is 4 edits from "sms" (4 chars vs 3), "paid_social" is 8 edits — nearest is "email"
-  const fixBtns = freshPage.locator('[data-testid^="fix-to-"]');
+  // Both table and card render fix-to buttons; filter to table-only (no -card suffix) for count
+  const fixBtns = freshPage.locator('[data-testid^="fix-to-"]:not([data-testid$="-card"])');
   await expect(fixBtns.first()).toBeVisible({ timeout: 5000 });
 
   // Row 2 and row 3 have allowed values → no off-spec warnings on those
-  // Confirm only 1 off-spec warning exists (for row 1's sms)
+  // Confirm only 1 off-spec warning exists (for row 1's sms) in the table view
   await expect(fixBtns).toHaveCount(1);
 
   await freshCtx.close();
@@ -452,7 +454,10 @@ test("(g) regression: generated URL, case/space lint, cross-row lint, bulk Set c
     page.getByRole("alert").filter({ hasText: '"spring_sale" vs "Spring Sale"' })
   ).toHaveCount(3);
 
-  // Bulk Set column: pick utm_campaign, set to "black_friday" on all rows
+  // Bulk Set column: expand the BulkEditBar (collapsed by default since panel round-4), then set
+  const bulkToggle = page.locator('button[aria-controls="bulk-edit-panel"]');
+  if ((await bulkToggle.getAttribute("aria-expanded")) === "false") await bulkToggle.click();
+  await expect(page.getByLabel("Column for bulk edit").first()).toBeVisible({ timeout: 3000 });
   await page.getByLabel("Column for bulk edit").first().selectOption("utm_campaign");
   await page.getByLabel("Value to set").first().fill("black_friday");
   await page.getByLabel("Set column utm_campaign").first().click();

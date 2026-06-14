@@ -11,7 +11,9 @@ import { UTM_FIELDS } from "./types";
  * The function is pure: it never touches row data directly.
  */
 export function normalizeValue(value: string, settings: Pick<LintSettings, "lowercaseOnly" | "noSpaces">): string {
-  let v = value;
+  // P1-2: trim leading/trailing whitespace FIRST so a stray trailing space never
+  // becomes a trailing underscore (e.g. "Instagram " → "instagram", not "instagram_").
+  let v = value.trim();
   if (settings.lowercaseOnly) v = v.toLowerCase();
   if (settings.noSpaces) v = v.replace(/[\s\-]+/g, "_");
   return v;
@@ -50,11 +52,22 @@ export function normalizeRow(row: UtmRow, settings: LintSettings): UtmRow {
  * the same reference.
  */
 export function normalizeAllRows(rows: UtmRow[], settings: LintSettings): { rows: UtmRow[]; count: number } {
-  let count = 0;
+  // count = number of CELLS changed (not rows), so the toast says "Auto-fixed 3 cells" not "1".
+  let cellCount = 0;
+  let anyRowChanged = false;
   const updated = rows.map((r) => {
-    const next = normalizeRow(r, settings);
-    if (next !== r) count++;
-    return next;
+    let changed = false;
+    const result = { ...r };
+    for (const f of UTM_FIELDS) {
+      const fixed = normalizeValue(r[f], settings);
+      if (fixed !== r[f]) {
+        result[f] = fixed;
+        cellCount++;
+        changed = true;
+      }
+    }
+    if (changed) { anyRowChanged = true; return result as UtmRow; }
+    return r;
   });
-  return { rows: count > 0 ? updated : rows, count };
+  return { rows: anyRowChanged ? updated : rows, count: cellCount };
 }

@@ -17,8 +17,11 @@ import { expect, test, type Page } from "@playwright/test";
 
 const PREVIEW = process.env.BASE_URL ?? "http://localhost:3811";
 
+// At 375px the TABLE is CSS-hidden (hidden sm:block) and the CARD is visible (sm:hidden).
+// These tests verify the Fix-to button is tappable in the CARD view at 375px.
+// Scope to the card container to interact with the visible card input.
 const cell = (page: Page, field: string, rowNum: number) =>
-  page.getByLabel(`${field} row ${rowNum}`, { exact: true });
+  page.locator(".sm\\:hidden.flex.flex-col.gap-3").getByLabel(`${field} row ${rowNum}`, { exact: true });
 
 /** Navigate to the preview URL at 375px mobile viewport. */
 async function gotoMobile(page: Page) {
@@ -56,9 +59,11 @@ async function enableEnforce(page: Page) {
   }
 }
 
-// ── Test 1: Fix-to is tappable at default scroll position ─────────────────────
+// ── Test 1: Fix-to is tappable in CARD view at 375px ─────────────────────────
+// At 375px the TABLE is CSS-hidden; the CARD view renders. The card Fix-to chip is in
+// normal document flow (not over a sticky column), so no occlusion should occur.
 
-test("375px: off-spec Fix-to button is tappable (not occluded by sticky column)", async ({
+test("375px: off-spec Fix-to button is tappable in card view (not occluded)", async ({
   browser,
 }) => {
   const ctx = await browser.newContext({ viewport: { width: 375, height: 812 } });
@@ -72,18 +77,18 @@ test("375px: off-spec Fix-to button is tappable (not occluded by sticky column)"
   await expandMobileSpecAndAdd(page, "utm_source", "facebook");
   await enableEnforce(page);
 
-  // Type a typo in utm_source row 1 to trigger off-spec warning
+  // Type a typo in utm_source row 1 to trigger off-spec warning (card view input)
   const sourceCell = cell(page, "utm_source", 1);
   await sourceCell.fill("twiter");
   // Tap elsewhere to blur and trigger lint
   await page.keyboard.press("Tab");
 
-  // Off-spec warning should appear with "Fix to twitter"
-  const fixBtn = page.locator('[data-testid="fix-to-twitter"]').first();
+  // In the card view, Fix-to button has -card suffix in testid
+  const fixBtn = page.locator('[data-testid="fix-to-twitter-card"]').first();
   await expect(fixBtn).toBeVisible({ timeout: 5000 });
   await expect(fixBtn).toContainText("Fix to twitter");
 
-  // Confirm no pointer interception: use elementFromPoint at the fix button's centre
+  // Confirm no pointer interception
   const btnBox = await fixBtn.boundingBox();
   expect(btnBox).not.toBeNull();
   const cx = btnBox!.x + btnBox!.width / 2;
@@ -106,24 +111,25 @@ test("375px: off-spec Fix-to button is tappable (not occluded by sticky column)"
     { x: cx, y: cy }
   );
 
-  // The topmost element should NOT be a sticky td (the Generated URL / Actions cell)
-  // It should be the fix button itself or a child of it (BUTTON or SPAN)
+  // Card Fix-to is in normal flow — no sticky td occlusion
   expect(interceptionResult.isSticky).toBe(false);
   expect(["BUTTON", "SPAN", "A"].includes(interceptionResult.tag)).toBe(true);
 
-  // Now actually click the Fix-to button — this would throw if another element intercepts
+  // Click succeeds
   await fixBtn.click();
 
   // Cell must now be "twitter" and the warning must be gone
   await expect(sourceCell).toHaveValue("twitter");
-  await expect(page.locator('[data-testid="fix-to-twitter"]')).toHaveCount(0);
+  await expect(page.locator('[data-testid="fix-to-twitter-card"]')).toHaveCount(0);
 
   await ctx.close();
 });
 
-// ── Test 2: Fix-to is tappable AFTER horizontal grid scroll ───────────────────
+// ── Test 2: Fix-to button tappable after page scroll (card view has no horizontal scroll) ─
+// At 375px the card view has no horizontal scroll. This test verifies the fix-to button
+// is still tappable after the user scrolls the page vertically.
 
-test("375px: Fix-to button tappable after horizontal grid scroll", async ({
+test("375px: Fix-to button tappable after page vertical scroll (card view)", async ({
   browser,
 }) => {
   const ctx = await browser.newContext({ viewport: { width: 375, height: 812 } });
@@ -137,20 +143,19 @@ test("375px: Fix-to button tappable after horizontal grid scroll", async ({
   await expandMobileSpecAndAdd(page, "utm_source", "facebook");
   await enableEnforce(page);
 
-  // Type typo in utm_source to trigger off-spec
+  // Type typo in utm_source to trigger off-spec (card view)
   await cell(page, "utm_source", 1).fill("twiter");
   await page.keyboard.press("Tab");
 
-  // Scroll the table horizontally to the right so sticky columns are more likely to overlap
-  const scrollContainer = page.locator(".overflow-x-auto").first();
-  await scrollContainer.evaluate((el) => { el.scrollLeft = 400; });
+  // Scroll the page down a bit
+  await page.evaluate(() => window.scrollBy(0, 200));
   await page.waitForTimeout(300);
 
-  // The Fix-to button should still be visible and tappable after scroll
-  const fixBtn = page.locator('[data-testid="fix-to-twitter"]').first();
+  // Fix-to button in card view (testid has -card suffix)
+  const fixBtn = page.locator('[data-testid="fix-to-twitter-card"]').first();
   await expect(fixBtn).toBeVisible({ timeout: 5000 });
 
-  // elementFromPoint check at scrolled position
+  // elementFromPoint check — must not be sticky-td (card view has no sticky columns)
   const btnBox = await fixBtn.boundingBox();
   expect(btnBox).not.toBeNull();
   const cx = btnBox!.x + btnBox!.width / 2;
@@ -173,13 +178,13 @@ test("375px: Fix-to button tappable after horizontal grid scroll", async ({
     { x: cx, y: cy }
   );
 
-  // Must not be a sticky-td intercept
+  // Card view is normal flow — no sticky td
   expect(interceptionResult.isSticky).toBe(false);
 
   // Click succeeds
   await fixBtn.click();
   await expect(cell(page, "utm_source", 1)).toHaveValue("twitter");
-  await expect(page.locator('[data-testid="fix-to-twitter"]')).toHaveCount(0);
+  await expect(page.locator('[data-testid="fix-to-twitter-card"]')).toHaveCount(0);
 
   await ctx.close();
 });

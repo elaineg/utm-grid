@@ -1,47 +1,32 @@
-# Sam (PM, mobile-heavy between meetings) — Re-test: UTM Spec + shareable enforcement
+# Round 1 — Tester 10 (Sam, Product Manager, mobile-heavy)
 
-## Prior concern re-checked
-- Last round (advocacy 7) my blocker was: on a 375px phone the sticky Generated-URL column
-  overlapped the row-select / select-all checkboxes, so subset selection was un-tappable.
-  RE-CHECKED at mobile width: with rows visible at their natural scroll position, the row-1
-  checkbox is the topmost element at its center, a real tap toggles it, and select-all goes
-  indeterminate correctly. Subset selection works on my phone now. **Fixed.**
+CLARITY: Partially. What I'd tell a teammate: "Grid where you batch-build campaign UTM links,
+auto-clean the casing/typos so everyone's tags match, then export a CSV or share one link." I
+got there, but past 5s. The H1 — "Share one link that enforces your team's UTM taxonomy — stop
+policing casing and typos that split your GA4 data." — is six lines tall on my phone and shoves
+the actual tool below the fold; "taxonomy"/"lint rules" are dev words. The subhead ("Build and
+tag links in a grid... export clean CSV") is what made it click.
 
-## 1. CLARITY — Yes
-Cold open on mobile, ~10s to get it: headline "Tag all your campaign links with clean,
-consistent UTM tags... so one stray capital letter never splits your data in Google
-Analytics." The new "UTM Spec" panel reads itself: "Your team's allowed values — enforced on
-every cell." I'd tell a teammate: "No-login grid where you bulk-tag launch links to ONE
-shared UTM convention, then send everyone a link that enforces it." Minor confusion: the
-"Enforce UTM Spec" toggle shows up twice (top lint bar + inside the panel) and I wasn't sure
-they were the same switch; and "lint rules" is mild dev jargon for a PM.
+VALUE: Yes. Today I keep a Google Sheet with a UTM formula and still chase people in Slack about
+"was it LinkedIn or linkedin." This beats that: on my phone I typed a deliberately messy row
+("LinkedIn / Paid Social / Summer Launch 2026"), hit Auto-fix, and it became
+"linkedin / paid_social / summer_launch_2026". CSV exported clean with base + each utm field +
+the full generated URL per row — drops straight into Notion/Sheets. Presets (Email, Paid Social,
+Google/CPC) cut typing. The enforcement is what my Sheet can't do.
 
-## 2. VALUE — Yes
-Today I keep our UTM convention in a Notion doc + a Sheets builder tab, and nobody follows
-the Notion doc, so Amplitude/GA4 still arrives fragmented. Here I added allowed values
-(newsletter, paid-social / email, cpc), flipped Enforce, typed a typo "newslettr," and it
-flagged "Off-spec — nearest allowed: newsletter" with a one-tap "Fix to newsletter" button
-that corrected the cell. That enforcement is the thing my Notion doc can never do. Real win.
+ADVOCACY: 7. The core loop (batch + auto-fix + CSV + share link) genuinely works on a phone, and
+the shared link reproduced all 3 rows with generated URLs at 375px (recipient even gets a "Loaded
+shared grid" toast). What holds it at 7: (1) dense headline costs clarity in the first 5s;
+(2) when a teammate opens my share link on their phone they land on the same marketing H1 and must
+scroll past the whole toolbar to reach the rows I sent — no "here's the grid Sam shared, 3 links"
+summary up top, which is the exact moment that would make me recommend it unprompted; (3) applying
+a preset alone leaves utm_campaign blank with a red "required" error while Auto-fix says "Nothing
+to fix — all cells are clean" right beside it (mildly contradictory). Fix the share-landing and
+I'm at 9.
 
-## 3. THE SHARE-LINK STORY LANDED — this is what moves me
-Copied the share link, opened it in a CLEAN browser: banner "Loaded shared grid (1 link)
-including this team's UTM Spec," all my allowed-value chips present, Enforce still ON. So I
-send ONE link to Paid, Lifecycle, and Social and they each type inside the guardrails —
-that's the cross-team coordination job exactly, and it makes me look organized, which is why
-I share. Mobile rendered the chips, the off-spec flag, and the Fix button cleanly.
-
-## ADVOCACY — 8 (up from 7; mobile blocker fixed, spec feature is strong)
-A real 8, not a polite one. What keeps it off a 9: (1) the duplicate Enforce toggle is
-genuinely confusing. (2) The spec only lives in localStorage + whatever share link is
-freshest — there's no central "team source of truth," so if a teammate edits their copy my
-canonical taxonomy can't sync back; I'd want the spec to live somewhere I own, not in the
-last link sent. (3) No top-level "X cells off-spec" counter to gauge launch-readiness before
-I export. Fix the toggle ambiguity and give me an off-spec count and I'd bring this up
-unprompted in every launch kickoff.
-
-(Share-link clipboard read succeeded this run; verified the link both as a string and by
-loading it fresh — spec rode along correctly.)
-
-```json
-{"tester": 10, "round": 1, "clarity": "Yes", "value": "Yes", "advocacy": 8, "topComplaints": ["'Enforce UTM Spec' toggle appears twice (top lint bar + panel) — unclear they are the same switch", "Spec only travels via share link / localStorage — no central source of truth, so a teammate's edits can't sync back to my canonical taxonomy", "No top-level 'X cells off-spec' counter for at-a-glance launch readiness; 'lint rules' is mild dev jargon for a PM"], "priorConcernsAddressed": "all"}
+```
+CLARITY (is the purpose clear in 5s): No — dense 6-line headline buries the tool below the fold on mobile; subhead rescues it
+VALUE (would it save you real time): Yes — auto-cleaned messy LinkedIn→linkedin and exported a drop-in CSV my UTM Sheet can't match
+ADVOCACY (0-10, would you recommend to a peer): 7 — works end-to-end on a phone, but a shared link lands on the marketing headline, not "here's the grid I sent you"
+TOP FRICTION: A recipient opening my share link lands on the generic headline + full toolbar and must scroll to find my rows — no "shared grid" summary at top, so it doesn't feel like a clean handoff
 ```

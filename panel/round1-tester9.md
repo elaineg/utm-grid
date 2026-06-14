@@ -1,38 +1,38 @@
-# Elena — Re-test (UTM Spec / shareable enforced spec)
-Eng manager, 8 reports. Laptop between meetings + quick phone check. ~30s patience.
+# Elena — Re-test (EM, 8 reports; tested on PHONE @375px, 30s budget)
 
-PRIOR CONCERNS, re-checked explicitly:
-- "Single-device localStorage = not team-adoptable, no shared source of truth, I'd re-create
-  conventions every session and nobody else sees them" (my hard blocker, advocacy 5):
-  **ADDRESSED — and this is the exact fix I asked for.** I defined utm_source allowed values
-  (newsletter, linkedin), flipped Enforce, then **opened the Copy-share-link in a clean second
-  browser (a stand-in teammate): enforcement was already ON and my allowed values were already
-  there with ZERO setup on their end.** Teammate typed "Newslettr" and it was flagged off-spec
-  immediately. That's a shared, enforced source of truth via a link — no account, no sheet to
-  babysit. My prior "this is a personal utility, not a team standard" no longer holds.
-- "Lint flags but doesn't auto-fix": still addressed (Auto-fix + "Fix to <nearest>" button;
-  confirmed the Fix button rewrites the cell and clears the warning).
+PRIOR CONCERNS, re-checked explicitly on mobile:
+- (a) "Killer feature — shareable enforced spec — buried, absent from hero": **FIXED.** The
+  hero now literally leads with "Share one link that enforces your team's UTM taxonomy — stop
+  policing casing and typos." Exactly what I asked for. (Side effect below: it's now too long
+  for a phone screen.)
+- (b) "Recipient sees no banner saying 'this link enforces <team>'s UTM spec'": **NOT FIXED.**
+  Opened my own share link in a fresh mobile context — still lands in the full editor, no
+  banner, no "your teammate shared an enforced spec" framing. Confirmed programmatically: no
+  such text on the recipient page.
+- (c) "'Fix to' button under an overlapping warnings popover, fiddly to tap": **FIXED.** On
+  mobile the inline "Fix" link is present and tapped cleanly, no overlap.
 
-1. CLARITY — Partially. Hero is instantly clear as a bulk UTM cleaner. But the feature that
-   reverses my blocker — the *shareable enforced spec* — is collapsed in a bottom-right "UTM
-   Spec" panel and is absent from the hero. On a real 30s skim I'd have missed it. Nothing says
-   "set your team's UTM conventions once and share a link that enforces them."
+CLARITY — No (for a 5s phone skim). The hero is now a 5-line bold wall that fills my whole
+screen: "Share one link that enforces your team's UTM taxonomy — stop policing casing and
+typos that split your GA4 data." The MESSAGE is right, but as a thumb-skim it's too dense; the
+job ("make clean, enforced UTM links") should be the first four words. The subhead "Build and
+tag links... export clean CSV — no account" is what actually lands.
 
-2. VALUE — Yes. Today my team copies from a shared Google Sheet template and I police casing in
-   PRs/Linear. This now genuinely beats that: one link enforces my taxonomy on everyone with no
-   sync setup, and catches off-spec values as they type. The Sheet doesn't enforce anything.
+VALUE — Yes. Today my reports hand-edit UTMs in a Google Sheet and half ship `Paid Social`
+(space) or `LinkedIn` (caps), splitting GA4. I typed messy values, hit "Auto-fix naming," and
+got `linkedin / paid_social / q3` instantly, zero setup. On mobile the grid collapses to clean
+stacked cards with inline warnings + a working Fix. This beats the Sheet, which enforces
+nothing.
 
-3. ADVOCACY — 7. Up from 5 because my structural blocker is actually solved and I'd now forward
-   the link to my reports, not just call it a one-off tool. Not a 9 yet for two honest reasons:
-   (a) the killer feature is buried — surface "share a link that enforces your team's UTM spec"
-   on the hero/next to LINT RULES; (b) the *recipient* sees values flagged but no banner saying
-   "this link is enforcing <your team>'s UTM spec," so the no-policing story isn't legible to
-   them. Also the "Fix to" button sits under an overlapping warnings popover (fiddly to click).
-   Fix those and I bring this to my team unprompted = a real 9.
-
-(End-to-end verified: spec + enforce rode the share link, len 361; recipient enforce=on,
-off-spec auto-caught with zero setup; Fix-to-newsletter rewrites cell and clears warning.)
+ADVOCACY — 7 (held flat from last time, honestly). Two of my three blockers are fixed, which
+is real progress, but the score doesn't move because the remaining gap is the one that matters
+for "standardize on this": the RECIPIENT experience. When my report opens the link on their
+phone they get the full editor with no banner telling them it's an enforced team spec, and the
+shared row arrives with the un-fixed dirty values + a URL still containing `Paid%20Social` —
+they must notice the warning and tap Fix themselves. A hurried report copies a dirty link. For
+me to forward this to 8 people unprompted (a 9), the recipient view has to be foolproof and
+self-explaining. It isn't yet.
 
 ```json
-{"tester": 9, "round": 1, "clarity": "Partially", "value": "Yes", "advocacy": 7, "topComplaints": ["Killer feature (shareable enforced team spec) is collapsed bottom-right and absent from the hero — I'd miss it in a 30s skim", "Recipient of a shared link gets enforcement but no banner explaining 'this link enforces your team's UTM spec', so the no-policing story isn't legible to my team", "'Fix to' button sits under an overlapping warnings popover — awkward to click"], "priorConcernsAddressed": "all"}
+{"tester": 9, "round": 2, "clarity": "No", "value": "Yes", "advocacy": 7, "topComplaints": ["Recipient of a shared link lands in the full editor with NO banner explaining it enforces my team's UTM spec, and the shared row arrives un-fixed (URL still has %20) so a hurried report copies a dirty link", "Hero is a 5-line wall of text on a phone — message is right but the job isn't skimmable in 5s; lead with the action, not the GA4 explanation"], "priorConcernsAddressed": "some"}
 ```

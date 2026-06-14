@@ -1,36 +1,32 @@
-# Round 2 — Tester 5 (Dana, demand-gen marketer) — governance / UTM Spec re-test
+# Round 2 — Tester 5 (Dana, demand-gen marketer; re-tested on 375px phone)
 
-Re-checked the three things I dinged in round 1, then re-ran the full governance flow.
+**Prior concerns, re-checked:**
+1. *5-line headline wall + "taxonomy" jargon* — FIXED. Hero is now a clean 2-line "Clean UTM
+   links for your whole campaign — in one grid." + plain subhead ("Auto-fix messy casing and
+   typos before they split your Google Analytics. Share one link… no login"). No "taxonomy" in
+   the hero (it's demoted to a small grey "LINT RULES" caption). I got the value in ~3 seconds.
+2. *Bulk "Set column" buried behind a tiny "Expand" toggle* — FIXED. There's a clearly labeled
+   top-level "BULK EDIT — set or replace a column across rows" card; tapping it reveals a Column
+   picker, "Set column" input/button, and Find & replace, plus a "Select all" + per-row "Select #1"
+   checkboxes. I'd actually find this now without hunting.
+3. *"Apply to: N selected rows" button clipping off the right edge* — FIXED. It's now a compact
+   left-aligned pill ("Apply to: all 1 row") sitting well inside the screen. Every overflow check
+   returned scrollWidth=375 — zero horizontal scroll, even with the bulk panel open and 3 rows.
 
-1. Discoverability of UTM Spec — FIXED enough. The lint bar now carries "Enforce your team's
-UTM taxonomy" under LINT RULES, an "Enforce UTM Spec" toggle in violet, and an above-the-fold
-legend "violet = off-spec | amber = case/space". That legend tells the whole governance story
-in one read, right where I actually look. The right-rail UTM Spec panel still starts collapsed
-while empty (minor), but auto-opens once it has values/enforce is on. I no longer nearly miss
-the headline feature.
+**Clarity — Yes.** One scroll shows headline, subhead, and the grid + action buttons. I'd tell my
+team: "drop in your links, hit Auto-fix, share one clean link — no login." Legible in 5s.
 
-2. Two warning styles now distinguishable — FIXED. Off-spec renders violet ("◆ Off-spec —
-nearest allowed: linkedin" + violet "Fix to linkedin" pill); case/space renders amber ("⚠
-Contains uppercase letters — use lowercase only"). Legend names both. A teammate won't confuse
-them now. (Note: my early probe runs threw a phantom "wrong nearest match / Fix-to broken" —
-that was MY cell-targeting error; on correctly targeted cells "linkdin" → nearest "linkedin"
-and one-click "Fix to linkedin" actually rewrote the cell. Verified clean.)
+**Value — Yes.** Same win over my CONCATENATE sheet + manual casing eyeballing: auto-fix, bulk Set
+column, per-channel Presets (Email / Paid Social – LinkedIn / Google CPC), and the share link. The
+Presets are a real step toward the saved team values I asked for last round.
 
-3. Team sync — still "Saved on this device" + share link, BUT the link is now a real handoff:
-opened the share URL fresh and the full spec carried (linkedin/google/newsletter/cpc/email/
-social chips all intact) AND Enforce loaded already ON (checked=true). So a teammate clicks my
-link and immediately sees governance firing — not a half-measure.
+**Advocacy — 9.** All three things that capped me at 8 are gone and Presets address part of my
+"lock our allowed values" ask. I'd screenshot this for the team channel unprompted. Off 10 only
+because Presets are starting points, not enforced/persisted team rules — a junior can still type a
+bad value that only a manual Auto-fix catches.
 
-Killer flow end to end: defined spec, enabled enforce, typed "linkdin" → violet off-spec with
-correct nearest "linkedin", one-click Fix-to corrected it, lint bar showed "2 cells off-spec".
-That off-spec counter is new and is exactly the at-a-glance number I'd screenshot for the team
-channel. Zero console errors throughout.
-
-Held below 10: the spec is per-device + per-link with no canonical home — if a teammate edits
-the spec there's no single source of truth, just whoever's link is newest. A saved/named
-canonical spec link (even read-only) is the one thing between "clever tool I share" and "where
-our UTM rules live." Bumping to 9: every governance promise it makes now actually fires.
-
-```json
-{"clarity":"Yes","value":"Yes","advocacy":9,"priorConcernsAddressed":"yes","notes":"Discoverability fixed: lint-bar 'Enforce your team's UTM taxonomy' label + violet/amber legend above the fold. Warnings now clearly distinguishable (violet off-spec vs amber case/space). Verified off-spec catch, correct nearest-match (linkdin->linkedin), working one-click Fix-to, 'N cells off-spec' counter, and share link carrying full spec with Enforce already ON on fresh load. Held from 10: spec is per-device/per-link with no canonical shared home — a saved/named canonical spec link would make it a clear 9-10."}
-```
+CLARITY (purpose clear in 5s): Yes — short 2-line hero + plain subhead, no jargon, grid near the fold
+VALUE (saves real time): Yes — auto-fix + bulk Set column + Presets + share link beat my weekly CONCATENATE sheet
+ADVOCACY (0-10): 9 — every prior friction fixed; I'd share it in our team channel today
+PRIOR CONCERNS ADDRESSED: Yes — headline, bulk-edit findability, and the clipping button are all fixed
+TOP FRICTION: Presets are suggestions, not enforced/persisted team rules — a teammate can still type a bad value

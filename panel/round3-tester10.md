@@ -1,10 +1,30 @@
-{"name":"Sam","clarity":"Yes","value":"Yes","advocacy":9,"prior_blocker_resolved":"Yes","top_blocker":"Share link is a stale snapshot, not a living doc — if I edit after sharing, the teammate's link is out of date and there's no 'this batch' identity to re-share or update in place."}
+# Round 3 — Tester 10 (Sam, PM, mobile-heavy)
 
-# Sam — Round 3
+PRIOR CONCERN (banner doesn't pin rows beneath it) — RE-CHECKED ON PHONE, 375px:
+Built a real 2-row batch (LinkedIn / Paid Social / Spring Launch 2026), turned on "Enforce
+allowed values," copied the share link (526-char data link), opened it in a fresh tab.
 
-PRIOR BLOCKER (R1+R2): "no live team sharing — consistency only travels via CSV, not the tool." RESOLVED — Yes. The toolbar now has "Copy share link." I built a 3-link Spring Launch batch (Facebook/Newsletter/Twitter), hit Copy share link, and opened the resulting URL in a clean browser with NO localStorage (a real teammate). It loaded all 3 rows in the right columns with a blue banner: "Loaded shared grid (3 links) — These are someone's links — edit any cell to make them yours." That is exactly the live handoff I wanted: I can drop that link in Slack and the team opens the SAME grid, not a CSV they have to re-import. And it's all in the URL hash, client-side ("nothing is sent to any server") — which I trust more than yet another tool with my data.
+REGRESSION — the handoff I gave a 9 for is GONE. The recipient now lands on the full
+marketing H1 "Clean UTM links for your whole campaign — in one grid" + "Unsaved grid" +
+the entire toolbar — visually identical to the cold home page. The "Loaded shared grid
+(N links)" banner that worked in my last two rounds is missing. The data DID load (both
+rows + URLs + rules reproduce below the fold), so it functions — but it no longer READS as
+"the grid Sam sent you."
 
-CLARITY: Yes. Hero line + "Edit links in a grid, fix naming automatically, export clean CSV — no account" still nails it in seconds.
-VALUE: Yes. This beats my shared Sheet + CONCATENATE AND now beats emailing a CSV — one link = consistent UTMs for the whole launch team. I'd use it live.
+The two things I was told shipped this round, I could not find at all: no "· enforces a
+UTM spec — N allowed-value rules" line, and no one-tap "Fix all naming" button anywhere on
+the recipient view (searched by role + text, 0 matches). Either they didn't deploy, or
+they replaced/broke the banner that previously framed the handoff. Net effect on my phone:
+a teammate I forward this to opens a marketing page and has to figure out the rows are for
+them. That's the whole reason I'd recommend it, and it got worse, not better.
 
-ADVOCACY: 9/10. I'd bring this up unprompted next launch. The ONE thing keeping it off 10: the share link is a frozen snapshot, not a living batch. If I tweak a campaign value after I've shared, my teammate's link is silently stale, and there's no named "this batch" I can re-open and re-share in place (no save/sync). For a true single source of truth I'd still want an optional account so the link always reflects the latest grid. Minor leftover: "Clean all" still leaves stray punctuation (summer_sale!!) — would expect it stripped or flagged.
+Dropping 9 → 6. Core grid + auto-fix still work great; the recipient framing — the viral
+handoff — regressed.
+
+```
+CLARITY (purpose clear in 5s): Yes — 2-line headline + grid above the fold is still sharp
+VALUE (saves real time): Yes — auto-fix + drop-in batch still beat my UTM Sheet
+ADVOCACY (0-10): 6 — recipient of my shared link lands on the marketing home page, not a "shared grid" banner; the handoff I forward teammates regressed
+PRIOR CONCERNS ADDRESSED: No — banner didn't pin rows AND the prior "Loaded shared grid" banner is gone; promised "enforces a UTM spec" line + "Fix all naming" button are absent
+TOP FRICTION: shared link recipients see the full marketing page instead of a "here's the grid Sam sent" banner — the viral handoff broke
+```

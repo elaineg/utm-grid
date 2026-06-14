@@ -17,8 +17,9 @@
 import LZString from "lz-string";
 import { expect, test, type Page } from "@playwright/test";
 
+// Both table and card layouts are always in DOM; use .first() to avoid strict-mode violations.
 const cell = (page: Page, field: string, rowNum: number) =>
-  page.getByLabel(`${field} row ${rowNum}`, { exact: true });
+  page.getByLabel(`${field} row ${rowNum}`, { exact: true }).first();
 
 /** Wide viewport, fresh context. */
 async function gotoWide(page: Page) {
@@ -39,15 +40,18 @@ async function expandSpecPanel(page: Page) {
   ).toBeVisible({ timeout: 5000 });
 }
 
-// ── Test 1: Hero headline contains team-governance copy ──────────────────────
+// ── Test 1: Hero headline is the new benefit-first copy (P0-1 panel-round-1 fix) ──
 
-test("hero headline leads with team-governance copy", async ({ page }) => {
+test("hero headline is the new benefit-first copy", async ({ page }) => {
   await gotoWide(page);
   const h1 = page.locator("h1").first();
   await expect(h1).toBeVisible();
   const text = await h1.textContent();
-  // Must mention team taxonomy / governance concept (not just "UTM builder")
-  expect(text?.toLowerCase()).toMatch(/team|taxonomy|enforc|govern/);
+  // New headline: "Clean UTM links for your whole campaign — in one grid."
+  // Must contain the core benefit phrase — no jargon (taxonomy/lint)
+  expect(text?.toLowerCase()).toMatch(/clean utm links|whole campaign|one grid/);
+  // Must NOT use jargon words
+  expect(text?.toLowerCase()).not.toMatch(/taxonomy|lint/);
 });
 
 // ── Test 2: Cold visit does NOT auto-load the sample spec ─────────────────────
@@ -122,12 +126,14 @@ test("'Try an example spec' loads sample taxonomy + demo rows; off-spec Fix-to a
   await expect(enforceToggle).toBeChecked({ timeout: 3000 });
 
   // Off-spec Fix-to button must appear for "email_blast" (nearest is "newsletter")
-  const fixBtns = page.locator('[data-testid^="fix-to-"]');
+  // At 1280px both table and card are in DOM; table fix-to uses testid "fix-to-<value>",
+  // card uses "fix-to-<value>-card". Count only the table ones (not matching -card suffix).
+  const fixBtns = page.locator('[data-testid^="fix-to-"]:not([data-testid$="-card"])');
   await expect(fixBtns.first()).toBeVisible({ timeout: 3000 });
 
   // The first row ("newsletter") must have no off-spec warning (it's an allowed value)
   // Confirmed by absence of a fix-to button for row 1's utm_source
-  // (Only row 2 is off-spec)
+  // (Only row 2 is off-spec — 1 fix-to button in the table view)
   await expect(fixBtns).toHaveCount(1);
 
   await ctx.close();
@@ -314,8 +320,8 @@ test("generated URL cell has title attribute with full URL", async ({
   await cell(page, "utm_medium", 1).fill("email");
   await cell(page, "utm_campaign", 1).fill("spring_sale");
 
-  // The generated URL element must have a title attribute with the full URL
-  const genUrlEl = page.getByLabel("Generated URL row 1", { exact: true });
+  // The generated URL element (table view only has title; card view doesn't) — use .first() for table
+  const genUrlEl = page.getByLabel("Generated URL row 1", { exact: true }).first();
   await expect(genUrlEl).toBeVisible();
   const title = await genUrlEl.getAttribute("title");
   expect(title).toContain("https://example.com/sale?utm_source=newsletter");

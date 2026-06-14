@@ -26,6 +26,8 @@ export function PresetsBar({
   onApplyToSelected: (presetId: string) => void;
   onNewRowPresetChange: (id: string | null) => void;
 }) {
+  // P1: collapsed by default on cold open; one tap expands
+  const [panelExpanded, setPanelExpanded] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
   const [name, setName] = useState("");
   const [saveToast, setSaveToast] = useState<string | null>(null);
@@ -96,9 +98,21 @@ export function PresetsBar({
   };
 
   return (
-    <section className="rounded-lg border border-gray-200 bg-white p-4">
+    <section className="rounded-lg border border-gray-200 bg-white">
+      {/* P1: collapsible header — payoff label always visible */}
+      <button
+        type="button"
+        onClick={() => setPanelExpanded((v) => !v)}
+        aria-expanded={panelExpanded}
+        className="flex w-full items-center justify-between px-4 py-3 text-sm font-semibold text-gray-800 hover:bg-gray-50"
+      >
+        <span>Presets <span className="font-normal text-gray-400 text-xs">— fill source/medium in one click</span></span>
+        <span className="text-gray-400 text-xs">{panelExpanded ? "▲" : "▼"}</span>
+      </button>
+      {panelExpanded && (
+      <div className="border-t border-gray-100 p-4">
       <div className="flex flex-wrap items-center gap-3">
-        <h2 className="text-sm font-semibold text-gray-900">Presets</h2>
+        <h2 className="sr-only">Presets</h2>
         {allPresets.map((p) => (
           <span
             key={p.id}
@@ -222,6 +236,8 @@ export function PresetsBar({
             row. Presets live in your browser (localStorage) only.
           </p>
         </div>
+      )}
+      </div>
       )}
     </section>
   );

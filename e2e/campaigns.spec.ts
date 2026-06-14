@@ -24,8 +24,9 @@ import { expect, test, type Page } from "@playwright/test";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+// Both table and card layouts are always in DOM; use .first() to avoid strict-mode violations.
 const cell = (page: Page, field: string, rowNum: number) =>
-  page.getByLabel(`${field} row ${rowNum}`, { exact: true });
+  page.getByLabel(`${field} row ${rowNum}`, { exact: true }).first();
 
 /** Save current grid under a campaign name via the sidebar. */
 async function saveAsCampaign(page: Page, name: string) {
@@ -544,10 +545,13 @@ function buildSharePayload(baseURL: string | undefined): { url: string } {
   return { url: `${origin}/#g=${compressed}` };
 }
 
-test("FIX1: dirty grid + share URL prompts confirm; cancel keeps original grid", async ({
+test("FIX1 (updated): dirty grid + share URL: shared rows shown immediately, NO confirm dialog (Round-3 behavior)", async ({
   browser,
   baseURL,
 }) => {
+  // Round-3 fix: the window.confirm guard was removed. The share fragment now takes
+  // DISPLAY precedence over a saved grid silently — shared rows shown, banner visible,
+  // localStorage NOT overwritten until a cell edit.
   const { url: shareUrl } = buildSharePayload(baseURL);
 
   const ctx = await browser.newContext();
@@ -564,29 +568,42 @@ test("FIX1: dirty grid + share URL prompts confirm; cancel keeps original grid",
   // Open the share URL in a new page (same context = same localStorage)
   const page = await ctx.newPage();
 
-  // Register cancel handler BEFORE navigating
-  page.once("dialog", async (dialog) => {
-    expect(dialog.type()).toBe("confirm");
-    await dialog.dismiss(); // CANCEL
+  // Fail if any confirm dialog appears (Round-3 removes the guard)
+  let unexpectedDialog = false;
+  page.on("dialog", async (dialog) => {
+    unexpectedDialog = true;
+    await dialog.dismiss();
   });
 
   await page.goto(shareUrl);
   await page.waitForLoadState("networkidle");
 
-  // The shared banner must NOT be visible (user cancelled)
-  await expect(page.locator('[data-testid="shared-grid-banner"]')).toHaveCount(0);
+  // No confirm dialog should have appeared
+  expect(unexpectedDialog).toBe(false);
 
-  // The grid must still show the original content (not the shared rows)
-  await expect(cell(page, "Base URL", 1)).toHaveValue("https://my-original-site.com");
-  await expect(cell(page, "utm_source", 1)).toHaveValue("original_src");
+  // The shared banner MUST be visible (shared fragment wins, no confirm needed)
+  await expect(page.locator('[data-testid="shared-grid-banner"]')).toBeVisible({ timeout: 5000 });
+  await expect(page.locator('[data-testid="shared-grid-banner"]')).toContainText("Loaded shared grid (2 links)");
+
+  // The SHARED rows must be shown, not the original "my-original-site.com" rows
+  await expect(cell(page, "Base URL", 1)).toHaveValue("https://shared.example.com/page");
+  await expect(cell(page, "utm_source", 1)).toHaveValue("fix1_src");
+
+  // localStorage must still hold the original grid (no cell was edited)
+  const checkPage = await ctx.newPage();
+  await checkPage.goto("/");
+  await checkPage.waitForLoadState("networkidle");
+  await expect(cell(checkPage, "Base URL", 1)).toHaveValue("https://my-original-site.com");
+  await expect(cell(checkPage, "utm_source", 1)).toHaveValue("original_src");
 
   await ctx.close();
 });
 
-test("FIX1: dirty grid + share URL prompts confirm; accept rehydrates + shows banner", async ({
+test("FIX1 (updated): dirty grid + share URL: banner visible + shared rows shown, no confirm needed (Round-3 behavior)", async ({
   browser,
   baseURL,
 }) => {
+  // Round-3 fix: no confirm dialog needed — banner shows and shared rows render immediately.
   const { url: shareUrl } = buildSharePayload(baseURL);
 
   const ctx = await browser.newContext();
@@ -602,16 +619,11 @@ test("FIX1: dirty grid + share URL prompts confirm; accept rehydrates + shows ba
 
   const page = await ctx.newPage();
 
-  // Accept the confirm dialog
-  page.once("dialog", async (dialog) => {
-    expect(dialog.type()).toBe("confirm");
-    await dialog.accept();
-  });
-
+  // No dialog handler needed — Round-3 removed the confirm guard
   await page.goto(shareUrl);
   await page.waitForLoadState("networkidle");
 
-  // Banner must be visible with correct row count
+  // Banner must be visible with correct row count (no confirm needed)
   await expect(page.locator('[data-testid="shared-grid-banner"]')).toBeVisible();
   await expect(page.locator('[data-testid="shared-grid-banner"]')).toContainText(
     "Loaded shared grid (2 links)"

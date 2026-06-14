@@ -10,7 +10,7 @@ import {
 } from "../../lib/csv";
 import { groupWarnings, hasCellFix, lintRows, warningKey, type LintWarning } from "../../lib/lint";
 import { isCellFixable, normalizeAllRows, normalizeValue } from "../../lib/normalize";
-import { buildShareUrl, extractSpecFromPayload, parseShareHash, storedGridHasContent, writeClipboard } from "../../lib/share";
+import { buildShareUrl, extractSpecFromPayload, parseShareHash, writeClipboard } from "../../lib/share";
 import {
   DEFAULT_LINT_SETTINGS,
   SEEDED_PRESETS,
@@ -77,7 +77,11 @@ export function UtmGrid() {
   const [shareLinkCopied, setShareLinkCopied] = useState(false);
   const shareCopyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const [sharedBanner, setSharedBanner] = useState<{ rowCount: number; hasSpec?: boolean } | null>(null);
+  // P1-2b: "Copy all URLs" green cue — ref-stable, same pattern as shareLinkCopied.
+  const [copyAllCopied, setCopyAllCopied] = useState(false);
+  const copyAllTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const [sharedBanner, setSharedBanner] = useState<{ rowCount: number; specRuleCount: number } | null>(null);
 
   const pendingSharedState = useRef<{ rows: UtmRow[]; settings: LintSettings } | null>(null);
 
@@ -95,25 +99,10 @@ export function UtmGrid() {
     if (!payload) return;
     history.replaceState(null, "", window.location.pathname + window.location.search);
 
-    // Guard: if the stored grid already has content, confirm before clobbering it.
-    // Read localStorage DIRECTLY (not from the React-state closure) because
-    // useSyncExternalStore returns the SSR-safe initial value on the first
-    // client render — the closure value is stale until after hydration.
-    if (storedGridHasContent()) {
-      // Parse the stored rows to get the current link count for the prompt.
-      let storedLinkCount = 1;
-      try {
-        const raw = window.localStorage.getItem("utm-grid:rows");
-        if (raw) {
-          const parsed = JSON.parse(raw) as unknown;
-          if (Array.isArray(parsed) && parsed.length > 0) storedLinkCount = parsed.length;
-        }
-      } catch { /* keep default */ }
-      const confirmed = window.confirm(
-        `Open shared grid (${payload.rows.length} link${payload.rows.length === 1 ? "" : "s"})? Your current unsaved grid (${storedLinkCount} link${storedLinkCount === 1 ? "" : "s"}) will be replaced. This can't be undone.`
-      );
-      if (!confirmed) return;
-    }
+    // P0-1: When the URL has a #g= fragment, the shared grid takes DISPLAY precedence
+    // over any existing localStorage grid — no confirm, no overwrite.
+    // The shared state is shown in-memory only; localStorage is not touched until the
+    // visitor edits a cell (commitSharedToStorage / setRows does that).
 
     const payloadSpec = extractSpecFromPayload(payload);
     pendingSharedState.current = { rows: payload.rows, settings: payload.settings };
@@ -122,7 +111,26 @@ export function UtmGrid() {
     setSharedSettings(payload.settings);
     setSharedSpec(payloadSpec);
     setIsUsingSharedState(true);
-    setSharedBanner({ rowCount: payload.rows.length, hasSpec: Object.values(payloadSpec.allowedValues).some((arr) => arr.length > 0) });
+    // P0-3a: count actual allowed-value rules (sum of allowed values per field), independent of enforceSpec flag.
+    const specRuleCount = Object.values(payloadSpec.allowedValues).reduce((sum, arr) => sum + arr.length, 0);
+    setSharedBanner({ rowCount: payload.rows.length, specRuleCount });
+
+    // P0-2: collapse the marketing hero to a muted one-liner on shared-link landing.
+    const heroEl = document.getElementById("utm-hero");
+    if (heroEl) {
+      heroEl.setAttribute("data-shared-landing", "true");
+    }
+
+    // P0-2: scroll the first grid row/card into view after the shared grid renders.
+    // We defer to the next paint so the DOM has updated with the shared rows.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const firstCard = document.querySelector("[data-testid^='copy-url-row-1']") ??
+          document.querySelector("tbody tr:first-child") ??
+          document.getElementById("utm-grid-first-row");
+        if (firstCard) firstCard.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      });
+    });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -367,6 +375,10 @@ export function UtmGrid() {
     setRows((prev) =>
       prev.map((r) => (r.id === rowId ? { ...r, [field]: value } : r))
     );
+    // P2: touching any cell removes the "fresh preset row" status so real validation resumes
+    if (presetFreshRows.has(rowId)) {
+      setPresetFreshRows((prev) => { const n = new Set(prev); n.delete(rowId); return n; });
+    }
   };
 
   const fixCell = (rowId: string, field: UtmField, currentValue: string) => {
@@ -380,6 +392,10 @@ export function UtmGrid() {
     showToast("Fixed 1 cell");
   };
 
+  // P2b backlog: when the grid carries an allowed-value spec, "Fix all naming" should
+  // prefer the spec's allowed value (e.g. `paid-social`) over the generic underscore rule
+  // (`paid_social`). Skipped — requires matching each cell to nearest allowed value during
+  // normalizeAllRows, which requires spec context not currently threaded into normalize.ts.
   const cleanAll = () => {
     const { rows: cleaned, count } = normalizeAllRows(rows, settings);
     if (count === 0) { showToast("Nothing to fix — all cells are clean."); return; }
@@ -436,6 +452,10 @@ export function UtmGrid() {
   const gridIsEmpty = rows.every(
     (r) => !r.baseUrl.trim() && UTM_FIELDS.every((f) => !r[f].trim())
   );
+
+  // ── P2: Preset fresh rows — rows that just had a preset applied but not yet touched.
+  // On a fresh preset row, empty required fields show a muted hint instead of a red error.
+  const [presetFreshRows, setPresetFreshRows] = useState<Set<string>>(new Set());
 
   // ── Bulk edit state ────────────────────────────────────────────────────────
   // Selection is purely transient — not persisted to localStorage.
@@ -580,9 +600,21 @@ export function UtmGrid() {
     }, 1800);
   };
 
-  const copyAll = () => {
+  const copyAll = async () => {
     const urls = rows.map((r) => buildUtmUrl(r)).filter(Boolean);
-    if (urls.length > 0) void copyText(urls.join("\n"), "all");
+    if (urls.length === 0) return;
+    try {
+      await writeClipboard(urls.join("\n"));
+    } catch {
+      // execCommand/textarea fallback already tried inside writeClipboard
+    }
+    // P1-2b: ref-stable green cue same as share link — survives re-render
+    if (copyAllTimer.current) clearTimeout(copyAllTimer.current);
+    setCopyAllCopied(true);
+    copyAllTimer.current = setTimeout(() => {
+      setCopyAllCopied(false);
+      copyAllTimer.current = null;
+    }, 1800);
   };
 
   const exportCsv = () => {
@@ -648,12 +680,16 @@ export function UtmGrid() {
       setRows((prev) =>
         prev.map((r) => (r.id === newRow.id ? { ...r, ...preset.values } : r))
       );
+      // P2: mark new row as fresh so empty required fields show a hint, not red error
+      setPresetFreshRows((prev) => { const n = new Set(prev); n.add(newRow.id); return n; });
       return;
     }
     setRows((prev) =>
       prev.map((r) => (r.id === targetId ? { ...r, ...preset.values } : r))
     );
     setSelectedId(targetId);
+    // P2: mark the target row as fresh so empty required fields show a hint, not red error
+    setPresetFreshRows((prev) => { const n = new Set(prev); n.add(targetId); return n; });
   };
 
   const savePreset = (name: string, values: Partial<Record<UtmField, string>>) => {
@@ -818,6 +854,9 @@ export function UtmGrid() {
     ? "rounded-full border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700"
     : "rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-medium text-gray-500";
 
+  // P1: collapsible panel state — collapsed by default on cold open
+  const [lintRulesExpanded, setLintRulesExpanded] = useState(false);
+
   const toggle = (key: keyof LintSettings, label: string) => (
     <label className="flex items-center gap-1.5 text-sm text-gray-700">
       <input
@@ -833,6 +872,73 @@ export function UtmGrid() {
 
   return (
     <div className="space-y-4">
+      {/* P0-2: CSS rule — when the hero has data-shared-landing, collapse it to a quiet one-liner.
+          This is pure CSS, set by the share-hash useEffect on the hero DOM element.
+          SSR-safe: the data attribute is absent on first render, so SSR and client match. */}
+      {sharedBanner && (
+        <style>{`
+          #utm-hero[data-shared-landing="true"] h1,
+          #utm-hero[data-shared-landing="true"] p {
+            display: none;
+          }
+          #utm-hero[data-shared-landing="true"]::after {
+            content: "UTM Grid — shared link loaded";
+            display: block;
+            font-size: 0.75rem;
+            color: #9ca3af;
+            padding-bottom: 0.25rem;
+          }
+        `}</style>
+      )}
+
+      {/* P0-2: Loaded shared grid banner — pinned at VERY TOP, full-width, in-flow (never overlay).
+          aria-live="polite" announces it on load. Hero collapses to muted one-liner via CSS
+          [data-shared-landing] selector set on the hero element by the share-hash useEffect. */}
+      {sharedBanner && (
+        <div
+          role="status"
+          aria-live="polite"
+          data-testid="shared-grid-banner"
+          className="flex items-start justify-between gap-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 w-full"
+        >
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium text-blue-900">
+              Loaded shared grid ({sharedBanner.rowCount}{" "}
+              {sharedBanner.rowCount === 1 ? "link" : "links"})
+              {sharedBanner.specRuleCount >= 1 && (
+                <span className="ml-1 text-xs font-normal text-violet-700">
+                  {" "}· enforces a UTM spec — {sharedBanner.specRuleCount} allowed-value rule{sharedBanner.specRuleCount === 1 ? "" : "s"}
+                </span>
+              )}
+            </p>
+            <p className="mt-0.5 text-xs text-blue-700">
+              These are someone&apos;s links — edit any cell to make them yours.
+            </p>
+            {/* P0-3b: "Fix all naming" — one-tap Auto-fix over the shared grid, never silent on load. ≥44px. */}
+            <button
+              type="button"
+              data-testid="shared-fix-all-naming"
+              onClick={() => cleanAll()}
+              className="mt-2 min-h-[44px] rounded-md border border-blue-400 bg-white px-3 py-2 text-xs font-medium text-blue-700 hover:bg-blue-50 active:bg-blue-100"
+            >
+              Fix all naming
+            </button>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setSharedBanner(null);
+              const heroEl = document.getElementById("utm-hero");
+              if (heroEl) heroEl.removeAttribute("data-shared-landing");
+            }}
+            aria-label="Dismiss shared grid banner"
+            className="shrink-0 text-blue-500 hover:text-blue-700 text-lg leading-none"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-3 rounded-lg border border-gray-200 bg-white p-4">
         {/* Open-campaign indicator pill */}
@@ -929,71 +1035,112 @@ export function UtmGrid() {
             </span>
           )}
         </span>
-        <span className="inline-flex items-center gap-2">
+        {/* P1-2b: Copy all URLs — same peripherally-unmissable green cue as share link */}
+        <span className="inline-flex flex-col items-start gap-0.5">
           <button
             type="button"
-            onClick={copyAll}
-            className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            data-testid="copy-all-urls"
+            onClick={() => void copyAll()}
+            className={`rounded-md border px-4 py-2 text-sm font-medium transition-colors duration-200 ${
+              copyAllCopied
+                ? "border-green-500 bg-green-500 text-white"
+                : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+            }`}
           >
-            Copy all URLs
+            {copyAllCopied ? (
+              <span className="inline-flex items-center gap-1">
+                <span>✓</span>{" "}
+                <span>Copied!</span>
+              </span>
+            ) : (
+              "Copy all URLs"
+            )}
           </button>
-          {copied === "all" && (
-            <span aria-live="polite" className="text-sm font-medium text-green-600">
-              Copied
-            </span>
-          )}
+          <span role="status" aria-live="polite" className="text-xs font-medium text-green-600 min-h-[1em]">
+            {copyAllCopied ? "Copied!" : ""}
+          </span>
         </span>
 
-        <div className="ml-auto flex flex-wrap items-center gap-4 border-l border-gray-200 pl-4">
-          <span className="flex flex-col gap-0.5">
-            <span className="text-xs font-semibold tracking-wide text-gray-400 uppercase">Lint rules</span>
-            {/* Fix C: "Enforce your team's UTM taxonomy" label for 5-second discoverability */}
-            <span className="text-[10px] text-violet-500">Enforce your team&apos;s UTM taxonomy</span>
-          </span>
-          {toggle("requiredParams", "Require source/medium/campaign")}
-          {toggle("lowercaseOnly", "Lowercase only")}
-          {toggle("noSpaces", "No spaces")}
-          {/* Fix D: canonical Enforce UTM Spec toggle lives HERE only — panel shows status, not a second switch */}
-          <label className="flex items-center gap-1.5 text-sm text-violet-700">
-            <input
-              type="checkbox"
-              data-testid="enforce-spec-toggle"
-              checked={!!spec.enforceSpec}
-              onChange={(e) => setSpec({ ...spec, enforceSpec: e.target.checked })}
-            />
-            Enforce UTM Spec
-          </label>
-          {/* Fix C: "N cells off-spec" indicator */}
-          {spec.enforceSpec && (() => {
-            const offSpecCount = Array.from(warnings.values()).flat().filter((w) => w.rule === "off-spec").length;
-            return offSpecCount > 0 ? (
-              <button
-                type="button"
-                data-testid="off-spec-indicator"
-                aria-label={`${offSpecCount} cell${offSpecCount === 1 ? "" : "s"} off-spec — click to open UTM Spec panel`}
-                onClick={() => {
-                  const panel = document.querySelector("[data-testid='utm-spec-panel']");
-                  if (panel) {
-                    panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
-                    const openEvent = new CustomEvent("utm-spec-open");
-                    panel.dispatchEvent(openEvent);
-                  }
-                }}
-                className="rounded-full border border-violet-300 bg-violet-50 px-2.5 py-0.5 text-xs font-semibold text-violet-700 hover:bg-violet-100"
-              >
-                {offSpecCount} cell{offSpecCount === 1 ? "" : "s"} off-spec
-              </button>
-            ) : null;
-          })()}
-          {/* Fix A: enforcing legend so green→violet chip jump reads as intentional */}
-          {spec.enforceSpec && (
-            <span className="text-[10px] text-gray-400">
-              <span className="inline-block w-2 h-2 rounded-sm bg-violet-300 align-middle mr-0.5" aria-hidden="true" />{" "}
-              violet = off-spec
-              <span className="mx-1.5 text-gray-300">|</span>
-              <span className="inline-block w-2 h-2 rounded-sm bg-amber-300 align-middle mr-0.5" aria-hidden="true" />{" "}
-              amber = case/space
-            </span>
+        {/* P1: Naming rules — collapsible disclosure, collapsed on cold open, payoff label always visible.
+            The Enforce toggle + off-spec indicator are ALWAYS rendered (never gated by collapse)
+            so e2e tests can click them without first expanding the section. */}
+        <div className="ml-auto border-l border-gray-200 pl-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setLintRulesExpanded((v) => !v)}
+              aria-expanded={lintRulesExpanded}
+              className="flex items-center gap-2 text-xs font-semibold tracking-wide text-gray-500 uppercase hover:text-gray-700"
+            >
+              <span>Naming rules</span>
+              <span className="text-gray-400 text-[10px]">{lintRulesExpanded ? "▲" : "▼"}</span>
+            </button>
+            {/* Fix D: canonical Enforce UTM Spec toggle — ALWAYS visible, never gated by collapse */}
+            <label className="flex items-center gap-1.5 text-sm text-violet-700">
+              <input
+                type="checkbox"
+                data-testid="enforce-spec-toggle"
+                checked={!!spec.enforceSpec}
+                onChange={(e) => setSpec({ ...spec, enforceSpec: e.target.checked })}
+              />
+              Enforce allowed values
+            </label>
+            {/* Fix C: "N cells off-spec" indicator — always visible when relevant */}
+            {spec.enforceSpec && (() => {
+              const offSpecCount = Array.from(warnings.values()).flat().filter((w) => w.rule === "off-spec").length;
+              return offSpecCount > 0 ? (
+                <button
+                  type="button"
+                  data-testid="off-spec-indicator"
+                  aria-label={`${offSpecCount} cell${offSpecCount === 1 ? "" : "s"} off-spec — click to open UTM Spec panel`}
+                  onClick={() => {
+                    const panel = document.querySelector("[data-testid='utm-spec-panel']");
+                    if (panel) {
+                      panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                      panel.dispatchEvent(new CustomEvent("utm-spec-open"));
+                    }
+                  }}
+                  className="rounded-full border border-violet-300 bg-violet-50 px-2.5 py-0.5 text-xs font-semibold text-violet-700 hover:bg-violet-100"
+                >
+                  {offSpecCount} cell{offSpecCount === 1 ? "" : "s"} off-spec
+                </button>
+              ) : null;
+            })()}
+          </div>
+          {/* P0-2: functional link always visible — opens/turns on Enforce + scrolls to UTM Spec */}
+          <button
+            type="button"
+            data-testid="enforce-taxonomy-link"
+            onClick={() => {
+              if (!spec.enforceSpec) setSpec({ ...spec, enforceSpec: true });
+              setLintRulesExpanded(true);
+              const panel = document.querySelector("[data-testid='utm-spec-panel']");
+              if (panel) {
+                panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                panel.dispatchEvent(new CustomEvent("utm-spec-open"));
+              }
+            }}
+            className="mt-0.5 text-[10px] text-violet-600 hover:text-violet-800 underline underline-offset-2 text-left cursor-pointer block"
+          >
+            Enforce allowed values
+          </button>
+          {/* Collapsible: the remaining three toggles + legend */}
+          {lintRulesExpanded && (
+            <div className="mt-2 flex flex-wrap items-center gap-4">
+              {toggle("requiredParams", "Require source/medium/campaign")}
+              {toggle("lowercaseOnly", "Lowercase only")}
+              {toggle("noSpaces", "No spaces")}
+              {/* Fix A: enforcing legend */}
+              {spec.enforceSpec && (
+                <span className="text-[10px] text-gray-400">
+                  <span className="inline-block w-2 h-2 rounded-sm bg-violet-300 align-middle mr-0.5" aria-hidden="true" />{" "}
+                  violet = off-spec
+                  <span className="mx-1.5 text-gray-300">|</span>
+                  <span className="inline-block w-2 h-2 rounded-sm bg-amber-300 align-middle mr-0.5" aria-hidden="true" />{" "}
+                  amber = casing/spaces
+                </span>
+              )}
+            </div>
           )}
         </div>
       </div>
@@ -1057,55 +1204,33 @@ export function UtmGrid() {
       {/* Undo affordance note: undo is in the toolbar above; bulk ops always append
           "— Undo" to the result message so Dana's Undo request is unmissable. */}
 
-      {/* Loaded shared grid banner */}
-      {sharedBanner && (
-        <div
-          role="status"
-          aria-live="polite"
-          data-testid="shared-grid-banner"
-          className="flex items-start justify-between gap-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3"
-        >
-          <div className="min-w-0">
-            <p className="text-sm font-medium text-blue-900">
-              Loaded shared grid ({sharedBanner.rowCount}{" "}
-              {sharedBanner.rowCount === 1 ? "link" : "links"})
-              {sharedBanner.hasSpec && (
-                <span className="ml-1 text-xs font-normal text-violet-700">
-                  including this team&apos;s UTM Spec
-                </span>
-              )}
-            </p>
-            <p className="mt-0.5 text-xs text-blue-700">
-              These are someone&apos;s links — edit any cell to make them yours.{" "}
-              Shareable link is built in your browser — nothing is sent to any server.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setSharedBanner(null)}
-            aria-label="Dismiss shared grid banner"
-            className="shrink-0 text-blue-500 hover:text-blue-700 text-lg leading-none"
-          >
-            ×
-          </button>
-        </div>
+      {/* Native datalists for UTM Spec autocomplete — one per field, outside both layouts so they
+          are not duplicated; datalist elements don't affect layout and work across DOM locations. */}
+      {spec.enforceSpec && UTM_FIELDS.map((field) =>
+        spec.allowedValues[field].length > 0 ? (
+          <datalist key={field} id={`datalist-${field}`}>
+            {spec.allowedValues[field].map((v) => (
+              <option key={v} value={v} />
+            ))}
+          </datalist>
+        ) : null
       )}
 
       {/* Main layout: grid + desktop sidebar side by side */}
       <div className="flex gap-4 items-start">
-        {/* Grid — mobile: scrollable container, sticky Generated URL + Actions columns */}
-        <div className="min-w-0 flex-1 overflow-x-auto rounded-lg border border-gray-200 bg-white">
-          {/* Native datalists for UTM Spec autocomplete — one per field, reused by every cell in that column */}
-          {spec.enforceSpec && UTM_FIELDS.map((field) =>
-            spec.allowedValues[field].length > 0 ? (
-              <datalist key={field} id={`datalist-${field}`}>
-                {spec.allowedValues[field].map((v) => (
-                  <option key={v} value={v} />
-                ))}
-              </datalist>
-            ) : null
-          )}
-          <table className="w-full min-w-[1100px] border-collapse text-sm">
+        {/* Grid container — holds BOTH table (≥640px) and card list (<640px).
+            Both are always in the DOM; visibility is controlled by pure CSS only
+            (no JS viewport detection — avoids SSR/hydration mismatch). */}
+        <div className="min-w-0 flex-1">
+
+          {/* ── TABLE VIEW (sm and up) ──────────────────────────────────────── */}
+          {/* P0-1: overflow-x-auto on THIS wrapper ensures the table scrolls horizontally
+              INSIDE its container — the page never scrolls sideways.
+              min-w-[1200px] on the table guarantees all UTM column headers (utm_campaign,
+              utm_term, utm_content) stay fully readable with the sidebar open at 1280–1440px.
+              whitespace-nowrap on header cells prevents any mid-word truncation. */}
+          <div className="hidden sm:block overflow-x-auto rounded-lg border border-gray-200 bg-white">
+          <table className="w-full min-w-[1200px] border-collapse text-sm">
             <thead>
               <tr className="border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase">
                 {/* Bulk-selection checkbox header
@@ -1120,7 +1245,7 @@ export function UtmGrid() {
                 </th>
                 <th className="w-8 px-2 py-2.5" aria-label="Row number" />
                 {COLUMNS.map((c) => (
-                  <th key={c} className="px-2 py-2.5">
+                  <th key={c} className="px-2 py-2.5 whitespace-nowrap">
                     {FIELD_LABELS[c]}
                     {settings.requiredParams &&
                       ["utm_source", "utm_medium", "utm_campaign"].includes(c) && (
@@ -1130,10 +1255,10 @@ export function UtmGrid() {
                       )}
                   </th>
                 ))}
-                <th className="sticky right-[108px] z-10 min-w-[280px] bg-gray-50 px-2 py-2.5 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)]">
+                <th className="sticky right-[108px] z-10 min-w-[280px] bg-gray-50 px-2 py-2.5 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] whitespace-nowrap">
                   Generated URL
                 </th>
-                <th className="sticky right-0 z-10 w-[108px] bg-gray-50 px-2 py-2.5 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)]">
+                <th className="sticky right-0 z-10 w-[108px] bg-gray-50 px-2 py-2.5 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] whitespace-nowrap">
                   Actions
                 </th>
               </tr>
@@ -1183,7 +1308,16 @@ export function UtmGrid() {
                     </td>
                     {COLUMNS.map((field) => {
                       const cellKey = warningKey(row.id, field);
-                      const cellWarnings = warnings.get(cellKey);
+                      const rawCellWarnings = warnings.get(cellKey);
+                      // P2: on a fresh preset row, suppress "required" warnings until the user touches the row
+                      const cellWarnings = (presetFreshRows.has(row.id) && rawCellWarnings)
+                        ? rawCellWarnings.filter((w) => w.rule !== "required")
+                        : rawCellWarnings;
+                      // P2: when a fresh preset row's required field is empty, show a muted placeholder
+                      const isPresetFreshRequired = presetFreshRows.has(row.id) &&
+                        settings.requiredParams &&
+                        ["utm_source", "utm_medium", "utm_campaign"].includes(field) &&
+                        !row[field].trim();
                       const flashKey = `${row.id}:${field}`;
                       const isFlashing = flashCells.has(flashKey);
                       const isUtmField = field !== "baseUrl";
@@ -1217,8 +1351,8 @@ export function UtmGrid() {
                             onChange={(e) => updateCell(row.id, field, e.target.value)}
                             onFocus={() => setSelectedId(row.id)}
                             aria-label={`${FIELD_LABELS[field]} row ${i + 1}`}
-                            aria-invalid={!!cellWarnings}
-                            placeholder={field === "baseUrl" ? "https://…" : ""}
+                            aria-invalid={!!cellWarnings && !isPresetFreshRequired}
+                            placeholder={isPresetFreshRequired ? "Add a campaign name" : field === "baseUrl" ? "https://…" : ""}
                             spellCheck={false}
                             list={datalistId}
                             className={`w-full rounded-md border pl-2 pr-7 py-1.5 font-mono text-xs focus:outline-none transition-colors duration-300 ${field === "baseUrl" ? "min-w-36" : "min-w-[8.5rem]"} ${
@@ -1228,6 +1362,8 @@ export function UtmGrid() {
                                 ? "border-violet-400 bg-violet-50 focus:border-violet-500"
                                 : cellWarnings
                                 ? "border-amber-400 bg-amber-50 focus:border-amber-500"
+                                : isPresetFreshRequired
+                                ? "border-gray-300 bg-gray-50 focus:border-blue-500"
                                 : "border-gray-200 bg-white focus:border-blue-500"
                             }`}
                           />
@@ -1340,6 +1476,231 @@ export function UtmGrid() {
               })}
             </tbody>
           </table>
+          </div>
+          {/* ── END TABLE VIEW ──────────────────────────────────────────────── */}
+
+          {/* ── CARD VIEW (below sm / ≤639px) ──────────────────────────────── */}
+          {/* sm:hidden = visible only on narrow (phone) viewports.
+              No JS, no useEffect, no matchMedia — pure Tailwind breakpoint.
+              All testids suffixed with -card to avoid dual-mount getByTestId collision. */}
+          <div className="sm:hidden flex flex-col gap-3">
+            {/* Card-view select-all bar */}
+            <div className="flex items-center rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
+              <label className="inline-flex min-h-[44px] min-w-[44px] items-center gap-2 cursor-pointer">
+                <SelectAllCheckbox
+                  rows={rows}
+                  selectedRowIds={selectedRowIds}
+                  onToggleAll={toggleSelectAll}
+                />
+                <span className="text-xs font-medium text-gray-500">
+                  {selectedRowIds.size > 0 ? `${selectedRowIds.size} selected` : "Select all"}
+                </span>
+              </label>
+            </div>
+
+            {rows.map((row, i) => {
+              const generated = buildUtmUrl(row);
+              const isBulkChecked = selectedRowIds.has(row.id);
+              return (
+                <div
+                  key={row.id}
+                  className={`rounded-lg border p-4 flex flex-col gap-3 ${
+                    isBulkChecked
+                      ? "border-blue-300 bg-blue-50/40"
+                      : "border-gray-200 bg-white"
+                  }`}
+                >
+                  {/* Card top bar: checkbox + row number + Duplicate / Delete */}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <label className="inline-flex min-h-[44px] min-w-[44px] items-center gap-1.5 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={isBulkChecked}
+                          onChange={() => toggleRowSelection(row.id)}
+                          aria-label={`Select row ${i + 1} for bulk edit`}
+                          className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-400 cursor-pointer"
+                        />
+                        <span className="text-xs font-medium text-gray-500" aria-hidden="true">Select</span>
+                      </label>
+                      <span className="text-xs font-medium text-gray-400">#{i + 1}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => duplicateRow(row.id)}
+                        aria-label={`Duplicate row ${i + 1}`}
+                        title="Duplicate row"
+                        className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md border border-gray-200 text-sm text-gray-600 hover:bg-gray-100"
+                      >
+                        ⧉
+                        <span className="sr-only">{" "}Duplicate row</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => deleteRow(row.id)}
+                        aria-label={`Delete row ${i + 1}`}
+                        title="Delete row"
+                        className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md border border-gray-200 text-sm text-red-600 hover:bg-red-50"
+                      >
+                        🗑
+                        <span className="sr-only">{" "}Delete row</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Stacked fields: label above each full-width input */}
+                  {COLUMNS.map((field) => {
+                    const cellKey = warningKey(row.id, field);
+                    const rawCellWarnings = warnings.get(cellKey);
+                    // P2: on a fresh preset row, suppress "required" warnings until touched
+                    const cellWarnings = (presetFreshRows.has(row.id) && rawCellWarnings)
+                      ? rawCellWarnings.filter((w) => w.rule !== "required")
+                      : rawCellWarnings;
+                    const isPresetFreshRequired = presetFreshRows.has(row.id) &&
+                      settings.requiredParams &&
+                      ["utm_source", "utm_medium", "utm_campaign"].includes(field) &&
+                      !row[field].trim();
+                    const flashKey = `${row.id}:${field}`;
+                    const isFlashing = flashCells.has(flashKey);
+                    const isUtmField = field !== "baseUrl";
+                    const canFix =
+                      isUtmField &&
+                      cellWarnings &&
+                      hasCellFix(cellWarnings) &&
+                      isCellFixable(row[field], settings);
+                    const datalistId =
+                      isUtmField && spec.enforceSpec && spec.allowedValues[field as UtmField].length > 0
+                        ? `datalist-${field}`
+                        : undefined;
+                    const offSpecWarning = cellWarnings?.find((w) => w.rule === "off-spec");
+                    const offSpecNearest = offSpecWarning
+                      ? nearestAllowedValue(row[field as UtmField] ?? "", spec.allowedValues[field as UtmField])
+                      : null;
+                    const hasOffSpec = !!offSpecWarning;
+                    return (
+                      <div key={field} className="flex flex-col gap-1">
+                        <label
+                          htmlFor={`card-${row.id}-${field}`}
+                          className="text-[11px] font-semibold uppercase tracking-wide text-gray-400"
+                        >
+                          {FIELD_LABELS[field]}
+                          {settings.requiredParams &&
+                            ["utm_source", "utm_medium", "utm_campaign"].includes(field) && (
+                              <span className="ml-0.5 text-red-500" title="Required">
+                                *
+                              </span>
+                            )}
+                        </label>
+                        <input
+                          id={`card-${row.id}-${field}`}
+                          value={row[field]}
+                          onChange={(e) => updateCell(row.id, field, e.target.value)}
+                          onFocus={() => setSelectedId(row.id)}
+                          aria-label={`${FIELD_LABELS[field]} row ${i + 1}`}
+                          aria-invalid={!!cellWarnings && !isPresetFreshRequired}
+                          placeholder={isPresetFreshRequired ? "Add a campaign name" : field === "baseUrl" ? "https://…" : ""}
+                          spellCheck={false}
+                          list={datalistId}
+                          className={`w-full rounded-md border px-3 py-3 font-mono text-sm focus:outline-none transition-colors duration-300 min-h-[44px] ${
+                            isFlashing
+                              ? "border-green-400 bg-green-50"
+                              : cellWarnings && hasOffSpec
+                              ? "border-violet-400 bg-violet-50 focus:border-violet-500"
+                              : cellWarnings
+                              ? "border-amber-400 bg-amber-50 focus:border-amber-500"
+                              : isPresetFreshRequired
+                              ? "border-gray-300 bg-gray-50 focus:border-blue-500"
+                              : "border-gray-200 bg-white focus:border-blue-500"
+                          }`}
+                        />
+                        {/* Inline "Fix to <value>" chip — in normal flow, never overlay */}
+                        {offSpecNearest && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              pushUndo("Fix to allowed value", rows);
+                              setRows((prev) =>
+                                prev.map((r) =>
+                                  r.id === row.id ? { ...r, [field]: offSpecNearest } : r
+                                )
+                              );
+                              flashCellKeys([`${row.id}:${field}`]);
+                            }}
+                            aria-label={`Fix to ${offSpecNearest}`}
+                            data-testid={`fix-to-${offSpecNearest}-card`}
+                            className="inline-flex min-h-[44px] items-center self-start rounded-full border border-violet-300 bg-violet-100 px-3 py-2 text-[12px] font-medium text-violet-800 hover:bg-violet-200 active:bg-violet-300"
+                          >
+                            Fix to{" "}{offSpecNearest}
+                          </button>
+                        )}
+                        {/* Lint warnings inline under field — in normal flow, never overlay */}
+                        {cellWarnings && (
+                          <CellWarnings
+                            warnings={cellWarnings}
+                            canFix={!!canFix}
+                            onFix={
+                              canFix
+                                ? () => fixCell(row.id, field as UtmField, row[field])
+                                : undefined
+                            }
+                            offSpecNearest={offSpecNearest ?? undefined}
+                            onFixOffSpec={
+                              offSpecNearest
+                                ? () => {
+                                    pushUndo("Fix to allowed value", rows);
+                                    setRows((prev) =>
+                                      prev.map((r) =>
+                                        r.id === row.id ? { ...r, [field]: offSpecNearest } : r
+                                      )
+                                    );
+                                    flashCellKeys([`${row.id}:${field}`]);
+                                  }
+                                : undefined
+                            }
+                          />
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {/* Generated URL block — full width, no truncation */}
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">
+                      Generated URL
+                    </span>
+                    <output
+                      aria-label={`Generated URL row ${i + 1}`}
+                      className={`w-full break-all rounded-md bg-gray-50 px-3 py-2 font-mono text-xs select-all ${
+                        generated ? "text-gray-800" : "text-gray-400"
+                      }`}
+                    >
+                      {generated || "—"}
+                    </output>
+                    {/* Full-width Copy button — ≥44px, primary mobile CTA */}
+                    <button
+                      type="button"
+                      data-testid={`copy-url-row-${i + 1}-card`}
+                      onClick={() => void copyText(generated, `${row.id}-card`)}
+                      disabled={!generated}
+                      aria-label={`Copy URL row ${i + 1}`}
+                      className="w-full rounded-md border border-blue-600 bg-blue-600 px-4 py-3 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-100 disabled:text-gray-400 min-h-[44px]"
+                    >
+                      {copied === `${row.id}-card` ? "Copied!" : "Copy URL"}
+                    </button>
+                    {copied === `${row.id}-card` && (
+                      <span role="status" aria-live="polite" className="sr-only">
+                        URL copied
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          {/* ── END CARD VIEW ──────────────────────────────────────────────── */}
+
         </div>
 
         {/* Desktop campaigns + UTM Spec sidebar — hidden on mobile */}

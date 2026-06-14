@@ -37,6 +37,7 @@ export function BulkEditBar({
   resultMessage,
   noMatchMessage,
 }: BulkEditBarProps) {
+  // P1: collapsed by default on cold open (desktop + mobile). Payoff label visible when collapsed.
   const [isExpanded, setIsExpanded] = useState(false);
   const [column, setColumn] = useState<BulkColumn>("utm_campaign");
   const [setValue, setSetValue] = useState("");
@@ -61,80 +62,68 @@ export function BulkEditBar({
 
   return (
     <div className="rounded-lg border border-gray-200 bg-gray-50/70">
-      {/* Always-visible label + mobile expand toggle */}
-      {/*
-        Fix 1: On mobile the sticky right columns (z-10) were covering the leftmost
-        checkbox column and this bar's "Find & replace" button when expanded.
-        The bar itself sits ABOVE the table, so its z-index only needs to be ≥1 to
-        stay in natural flow above the page — the table sticky columns only overlap
-        elements INSIDE the table's scroll container. The real fix for the checkbox
-        overlap is in UtmGrid.tsx where the checkbox th/td gets relative + z-20.
-      */}
-      <div className="flex items-center gap-3 px-4 py-2">
-        <span className="text-xs font-semibold tracking-wide text-gray-500 uppercase whitespace-nowrap">
-          Bulk edit
+      {/* P1: Always-visible collapsible header — payoff label named so it's legible at a glance.
+          Fix 1: this bar sits ABOVE the table so sticky table columns don't overlap it. */}
+      <button
+        type="button"
+        onClick={() => setIsExpanded((v) => !v)}
+        aria-expanded={isExpanded}
+        aria-controls="bulk-edit-panel"
+        className="flex w-full items-center justify-between px-4 py-2.5 text-xs font-semibold tracking-wide text-gray-500 uppercase hover:text-gray-700 hover:bg-gray-100/50"
+      >
+        <span>
+          Bulk edit{" "}
+          <span className="normal-case font-normal text-gray-400">— set or replace a column across rows</span>
         </span>
+        <span className="text-gray-400 text-[10px]">{isExpanded ? "▲" : "▼"}</span>
+      </button>
 
-        {/* Desktop: full controls inline. Mobile: toggle button */}
-        {/* Fix 6: toggle button is keyboard-reachable (it is a <button>, always was). */}
-        <button
-          type="button"
-          onClick={() => setIsExpanded((v) => !v)}
-          aria-expanded={isExpanded}
-          aria-controls="bulk-edit-mobile-panel"
-          className="min-[900px]:hidden ml-auto text-xs text-gray-500 hover:text-gray-700 border border-gray-300 rounded px-2 py-0.5"
-        >
-          {isExpanded ? "Collapse" : "Expand"}
-        </button>
-
-        {/* Desktop controls (always visible at ≥900px) */}
-        <div className="hidden min-[900px]:flex flex-1 items-start gap-3 flex-wrap">
-          <BulkEditControls
-            column={column}
-            setColumn={setColumn}
-            setValue={setValue}
-            setSetValue={setSetValue}
-            findValue={findValue}
-            setFindValue={setFindValue}
-            replaceValue={replaceValue}
-            setReplaceValue={setReplaceValue}
-            matchCase={matchCase}
-            setMatchCase={setMatchCase}
-            scopeLabel={scopeLabel}
-            someSelected={someSelected}
-            onSetColumn={handleSetColumn}
-            onFindReplace={handleFindReplace}
-          />
-        </div>
-      </div>
-
-      {/* Mobile: expanded controls */}
+      {/* Expanded: desktop inline, mobile stacked — both show when expanded */}
       {isExpanded && (
-        <div
-          id="bulk-edit-mobile-panel"
-          className="min-[900px]:hidden border-t border-gray-200 px-4 py-3 flex flex-col gap-3"
-        >
-          <BulkEditControls
-            column={column}
-            setColumn={setColumn}
-            setValue={setValue}
-            setSetValue={setSetValue}
-            findValue={findValue}
-            setFindValue={setFindValue}
-            replaceValue={replaceValue}
-            setReplaceValue={setReplaceValue}
-            matchCase={matchCase}
-            setMatchCase={setMatchCase}
-            scopeLabel={scopeLabel}
-            someSelected={someSelected}
-            onSetColumn={handleSetColumn}
-            onFindReplace={handleFindReplace}
-            mobile
-          />
+        <div id="bulk-edit-panel" className="border-t border-gray-200">
+          {/* Desktop controls (inline at ≥900px) */}
+          <div className="hidden min-[900px]:flex items-start gap-3 flex-wrap px-4 py-3">
+            <BulkEditControls
+              column={column}
+              setColumn={setColumn}
+              setValue={setValue}
+              setSetValue={setSetValue}
+              findValue={findValue}
+              setFindValue={setFindValue}
+              replaceValue={replaceValue}
+              setReplaceValue={setReplaceValue}
+              matchCase={matchCase}
+              setMatchCase={setMatchCase}
+              scopeLabel={scopeLabel}
+              someSelected={someSelected}
+              onSetColumn={handleSetColumn}
+              onFindReplace={handleFindReplace}
+            />
+          </div>
+          {/* Mobile controls (stacked at <900px) */}
+          <div className="min-[900px]:hidden px-4 py-3 flex flex-col gap-3">
+            <BulkEditControls
+              column={column}
+              setColumn={setColumn}
+              setValue={setValue}
+              setSetValue={setSetValue}
+              findValue={findValue}
+              setFindValue={setFindValue}
+              replaceValue={replaceValue}
+              setReplaceValue={setReplaceValue}
+              matchCase={matchCase}
+              setMatchCase={setMatchCase}
+              scopeLabel={scopeLabel}
+              someSelected={someSelected}
+              onSetColumn={handleSetColumn}
+              onFindReplace={handleFindReplace}
+              mobile
+            />
+          </div>
         </div>
       )}
 
-      {/* Result / no-match messages — always shown, never silent (Fix 2a). */}
+      {/* Result / no-match messages — always shown when present, never silent (Fix 2a). */}
       {(resultMessage || noMatchMessage) && (
         <div className="border-t border-gray-200 px-4 py-1.5">
           {resultMessage && (
@@ -192,13 +181,15 @@ function BulkEditControls({
 }: BulkEditControlsProps) {
   const baseInputCls =
     "rounded border border-gray-300 bg-white px-2 py-1 text-xs font-mono focus:outline-none focus:border-blue-400";
+  // P1-1a: strong button styling so controls unmistakably read as buttons, not inputs.
   const baseBtnCls =
-    "rounded border px-3 py-1 text-xs font-medium whitespace-nowrap";
+    "cursor-pointer rounded border px-3 py-1.5 text-xs font-semibold whitespace-nowrap shadow-sm active:scale-95 transition-transform";
 
   // Fix 4: stronger visual emphasis when scope is narrowed to selected rows.
+  // P1-2a: pill uses break-words/normal whitespace so it wraps instead of overflowing at 375px.
   const scopePill = (
     <span
-      className={`text-xs rounded-full px-2.5 py-0.5 whitespace-nowrap ${
+      className={`text-xs rounded-full px-2.5 py-0.5 break-words max-w-full ${
         someSelected
           ? "bg-blue-600 text-white font-semibold border border-blue-700"
           : "bg-gray-100 text-gray-500 font-medium border border-gray-200"
@@ -212,7 +203,7 @@ function BulkEditControls({
 
   // Fix 5: column picker includes Base URL.
   const columnPicker = (labelVisible: boolean) => (
-    <div className={labelVisible ? "flex items-center gap-2" : ""}>
+    <div className={labelVisible ? "flex flex-wrap items-center gap-2" : ""}>
       {labelVisible && (
         <label htmlFor={mobile ? "bulk-col-mobile" : "bulk-col-desktop"} className="text-xs text-gray-600 whitespace-nowrap">
           Column:
@@ -273,7 +264,7 @@ function BulkEditControls({
               onClick={onSetColumn}
               aria-label={`Set column ${column}`}
               title={`Set ${column} on targeted rows`}
-              className={`${baseBtnCls} border-blue-400 bg-blue-50 text-blue-700 hover:bg-blue-100`}
+              className={`${baseBtnCls} border-blue-600 bg-blue-600 text-white hover:bg-blue-700`}
             >
               Set column
             </button>
@@ -311,7 +302,7 @@ function BulkEditControls({
               onClick={onFindReplace}
               aria-label={`Find and replace in column ${column}`}
               title={`Replace in ${column} on targeted rows`}
-              className={`${baseBtnCls} border-purple-400 bg-purple-50 text-purple-700 hover:bg-purple-100`}
+              className={`${baseBtnCls} border-purple-600 bg-purple-600 text-white hover:bg-purple-700`}
             >
               Find &amp; replace in column
             </button>

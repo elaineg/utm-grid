@@ -14,8 +14,9 @@
 import LZString from "lz-string";
 import { expect, test, type Page } from "@playwright/test";
 
+// Both table and card layouts are always in DOM; use .first() to avoid strict-mode violations.
 const cell = (page: Page, field: string, rowNum: number) =>
-  page.getByLabel(`${field} row ${rowNum}`, { exact: true });
+  page.getByLabel(`${field} row ${rowNum}`, { exact: true }).first();
 
 const shareBtn = (page: Page) => page.locator('[data-testid="copy-share-link"]');
 const sharedBanner = (page: Page) => page.locator('[data-testid="shared-grid-banner"]');
@@ -205,11 +206,7 @@ test("opening a share URL does not overwrite pre-existing localStorage until a c
   // Using a new page ensures the React component mounts fresh and reads the URL hash.
   const recipientPage = await recipientCtx.newPage();
 
-  // FIX1: dirty-guard now prompts when existing grid has content — accept to load shared grid.
-  recipientPage.once("dialog", async (dialog) => {
-    if (dialog.type() === "confirm") await dialog.accept();
-  });
-
+  // P0-1: No confirm dialog — shared grid takes display precedence silently.
   await recipientPage.goto(shareUrl2);
   await recipientPage.waitForLoadState("networkidle");
 
@@ -298,15 +295,11 @@ test("share hash wins over pre-seeded localStorage: shows shared rows + banner",
   // Open share URL in a new page within same context (same localStorage)
   const recipientPage = await recipientCtx.newPage();
 
-  // FIX1: dirty-guard now prompts when existing grid has content — accept to load shared grid.
-  recipientPage.once("dialog", async (dialog) => {
-    if (dialog.type() === "confirm") await dialog.accept();
-  });
-
+  // P0-1: No confirm dialog — shared grid takes display precedence silently.
   await recipientPage.goto(shareUrl);
   await recipientPage.waitForLoadState("networkidle");
 
-  // Banner must be visible with correct row count (P2: must show even with saved grid)
+  // Banner must be visible with correct row count (P0-1: must show even with saved grid)
   const banner = sharedBanner(recipientPage);
   await expect(banner).toBeVisible();
   await expect(banner).toContainText("Loaded shared grid (2 links)");
@@ -365,4 +358,82 @@ test("Link copied! cue shows even when navigator.clipboard is blocked (execComma
 
   // The button shows "Link copied!" regardless of clipboard success
   await expect(shareBtn(page)).toContainText("Link copied!", { timeout: 2000 });
+});
+
+// ── Test 10: P0-1 regression — share fragment wins even when localStorage is pre-populated ──
+// Reproduces the exact bug Sam/Priya hit: a visitor with a saved grid opens a #g= URL and
+// MUST see the shared grid + banner WITHOUT a confirm dialog and WITHOUT the saved grid showing.
+
+test("P0-1: share fragment shows shared grid + banner even when localStorage has a saved grid (no confirm)", async ({
+  browser,
+  baseURL,
+}) => {
+  const sharedPayload = {
+    rows: [
+      {
+        id: "shared-1",
+        baseUrl: "https://shared-example.com/page",
+        utm_source: "shared_src",
+        utm_medium: "email",
+        utm_campaign: "shared_campaign",
+        utm_term: "",
+        utm_content: "",
+      },
+    ],
+    settings: { requiredParams: true, lowercaseOnly: true, noSpaces: true },
+  };
+  const compressed = LZString.compressToEncodedURIComponent(JSON.stringify(sharedPayload));
+  const origin = (baseURL ?? "http://localhost:3811").replace(/\/$/, "");
+  const shareUrl = `${origin}/#g=${compressed}`;
+
+  // Build a context with a pre-seeded "own" grid in localStorage
+  const ctx = await browser.newContext();
+  const seedPage = await ctx.newPage();
+  await seedPage.goto("/");
+  // Fill enough cells to ensure the grid has real content in localStorage
+  await cell(seedPage, "Base URL", 1).fill("https://my-saved-site.com");
+  await cell(seedPage, "utm_source", 1).fill("saved_source");
+  await cell(seedPage, "utm_medium", 1).fill("organic");
+  await cell(seedPage, "utm_campaign", 1).fill("saved_campaign");
+  // Wait for debounce to flush (400ms)
+  await seedPage.waitForTimeout(700);
+  await seedPage.close();
+
+  // Open the share URL in a new page in the same context (same localStorage origin)
+  const recipientPage = await ctx.newPage();
+
+  // Attach a dialog listener that FAILs if any confirm appears
+  // (P0-1 fix: no confirm should fire)
+  let unexpectedDialog = false;
+  recipientPage.on("dialog", async (dialog) => {
+    unexpectedDialog = true;
+    await dialog.dismiss(); // dismiss it so the test doesn't hang
+  });
+
+  await recipientPage.goto(shareUrl);
+  await recipientPage.waitForLoadState("networkidle");
+
+  // No confirm dialog should have appeared
+  expect(unexpectedDialog).toBe(false);
+
+  // Banner must be visible
+  await expect(sharedBanner(recipientPage)).toBeVisible({ timeout: 5000 });
+  await expect(sharedBanner(recipientPage)).toContainText("Loaded shared grid (1 link)");
+
+  // The SHARED rows must be shown (not the saved "my-saved-site.com" ones)
+  await expect(cell(recipientPage, "Base URL", 1)).toHaveValue("https://shared-example.com/page");
+  await expect(cell(recipientPage, "utm_source", 1)).toHaveValue("shared_src");
+
+  // The saved "my-saved-site.com" row must NOT appear
+  const row1Value = await cell(recipientPage, "Base URL", 1).inputValue();
+  expect(row1Value).not.toContain("my-saved-site.com");
+
+  // Navigate to "/" without editing — localStorage must still hold the original grid
+  const checkPage = await ctx.newPage();
+  await checkPage.goto("/");
+  await checkPage.waitForLoadState("networkidle");
+  await expect(cell(checkPage, "Base URL", 1)).toHaveValue("https://my-saved-site.com");
+  await expect(cell(checkPage, "utm_source", 1)).toHaveValue("saved_source");
+
+  await ctx.close();
 });

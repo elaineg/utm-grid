@@ -25,8 +25,9 @@ import { expect, test, type Page } from "@playwright/test";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+// Both table and card layouts are always in DOM; use .first() to avoid strict-mode violations.
 const cell = (page: Page, field: string, rowNum: number) =>
-  page.getByLabel(`${field} row ${rowNum}`, { exact: true });
+  page.getByLabel(`${field} row ${rowNum}`, { exact: true }).first();
 
 /** Widen viewport to desktop so only the desktop BulkEditBar layout is rendered. */
 async function gotoWide(page: Page) {
@@ -64,6 +65,17 @@ async function clickFindReplace(page: Page, field: string) {
   await page.getByLabel(`Find and replace in column ${field}`).first().click();
 }
 
+/** Expand the BulkEditBar disclosure (collapsed by default since panel round-2). */
+async function expandBulkBar(page: Page) {
+  const toggle = page.locator('button[aria-controls="bulk-edit-panel"]');
+  const expanded = await toggle.getAttribute("aria-expanded");
+  if (expanded === "false" || expanded === null) {
+    await toggle.click();
+  }
+  // Wait for the column picker to be visible before proceeding
+  await expect(page.getByLabel("Column for bulk edit").first()).toBeVisible({ timeout: 3000 });
+}
+
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 test("Set column (no selection) sets utm_campaign on all 3 rows; generated URLs update; persists reload", async ({
@@ -72,6 +84,7 @@ test("Set column (no selection) sets utm_campaign on all 3 rows; generated URLs 
   const ctx = await browser.newContext();
   const page = await ctx.newPage();
   await gotoWide(page);
+  await expandBulkBar(page);
 
   // Build 3-row grid with utm_campaign empty
   await fillRows(page, [
@@ -123,6 +136,7 @@ test("Select rows 1 and 3; Set column applies only to them; row 2 unchanged", as
   const ctx = await browser.newContext();
   const page = await ctx.newPage();
   await gotoWide(page);
+  await expandBulkBar(page);
 
   await fillRows(page, [
     { base: "https://example.com/a", campaign: "", source: "alpha" },
@@ -130,9 +144,9 @@ test("Select rows 1 and 3; Set column applies only to them; row 2 unchanged", as
     { base: "https://example.com/c", campaign: "", source: "gamma" },
   ]);
 
-  // Select rows 1 and 3 via checkboxes
-  await page.getByLabel("Select row 1 for bulk edit").click();
-  await page.getByLabel("Select row 3 for bulk edit").click();
+  // Select rows 1 and 3 via checkboxes — use .first() (both table+card have same label)
+  await page.getByLabel("Select row 1 for bulk edit").first().click();
+  await page.getByLabel("Select row 3 for bulk edit").first().click();
 
   // Scope pill should now say "Apply to: 2 selected rows"
   await expect(
@@ -162,13 +176,13 @@ test("Select-all header checkbox selects all rows; clicking again clears all", a
   // Add 2 rows
   await page.getByRole("button", { name: "Add row" }).click();
 
-  // Click the select-all checkbox
-  const selectAll = page.getByLabel("Select all rows for bulk edit");
+  // Click the select-all checkbox — use .first() (both table+card have same label)
+  const selectAll = page.getByLabel("Select all rows for bulk edit").first();
   await selectAll.click();
 
-  // Both per-row checkboxes should now be checked
-  const row1Check = page.getByLabel("Select row 1 for bulk edit");
-  const row2Check = page.getByLabel("Select row 2 for bulk edit");
+  // Both per-row checkboxes should now be checked — use .first() for same reason
+  const row1Check = page.getByLabel("Select row 1 for bulk edit").first();
+  const row2Check = page.getByLabel("Select row 2 for bulk edit").first();
   await expect(row1Check).toBeChecked();
   await expect(row2Check).toBeChecked();
 
@@ -186,6 +200,7 @@ test("Find & replace clears cross-row consistency warning on both cells", async 
   const ctx = await browser.newContext();
   const page = await ctx.newPage();
   await gotoWide(page);
+  await expandBulkBar(page);
 
   // Two rows with normalizing-equal but literal-different utm_campaign values
   await cell(page, "Base URL", 1).fill("https://example.com/a");
@@ -223,6 +238,7 @@ test("Set column with empty value clears the field; required-param warning appea
   const ctx = await browser.newContext();
   const page = await ctx.newPage();
   await gotoWide(page);
+  await expandBulkBar(page);
 
   // Build a row with utm_campaign set
   await cell(page, "Base URL", 1).fill("https://example.com/a");
@@ -263,6 +279,7 @@ test("Bulk Set column and Find & replace trigger NO network requests", async ({
   await gotoWide(page);
 
   await page.waitForLoadState("networkidle");
+  await expandBulkBar(page);
 
   // Start recording requests AFTER initial page load
   const requests: string[] = [];
@@ -303,6 +320,7 @@ test("Round-2: Find & replace shows 'Replaced in N rows' on success", async ({
   const ctx = await browser.newContext();
   const page = await ctx.newPage();
   await gotoWide(page);
+  await expandBulkBar(page);
 
   await cell(page, "Base URL", 1).fill("https://example.com/a");
   await cell(page, "utm_campaign", 1).fill("spring-sale");
@@ -327,6 +345,7 @@ test("Round-2: Find & replace shows 'No matches in <column>' when nothing matche
   const ctx = await browser.newContext();
   const page = await ctx.newPage();
   await gotoWide(page);
+  await expandBulkBar(page);
 
   await cell(page, "Base URL", 1).fill("https://example.com/a");
   await cell(page, "utm_campaign", 1).fill("spring_sale");
@@ -348,6 +367,7 @@ test("Round-2: Find & replace shows 'Enter a value to find' when find is empty",
   const ctx = await browser.newContext();
   const page = await ctx.newPage();
   await gotoWide(page);
+  await expandBulkBar(page);
 
   await cell(page, "Base URL", 1).fill("https://example.com/a");
   await cell(page, "utm_campaign", 1).fill("spring_sale");
@@ -369,6 +389,7 @@ test("Round-2: Match case OFF — case-insensitive find matches Spring-Sale with
   const ctx = await browser.newContext();
   const page = await ctx.newPage();
   await gotoWide(page);
+  await expandBulkBar(page);
 
   await cell(page, "Base URL", 1).fill("https://example.com/a");
   await cell(page, "utm_campaign", 1).fill("Spring-Sale");
@@ -395,6 +416,7 @@ test("Round-2: Empty Set column shows 'Cleared <column> on N rows' message", asy
   const ctx = await browser.newContext();
   const page = await ctx.newPage();
   await gotoWide(page);
+  await expandBulkBar(page);
 
   await cell(page, "Base URL", 1).fill("https://example.com/a");
   await cell(page, "utm_campaign", 1).fill("spring_sale");
@@ -419,6 +441,7 @@ test("Round-2: Base URL selectable in bulk column picker; Set column works on it
   const ctx = await browser.newContext();
   const page = await ctx.newPage();
   await gotoWide(page);
+  await expandBulkBar(page);
 
   await cell(page, "Base URL", 1).fill("https://old-domain.com/a");
   await page.getByRole("button", { name: "Add row" }).click();

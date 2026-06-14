@@ -365,7 +365,10 @@ export function CampaignsSidebar({
           aria-expanded={mobileExpanded}
           data-testid="campaigns-mobile-toggle"
         >
-          <span>Campaigns{campaigns.length > 0 ? ` (${campaigns.length})` : ""}</span>
+          <span>
+            Campaigns{campaigns.length > 0 ? ` (${campaigns.length})` : ""}{" "}
+            <span className="font-normal text-gray-400 text-xs">— save &amp; reuse grids</span>
+          </span>
           <span className="text-gray-400">{mobileExpanded ? "▲" : "▼"}</span>
         </button>
         {mobileExpanded && (

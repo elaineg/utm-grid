@@ -1,8 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
 import fs from "node:fs/promises";
 
+// Both table and card layouts are always in DOM; use .first() to avoid strict-mode violations.
 const cell = (page: Page, field: string, rowNum: number) =>
-  page.getByLabel(`${field} row ${rowNum}`, { exact: true });
+  page.getByLabel(`${field} row ${rowNum}`, { exact: true }).first();
 
 async function fillRow(
   page: Page,
@@ -148,12 +149,18 @@ test("presets persist across reload and apply to a row", async ({ page }) => {
   // Put the values on row 1, select it, save as preset.
   await fillRow(page, 1, { utm_source: "facebook", utm_medium: "paid_social" });
   await cell(page, "utm_source", 1).click();
+  // Expand Presets section (collapsed by default since panel round-4)
+  const presetsToggle = page.locator('section').filter({ hasText: /Presets/ }).locator('button[aria-expanded]').first();
+  if ((await presetsToggle.getAttribute("aria-expanded")) === "false") await presetsToggle.click();
   await page.getByRole("button", { name: "Save preset…" }).click();
   await page.getByPlaceholder("Paid Social").fill("Paid Social");
   await expect(page.getByLabel("Preset value for utm_source")).toHaveValue("facebook");
   await page.getByRole("button", { name: "Save preset", exact: true }).click();
 
   await page.reload();
+  // Re-expand Presets after reload (collapses on page load)
+  const presetsToggle2 = page.locator('section').filter({ hasText: /Presets/ }).locator('button[aria-expanded]').first();
+  if ((await presetsToggle2.getAttribute("aria-expanded")) === "false") await presetsToggle2.click();
   // Preset chip survives the reload (it also appears in the "new rows" select).
   await expect(
     page.getByText("Paid Social", { exact: true }).first()

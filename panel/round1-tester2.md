@@ -1,47 +1,47 @@
 # Round 1 — Tester 2 (Marcus, frontend eng, 2yr, desktop Chrome + devtools)
 
-Motivation: tagging launch links consistently across channels with my team's conventions.
+Motivation: tagging a product launch across email, Twitter, and the blog with my team's
+conventions, without fiddling with query params by hand.
 
 ## Clarity — Yes
-The H1 "Tag all your campaign links with clean, consistent UTM tags at once — so one
-stray capital letter never splits your data in Google Analytics" nailed it in <5s. I'd
-tell a teammate: "bulk UTM builder grid, no login, enforces your naming so GA doesn't
-fragment." The "no account / runs in your browser" line and the LINT RULES toggles made
-the value obvious. Nothing confused me on first read.
+Cold open H1: "Share one link that enforces your team's UTM taxonomy — stop policing
+casing and typos that split your GA4 data." Subhead: "Build and tag links in a grid,
+define your org's allowed values, fix naming automatically, and export clean CSV — no
+account." I knew exactly what this was in ~3s. I'd tell a teammate: "bulk UTM grid, no
+login, auto-fixes casing/typos and enforces our naming so GA4 doesn't fragment."
 
 ## Value — Yes
-Today I keep a shared Google Sheet with a CONCATENATE formula and eyeball casing by hand,
-or paste into ga-dev-tools Campaign URL Builder one link at a time. This is genuinely
-faster: grid + Auto-fix naming ("Summer Launch 2026" -> "summer_launch_2026" in one click)
-+ Enforce UTM Spec is exactly the missing piece — the sheet can't stop a teammate typing
-"Newsletter". The off-spec flag "◆ Off-spec — nearest allowed: newsletter [Fix to
-newsletter]" with one-click fix, and the spec riding in the share link so I hand a teammate
-a link that enforces our taxonomy, is the actual workflow win. I'd drop this in team Slack.
+Today I hand-edit query params or paste into ga-dev-tools one link at a time, and keep a
+Google Sheet with a CONCATENATE formula I eyeball for casing. This is faster: grid +
+Auto-fix ("Spring Launch" -> spring_launch, "Email Newsletter" -> email_newsletter in one
+click) + inline lint + a share link that round-trips the whole grid. The sheet can't stop
+a teammate typing "Newsletter"; this does, and the share link carries it. I'd drop it in
+team Slack.
 
-## What I tested (all worked, zero console/page errors)
-- Defined allowed values per field (chips add on Enter), Enforce toggle on.
-- Off-spec "Newsleter" -> violet off-spec flag -> "Fix to newsletter" corrected the cell;
-  cell then becomes an allowed-values dropdown (green border, ▾ caret). Nice touch.
-- Copy share link (419 chars) carries the spec; fresh page shows newsletter/linkedin/social
-  chips AND enforcement is live (typed "Facebook" -> off-spec warning fired). Solid.
-- Core regression: Auto-fix naming + clean generated URL both correct.
+## What I tested (zero console/page errors throughout)
+- Filled a row, applied Email preset, typed messy values, hit Auto-fix — corrected
+  perfectly, with an "Auto-fixed 1 cell — Undo" toast + working Undo.
+- Inline lint: red "utm_medium is required / utm_campaign is required" under the exact
+  cells; generated URL stays blank until valid — no silent garbage.
+- Copy share link = client-side hash; round-tripped in a fresh tab and every cell incl.
+  the auto-fixed campaign was intact. "nothing sent to any server" + localStorage note is
+  the trust signal I want. (Copy verified visually; clipboard read succeeded in my env.)
+- Mobile @375px: deliberate, not a squished table — collapses to a labeled stacked card
+  per row with a full-width "Copy URL" button; Campaigns/UTM Spec/Bulk Edit become
+  accordions; no horizontal scroll. Generated URL renders clean.
 
-## Jank / nits (minor, would move score up if fixed)
-- The fixed cell renders "newslette ▾" — the ▾ caret clips the last char visually
-  (value is actually "newsletter"). Looks like a width bug; an engineer will assume a
-  truncation bug. Pad-right or shrink the caret.
-- Spec chips switch green->violet when Enforce flips on; intentional but the color jump
-  with no legend made me double-check it wasn't a state bug. A tiny "enforcing" label
-  would remove the doubt.
-- Off-spec warning only surfaces the "Fix to" button after you focus/expand the cell's
-  "warnings" chip — I almost missed it. Surfacing it inline would be stronger.
+## Jank / nits (would move the score up)
+- Channel presets fill source+medium but NOT campaign, so a fresh preset row opens in an
+  error state ("utm_campaign is required"). Reads as broken rather than "fill this one
+  field." Biggest perception gap for me.
+- Desktop column headers truncate ("UTM_MED") at mid widths before the mobile breakpoint.
 
 ## Advocacy — 8
-Real recurring pain, fast, share-link-carries-spec is the killer feature for a launch with
-a team. Not a 9 only because of the small CSS clip on the fixed cell and the green/violet
-chip ambiguity — polish gaps an engineer notices immediately. Fix those and it's a 9 I'd
-post in Slack unprompted.
+Real recurring pain, genuinely fast, share-link-carries-the-grid is the launch killer
+feature, and the mobile layout is polished. Not a 9 only because presets leave the
+required campaign blank (every preset row opens as an error) and the mid-width header
+truncation — polish gaps an engineer clocks immediately.
 
 ```json
-{"tester": 2, "round": 1, "clarity": "Yes", "value": "Yes", "advocacy": 8, "topComplaints": ["fixed cell 'newslette ▾' clips last char via dropdown caret — looks like a truncation bug", "spec chips jump green->violet on Enforce with no legend; momentarily reads as a state bug", "off-spec 'Fix to' button hidden behind a 'warnings' chip you must focus/expand to see"], "priorConcernsAddressed": "n/a"}
+{"tester": 2, "round": 1, "clarity": "Yes", "value": "Yes", "advocacy": 8, "topComplaints": ["channel presets fill source/medium but leave required utm_campaign blank, so every preset row opens in an error state", "desktop column headers truncate ('UTM_MED') at mid viewport widths before the mobile breakpoint"], "priorConcernsAddressed": "n/a"}
 ```

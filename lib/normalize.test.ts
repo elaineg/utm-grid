@@ -40,6 +40,19 @@ describe("normalizeValue", () => {
     expect(unique.size).toBe(1);
     expect([...unique][0]).toBe("spring_sale");
   });
+
+  // P1-2 regression: trailing/leading whitespace must never become trailing/leading underscores.
+  it("trims trailing space before converting spaces to underscores (Instagram  → instagram, not instagram_)", () => {
+    expect(normalizeValue("Instagram ", DEFAULT_LINT_SETTINGS)).toBe("instagram");
+  });
+
+  it("trims leading space before converting spaces to underscores ( Instagram → instagram)", () => {
+    expect(normalizeValue(" Instagram", DEFAULT_LINT_SETTINGS)).toBe("instagram");
+  });
+
+  it("trims both leading and trailing spaces, then normalizes internal spaces (Spring Sale  → spring_sale)", () => {
+    expect(normalizeValue(" Spring Sale ", DEFAULT_LINT_SETTINGS)).toBe("spring_sale");
+  });
 });
 
 describe("isCellFixable", () => {
@@ -71,15 +84,29 @@ describe("normalizeRow", () => {
 });
 
 describe("normalizeAllRows", () => {
-  it("counts only changed rows", () => {
+  it("counts CELLS changed (not rows)", () => {
+    // Row 1: 1 cell to fix (utm_source). Row 2: nothing. Total = 1 cell.
     const rows = [
       { ...emptyRow("r1"), utm_source: "Facebook" },
       { ...emptyRow("r2"), utm_source: "facebook" },
     ];
     const result = normalizeAllRows(rows, DEFAULT_LINT_SETTINGS);
-    expect(result.count).toBe(1);
+    expect(result.count).toBe(1); // 1 cell fixed
     expect(result.rows[0].utm_source).toBe("facebook");
     expect(result.rows[1].utm_source).toBe("facebook");
+  });
+
+  it("counts multiple cells changed across rows correctly", () => {
+    // Row 1: 2 cells to fix (utm_source + utm_campaign). Row 2: 1 cell.
+    const rows = [
+      { ...emptyRow("r1"), utm_source: "Facebook", utm_campaign: "Spring Sale" },
+      { ...emptyRow("r2"), utm_source: "Instagram " },
+    ];
+    const result = normalizeAllRows(rows, DEFAULT_LINT_SETTINGS);
+    expect(result.count).toBe(3); // 3 cells total (2 in r1, 1 in r2)
+    expect(result.rows[0].utm_source).toBe("facebook");
+    expect(result.rows[0].utm_campaign).toBe("spring_sale");
+    expect(result.rows[1].utm_source).toBe("instagram"); // trailing space trimmed, not trailing _
   });
 
   it("returns same reference when nothing changed", () => {

@@ -1,31 +1,25 @@
-# Elena — Round 3 (UTM Spec governance / shareable enforced spec)
-Eng manager, 8 reports. Laptop between meetings + phone checks. ~30s patience.
+# Elena — Round 3 (EM, on phone @375px, 30s budget)
 
-PRIOR CONCERN (my only remaining capping gripe), re-checked explicitly:
-- "Hero headline still led with bulk-cleaner/CSV, not the team-governance promise" — FIXED,
-  word-for-word what I asked. The h1 now reads: "Share one link that enforces your team's UTM
-  taxonomy — stop policing casing and typos that split your GA4 data." On a 10s skim — laptop
-  AND 375px phone (verified both screenshots) — the FIRST thing I read is the team-governance
-  payoff. "Build and tag links… export clean CSV" is correctly demoted to a grey subhead. The
-  cleaner is now the how, not the headline. The "Enforce your team's UTM taxonomy" label +
-  "Enforce UTM Spec" toggle are still above the fold under LINT RULES.
+PRIOR CONCERNS, re-checked live as a fresh recipient on mobile:
+- Banner never said it enforces a spec: **FIXED.** Built a 3-rule allowed-value spec, Enforce on,
+  copied the link, opened it in a clean context. Banner now reads "Loaded shared grid (1 link)
+  · enforces a UTM spec — 3 allowed-value rules." Exactly the line I wanted; the recipient instantly
+  knows this link carries our taxonomy.
+- Recipient inherits a dirty `%20` URL: **FIXED (one tap).** On arrival the URL is still dirty
+  (`utm_medium=Paid%20Social&utm_campaign=Q3%20Launch`), BUT the banner now has a "Fix all naming"
+  button. One tap → cells go green (`linkedin`, `paid_social`, `q3_launch`) and the generated URL is
+  clean lowercase, no `%20`. A hurried report no longer copies a broken link.
 
-CLARITY — Yes. In under 10 seconds I'd tell a report: "one link that forces everyone's UTM tags
-to match our spec so I stop fixing casing in PRs." The headline does the explaining now; I don't
-have to do a second read to find the team angle. It lands well inside my patience budget.
+VALUE — Yes. My reports hand-edit UTMs in a Google Sheet; half ship `Paid Social` and split GA4. Now I
+forward ONE link that announces the spec and lets the recipient self-clean in a tap. Beats the Sheet.
 
-VALUE — Yes. Today: shared Google Sheet template + me policing casing in PRs/Linear. This still
-beats it — one link enforces my taxonomy, catches off-spec as they type, one-click fixes, no sync
-to babysit — and now the page SELLS that promise first instead of making me dig for it. This
-round's change is hero copy, which is the exact lever that decides whether a busy manager forwards
-it.
+ADVOCACY — 9 (up from 8). Handoff is finally clean end-to-end: recipient sees the spec, fixes everything
+in one tap, copies a correct link. This is the version I'd bring up unprompted to other EMs. Not a 10:
+the toast said "Auto-fixed 1 cell" when it cleaned 3, and Fix normalized to the naming-rule format
+(`paid_social`) rather than my spec's allowed value (`paid-social`) — clean, but not what a strict spec owner expects.
 
-ADVOCACY — 9. Up from 8. The headline now leads with governance and lands first on both my
-devices; that was the single thing capping me, and it's done. I'd forward this link to my 8
-reports and bring it up unprompted as "this is how we tag links now." Not a 10 only because it's
-still forward-and-hope — there's no lightweight way to see WHO on the team is off-spec, nor to
-lock the spec so a report can't toggle Enforce off; that's a "next" nicety, not a blocker.
-
-```json
-{"clarity":"Yes","value":"Yes","advocacy":9,"priorConcernsAddressed":"yes","notes":"Hero now LEADS with governance: h1 = 'Share one link that enforces your team's UTM taxonomy — stop policing casing and typos that split your GA4 data', old bulk-cleaner/CSV pitch demoted to grey subhead. Verified on laptop and 375px phone — the governance payoff is the first thing read, well inside a 10s skim. Enforce label + Enforce UTM Spec toggle still above the fold. This was my only remaining capping complaint and it's fixed word-for-word; moves me 8->9, would forward to my 8 reports unprompted. Below 10 only because there's no visibility into which report is off-spec and no way to lock the Enforce toggle so a recipient can't turn governance off — a 'next' nicety, not a blocker."}
-```
+CLARITY (purpose clear in 5s): Yes — 2-line headline + subhead read in one thumb-skim.
+VALUE (saves real time): Yes — one clean enforced link replaces my Google Sheet round-trips.
+ADVOCACY (0-10): 9 — handoff now clean both ways; only nits (toast count, spec-vs-rule format) left.
+PRIOR CONCERNS ADDRESSED: Yes — spec clause in banner AND one-tap "Fix all naming" both work on mobile.
+TOP FRICTION: Fix normalizes to the naming-rule format (`paid_social`) not the spec's allowed value (`paid-social`) — minor, but a strict spec owner expects their allowed value to win.

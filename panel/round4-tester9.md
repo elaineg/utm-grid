@@ -1,73 +1,29 @@
-# Round 4 — Tester 9 (Elena, Engineering manager, 8 reports)
+# Elena — Round 4 (EM, on phone @375px, 30s budget)
 
-Context: 30-second patience budget, skimming between meetings on a laptop. I do NOT build
-UTMs myself. A report asked whether the team should standardize on this. I judge it on:
-would it save my reports time, and is it instantly obvious + setup-free.
+Re-checked my round-3 likes + the three claimed fixes, live as a fresh recipient on mobile:
+- Shared-link handoff to a recipient who ALREADY has a saved grid: **FIXED.** Built a spec link, then on a
+  phone that already had a grid in localStorage (`utm-grid:rows`) I opened the link in a fresh tab — banner now
+  reads "Loaded shared grid (1 link) · enforces a UTM spec — 3 allowed-value rules", "Fix all naming" is there,
+  and my own grid is correctly replaced by the shared one. No silent swallow. 0 console errors.
+- "Auto-fixed N cells" toast count: **FIXED.** Cleaned 3 messy cells and the toast reads "Auto-fixed 3 cells —
+  Undo" (was wrongly "1 cell" last round). Bonus: there's now an Undo, which I'd actually use mid-meeting.
+- Whitespace in auto-fix: **FIXED.** Result cells trimmed clean (`linkedin`, `paid_social`, `q3_launch`), no
+  leading/trailing spaces, generated URL has no `%20`.
 
-## Cold open (first 30s)
-- Headline says exactly what it is: "Tag all your campaign links with clean, consistent UTM
-  tags at once — so one stray capital letter never splits your data in Google Analytics."
-  That sentence does the whole pitch. Subline "no account" sealed it — setup-free confirmed.
-- A grid was already there ready to type into. No signup, no modal, no onboarding. Good.
+VALUE — Yes. My reports hand-edit UTMs in a Google Sheet and half ship `Paid Social` and split GA4. One enforced
+link that announces the spec and self-cleans in a tap still beats the Sheet round-trips. Nothing regressed.
 
-## Building a row
-- Filled base URL + source/medium/campaign with deliberately messy values ("LinkedIn",
-  "Paid Social", "Q2 Launch"). Inline lint fired instantly: "Contains uppercase letters —
-  use lowercase only ('linkedin')" and "Contains spaces — use '_' or '-'" each with a
-  one-click **Fix**. THIS is the part I'd actually point a report to: it stops the exact
-  "one stray capital splits your GA data" mistake without anyone having to remember a
-  convention. That's the standardization value, more than the library.
+ADVOCACY — Holding 9. Every fix landed and the Undo is a real improvement; I'd bring this up to other EMs. Not a
+10 for the same reason as round 3: with Enforce ON, "Fix all naming" normalizes to the underscore rule
+(`paid_social`) instead of MY spec's allowed value (`paid-social`), and never flags the mismatch — a strict spec
+owner expects their allowed value to win, or at least see a violation. Clean output, but not MY taxonomy.
 
-## NEW Campaigns library
-- "+ Save as campaign" → inline "Name this campaign" field (Save/Cancel). Saved "Weekly
-  LinkedIn Batch"; sidebar showed "Campaigns (1)" with "1 link · saved just now" and
-  Open / Duplicate / Delete. Top badge flips to "In: Weekly LinkedIn Batch · Saved!".
-- Edited a cell → badge became "In: ... · unsaved changes" with an amber dirty-dot, button
-  became "Save changes". That dirty-state tracking is genuinely thoughtful — better than I
-  expected from a free no-account tool.
-- Reload: campaign persisted, grid restored. Duplicate genuinely creates a 2nd campaign
-  (header 1→2), does NOT just dupe a grid row. Verified.
-- Share link: "Copy share link" → 398-char client-side hash URL (#g=...). So a saved batch
-  can be handed to a teammate as a link. That IS the "canonical batch the team standardizes
-  on" story, and it works.
-
-## Honest manager verdict on standardizing
-The lint-on-type + one-click Fix is a real reason to say "yes, use this" to a report — it
-removes a class of GA data-splitting bugs with zero setup. The saved-campaigns library is a
-nice-to-have but does NOT move my decision much: my reports who run campaign batches mostly
-live in a spreadsheet or their ad platform's own builder, and "saved locally on this device"
-means it's per-person, per-browser — not a shared team library. A campaign saved on one
-person's laptop isn't visible to the team; the only sharing is manually copying a link. So
-"standardize on it" really means "everyone independently keeps their own local copies," which
-isn't standardization in the way my report meant. For a true team-canonical batch I'd want
-the link to be the source of truth, or a shared store. Local-only caps the manager value.
-
-## Confusing in a quick skim
-- "Clean all" sits next to Add row and reads like "clear the grid," but it's the LINT-RULES
-  toggle group affordance — I'd have to stop and test it, which a 30s skimmer won't. Mislabel.
-- Two different "duplicate" affordances: grid-row "Dup" and campaign-card "Duplicate." On a
-  fast skim I conflated them and briefly thought Duplicate had cloned a row.
-- "Saved on this device" is honest but quietly kills the team-standardization pitch; nothing
-  tells me how to make a campaign the team's shared canonical one besides copy-pasting a link.
-
-## Likes
-- Instant, setup-free, no account — passes my bar in <30s.
-- Inline lint + one-click Fix is the real product; it's what I'd recommend it FOR.
-- Dirty-state ("unsaved changes" + Save changes) on campaigns is polished.
-
-## Regression
-None. Everything I used before (grid, lint, share link, CSV) still works; campaigns are
-additive and didn't break the core flow.
+CLARITY (purpose clear in 5s): Yes — 2-line headline + subhead read in one thumb-skim.
+VALUE (saves real time): Yes — one enforced, self-cleaning link replaces my Google Sheet round-trips.
+ADVOCACY (0-10): 9 — all three fixes verified on mobile; handoff is clean end-to-end both ways.
+PRIOR CONCERNS ADDRESSED: Yes — saved-user banner, toast count, and whitespace-trim all confirmed fixed.
+TOP FRICTION: "Fix all naming" applies the underscore rule (`paid_social`) over my spec's allowed value (`paid-social`) and never flags the mismatch — the one gap between a 9 and a 10.
 
 ```json
-{
-  "tester": "Elena",
-  "clarity": "Yes",
-  "value": "No",
-  "advocacy": 6,
-  "campaigns_verdict": "The save & reuse named-campaigns library is well-built (persists, dirty-state, Duplicate, Delete) but it's local-to-one-browser, so it doesn't deliver the team-standardization my report was asking about — sharing is still manual link copy, not a shared canonical library. It doesn't change my recommend decision; the inline lint + one-click Fix is what makes this worth pointing a report at, not the library.",
-  "likes": ["Setup-free, no account, usable in under 30s", "Inline UTM lint with one-click Fix stops the exact GA data-splitting bug the headline promises", "Campaign cards have polished dirty-state ('unsaved changes' / 'Save changes') and persist across reload"],
-  "complaints": ["'Saved on this device' = per-person/per-browser, so 'standardize the team on it' really means everyone keeps separate local copies — not real standardization", "'Clean all' next to 'Add row' reads like 'clear the grid' but is a lint affordance — mislabeled for a 30s skimmer", "Two duplicate controls (grid-row 'Dup' vs campaign 'Duplicate') are easy to conflate on a fast skim"],
-  "regression": "none"
-}
+{"tester": 9, "round": 4, "clarity": "Yes", "value": "Yes", "advocacy": 9, "topComplaints": ["Fix all naming normalizes to underscore rule (paid_social) instead of my spec's allowed value (paid-social) and never flags the mismatch under Enforce"], "priorConcernsAddressed": "all"}
 ```

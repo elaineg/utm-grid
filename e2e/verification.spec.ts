@@ -6,8 +6,9 @@
 import { expect, test, type Page } from "@playwright/test";
 import fs from "node:fs/promises";
 
+// Both table and card layouts are always in DOM; use .first() to avoid strict-mode violations.
 const cell = (page: Page, field: string, rowNum: number) =>
-  page.getByLabel(`${field} row ${rowNum}`, { exact: true });
+  page.getByLabel(`${field} row ${rowNum}`, { exact: true }).first();
 
 test("base URL with existing query and fragment: params appended correctly", async ({
   page,
@@ -33,18 +34,32 @@ test("special characters in UTM values are URL-encoded in generated URL", async 
 
 test("page has no login or signup", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByText(/log\s?in|sign\s?up|sign\s?in/i)).toHaveCount(0);
+  // No password fields (definitive auth signal)
   await expect(page.locator('input[type="password"]')).toHaveCount(0);
+  // No login/sign-in/sign-up buttons or links (not body text which says "no login")
+  await expect(
+    page.getByRole("button", { name: /log\s?in|sign\s?up|sign\s?in/i })
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("link", { name: /log\s?in|sign\s?up|sign\s?in/i })
+  ).toHaveCount(0);
 });
 
 test("lint-rule toggles persist in localStorage across reload", async ({
   page,
 }) => {
   await page.goto("/");
+  // Expand Naming rules disclosure (collapsed by default since panel round-4)
+  const namingRulesBtn = page.locator('button[aria-expanded]').filter({ hasText: /Naming rules/ });
+  if ((await namingRulesBtn.getAttribute("aria-expanded")) === "false") await namingRulesBtn.click();
   const lowercase = page.getByRole("checkbox", { name: "Lowercase only" });
+  await expect(lowercase).toBeVisible({ timeout: 3000 });
   await expect(lowercase).toBeChecked();
   await lowercase.uncheck();
   await page.reload();
+  // Re-expand Naming rules after reload to check persisted toggle state
+  const namingRulesBtn2 = page.locator('button[aria-expanded]').filter({ hasText: /Naming rules/ });
+  if ((await namingRulesBtn2.getAttribute("aria-expanded")) === "false") await namingRulesBtn2.click();
   await expect(
     page.getByRole("checkbox", { name: "Lowercase only" })
   ).not.toBeChecked();
@@ -151,7 +166,7 @@ test("row copy button copies that row's generated URL", async ({
   await page.goto("/");
   await cell(page, "Base URL", 1).fill("https://example.com/sale");
   await cell(page, "utm_source", 1).fill("newsletter");
-  await page.getByLabel("Copy URL row 1", { exact: true }).click();
+  await page.getByLabel("Copy URL row 1", { exact: true }).first().click();
   const clipboard = await page.evaluate(() => navigator.clipboard.readText());
   expect(clipboard).toBe("https://example.com/sale?utm_source=newsletter");
 });
@@ -160,10 +175,10 @@ test("duplicate and delete row work", async ({ page }) => {
   await page.goto("/");
   await cell(page, "Base URL", 1).fill("https://example.com/a");
   await cell(page, "utm_source", 1).fill("s1");
-  await page.getByLabel("Duplicate row 1", { exact: true }).click();
+  await page.getByLabel("Duplicate row 1", { exact: true }).first().click();
   await expect(cell(page, "Base URL", 2)).toHaveValue("https://example.com/a");
   await expect(cell(page, "utm_source", 2)).toHaveValue("s1");
-  await page.getByLabel("Delete row 1", { exact: true }).click();
+  await page.getByLabel("Delete row 1", { exact: true }).first().click();
   await expect(cell(page, "Base URL", 1)).toHaveValue("https://example.com/a");
   await expect(cell(page, "Base URL", 2)).toHaveCount(0);
 });

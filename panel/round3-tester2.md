@@ -1,35 +1,21 @@
 # Round 3 — Tester 2 (Marcus, frontend eng, desktop Chrome + devtools)
 
-Re-exercised my EXACT capping complaint: added allowed value "newsletter" to utm_medium →
-Enforce UTM Spec → typed typo "newsleter" → clicked inline "Fix to newsletter" chip →
-measured the corrected `<input list=datalist-utm_medium>` cell. Plus core regression. Zero
-console/page errors all session; share link copied (409 chars, clipboard readText worked).
+## Prior concern re-checked (mid-width header truncation w/ Campaigns sidebar open)
+FIXED. At 1280/1366/1440px with the sidebar open the DOM now carries full, non-truncating
+headers (utm_campaign, utm_term, utm_content all present) and the table sits in a real
+horizontal-scroll container (scrollW 1413 > clientW 958). Scrolling right renders every
+header cleanly — UTM_CAMPAIGN*, UTM_TERM, UTM_CONTENT, GENERATED URL, ACTIONS — no collapse,
+no vanished labels, 0 console errors. The round-2 "reads as broken" defect is gone: labels
+are preserved and reachable instead of disappearing.
 
-## My round-2 capping nit — VERDICT: FIXED
-The corrected utm_medium cell with "newsletter" (10 chars) now measures
-scrollWidth 134 === clientWidth 134 → clipped:FALSE, both unfocused AND focused. Round 2 it
-was sw 120 > cw 94 (clipped, "newslet▼"). They raised min-width to 136px and reserve 28px
-right-padding for the datalist caret. Cropped screenshot confirms "newsletter" renders
-WHOLE with the caret beside it — the jank I flagged is genuinely gone. This is the fix I
-asked for verbatim.
+## Remaining nit (minor, not the old bug)
+On first paint at 1280px with the sidebar open, utm_campaign is still visually clipped to
+"UTM_" at the container edge with no scrollbar/fade hint that there's more to the right. It's
+a scroll-discoverability polish issue now, not a layout collapse — I had to scroll to confirm
+the labels, but they're all there and intact. Not enough to hold a 9.
 
-## One residual (NOT my named complaint)
-A 12-char allowed value ("social_email") still overflows: sw 138 > cw 134, ~4px, the
-trailing char is grazed by the caret. But 10-char was the case I named, and realistic medium
-values (email/social/referral/affiliate/newsletter) all fit. This is an edge nit, not a
-hero-flow bug anymore — it no longer lands on the common "newsletter" path.
-
-## Core regression — clean
-Auto-fix "Email Blast"→email_blast. Off-spec legend (violet/amber) + counter + "Enforcing"
-pill all present. "Auto-fixed 1 cell — Undo" toast, "Link copied!" feedback. Share link 409
-chars, copied fine. 0 console errors, 0 post-load network beyond initial load.
-
-## Advocacy — 9
-The clip I'd been stuck on for two rounds is measurably and visually gone on the hero
-Fix-to output. That was my only blocker, and it was fixed precisely. I'd post this in team
-Slack now. Not a 10 only because a 12-char value still grazes by 4px — trivial, but I notice
-it, and reserving ~8px more min-width would make it bulletproof and earn the 10.
-
-```json
-{"clarity":"Yes","value":"Yes","advocacy":9,"priorConcernsAddressed":"yes","notes":"My round-2 capping nit is FIXED: corrected utm_medium cell with 'newsletter' (10ch) now scrollWidth 134 === clientWidth 134, clipped:false focused+unfocused (was sw120>cw94). min-width raised to 136px, 28px right-pad reserves the caret; crop confirms full un-clipped render alongside the datalist caret. Core regression clean: Email Blast->email_blast, legend/counter/Enforcing pill present, share link 409ch copied, 0 console errors. Holding it at 9 not 10: a 12-char value ('social_email') still overflows sw138>cw134 (~4px, trailing char grazed) — edge case, not the named 'newsletter' path; +8px min-width would make it bulletproof for the 10."}
-```
+CLARITY (purpose clear in 5s): Yes — hero names the job, no-login hook lands fast.
+VALUE (saves real time): Yes — enforces taxonomy + share-link my CONCATENATE sheet can't.
+ADVOCACY (0-10): 9 — the header collapse that held me at 8 is fixed; I'd drop this in team Slack.
+PRIOR CONCERNS ADDRESSED: Yes — headers no longer collapse; only a faint scroll-cue nit left.
+TOP FRICTION: no visible affordance (fade/scrollbar) that the grid scrolls right when the sidebar is open — first glance still shows a clipped "UTM_" until you scroll.

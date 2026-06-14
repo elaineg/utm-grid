@@ -1,13 +1,13 @@
-# Tomás — Round 2
-CLARITY: Yes — Headline + "Edit links in a grid, fix naming automatically, export clean CSV — no account" tells me in seconds what it is and that my data stays put.
-VALUE: Yes — Full Excel round-trip now lands cleanly: landing_url auto-mapped to base_url, generated_url carries the destination + every UTM, export pastes straight back into my sheet.
-ADVOCACY: 9/10 — All three round-1 import gripes fixed and it's provably client-side; I'd bring this up to my ops team unprompted.
-PRIOR_CONCERN_ADDRESSED: Yes — landing_url now pre-maps to Base URL, the dialog offers Append vs Replace (Append is the safe default), and Undo verifiably reverts only the import while keeping my hand-typed row.
-LIKES:
-- Base URL dropdown pre-mapped to my "landing_url" header — the exact field that silently broke last time now Just Works.
-- Append vs Replace with Append as default, plus a working Undo: I imported onto a hand-typed row, it kept both, and Undo removed only the 3 imported rows. No more silent wipe.
-- Row count up front ("Import 3 rows") so I know what I'm committing. Still zero network requests after load (watched it) — safe for company data.
-COMPLAINTS (ranked):
-- Import does NOT auto-clean values: my "Newsletter"/"Social" stayed capitalized; lint flags them but I have to remember to hit "Clean all" or I export dirty data. An "apply lint on import" option would close this.
-- No post-import summary of how many rows had lint warnings, so on a 50-row campaign I can't tell at a glance which rows need fixing.
-VERDICT_BLOCK: {"id":4,"name":"Tomás","clarity":"Yes","value":"Yes","advocacy":9,"prior_addressed":"Yes"}
+# Round 2 — Tester 4 (Tomás, Ops Analyst, Edge/Windows, wary of data leaving the browser)
+
+**Prior concern re-check (flat gray bulk buttons):** FIXED. "Set column" is now a solid blue button and "Find & replace in column" a solid purple button — real `<button>` elements (`font-semibold`, shadow, `cursor-pointer`, `active:scale-95`). They jump out from the gray text inputs beside them; found instantly, no hunting. This was the only thing keeping me off a 9 last round.
+
+**Privacy (#1 worry) re-verified:** Imported a company-style CSV, ran import → bulk edit → export → copy share link while watching the network. ZERO POST/PUT/PATCH. "Copy share link" produced a 511-char client-side `/#g=...` hash — built in-browser. I'd trust this with a real campaign sheet.
+
+**CSV round-trip re-verified, still flawless:** `"Q3, Ops Push"` re-quoted (comma kept), `café_term` unicode preserved and encoded `caf%C3%A9_term` in the Generated URL, no number coercion on `00123`/`99`. Map-columns dialog auto-mapped headers, Append/Replace, Undo toast after import. Lint flags uppercase with one-click Fix.
+
+CLARITY (purpose clear in 5s): Yes — H1 "Clean UTM links for your whole campaign — in one grid" + "no login, nothing leaves your browser" nails it.
+VALUE (saves real time): Yes — replaces my hand-built Excel UTM concatenation and round-trips CSV without mangling commas, leading zeros, or unicode.
+ADVOCACY (0-10): 9 — bulk actions now read as buttons; no-network + clean CSV round-trip verified, so I'd raise this with ops peers unprompted.
+PRIOR CONCERNS ADDRESSED: Yes — bulk Set column / Find & replace are now solid colored buttons, obviously clickable.
+TOP FRICTION: Minor only — a typed-but-unsaved grid still reads "Unsaved grid"; an ops user might close the tab assuming localStorage didn't catch it. Nothing blocking.

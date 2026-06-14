@@ -1,70 +1,64 @@
-# UTM Grid — Panel Synthesis, Round 3
+# Panel Synthesis — Round 3 (utm-grid)
 
-Delta re-test after shipping the client-side "Copy share link" feature (whole grid encoded
-in a URL `#g=` hash, zero server, no account). The 5 prior fully-passing in-ICP testers
-carried their round-2 verdicts forward; the 5 with open round-2 items were re-tested.
+**Count at the 9-bar: 7/10.** Clarity = Yes 10/10, Value = Yes 10/10. The cap is craft +
+one P0 regression on the viral-loop landing, not comprehension.
 
-## Score table (round 3)
+## 1. Score table
 
-| # | Persona | Role | Clarity | Value | Advocacy | Pass? | note |
-|---|---------|------|---------|-------|----------|-------|------|
-| 1 | Priya | Sr backend eng | Yes | Yes | 9 | ✅ | carried (R2) |
-| 2 | Marcus | Frontend eng | Yes | Yes | 9 | ✅ | carried (R2) |
-| 3 | Wen | Marketing data analyst | Yes | Yes | 9 | ✅ | carried (R2) |
-| 4 | Tomás | Ops analyst | Yes | Yes | 9 | ✅ | carried (R2) |
-| 5 | Dana | Demand-gen marketer | Yes | Yes | 9 | ✅ | R3 retest — did not notice "Link copied!" cue (perception nit) |
-| 6 | Jules | Content/community mktr | Yes | Yes | 9 | ✅ | R3 retest — mobile grid side-scroll pre-existing nit, no regression |
-| 7 | Aisha | Product designer | Yes | Yes | 9 | ✅ | R3 retest — converted from value=No as the share recipient |
-| 8 | Rob | Brand designer | Yes | Yes | 9 | ✅ | carried (R2) |
-| 9 | Elena | Eng manager | Yes | **No** | 8 | ❌ | structural out-of-ICP — green-lights for her report, won't personally evangelize |
-| 10 | Sam | Product manager | Yes | Yes | 9 | ✅ | R3 retest — prior blocker "live team sharing" RESOLVED, 8→9 |
+| Tester | Persona | Advocacy | Status | Top friction |
+|--------|---------|----------|--------|--------------|
+| Priya  | senior backend SWE, keyboard-first | 8 | sub-bar | messy values stay messy until you click Fix (no lint-on-type); shared link opens as plain homepage, no "shared with you" cue |
+| Marcus | frontend eng | 9 | PASS | no scroll affordance (fade/scrollbar) when sidebar open — "UTM_" clip until you scroll |
+| Wen    | data analyst | 9 | PASS | no real team sync — spec is localStorage, "share" is a link copy |
+| Tomás  | ops analyst | 9 | PASS | "Unsaved grid" pill on a typed-but-unsaved grid (minor) |
+| Dana   | demand-gen marketer (375px) | 9 | PASS | allowed values/campaigns localStorage-only, no cross-device sync |
+| Jules  | mobile (375px) | 9 | CARRIED (untouched surfaces) | — |
+| Aisha  | craft/design reviewer | 9 | CARRIED (untouched surfaces) | — |
+| Rob    | freelance designer | 8 | sub-bar | "Enforce your team's UTM taxonomy" + "teammates" copy pitches a solo at marketing-ops; trailing space → trailing underscore |
+| Elena  | EM (375px) | 9 | PASS | Fix normalizes to naming-rule format (`paid_social`) not spec's allowed value (`paid-social`); toast count wrong |
+| Sam    | PM, mobile-heavy | 6 | sub-bar (REGRESSION 9→6) | shared-link recipient lands on full marketing page, NO "Loaded shared grid" banner |
 
-**Fully passing: 9/10** (was 7/10 in round 2). Exit bar 9/10 — **MET**.
+PASS (≥9): Marcus, Wen, Tomás, Dana, Elena + carried Jules, Aisha = **7/10**.
+Sub-bar: Priya 8, Rob 8, Sam 6.
 
-## What the share feature achieved
-The client-side "Copy share link" broke the round-2 7/10 ceiling by converting the two
-personas the prior synthesis flagged as the only movable ones:
+## 2. CRITICAL — share-banner contradiction (the run's headline finding)
 
-- **Sam (in-ICP PM) — 8→9, the holdout that mattered.** His sole round-2 9-blocker was "no
-  live team sharing — team consistency only travels via the CSV, not the tool." He built a
-  3-link Spring Launch batch, hit Copy share link, and opened it in a clean browser with no
-  localStorage (a real teammate): all 3 rows rebuilt with the blue "Loaded shared grid"
-  banner. The handoff he wanted, delivered without breaking the no-account / client-side
-  privacy prop the in-ICP majority loves ("nothing is sent to any server").
-- **Aisha (product designer) — value No→Yes.** She still rarely *builds* UTMs, but as the
-  *recipient* the feature gives her real value: opening a shared grid cold gave her a soft-
-  blue "Loaded shared grid (2 links)" banner, lint firing on the received rows, no signup —
-  "a flow I'd actually be on the receiving end of."
+Two testers directly contradict each other on whether the shared-grid banner even appears:
+- **Elena (PASS):** clean recipient context. Banner rendered correctly —
+  "Loaded shared grid (1 link) · enforces a UTM spec — 3 allowed-value rules" + a working
+  one-tap "Fix all naming". The R2 P0-3 fix demonstrably shipped.
+- **Sam (9→6) and Priya (8):** NO banner — shared grid reads as the generic marketing
+  homepage; the "· enforces a UTM spec — N rules" clause and the "Fix all naming" button are
+  absent (Sam searched by role + text, 0 matches). Both had **built a grid first**, so their
+  localStorage was already pre-populated.
 
-The feature shipped without cluttering the toolbar: Dana and Jules both confirmed it stayed
-a single clean row of 6 buttons, stacking fine on mobile.
+**Root cause:** the `#g=` share fragment does NOT take display precedence when the visitor
+already has a saved localStorage grid — the localStorage hydration wins the first paint and
+suppresses the shared state + banner. Elena's context was clean, so the fragment had nothing
+to compete with. This is invisible to clean-context e2e (17/17 green) because the harness
+never pre-populates localStorage before opening a share link. It is the single biggest score
+lever: it is the literal viral-loop landing and it cost Sam 3 points (a regression from his
+prior 9).
 
-## Remaining items
+## 3. Grouped complaints
 
-(a) **Dana's "copied" perception gap — polish, not a defect.** Dana reported "Copy share
-    link" gave no visible "Copied!" confirmation. Cross-reference: the cue is mechanically
-    present and verifier-confirmed, and Aisha explicitly saw the crisp green "✓ Link copied!"
-    confirmation (clipboard read worked, 430-char link). So this is a perception-polish item
-    — the cue exists but didn't register for Dana in two runs — worth a future tweak (more
-    prominent flash/label swap), not a blocker.
+**RECUR (multiple testers / structural):**
+- **No real cross-device team sync** — Wen, Dana (and Elena's spec-format nit borders it).
+  Each holds their off-10 here. This is the accepted structural ceiling (needs accounts +
+  server, blocked on credential, regresses zero-network prop). Out of scope; ceiling is 9.
+- **Team/taxonomy framing alienates solos** — Rob (8), the long-standing C1/P1 thread.
+  "Enforce your team's UTM taxonomy" still verbatim; the subhead adds "teammates".
 
-(b) **Jules's mobile grid side-scroll — pre-existing carried nit.** At 375px the grid table
-    still side-scrolls inside its wrapper with no stacked card-per-row view. This is
-    unchanged from round 2, not a regression introduced by the share feature; it does not
-    move her pass.
+**QUIRK (single-tester, cheap correctness):**
+- Auto-fix doesn't trim leading/trailing whitespace: `Instagram ` → `instagram_` (Rob).
+- Auto-fix toast count wrong: "Auto-fixed 1 cell" when 3 changed (Elena).
+- Fix normalizes to naming-rule format, not the spec's allowed value `paid-social` (Elena).
+- No scroll-discoverability cue when sidebar open (Marcus — "not enough to hold a 9").
+- Lint-on-type not implemented; Fix still manual (Priya — a want, not a blocker).
+- "Unsaved grid" pill on a typed grid (Tomás — minor).
 
-(c) **Sam/Aisha's fat-URL / frozen-snapshot notes — future scope.** Sam: the share link is
-    a frozen snapshot, not a living batch — edits after sharing leave a teammate's link
-    silently stale, and there's no named "this batch" to re-share in place. Aisha: the
-    `#g=` fragment grows with the grid (430 chars here) and could be truncated by Slack/email
-    or balloon past URL limits on a 30-row grid, with no length guard or short-link fallback.
-    Both point at the same future lever: an optional account/sync or a short-link backend —
-    deliberately out of scope for this on-brand client-side iteration.
+## 4. Verdict
 
-## Exit decision
-**9/10 MET.** The client-side Copy share link feature broke the prior 7/10 ceiling by
-converting both an in-ICP holdout (Sam) and the recipient persona (Aisha) — without
-touching the zero-server privacy prop. Elena remains the sole holdout and is the documented
-out-of-ICP structural value=No persona (an EM who never builds UTMs; she green-lights the
-tool for her report but cannot be the weekly evangelist — unfixable by any product work).
-Fully-passing round-over-round: R1=1 → R2=7 → R3=9. **Promoted to production.**
+7/10 at the 9-bar. The share-precedence regression (P0) is the gate: fixing it recovers Sam
+(6→9 expected) and removes Priya's strongest cap, plausibly reaching 9/10. Rob's solo-framing
+(P1) and the whitespace / count / spec-format quirks (P1/P2) are cheap, high-confidence flips.

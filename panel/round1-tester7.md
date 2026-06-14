@@ -1,46 +1,40 @@
-# UTM Grid — UTM Spec panel review, Tester 7 (Aisha, Product Designer)
+# Round 1 — Tester 7 (Aisha, Product Designer)
+
+A teammate shared this; I judge craft hard — spacing, copy tone, empty states, lint affordances.
 
 ## Clarity — Yes
-First 30s, I'd tell a teammate: "It's a grid for tagging a batch of campaign links with consistent
-UTMs, and it nags you when a value breaks your naming convention." The h1 ("so one stray capital
-letter never splits your data in Google Analytics") nails the *why* — that's the line that made me
-get it instantly. Sub-line "Edit links in a grid, fix naming automatically, export clean CSV — no
-account" closes it. Nothing confused me cold.
+The H1 "Share one link that enforces your team's UTM taxonomy — stop policing casing and typos
+that split your GA4 data" plus the verb subhead (build, tag, fix naming, export CSV, no account)
+told me in 5s what it is and who it's for: a growth/marketing team standardizing UTMs. The words
+"Auto-fix naming," "Lint Rules," and "Enforce UTM Spec" are what landed for me.
 
 ## Value — Yes
-Today my team does this in a shared Google Sheet with a hand-rolled formula + a "naming rules" Notion
-doc nobody reads. What that doc *can't* do is enforce the taxonomy live — which is exactly what the
-UTM Spec panel is. Defining `newsletter`/`linkedin` once and having every off-spec cell flagged with
-a one-click "Fix to newsletter" is genuinely better than my sheet. The fuzzy "nearest allowed" match
-+ autocorrect is the considered touch a marketer actually feels.
+Today I'd hand-build UTMs in a Notion table / shared Google Sheet and nag teammates about casing
+in Slack. The lint toggles + Auto-fix (LinkedIn→linkedin, Paid Social→paid_social, Q2 Launch→
+q2_launch, with an inline "Contains uppercase — use lowercase ('newsletter'). Fix" hint and an
+"Undo" toast) do the policing the sheet can't. The shareable link that carries the spec is the part
+I'd actually advocate — the taxonomy travels, not just the values.
 
-## Advocacy — 7 (held back by one real craft miss)
-I'd recommend it, but not unprompted, and here's the honest reason: **the off-spec violet is NOT
-distinct where it counts.** In the popover the two lines ARE correctly differentiated — amber
-`⚠ Contains uppercase…` (text-amber-800) vs violet `◆ Off-spec — nearest allowed: newsletter`
-(text-violet-800) with a clean violet "Fix to newsletter" text-link, and even different glyphs (⚠ vs
-◆). Good. But at the **cell and the "warnings" badge** — the glanceable layer — an off-spec cell
-renders the *identical* `border-amber-400 bg-amber-50` and an *amber* badge dot as a plain case/space
-warning (verified: off-spec "Newsletterr" carries the exact same amber classes as "Email Blast").
-So scanning a 50-row grid I can't tell "this is a typo" from "this violates our taxonomy" without
-clicking each cell open. The entire point of a third violet category is lost the moment it only lives
-one click deep. Tint the off-spec cell + badge violet and I jump to a 9.
+## Craft notes
+Desktop is considered: green-border "fixed" cells, inline "warnings · Fix" affordances, Undo toast,
+preset pills, "nothing is sent to any server" reassurance. Nit: column headers clip (UTM_MEDIUM →
+"UTM_MED", GENERATED URL cramped). I also couldn't tell at a glance whether the violet "Enforce UTM
+Spec" category visually outranks plain amber lint in the grid — off-spec and case warnings read as
+the same amber until you click a cell, so a taxonomy violation doesn't pull my eye on a long grid.
+Mobile (375px) is the standout: genuinely phone-designed, not a squashed table — vertical cards,
+uppercase labels with red required asterisks, full-width inputs, per-card "Copy URL", bulk edit
+collapsed to "Expand," "Select #1" row affordance. Nits: duplicate/trash icons are thin wireframe
+glyphs that read unpolished, and empty GENERATED URL is a bare "–" instead of a "fill required
+fields" hint. (Copy share link verified; clipboard returned the #g= link in my env.)
 
-### What IS considered (credit due)
-- Empty state of the Spec panel is thoughtful: "Your team's allowed values — enforced on every cell.
-  Saved on this device," each field shows italic "any value" + a "+ add value" input. Not a blank box.
-- Allowed values render as green pills with a violet "×"; green matches the *valid-cell* green, so the
-  semantic is consistent across panel and grid. Nice.
-- "Fix to newsletter" reads cleanly, doesn't collide with anything (44px violet text-link in the
-  popover), and works: corrected the value AND flipped the cell to green (`border-green-400`).
-- The in-panel "Enforce UTM Spec" toggle echoes the lint-bar toggle (same violet, two entry points,
-  no confusion).
-
-### Smaller nits
-- "2 warnings" badge stays amber even when one of the two is the violet off-spec — same gap as above.
-- Popover sits collapsed behind a warnings count; a taxonomy violation should pull my eye *before* a
-  click, not after.
+## Verdict
+```
+CLARITY (is the purpose clear in 5s): Yes — H1 + verb subhead nail the "stop policing UTM casing" job instantly.
+VALUE (would it save you real time): Yes — Auto-fix + lint + spec-in-link replaces my Notion table and Slack nagging.
+ADVOCACY (0-10, would you recommend to a peer): 8 — I'd raise it with my growth team; held back by amber/violet lint not being glance-distinct and minor card-icon/header polish.
+TOP FRICTION: Off-spec (violet "Enforce UTM Spec") cells read as the same amber as plain case/space lint until you click — on a long grid I can't glance-distinguish a typo from a taxonomy violation, which defeats the separate category; plus clipped desktop column headers ("UTM_MED").
+```
 
 ```json
-{"tester": 7, "round": 1, "clarity": "Yes", "value": "Yes", "advocacy": 7, "topComplaints": ["Off-spec cells and the warning-count badge render identical AMBER to case/space lint — the violet distinction only exists one click deep in the popover, defeating the purpose of a separate category", "On a long grid I cannot glance-distinguish a typo from a taxonomy violation without opening each cell's popover"], "priorConcernsAddressed": "n/a"}
+{"tester": 7, "round": 1, "clarity": "Yes", "value": "Yes", "advocacy": 8, "topComplaints": ["Off-spec/taxonomy violations render the same amber as plain case/space lint in the grid — the violet 'Enforce UTM Spec' distinction isn't glanceable, only one click deep", "Desktop column headers clip (UTM_MEDIUM → 'UTM_MED'); mobile duplicate/trash icons + bare '–' empty generated-URL state feel a notch below the otherwise considered craft"], "priorConcernsAddressed": "n/a"}
 ```

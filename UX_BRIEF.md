@@ -282,6 +282,69 @@ Cold visitor still sees the hero: headline, subtitle, the pre-filled example gri
 generated URL + Copy. The **Bulk edit** bar is present and labeled (so its power-tool purpose is
 instantly legible) but quiet — it never displaces the grid or competes for the first read.
 
+## Mobile card view (≤640px) — added 2026-06-13
+
+ONE new capability: at ≤640px each grid ROW renders as a vertical CARD instead of a table row;
+at ≥640px the desktop spreadsheet table is **unchanged**. This SUPERSEDES the old R2 §C mobile
+approach (sticky horizontally-scrolling table with a pinned URL/Copy column) — that pinned
+column is the ROOT CAUSE of this app's two recurring occlusion bugs (it overlapped the bulk
+checkboxes, then the off-spec "Fix to <value>" link). The card view has no sticky column and
+no horizontal scroll, so it removes the bug class rather than patching its z-index again.
+
+**1. Card anatomy (one row → one card).** Each card is a bordered, generously-padded block
+(≥16px padding, ≥12px gap between cards) in this top-to-bottom order:
+- **Top bar:** the row **select checkbox** (≥44px, with a "Select this link" label) on the
+  left, and the row-scope icons **Duplicate row** / **Delete row** (each ≥44px, icon+label,
+  the Fix A scope-named tooltips) on the right. These are the only row controls here — no
+  sticky/pinned anything.
+- **Stacked fields:** Base URL, then utm_source / utm_medium / utm_campaign / utm_term /
+  utm_content, each as a **label ABOVE its full-width input** (label small/muted, input
+  full card width, ≥44px tall). No field requires horizontal scroll to reach.
+- **Inline lint under each field:** the cell's collapsed warning pill (amber case/space,
+  violet off-spec, cross-row color — all three still tellable apart) renders **directly
+  under that field's input**, in normal flow, pushing content down — never an overlay. The
+  off-spec **"Fix to <value>"** violet chip auto-reveals inline under its field (≥44px),
+  same as desktop; it sits in card flow so nothing can occlude it.
+- **Generated URL block:** full-width, label "Generated URL" above a wrapping/selectable
+  value (no ellipsis-truncation needed — full width is available), with a full-width
+  **Copy** button (≥44px) directly beneath it. The fill-a-row → copy path is one vertical
+  read, no sideways scroll to find Copy.
+
+**2. PURE CSS breakpoints — no JS viewport detection (hard requirement, two bug classes).**
+The table and the card list are BOTH always in the DOM; visibility is Tailwind only —
+table is `hidden sm:block` (or `sm:table`), card list is `sm:hidden`. There is NO
+`useEffect`/`window.innerWidth`/matchMedia/`useMediaQuery` swap — that would cause an
+SSR/hydration mismatch and re-introduce a sticky-overlay-on-a-tap-target regression.
+GOTCHA (dual-mount strict-mode collision has bitten this app): any `data-testid` shared by
+the table and card renderings of the same control MUST be breakpoint-suffixed
+(e.g. `copy-url-row-3-card` vs `copy-url-row-3-table`) OR the test scoped to one breakpoint —
+two elements with the same testid mounted at once is a strict-mode/`getByTestId` collision.
+Both layouts read the SAME row state, so editing a card and resizing to desktop shows the
+edit (and vice-versa) with zero state loss.
+
+**3. Reads as a deliberate phone app, not a squished table.** The card list must look
+designed for the phone on first glance. The toolbar/panels stack sensibly and stay reachable:
+the top action bar (Auto-fix naming, Add row, Export, Import, Copy share link) wraps to
+full-label thumb-sized buttons; the **Bulk edit**, **Campaigns**, and **UTM Spec** surfaces
+stay as the existing collapsed disclosures under the toolbar (collapsed by default so they
+never push the card list down on cold open), expanding to full-width stacked controls. The
+lint-rule toggles (incl. the one canonical Enforce UTM Spec) stay reachable above the cards.
+Nothing horizontally scrolls; spacing is generous (cards breathe) so it reads polished, not
+dense.
+
+**4. Shared-link landing on a phone (the viral loop's landing).** A teammate opening a
+"Copy share link" URL at 375px rehydrates into THIS card view. The **"Loaded shared grid
+(N links)"** banner renders full-width, in flow, directly above the card list (never an
+overlay/modal over a card), with its "edit any cell to make them yours" sub-line and (when
+the share carried a spec) the "… including this team's UTM Spec" clause, `aria-live="polite"`.
+Each shared row's fields are immediately legible as stacked cards with no horizontal scroll —
+the teammate's first impression is a clean, readable phone view, not a sideways-scrolling
+grid.
+
+**5-second check (mobile, ≤640px).** Headline + subtitle + the pre-filled example as the
+FIRST card (label-over-input fields with a live Generated URL + Copy button visible without
+scroll). The card view IS the hero on a phone; disclosures stay collapsed and quiet.
+
 ## Round 2 fixes — Bulk edit (panel round 1: 2/10 pass; ceiling = 2 recurring causes)
 
 Additive, client-side only. The zero-network privacy prop, cold-open grid-hero, headline, toolbar
@@ -475,3 +538,188 @@ bug class as Bulk Fix 1) and be a ≥44px target; verify the tap lands on the ch
 cross-row — do not let the new violet cell-tint wash out into the amber or collide with the cross-row
 color. (3) The inline "Fix to <value>" chip must still never neighbor row Dup/Delete or Bulk
 Set/Replace — keep it on/under its own cell, violet, named to its target value.
+
+## Mobile-card panel Round 1 response (2026-06-13) — the cold-open craft pass
+
+Panel round 1 (10 testers) on the mobile card build: **0/10 hit the 9-bar (all 6–8), value=Yes
+10/10**, and the card layout ITSELF tested well (5 testers praised it unprompted). The blockers are
+pre-existing craft exposed by the cold open. Two P0 levers (hero, share-landing) + P1 affordance
+polish + one P2. Do NOT regress the card view, the ≥640px desktop table, the zero-network privacy
+prop, toolbar order, Presets, Campaigns/UTM-Spec panels, or Bulk edit. Pure CSS breakpoints only —
+no JS viewport detection. Each item maps to a synthesis cause (C1–C4 + preset quirk).
+
+**P0-1 — Rewrite the hero (C1; the clarity blocker, 6 testers, top lever).** The current hero
+("Share one link that enforces your team's UTM taxonomy — stop policing casing and typos that split
+your GA4 data") is too long (a 5–6 line wall at 375px that pushes the grid below the fold), uses
+jargon ("taxonomy"/"lint"), and mis-pitches ("your team's") so solo marketers and freelancers
+bounce. Replace with the SHORT, benefit-first, plain-language copy below; the subhead now carries the
+team/enforce detail so the headline doesn't have to. Sizing so it's compact on phones and the first
+card is visible/near-visible on first paint at 375px:
+- **Headline (verbatim):** `Clean UTM links for your whole campaign — in one grid.`
+- **Subhead (verbatim):** `Auto-fix messy casing and typos before they split your Google Analytics. Share one link your teammates can reuse — no login, nothing leaves your browser.`
+- **Mobile sizing (≤640px):** headline `text-xl` (≈20px) / `leading-snug`, max two lines on a 375px
+  width; subhead `text-sm` muted, max three lines; total hero block ≤ ~120px tall with `pt-3 pb-2`
+  so the first example card's top edge sits at/just below the fold on a 375px×667px viewport. No
+  hero image, no extra tagline rows.
+- **Desktop (≥640px):** headline `text-3xl`/`text-4xl` as today; subhead one line under it. Same
+  copy. Keep the quiet zero-network line where it is.
+- Word "taxonomy"/"lint" must NOT appear in the hero (keep them only inside the UTM Spec / lint-rule
+  controls where they're labels, not pitch).
+
+**P0-2 — Shared-link landing = clean handoff (C2; the viral-loop surface, Sam & Elena gate their 9
+here).** When the URL carries a share fragment (`#g=…`), the page must FOREGROUND the loaded grid,
+not the marketing homepage. Spec (one paragraph): on a fragment load, **replace/collapse the
+marketing hero** (headline + subhead hidden, or rendered as a single muted one-liner below the
+banner) and **pin a compact summary banner at the very top** reading **"Loaded shared grid (N
+links)"** with the sub-line **"These are someone's links — edit any cell to make them yours"**; when
+the shared grid carries a non-empty UTM Spec, append the clause **"· enforces a UTM spec — M
+allowed-value rules"** so the recipient knows their cells are governed; then **scroll the first grid
+row/card into view** on load so the sent grid is front-and-center. The banner is full-width, in
+normal flow (never an overlay/modal over a cell), cool-neutral, with an **×** dismiss; it does not
+overwrite the visitor's own saved localStorage until they edit or dismiss; `aria-live="polite"`.
+**Desktop (≥640px):** banner spans the grid width above the table, marketing hero collapsed to the
+muted one-liner. **Mobile (375px):** banner spans full width directly above the card list, the
+collapsed hero one-liner sits below it (or is hidden), and the first shared card is in view without
+horizontal scroll — the recipient's first impression is the sent grid, not the generic page.
+
+**P1-1 — Surface the power features (C3; Tomás, Dana, Wen).** (a) Restyle the Bulk-edit **"Set
+column"** and **"Find & replace in column"** controls so they unmistakably read as BUTTONS, not
+inputs — accent or solid secondary fill, button cursor, clearly distinct from the gray text inputs
+beside them (Tomás had to hunt). (b) Make the Bulk-edit bar more discoverable: on mobile the
+collapsed disclosure must label its payoff, e.g. **"Bulk edit — set or replace a column across rows"**
+(not a bare "Expand"/icon), so the time-saving feature isn't missed (Dana). (c) UTM Spec: keep the
+prior fix — open the panel by default once it has any allowed values, surface the **"N cells
+off-spec"** lint-bar indicator, and keep the paste-a-list entry visible (Wen). Do NOT over-expand the
+dense layout — these are affordance/label changes, the panels stay collapsed on a true cold open.
+
+**P1-2 — Mobile fixes (C4 + Dana clip).** (a) The Bulk-edit **"Apply to: N selected rows"** button
+must wrap/fit within the 375px viewport — clips off the right edge today (Dana); let it wrap to a
+second line or shrink, never overflow horizontally. (b) **"Copy share link"** and **"Copy all URLs"**
+must give the SAME peripherally-unmissable **"Copied!"** cue on mobile that row "Copy URL" already
+gives — button-fill green + label swap on the button itself for ~1.8s, ref-stable timer that survives
+re-render, `aria-live="polite"`, execCommand/textarea fallback when `navigator.clipboard` rejects
+(this is the recurring **copy-confirmation-survives-tick-rerender** lesson; Jules). No corner toast
+that scrolls off.
+
+**P2 — Preset rows guide, don't error (Marcus, Sam).** Applying a channel preset (source/medium)
+currently leaves required utm_campaign blank, so the row opens with a red "required" error sitting
+beside Auto-fix's "Nothing to fix — all cells are clean" (contradictory). If cheap: on a fresh
+preset row, render the empty utm_campaign as a **guiding hint** (muted "Add a campaign name" /
+placeholder + neutral styling), NOT a red error, until the user has touched the grid — so a preset
+feels like a head-start, not a broken state. Keep the true required-field validation for export/URL
+generation.
+
+## 5-second check (mobile-card Round 1 — cold open at 375px)
+- **Headline:** `Clean UTM links for your whole campaign — in one grid.` (≤2 lines, ~20px).
+- **Subtitle:** `Auto-fix messy casing and typos before they split your Google Analytics. Share one link your teammates can reuse — no login, nothing leaves your browser.`
+- **Primary action:** the pre-filled example card (label-over-input fields) with a live Generated URL
+  + Copy button visible/near-visible on first paint — the hero no longer buries it below the fold.
+- **Pre-filled example:** one clean example row as the first card, plus one flagged cell with its
+  visible inline Fix so the "auto-fix" value is shown, not just described.
+- **Shared-link visitor instead sees:** the "Loaded shared grid (N links)" banner pinned at top
+  (+ "enforces a UTM spec — M rules" when present) with the sent card scrolled into view — a clean
+  handoff, not the generic homepage.
+
+## Hero + share-handoff panel Round 2 response (2026-06-13) — finish-the-craft pass
+
+Panel R2 = **5/10 at the 9-bar** (Tomás, Dana, Jules, Aisha, Sam all 9), up from 0/10. Clarity 10/10
+Yes, value 10/10 Yes — the cap is now craft bugs, not comprehension. Remaining sub-bar: Priya 8,
+Marcus 8, Wen 8, Rob 7, Elena 8. These are cheap, high-confidence flips. Additive/CSS/copy only — do
+NOT touch the headline, subhead, lint toggles, toolbar order, or the ≤640px card view; keep desktop
+≥640px table behavior intact; pure CSS breakpoints, no JS viewport detection.
+
+**P0-1 — Desktop header clipping when the sidebar is open (Marcus 8, Aisha 9; biggest lever).** At
+~1280–1440px with the Campaigns/UTM-Spec sidebar open the grid is squeezed: the `utm_campaign` header
+clips to "UTM_" and the term/content headers vanish — reads as broken to an engineer instantly. Make
+ALL column headers stay legible when the sidebar is open: give the table area a `min-width` and let it
+**scroll horizontally inside its own container** (page never scrolls sideways), so headers keep full
+labels rather than truncating; the header row must show full `utm_campaign` / `utm_term` / `utm_content`
+at every width from 1280→1440px with the sidebar open. (No `text-overflow:ellipsis` on header cells.)
+
+**P0-2 — Dead pseudo-link under LINT RULES (Wen 8; trust trap).** The purple "Enforce your team's UTM
+taxonomy" text is link-styled but an inert `<span>`. Make it FUNCTIONAL: clicking it (a) turns ON the
+canonical **Enforce UTM Spec** toggle and (b) opens/expands and scrolls to the UTM Spec panel — one
+gesture from the named differentiator to the place you configure it. It stays the single canonical
+toggle (Fix D); this link drives that one switch, never a second one. (If for any reason it can't be
+wired, strip the link affordance so it no longer looks clickable — but prefer making it work.)
+
+**P0-3 — Shared-link spec clause + dirty handoff (Elena 8; the viral-loop landing).**
+(a) **Render the spec clause:** the recipient banner must append **"· enforces a UTM spec — N
+allowed-value rules"** whenever the shared grid carries **≥1 allowed-value rule** (count the rules,
+not the Enforce flag) — it currently never renders even with Enforce on.
+(b) **Recipient "Fix all naming":** the shared row reaches the recipient dirty (e.g. `Paid%20Social`,
+`Q3%20Launch`). Add a recipient-facing **"Fix all naming"** action in/under the banner that, in ONE
+tap, runs Auto-fix on the shared grid's fixable cells (same engine as the toolbar Auto-fix, folds into
+Undo, flashes changed cells green, result "Auto-fixed N cells — Undo"). Keep it the recipient's choice
+— do NOT silently rewrite on load — but make the fix a single tap so a hurried recipient is never
+handed a broken link. Mobile: the banner + "Fix all naming" render full-width, in flow, ≥44px target.
+
+**P1 — Lighten the first screen for the simple case WITHOUT losing discoverability (Rob 7, Priya 8;
+echoed by Sam, Wen).** Balance is the point — the same Bulk/Spec/Presets surfacing that Dana, Wen, and
+Tomás praised must NOT be buried. The compromise: (a) **Soften body copy toward plain language** —
+panel labels/hints drop "team / teammates / taxonomy / lint" framing in favor of plain words
+("allowed values", "set a column across rows", "fix naming"); keep "taxonomy"/"lint" only as the
+technical control labels where they're accurate, never as body pitch. (b) **Make the four config
+sections read as compact, collapsible affordances** (Lint Rules, Presets, Bulk Edit, UTM Spec /
+Campaigns): each a one-line labeled disclosure, collapsed by default on cold open so the core grid
+stays the prominent hero for someone doing 3 links — but each label still names its payoff so it's
+discoverable in the 5-second skim. Do NOT bury the bulk toolbar or UTM Spec that Dana/Wen needed
+surfaced; "collapsed-but-labeled-and-one-tap-away" is the balance, not "hidden."
+
+**P2 — Cold share-restore sanity-check (Priya 8; likely harness artifact).** Priya saw a generic home
++ empty grid on one `/#g=` cold load; share e2e is green and Jules/Sam/Elena confirmed restore on
+mobile. Builder: sanity-check the cold share-restore path (fragment parse on first paint, before any
+localStorage hydration overwrites it) — no rebuild expected, just confirm the path can't no-op.
+
+### 5-second check (unchanged above the fold)
+Headline, subhead, lint toggles, and the pre-filled example grid row + Copy stay exactly as shipped.
+The config sections read as compact labeled disclosures (collapsed, discoverable), and a shared-link
+visitor sees the banner with the now-rendering "enforces a UTM spec — N rules" clause plus a one-tap
+"Fix all naming" — a clean, governed handoff.
+
+## Panel Round 3 response (2026-06-13) — fix the viral-loop landing + solo framing
+
+Panel R3 = **7/10 at the 9-bar** (Marcus, Wen, Tomás, Dana, Elena 9; Jules, Aisha carried 9).
+Clarity 10/10, Value 10/10 — comprehension is solved; this is craft + one P0 regression on the
+share-link landing. Additive / CSS / copy / logic only — do NOT touch the headline, subhead, lint
+toggles, toolbar order, ≤640px card view, or ≥640px desktop table; pure CSS breakpoints, no JS
+viewport detection. Builder task list, priority order:
+
+**P0-1 — Share fragment takes DISPLAY precedence over existing localStorage (Sam 9→6, Priya; THE
+viral-loop landing, top lever).** When the URL has a `#g=` fragment, the page MUST render the SHARED
+grid + the **"Loaded shared grid (N links)"** banner (+ the **"· enforces a UTM spec — N allowed-value
+rules"** clause when the share carries ≥1 rule + the **"Fix all naming"** button) EVEN IF the visitor
+already has a saved working grid in localStorage. Today a pre-populated localStorage grid wins first
+paint and SUPPRESSES the shared state + banner — the recipient lands on the generic marketing page.
+Precedence rule, explicit: on first paint, if a `#g=` fragment is present, parse it BEFORE localStorage
+hydration and display the shared grid + banner; the shared state owns the screen regardless of any
+pre-existing saved grid. It must NOT overwrite the visitor's localStorage until they edit a cell
+(preserve the existing spec behavior) — show the shared state, persist nothing until first edit.
+
+**P1-1 — Dial down team/taxonomy framing for the solo user (Rob 8).** "Enforce your team's UTM
+taxonomy" is still verbatim on the toggle/link; the subhead adds "Share one link your teammates can
+reuse." Soften to plain language that doesn't read as enterprise team-governance: the toggle/link
+reads **"Enforce allowed values"** (drop "your team's UTM taxonomy"), and reconsider the "teammates"
+subhead clause so a solo freelancer doing 3 links isn't pitched at an ops team. Keep it accurate for
+team users without alienating solos — plain words, not org-governance pitch.
+
+**P1-2 — Auto-fix must trim leading/trailing whitespace (Rob; credibility bug for a cleaning tool).**
+`Instagram ` (trailing space) became `instagram_` (trailing underscore). Auto-fix/clean must **trim
+leading/trailing whitespace FIRST, THEN** convert internal spaces to underscores — so a stray trailing
+space never becomes a trailing underscore.
+
+**P2 — Cheap correctness wins on a passing tester (Elena).** (a) The "Fix all naming" / Auto-fix toast
+must report the ACTUAL count of cells changed — it said "Auto-fixed 1 cell" when it fixed 3. (b) When
+the shared grid carries an allowed-value spec, "Fix all naming" should prefer the **SPEC's allowed
+value** (e.g. `paid-social` if that's the allowed value) over the generic underscore rule
+(`paid_social`) — only if cheap; otherwise note as backlog.
+
+Out of scope (accepted structural ceiling, do NOT build): cross-device / team sync (Wen, Dana) — needs
+accounts + server, regresses zero-network prop; panel ceiling is 9/10. Keep desktop table + mobile
+cards + collapsed-config-sections intact.
+
+### 5-second check (unchanged above the fold)
+Cold visitor: same hero (headline, subhead, pre-filled example row + Copy). Shared-link visitor —
+**even one with a saved localStorage grid** — now sees the "Loaded shared grid (N links)" banner with
+the "enforces a UTM spec — N rules" clause and one-tap "Fix all naming" on first paint, not the
+generic homepage.

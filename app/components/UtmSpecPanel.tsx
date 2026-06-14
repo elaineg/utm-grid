@@ -149,8 +149,8 @@ export function UtmSpecPanel({
       />
       <span className="text-xs font-medium text-violet-800">
         {spec.enforceSpec
-          ? "Enforcing — change in Lint rules"
-          : "Not enforcing — enable in Lint rules"}
+          ? "Enforcing — toggle in Naming rules"
+          : "Not enforcing — enable in Naming rules"}
       </span>
     </div>
   );
@@ -321,19 +321,19 @@ export function UtmSpecPanel({
           aria-expanded={expanded}
           data-testid="utm-spec-toggle"
         >
-          <span>UTM Spec</span>
+          <span>Allowed values</span>
           <span className="text-gray-400 text-xs">{expanded ? "▲" : "▼"}</span>
         </button>
         {!expanded && (
           <p className="text-[11px] text-gray-400 leading-relaxed">
-            Your team&apos;s allowed values — enforced on every cell.{" "}
+            Define allowed values per field — catch typos before they split your analytics.{" "}
             Saved on this device.
           </p>
         )}
         {expanded && (
           <>
             <p className="text-[11px] text-gray-400 mb-2 leading-relaxed">
-              Your team&apos;s allowed values — enforced on every cell.{" "}
+              Define allowed values per field — catch typos before they split your analytics.{" "}
               Saved on this device.
             </p>
             {innerContent}
@@ -353,7 +353,10 @@ export function UtmSpecPanel({
           aria-expanded={expanded}
           data-testid="utm-spec-mobile-toggle"
         >
-          <span>UTM Spec</span>
+          <span>
+            Allowed values{" "}
+            <span className="font-normal text-gray-400 text-xs">— catch typos before they split your analytics</span>
+          </span>
           <span className="text-gray-400">{expanded ? "▲" : "▼"}</span>
         </button>
         {expanded && (

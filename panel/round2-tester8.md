@@ -1,45 +1,27 @@
-{"name":"Rob","clarity":"Yes","value":"Yes","advocacy":8}
+# Round 2 — Tester 8 (Rob, freelance brand/visual designer, desktop)
 
-# Rob — freelance brand/visual designer (round 2, bulk-add + reuse)
+Re-check of my round-1 complaints:
+- Enterprise headline: FIXED. "Clean UTM links for your whole campaign — in one grid" + subhead
+  "Auto-fix messy casing and typos before they split your Google Analytics... no login, nothing
+  leaves your browser." That is my job, in plain words, in 5 seconds. Real improvement — I would
+  not bounce now.
+- Crowded first screen: PARTIALLY. The hero lands, but below it I still wade past LINT RULES
+  ("Enforce your team's UTM taxonomy"), a Presets row, BULK EDIT, a Campaigns panel, and a "UTM
+  Spec / Your team's allowed values" box — four config panels stacked above ONE empty grid row.
+  For 3 client links that is a lot of team-ops furniture, and "team/teammates" framing is still
+  everywhere even though the hero promises a simple personal tool.
 
-Benchmark unchanged: "I could just hand-type the query string in 4 minutes," and I keep the
-last link in a scratch file and copy-paste/hand-edit per client.
+Re-ran my real flow: typed Facebook/CPC/Spring Sale 2026 plus a second messy row, hit Auto-fix —
+green cells, an "Auto-fixed 2 cells — Undo" toast, and Copy all URLs gave clean
+lowercased/underscored links. The engine is genuinely good and still beats my Google Sheet, which
+never catches a stray capital that splits GA4 data.
 
-## Prior concerns — re-checked first
-1. Bare-datalist autocomplete, no pickable cue — IMPROVED. With a typo "linkedn" the cell now
-   gets a VIOLET border and an inline "Fix to linkedin" pill right under it, the cell has a
-   caret gutter (pr-6) and the datalist (linkedin/newsletter/google) is attached. One click on
-   the pill corrected it to "linkedin". A peer reads "off-spec, here's the right value" instead
-   of "it's nagging me." The amber "is required" warnings are visually distinct from violet
-   off-spec — good. FIXED.
-2. One-at-a-time + Enter add — FIXED, and this is the headline win. I pasted
-   "linkedin, newsletter, google, facebook , Linkedin, instagram," into "+ add value" and got 5
-   clean chips: split on comma AND newline, trimmed, and the duplicate "Linkedin" (capital) was
-   deduped against "linkedin". That's a real client list dumped in one paste, exactly what I
-   wanted.
-3. Nothing sold the reuse payoff — FIXED enough. The hint "Paste a list — define once, reuse
-   every week, share it to your team" sits under every field, the panel says "Saved on this
-   device / Enforcing," and "Save as campaign" persisted my "Acme — Spring" across a full reload.
+Still incremental for my volume: one link, my Sheet ties it; the casing fix + batch is the real win
+at 3-10 links. The hero fix moved me from "almost bounced" to "I'd actually try this," but the body
+reads heavier than the job, so it is not yet unprompted-recommend territory.
 
-## Value vs my copy-paste — Yes
-First session is still slower than 4 minutes of copy-paste IF I only tag one link. But pasting a
-client's whole source/medium/campaign list now takes ~15 seconds instead of typing 6 chips, so
-the setup tax dropped hard. The win lands on week 2: I reopen "Acme — Spring," the spec is
-loaded, enforce is on, and every cell is a pick-or-get-corrected dropdown that copy-paste can
-NEVER do — copy-paste won't catch "linkedn" or a stray capital that splits my GA data. For a
-designer juggling 4–5 repeat clients, that's genuinely less grunt work than my scratch file.
-
-## Advocacy — 8 (was 6)
-The two things that capped me are gone and the bulk-paste dedupe is genuinely slick. I'd bring
-this up to a freelancer who tags links for recurring clients. Not a 9–10 because: (a) the value
-is still ALL on reuse — a first-time visitor tagging one link is slower than typing it, and the
-"define once, reuse weekly" hint tells but doesn't SHOW it (no 5-second demo/sample spec to load
-so a cold user feels the payoff before doing the setup work); (b) "share it to your team" is
-promised in the hint but as a solo freelancer I never found what sharing actually does from the
-spec panel — if there's a share-the-spec flow it's not where the copy points me. Make the cold
-open load a sample client spec so the dropdown-pick magic is visible in 5 seconds, and make the
-"share to your team" promise real and reachable from that hint, and it's a 9.
-
-```json
-{"clarity":"Yes","value":"Yes","advocacy":8,"priorConcernsAddressed":"yes","notes":"Bulk paste-add works exactly as promised: comma+newline list with dupes/spaces/capitals -> split, trimmed, deduped chips in one paste (~15s vs typing each). Off-spec cells are now violet with a clickable inline 'Fix to linkedin' pill, distinct from amber case/space warnings, and the cell has a real datalist + caret gutter — no longer feels like nagging. Reuse payoff lands: 'define once, reuse every week' hint on every field, Save as campaign persisted 'Acme — Spring' across reload with enforce on. Faster than my copy-paste ON REUSE for repeat clients (catches 'linkedn' GA-splitters copy-paste never could); first single-link session is still slower than 4-min hand-typing. To hit 9-10: load a sample client spec on cold open so the pick/auto-fix magic is visible in 5s before any setup work, and make the promised 'share it to your team' actually reachable from the spec panel — currently it's copy that points nowhere I could find."}
-```
+CLARITY (purpose clear in 5s): Yes — new hero + "auto-fix casing, no login" nails it instantly.
+VALUE (saves real time): Yes — auto-fixing casing/spaces + clean batch copy beats my Sheet at 3+ links.
+ADVOCACY (0-10): 7 — hero fix earned a point; held back because the body still feels like a team-ops config app.
+PRIOR CONCERNS ADDRESSED: Partially — headline fully fixed; the crowded, team-pitched body below the hero remains.
+TOP FRICTION: four config panels (Lint/Presets/Bulk Edit/Campaigns) plus pervasive "team taxonomy" language sit above a single empty row, making a simple 3-link job look like marketing-ops setup.

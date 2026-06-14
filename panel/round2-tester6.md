@@ -1,41 +1,30 @@
-{"clarity":"Yes","value":"Yes","advocacy":8,"priorConcernsAddressed":"yes","notes":"Fix-to is now an inline violet chip directly on the off-spec cell — directly visible, tapped once, fixed first try (cell became 'linkedin', chip then gone). Copy share link now shows a clear green checkmark '✓ Link copied!' on the button PLUS a green 'Link copied!' line for ~1.9s at 375px, and the clipboard genuinely received the share URL. Still slightly cramped: the row grid scrolls horizontally so a cell + its Fix chip + the row's actions don't all fit on one phone screen at the same time. To reach 9-10: stack the mobile grid into per-row cards so a row's cell, its Fix chip, and actions are visible without sideways scrolling."}
+# Round 2 — Tester 6 (Jules, content & community marketer, 50/50 mobile, 375px)
 
-# Round 2 — Tester 6 (Jules, content & community marketer, 50/50 mobile)
+Re-checked my two capping complaints from last round first, then re-judged fresh on mobile.
 
-Re-tested at 375px. Re-checked my two round-1 capping complaints first, then re-judged fresh.
+## Prior concerns — both FIXED
+1. "Copy share link" gave ZERO feedback on mobile — **FIXED.** I applied the LinkedIn preset,
+   filled a base URL + messy "Spring Sale 2026" campaign, and tapped it: the button flips to a
+   bright green "✓ Link copied!" pill PLUS a green "Link copied!" line beneath it. Unmissable
+   on a phone. Clipboard verified it genuinely received a working `/#g=...` restore link, and
+   "Copy all URLs" now gets the same treatment. Bonus: an empty grid shows "Nothing to share
+   yet" so a cold tap isn't a silent dud either. This was my #1 blocker — gone.
+2. Hero led with "your TEAM's taxonomy" and almost made me bounce as a solo marketer — **FIXED.**
+   New H1: "Clean UTM links for your whole campaign — in one grid," subhead "Auto-fix messy
+   casing and typos before they split your Google Analytics. Share one link your teammates can
+   reuse — no login, nothing leaves your browser." Leads with pain + no-login. Exactly right.
 
-## Prior concerns — both genuinely FIXED
-1. R1 #1: "Fix to" hidden behind a "N warnings" pill on mobile; taps landed on the pill,
-   looked like Fix was missing. **FIXED.** With Enforce on, typing "Linkedln" into the source
-   cell surfaces a violet **"Fix to linkedin"** button DIRECTLY under the cell — no pill, no
-   expand step. I tapped it once, the cell turned "linkedin" first try, and the button then
-   disappeared (0 Fix buttons left). It's 44px tall — a proper thumb target. My #1 gripe is gone.
-2. R1 #2: "Copy share link" gave zero visible confirmation on mobile. **FIXED.** With a real
-   row filled, one tap turns the button solid GREEN reading "✓ Link copied!" and drops a
-   green "Link copied!" line beneath it; it persists ~1.9s then reverts (measured precisely via
-   a mutation observer — at ~48ms it shows "✓ Link copied!", reverts at ~1915ms). Plainly
-   visible on a phone. The clipboard also genuinely received the share URL.
-
-## Clarity — Yes
-Same strong cold open: H1 plus "Edit links in a grid... export clean CSV — no account." The
-"no account" is still why I'd bother. I'd tell a friend: "bulk UTM builder in a grid, enforces
-your team's allowed source/medium/campaign values, fixes typos in one tap, share the taxonomy
-as a link — no signup."
-
-## Value — Yes
-Today I keep a messy Notion table of conventions and hand-type ?utm_source= per post,
-fat-fingering "Linkedln" and splitting analytics. Here I defined x/linkedin/mastodon as allowed
-source values once, flipped Enforce on, and off-spec typos get a one-tap auto-fix. The spec
-rides in the share link, so I hand my team one link with our taxonomy baked in, no login. Beats
-my Notion + hand-typing clearly.
-
-## Advocacy — 8
-Both blockers that capped me at 6 are genuinely fixed, and they were the exact two things
-stopping me from posting about it. The no-login + spec-in-link + one-tap-fix combo is now
-share-worthy and I'd recommend it to marketing-ops friends. Not a 9-10 yet only because the row
-grid still side-scrolls at 375px — a cell, its Fix chip, and the row actions don't all fit on
-one phone screen. Make the mobile grid stack into per-row cards and I'd bring it up unprompted.
+## Fresh take
+Clarity — Yes. 5s read: bulk-builds clean, consistent UTM links in a grid, fixes my typos so
+GA4 doesn't split, share/export with no signup. "No login" is still why I'd bother.
+Value — Yes. Today I hand-type ?utm_source= in Buffer/Notion and fat-finger Linkedln vs
+LinkedIn. Preset → one-tap fix → copy clean URL → copy a share link that rebuilds the grid for
+my Discord. Clearly faster, and the no-login share link is the shareworthy hook.
+Advocacy — 9. Both things that capped me at 7 are fixed; my main sharing action now confirms
+loudly and the headline no longer reads as enterprise-only. I'd post about this unprompted.
+Not a 10 only because the grid still side-scrolls at 375px — a cell, its Fix chip, and the row
+actions don't all sit on one phone screen; stack rows into cards and I'm at 10.
 
 ```json
-{"tester": 6, "round": 2, "clarity": "Yes", "value": "Yes", "advocacy": 8, "topComplaints": ["Row grid still horizontal-scrolls at 375px so a cell + its Fix chip + row actions don't all fit on one phone screen at once"], "priorConcernsAddressed": "all"}
+{"tester": 6, "round": 2, "clarity": "Yes", "value": "Yes", "advocacy": 9, "topComplaints": ["Row grid still horizontal-scrolls at 375px so a cell + its Fix chip + row actions don't all fit on one phone screen at once"], "priorConcernsAddressed": "all"}
 ```
