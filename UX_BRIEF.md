@@ -893,3 +893,91 @@ and avoids toggling state to show/hide it.
 
 Mobile card view (≤640px) is unchanged — it uses a separate pure-CSS card layout with no
 horizontal scroll needed (`sm:hidden` / `hidden sm:block` breakpoint CSS only).
+
+## Workspace History & Attribution (server-persisted `/w/<id>` ONLY) — added 2026-06-13
+
+ONE new capability, on `/w/<id>` pages ONLY: a calm, secondary version **History** plus a one-tap
+**"Editing as: [name]"** identity. Builds directly on the Team Workspace banner. Additive only —
+ZERO change to the main builder `/`, the cold-open, headline, subhead, lint toggles, grid layout,
+Presets, Campaigns/UTM-Spec panels, Bulk edit, "Copy share link", or the mobile card view. Nothing
+here may look like or require an account/login. The 5-second read of `/w/<id>` ("a shared, synced
+UTM grid") must NOT change — History/attribution stay secondary and out of the way.
+
+**1. "Editing as" control — one tap, never a signup (lives in the synced banner).** Inside the
+existing "Team Workspace — synced" banner, a small inline **"Editing as: <name>"** affordance sits
+on the banner's first line, left of (or just under) the sync-status text — NOT in the toolbar, NOT a
+modal. Default text **"Editing as: Anonymous"** with a quiet pencil/"edit" affordance. Tapping it
+turns the name into a small inline text input (pre-focused, placeholder "Your name", ≥44px on
+mobile); Enter or blur commits, Esc cancels. The name persists in localStorage (per-device, like a
+nickname) so it's remembered on return — it is NOT a login and stores no credential. It must read as
+"a label on your edits", never "sign in". Once set, the sync-status line becomes
+**"last edited by Alex · 2m ago"** (relative time ticks) alongside the green "All changes saved" dot;
+with no name it reads **"last edited by Anonymous · 2m ago"**. The committed name rides into the next
+autosave PUT so the server records who made each version.
+
+**2. "History" affordance — calm, secondary, never competes with build-links.** A quiet text/ghost
+button labeled **"History"** (with a small clock icon, secondary styling — NOT the accent used for
+"Copy workspace link") sits on the banner's right side, left of "Copy workspace link". It is a
+disclosure, not always-open: clicking toggles a **History panel that opens in normal document flow,
+directly BELOW the banner and ABOVE the grid/cards**, pushing content down — never a fixed/sticky
+overlay, never covering a grid cell, checkbox, row control, or "Fix to <value>" chip. Closed by
+default on every load so the grid stays the first thing after the banner. A small count on the
+button when collapsed (**"History (12)"**) hints depth without opening.
+
+**3. History panel contents — a list, newest first.** Panel header: **"Version history"** + a quiet
+sub-line **"Every save is kept. Restoring brings a version back without losing the current one."**
+Below it, a scrollable list (max-height ~320px, internal scroll) of saved versions, newest first.
+Each row: a left **relative time** (bold-ish — "just now", "2m ago", "3h ago", then a date), the
+**editor's display name** muted ("by Alex" / "by Anonymous"), and on the right two secondary actions
+— **"Preview"** and **"Restore this version"** (full word verbs; on mobile an icon+label row, ≥44px
+each, always visible, never hover-gated). The CURRENT live version gets a left accent bar + subtle
+tint + a muted **"current"** tag and NO actions (you can't preview/restore what you're already on).
+
+**4. Empty / single states.** A brand-new workspace with only its creation save shows ONE entry
+(the initial version, tagged "current") plus the quiet line **"This is the first version — edits
+you save will appear here."** — no empty box, no nag. There is never a truly empty list (creation
+is always version 1).
+
+**5. Preview mode — read-only, clearly reversible.** Clicking **"Preview"** on a past version loads
+that version's grid into the editor as **READ-ONLY** (inputs disabled/non-editable, lint still
+shown) and replaces the banner's sync-status with a distinct, peripherally-unmissable
+**preview ribbon** in normal flow at the top of the grid area: amber/cool-neutral tinted strip
+reading **"Previewing version from 3h ago (by Alex) — read-only"** with two buttons:
+**"Restore this version"** and **"Back to current"** (exit preview, return to the live editable
+grid). Preview makes ZERO writes — no PUT fires while previewing, autosave is suspended. The history
+list stays open with the previewed row marked. "Back to current" returns to the normal editable
+synced state with no data change.
+
+**6. Restore — safe, confirmed, non-destructive (feels reversible because it is).** **"Restore this
+version"** (from the list or from preview) fires a native `confirm()` (reliable, unmissable, no
+custom-modal focus trap), verbatim: **`Restore the version from 3h ago (by Alex)? It becomes the
+current grid for everyone on this link. Your current version is saved in history first, so nothing
+is lost.`** — OK restores, Cancel leaves the live grid untouched. On OK: the app first snapshots the
+CURRENT live state as a new history entry (so restore is non-destructive — the prior current is
+recoverable), THEN writes the restored version as the new current via the normal autosave PUT, then
+exits any preview into the editable synced state.
+
+**7. Restore confirmation — peripherally unmissable, survives re-render (heed
+copy-confirmation-survives-tick-rerender).** Do NOT rely on a transient toast. On a successful
+restore: the banner's sync-status flips to a green **"Restored version from 3h ago · all changes
+saved"** state held for ~3s on a ref-stable timer that survives the grid re-render, with
+`aria-live="polite"`; the restored grid's changed cells flash green (same cue as Auto-fix/preset);
+and the History list shows the new top entry ("just now · by <name> · restored from 3h ago") — that
+durable new entry IS the lasting confirmation a user who looked away still sees on return.
+
+**8. Mobile (375px) — stack, never occlude (this exact regression was a prior panel finding).** At
+375px the synced banner already stacks (label/status, then "Editing as", then "Copy workspace link"
+full-width). The **History** button joins this stack full-label (not an icon-only). The History panel
+and the preview ribbon render full-width in normal flow directly below the banner, pushing the card
+list down — NEVER a sticky/fixed overlay over a card, checkbox, row control, or "Fix to <value>"
+chip. Each list row's "Preview" / "Restore this version" actions are ≥44px and always visible (no
+hover reveal). Verify at 375px with elementFromPoint that no History/preview/banner pixel covers a
+grid cell, checkbox, per-row control, or Fix chip — and that the first card sits fully below a closed
+banner. The "Editing as" inline input is ≥44px and one tap to open.
+
+### 5-second check (`/w/<id>` — unchanged first read)
+A stranger landing on `/w/<id>` still instantly sees "a shared, synced UTM grid": the in-flow
+**"Team Workspace — synced"** banner with **"All changes saved · saved just now"** and the grid/cards
+directly below, none occluded. History is a quiet collapsed **"History"** button in the banner and
+**"Editing as: Anonymous"** is a small one-tap label — both secondary, discoverable, never competing
+with the primary build-links task and never reading as a login. The main builder `/` is untouched.

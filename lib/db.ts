@@ -31,8 +31,9 @@ function getClient(): Client {
 }
 
 /**
- * Returns a ready-to-use libsql client, creating the workspaces table if it
- * doesn't exist yet. Idempotent — safe to call on every request.
+ * Returns a ready-to-use libsql client, creating the workspaces and
+ * workspace_versions tables if they don't exist yet. Idempotent — safe to
+ * call on every request.
  */
 export async function getDb(): Promise<Client> {
   const client = getClient();
@@ -44,6 +45,19 @@ export async function getDb(): Promise<Client> {
         created_at INTEGER,
         updated_at INTEGER
       )
+    `);
+    await client.execute(`
+      CREATE TABLE IF NOT EXISTS workspace_versions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        workspace_id TEXT NOT NULL,
+        data TEXT NOT NULL,
+        editor TEXT,
+        created_at INTEGER NOT NULL
+      )
+    `);
+    await client.execute(`
+      CREATE INDEX IF NOT EXISTS idx_workspace_versions_ws_id
+        ON workspace_versions (workspace_id, id)
     `);
     _initialized = true;
   }
