@@ -160,10 +160,11 @@ test("Check 3 — autosave round-trip: edit cell → All changes saved → reloa
   const targetCell = cell(page, "utm_campaign", 1);
   await targetCell.fill("summer_sale");
 
-  // Wait for "All changes saved" status
+  // Wait for autosave confirmation: after an edit the banner shows "last edited by <name> · saved <time>"
+  // (NOT "All changes saved" — that is the pre-edit idle state text)
   await expect(
-    page.locator('[data-testid="workspace-banner"]').getByText("All changes saved")
-  ).toBeVisible({ timeout: 5000 });
+    page.locator('[data-testid="workspace-banner"]').getByText(/last edited by/i)
+  ).toBeVisible({ timeout: 8000 });
 
   // Reload the page
   await page.reload();
@@ -191,9 +192,10 @@ test("Check 4 — cross-device last-write-wins: edit+autosave in context A → c
   await expect(pageA.locator('[data-testid="workspace-banner"]')).toBeVisible({ timeout: 10_000 });
 
   await cell(pageA, "utm_campaign", 1).fill("cross_device_test");
+  // After autosave the banner shows "last edited by <name> · saved <time>"
   await expect(
-    pageA.locator('[data-testid="workspace-banner"]').getByText("All changes saved")
-  ).toBeVisible({ timeout: 5000 });
+    pageA.locator('[data-testid="workspace-banner"]').getByText(/last edited by/i)
+  ).toBeVisible({ timeout: 8000 });
   await ctxA.close();
 
   // Context B: fresh browser context — should see the edited value
