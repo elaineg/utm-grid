@@ -1,15 +1,12 @@
-# Round 2 — Tester 8 (Rob, freelance brand/visual designer, desktop)
+# Round 2 — Tester 8 (Rob, freelance brand/visual designer)
 
-PRIOR BLOCKER (my 9-stopper): contradictory "no server, saved in localStorage" footer on the synced /w/ page. **RESOLVED.** Verified live: built a grid (Newsletter/EMAIL/Spring_Sale), created a workspace, opened the /w/ link in a fresh no-localStorage browser (my "client"). The /w/ footer now reads "Changes are synced to the server workspace automatically — anyone with the secret link can view and edit" — zero localStorage/"no server" phrases on that page. Banner adds "Anyone with this secret link can edit." right under it. Main page still correctly carries the browser-only claim. No contradiction left.
+Cold open read in ~5s: "Clean UTM links for your whole campaign — in one grid" + Export CSV + auto-fix casing. I know exactly what it is. Both my round-1 gripes are fixed: I clicked the ✏️ "+" by the workspace title and got a "Name this workspace" field ("e.g. Q3 Paid Campaigns") — typed "Acme — Spring 2026", it persisted after reload and now headers the banner, so multiple client grids are finally distinguishable. After typing "Rob" in "Your name" the banner shows "Editing as: Rob" (no longer Anonymous), and version history attributes each snapshot ("just now by Rob", "51s ago by Anonymous") with non-destructive Preview/Restore. That makes it a real client source-of-truth.
 
-ACCESS MODEL (my secondary): the "Anyone with this secret link can edit" note now appears in banner, subhead, and footer. I know exactly what I'm handing a client. Good.
+Value vs by-hand: auto-fix lowercased Facebook→facebook, CPC→cpc so I can't ship a casing typo that splits GA — that plus CSV export genuinely beats me hand-typing query strings for a batch.
 
-**Clarity — Yes.** Same fast read as R1; headline + grid columns tell the job in ~3s.
+Friction/bugs: none blocking. Minor — the name field is hidden behind a small "+"/pencil affordance I almost missed; a plain "Name this workspace" label would be clearer. No console errors, saves were instant.
 
-**Value — Yes.** Lint caught Newsletter/EMAIL/Spring_Sale casing; a fresh client browser saw my rows synced server-side. For sending a client an editable link this beats my CONCATENATE Sheet, and I ship clean GA4 data.
-
-**Advocacy — 9** (was 8). The footer contradiction that capped me at 8 is gone, and the secret-link note removes the "is this private?" hesitation when handing a client a link. I'd bring this up to other freelancers unprompted. Held below 10 by one real thing: per-workspace NAMING still doesn't exist — pill says "Unsaved grid," nothing labels the workspace, so juggling 3 client /w/ links I can't tell them apart. That's a polish gap now, not a trust blocker, so it no longer caps the 9.
-
-```json
-{"tester":8,"name":"Rob","clarity":"Yes","value":"Yes","advocacy":9,"prior_blocker_resolved":true,"top_problems":["No per-workspace name/label — pill still reads 'Unsaved grid'; juggling multiple client /w/ links you can't tell them apart"],"likes":["Round-1 blocker gone: /w/ footer now says 'synced to server workspace' with zero localStorage contradiction; client view earns trust","'Anyone with this secret link can edit' access note now stated in banner+subhead+footer — I know what I'm handing a client","Fresh no-localStorage client browser saw my rows synced server-side; lint caught cross-cell casing that splits GA4"]}
-```
+CLARITY: Yes
+VALUE: Yes
+ADVOCACY: 9/10
+REASON: Both prior blockers gone — named workspaces and real attribution make it a trustworthy shared client URL I'd actually send a PM; only the discoverability of the rename "+" keeps it off a 10.

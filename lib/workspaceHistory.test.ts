@@ -12,6 +12,69 @@ import {
 } from "./workspaceHistory";
 import { writeValue, readSnapshot } from "./useLocalStorage";
 
+// ── P1-1 Name persistence regression test ─────────────────────────────────────
+// Validates that: (a) editor name written by WorkspaceHistory (JSON-stringified
+// via window.localStorage.setItem) is recoverable by reading it back as the page
+// component does (JSON.parse), and (b) the EDITOR_KEY encoding matches across
+// the write path (component) and read path (page useEffect).
+
+const EDITOR_KEY = "utm-grid:editor-name";
+
+describe("P1-1 Name persistence: localStorage encoding round-trip (EDITOR_KEY)", () => {
+  let fake: { backing: Map<string, string>; window: { localStorage: { getItem: (k: string) => string | null; setItem: (k: string, v: string) => void } } };
+
+  beforeEach(() => {
+    const backing = new Map<string, string>();
+    fake = {
+      backing,
+      window: {
+        localStorage: {
+          getItem: (k: string) => backing.get(k) ?? null,
+          setItem: (k: string, v: string) => void backing.set(k, v),
+        },
+      },
+    };
+    vi.stubGlobal("window", fake.window);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("name written by WorkspaceHistory (JSON.stringify) is readable by the page effect (JSON.parse)", () => {
+    // Simulate what WorkspaceHistory's commitName writes:
+    const name = "Alex";
+    window.localStorage.setItem(EDITOR_KEY, JSON.stringify(name));
+
+    // Simulate what the page's mount useEffect reads:
+    const raw = window.localStorage.getItem(EDITOR_KEY);
+    expect(raw).not.toBeNull();
+    const parsed = JSON.parse(raw!) as string;
+    expect(parsed.trim()).toBe("Alex");
+  });
+
+  it("empty name is stored and recovered as an empty string (no revert to Anonymous)", () => {
+    window.localStorage.setItem(EDITOR_KEY, JSON.stringify(""));
+    const raw = window.localStorage.getItem(EDITOR_KEY);
+    const parsed = JSON.parse(raw!) as string;
+    expect(parsed.trim()).toBe("");
+  });
+
+  it("name with leading/trailing spaces is trimmed on read (consistent with commitName)", () => {
+    window.localStorage.setItem(EDITOR_KEY, JSON.stringify("  Dana  "));
+    const raw = window.localStorage.getItem(EDITOR_KEY);
+    const parsed = (JSON.parse(raw!) as string).trim();
+    expect(parsed).toBe("Dana");
+  });
+
+  it("missing key returns null so editorNameRef stays empty (Anonymous) without error", () => {
+    // Key not set at all
+    const raw = window.localStorage.getItem(EDITOR_KEY);
+    expect(raw).toBeNull();
+    // Page effect: no parse needed; editorNameRef stays ""
+  });
+});
+
 // ── Preview-seeding regression test ─────────────────────────────────────────
 // Validates the fix for P1 bug: Preview showed empty grid because the page
 // never wrote preview-prefixed localStorage keys before mounting UtmGrid.

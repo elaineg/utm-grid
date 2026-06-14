@@ -86,10 +86,13 @@ export function WorkspaceHistory({
         // Name already set — no nudge needed.
       } else {
         // P0-2: no name on this device → pre-open the field as a gentle nudge.
-        // Auto-focus in a short timeout so the grid renders first (non-blocking).
+        // DO NOT auto-focus: stealing focus means the input's onBlur fires on the
+        // first click of a sibling toggle (History, taxonomy disclosure), swallowing
+        // that click. Render the field open/visible but leave document focus on body
+        // so the first sibling click lands cleanly. (Round 3 P0-1 fix.)
         setNameInput("");
         setIsEditingName(true);
-        setTimeout(() => nameInputRef.current?.focus(), 150);
+        // No focus() call here — intentional.
       }
     } catch {
       // localStorage unavailable
@@ -143,9 +146,21 @@ export function WorkspaceHistory({
     }
   }, [workspaceId]);
 
-  // Fetch when panel opens
+  // Pre-fetch history on mount so the list is ready the moment the panel first opens.
+  // P0-1 (Round 3): ensures the FIRST click on "History" immediately shows the version
+  // list without a "Loading…" → second-click sequence. The fetch is in-flight during
+  // the brief time between page load and the user's first click, so it resolves before
+  // or just as the panel opens.
+  const didInitialFetchRef = useRef(false);
   useEffect(() => {
-    if (historyOpen) {
+    if (didInitialFetchRef.current) return;
+    didInitialFetchRef.current = true;
+    void fetchHistory();
+  }, [fetchHistory]);
+
+  // Re-fetch when panel opens (for subsequent opens after the initial mount)
+  useEffect(() => {
+    if (historyOpen && didInitialFetchRef.current) {
       void fetchHistory();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

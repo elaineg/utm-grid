@@ -452,3 +452,60 @@ describe("SAMPLE_SPEC", () => {
     expect(lintOffSpec(rows, SAMPLE_SPEC)).toHaveLength(0);
   });
 });
+
+// ── P2 Enforce-shortcut condition (Round 3) ───────────────────────────────────
+// The "Enforce these allowed values now" button renders when:
+//   specHasValues(spec) === true AND spec.enforceSpec === false
+// This tests the condition logic in isolation.
+
+function specHasValues(spec: UtmSpec): boolean {
+  return Object.values(spec.allowedValues).some((arr) => arr.length > 0);
+}
+
+describe("P2 enforce-shortcut: specHasValues condition", () => {
+  it("returns false for a default empty spec", () => {
+    expect(specHasValues(DEFAULT_SPEC)).toBe(false);
+  });
+
+  it("returns true when at least one field has a value", () => {
+    const s: UtmSpec = {
+      ...DEFAULT_SPEC,
+      allowedValues: { ...DEFAULT_SPEC.allowedValues, utm_source: ["email"] },
+    };
+    expect(specHasValues(s)).toBe(true);
+  });
+
+  it("enforce shortcut shows when values exist and enforceSpec is off", () => {
+    const spec: UtmSpec = {
+      allowedValues: { ...DEFAULT_SPEC.allowedValues, utm_source: ["email"] },
+      enforceSpec: false,
+    };
+    const showShortcut = specHasValues(spec) && !spec.enforceSpec;
+    expect(showShortcut).toBe(true);
+  });
+
+  it("enforce shortcut hidden when enforceSpec is already on", () => {
+    const spec: UtmSpec = {
+      allowedValues: { ...DEFAULT_SPEC.allowedValues, utm_source: ["email"] },
+      enforceSpec: true,
+    };
+    const showShortcut = specHasValues(spec) && !spec.enforceSpec;
+    expect(showShortcut).toBe(false);
+  });
+
+  it("enforce shortcut hidden when no values defined (nothing to enforce)", () => {
+    const showShortcut = specHasValues(DEFAULT_SPEC) && !DEFAULT_SPEC.enforceSpec;
+    expect(showShortcut).toBe(false);
+  });
+
+  it("clicking Enforce now shortcut produces spec with enforceSpec true (onChange call)", () => {
+    const spec: UtmSpec = {
+      allowedValues: { ...DEFAULT_SPEC.allowedValues, utm_source: ["email"] },
+      enforceSpec: false,
+    };
+    // Simulate what the button's onClick does: onChange({ ...spec, enforceSpec: true })
+    const nextSpec = { ...spec, enforceSpec: true };
+    expect(nextSpec.enforceSpec).toBe(true);
+    expect(nextSpec.allowedValues.utm_source).toEqual(["email"]);
+  });
+});

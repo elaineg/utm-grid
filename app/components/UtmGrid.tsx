@@ -1902,14 +1902,13 @@ export function UtmGrid({
 
         </div>
 
-        {/* Desktop sidebar — hidden on mobile (<900px); inline flex column at ≥900px.
+        {/* Desktop sidebar — hidden in workspace mode (UTM Spec is below grid in workspace mode
+            to avoid squeezing source columns off-screen — Round 3 P0-2 fix).
+            In non-workspace mode: hidden on mobile (<900px); inline flex column at ≥900px.
             At 1280px viewport (sidebar 256px + gap 16px + page padding 48px = 320px),
-            the grid gets ~960px. The table uses table-fixed layout with explicit column
-            widths totalling ≤960px, so the table never overflows its 960px container —
-            the sticky right columns are always visible without horizontal scroll.
-            Campaigns hidden in workspace mode (local-only). UTM Spec shown in all modes. */}
-        <div className="hidden min-[900px]:flex flex-col w-64 shrink-0 gap-0">
-          {!isWorkspaceMode && (
+            the grid gets ~960px. Campaigns hidden in workspace mode (local-only). */}
+        {!isWorkspaceMode && (
+          <div className="hidden min-[900px]:flex flex-col w-64 shrink-0 gap-0">
             <CampaignsSidebar
               campaigns={campaigns}
               openCampaignId={openCampaignId}
@@ -1923,21 +1922,35 @@ export function UtmGrid({
               savedFlash={savedFlash}
               desktopOnly
             />
-          )}
-          {/* UTM Spec panel — shown in all modes; workspace-labeled in workspace mode */}
+            {/* UTM Spec panel (non-workspace mode) — beside the grid in the sidebar */}
+            <UtmSpecPanel
+              spec={spec}
+              onChange={setSpec}
+              onLoadSample={handleLoadSample}
+              onShareSpec={() => void copyShareLink()}
+              specLinkCopied={shareLinkCopied}
+              workspaceMode={false}
+              desktopOnly
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Workspace mode: UTM Spec panel below the grid (not beside it) so source columns
+          always stay visible. Hidden on mobile (<900px) — mobile uses the disclosure above.
+          Round 3 P0-2 fix: opening the panel never squeezes utm_source/medium/campaign off-screen. */}
+      {isWorkspaceMode && (
+        <div className="hidden min-[900px]:block mt-2">
           <UtmSpecPanel
             spec={spec}
             onChange={setSpec}
-            onLoadSample={isWorkspaceMode ? undefined : handleLoadSample}
-            onShareSpec={isWorkspaceMode ? undefined : () => void copyShareLink()}
-            specLinkCopied={isWorkspaceMode ? undefined : shareLinkCopied}
-            workspaceMode={isWorkspaceMode}
-            syncStatus={isWorkspaceMode ? specSyncStatus : undefined}
-            syncSavedAt={isWorkspaceMode ? specSavedAt : undefined}
+            workspaceMode={true}
+            syncStatus={specSyncStatus}
+            syncSavedAt={specSavedAt}
             desktopOnly
           />
         </div>
-      </div>
+      )}
 
       {/* F: Trust note — mode-aware (Fix 1). */}
       {isWorkspaceMode ? (

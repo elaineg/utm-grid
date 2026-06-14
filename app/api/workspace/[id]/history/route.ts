@@ -17,6 +17,50 @@ import { VERSION_CAP } from "../../../../../lib/workspaceHistory";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
+/**
+ * PATCH /api/workspace/[id]/history
+ *
+ * Body: { editor: string }
+ * Back-fills the most-recent workspace_versions row's editor field so a name
+ * entered after the creation snapshot propagates (P1-1 Round 3 fix).
+ * Only updates the single most-recent row; ignores if workspace does not exist.
+ */
+export async function PATCH(
+  req: NextRequest,
+  ctx: RouteContext
+): Promise<NextResponse> {
+  const { id } = await ctx.params;
+  if (!isValidWorkspaceId(id)) {
+    return NextResponse.json({ error: "not_found" }, { status: 404 });
+  }
+  let editor: string | null = null;
+  try {
+    const body = (await req.json()) as { editor?: unknown };
+    if (typeof body.editor === "string" && body.editor.trim()) {
+      editor = body.editor.trim().slice(0, 80);
+    }
+  } catch {
+    return NextResponse.json({ error: "bad_request" }, { status: 400 });
+  }
+  if (!editor) {
+    return NextResponse.json({ error: "bad_request" }, { status: 400 });
+  }
+  const db = await getDb();
+  // Find the most recent version for this workspace and update its editor.
+  await db.execute({
+    sql: `UPDATE workspace_versions
+          SET editor = ?
+          WHERE id = (
+            SELECT id FROM workspace_versions
+            WHERE workspace_id = ?
+            ORDER BY id DESC
+            LIMIT 1
+          )`,
+    args: [editor, id],
+  });
+  return NextResponse.json({ ok: true });
+}
+
 export async function GET(
   _req: NextRequest,
   ctx: RouteContext

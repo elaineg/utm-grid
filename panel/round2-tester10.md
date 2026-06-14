@@ -1,17 +1,10 @@
-# Round 2 — Tester 10 (Sam, PM, mobile-heavy, 375px)
+# Round 2 — Sam (PM, mobile-heavy, team sync), 375px
 
-PRIOR BLOCKERS RE-CHECKED (from my last verdict, advocacy 8):
-- #1 contradictory "nothing sent to server / saved in localStorage" on a synced /w/ page → RESOLVED. Copy is now mode-aware. On /w/ the header reads "Synced to a private server workspace — anyone with the secret link can view and edit. Changes save automatically." and the footer reads "Changes are synced to the server workspace automatically." The browser-only/localStorage claim now appears ONLY on the main page (verified — accurate, since the main grid is local).
-- #2 no "anyone with this link can edit" permission note → RESOLVED. "Anyone with this secret link can edit." sits directly under the "Copy workspace link" button — exactly the line I wanted before pasting in Slack.
+Re-test of my round-1 concern: attribution defaulted to "Anonymous" until each person set a name. FIXED. On a fresh /w/ visit there's a "Your name" box right under the header with "Add your name so teammates see who changed what". I typed "Sam"; header flipped to "last edited by Sam" + "Editing as: Sam", and History logged my edits "by Sam". Preview is genuinely read-only ("Previewing… read-only. Cells are locked", padlock + greyed cells + "Back to current"); Restore is non-destructive (version count held, older versions and Sam attribution preserved). Shared UTM taxonomy syncs ("Synced · saved just now"). Copy workspace link put a real /w/ URL on the clipboard. Nothing occludes grid cells or row controls at 375px — clean vertical stack.
 
-CLARITY: Yes. In ~3s: "batch-build your campaign's UTMs in one grid, it auto-cleans casing/typos, and you can share a live link your team edits together, no login." Helped: H1 "Clean UTM links for your whole campaign — in one grid" and the LIVE TEAM WORKSPACE box spelling out live-vs-snapshot.
+FRICTION: The very first auto-save at workspace creation still logs as "Anonymous" because it happens before the nudge is filled, so a brand-new teammate's first edit is anonymous until they set their name. Minor — now clearly the user's choice, not a system gap. No bugs, no console/page errors, no mobile occlusion. (Note: "Create shared workspace" is correctly disabled on an empty grid — expected, not a bug.)
 
-VALUE: Yes. Today = Google Sheet + Slack screenshot; casing always drifts and splits my GA4/Amplitude. Built a row, hit Create shared workspace, got a /w/ link, opened it in a CLEAN mobile browser and my "Newsletter" data was there (real cross-device sync, not a snapshot). Lint flagged Newsletter/Email/Summer Launch with inline "Fix". Replaces the sheet-and-screenshot dance.
-
-ADVOCACY: 9. Up from 8. Both trust gaps that held me at 8 are gone, sync re-verified in a fresh browser, zero console errors, mobile layout clean. I'd bring this up unprompted to a launch team. Held off 10 by one nit, not a blocker: the GENERATED URL still shows the un-fixed dirty values (Newsletter/Email/Summer%20Launch) until you click Auto-fix — a hurried PM could copy a dirty URL despite the lint warnings right above it.
-
-LIKES: mode-aware server/local copy now correct on /w/; explicit edit-permission line under the share button; live cross-device sync re-verified in a clean browser; inline per-cell lint with Fix; clean 375px layout; zero console errors.
-
-```json
-{"tester":10,"name":"Sam","clarity":"Yes","value":"Yes","advocacy":9,"prior_blocker_resolved":true,"top_problems":["Generated URL still shows un-fixed dirty casing (Newsletter/Email/Summer%20Launch) until Auto-fix is clicked — a rushed PM could copy a dirty URL despite lint warnings above it","Copy-URL is per-row; no one-tap 'auto-fix then copy all' to guarantee every shared link is clean"],"likes":["Mode-aware copy: /w/ page correctly says synced to private server workspace; localStorage claim only on main page","'Anyone with this secret link can edit' shown directly under Copy workspace link","Live cross-device sync re-verified in a clean mobile browser","Inline per-cell lint with Fix affordance","Clean 375px mobile layout, zero console errors"]}
-```
+CLARITY: Yes
+VALUE: Yes
+ADVOCACY: 9/10
+REASON: History + read-only Preview + non-destructive Restore + named "Editing as" attribution now make this a trustworthy team source-of-truth I'd recommend to another PM unprompted; held off 10 only because the creation auto-save lands as "Anonymous" before the name nudge is filled.

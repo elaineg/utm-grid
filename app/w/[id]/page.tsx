@@ -68,10 +68,47 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
   const [historyTick, setHistoryTick] = useState(0);
 
   // Editor name (managed by WorkspaceHistory component, hoisted here for autosave)
+  // P1-1 (Round 3): read from localStorage on mount so the first autosave carries
+  // the committed name even if WorkspaceHistory's onEditorChange hasn't fired yet.
+  // SSR-safe: never read localStorage in useState initializer — use useEffect only.
   const editorNameRef = useRef<string>("");
+  // Track whether the name was previously empty so we know to back-fill on first commit.
+  const wasAnonymousRef = useRef<boolean>(true);
+
   const handleEditorChange = useCallback((name: string) => {
+    const wasEmpty = wasAnonymousRef.current;
     editorNameRef.current = name;
-  }, []);
+    if (name) {
+      wasAnonymousRef.current = false;
+    }
+    // P1-1: when a name is set for the first time (was Anonymous before), back-fill the
+    // most-recent history version's attribution so the creation snapshot shows the real name.
+    if (wasEmpty && name && id) {
+      void fetch(`/api/workspace/${id}/history`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ editor: name }),
+      }).catch(() => {}); // fire-and-forget; non-fatal
+    }
+  }, [id]);
+
+  // P1-1: seed editorNameRef from localStorage on mount (effect, not lazy init — SSR rule).
+  useEffect(() => {
+    try {
+      const EDITOR_KEY = "utm-grid:editor-name";
+      const raw = window.localStorage.getItem(EDITOR_KEY);
+      if (raw !== null) {
+        const val = JSON.parse(raw) as string;
+        const name = typeof val === "string" ? val.trim() : "";
+        if (name) {
+          editorNameRef.current = name;
+          // No state update needed — editorNameRef is the source for autosave attribution.
+        }
+      }
+    } catch {
+      // localStorage unavailable — leave editorNameRef as ""
+    }
+  }, []); // mount only
 
   // P1-2: Optional workspace name — persisted in the server payload.
   const [workspaceName, setWorkspaceName] = useState<string>("");

@@ -1085,3 +1085,74 @@ screenful** (clearly typeable, not greyed), and the grid/cards directly below �
 amber "read-only — cells are locked" ribbon. The "Shared UTM taxonomy" panel shows a live
 "Synced · saved just now" state so the team's allowed values are trustworthy. The cold-open builder
 `/` is untouched.
+
+## Workspace History & Attribution — Round 3 fixes (panel R2: 7/10 at the 9-bar) — added 2026-06-13
+
+Clarity 10/10, Value 10/10 — the cap is now a small set of craft bugs blocking three holdouts
+(Tomás 8, Dana 6, Elena 8) and a couple of passing testers. Surfacing/interaction/copy only, NOT a
+redesign. Do NOT regress: 5-second `/w/<id>` clarity, mobile 375px no-occlusion, durable copy/
+confirmation, anonymous-first (no login), the visibly-locked Preview, the name nudge, taxonomy
+persistence, the workspace name, and ZERO change to the cold-open `/`. Ranked by testers unblocked.
+
+**P0-1 — First click on History AND on "Shared UTM taxonomy" must work on cold load (THE blocker;
+Aisha, Elena, Tomás, Dana, Jules).** Root cause (verifier-diagnosed): on a fresh `/w/` load the name
+nudge auto-FOCUSES the "Editing as" input, and that input's `onBlur` fires on the user's first click
+on a sibling toggle (History, the taxonomy disclosure) — the blur commits/re-renders the banner and
+the toggle never receives/processes that first pointer event, so the panel renders empty or stays
+closed and needs a second click. The user-visible requirement is absolute: **open `/w/` cold → ONE
+click on "History" shows the version list; ONE click on "Shared UTM taxonomy" reveals the chip-entry
+field** — no second click, no empty render. Fix mechanism (do all three so it's robust):
+- **Stop the nudge from stealing/trapping the click.** Do NOT auto-`focus()` the "Editing as" input
+  on load. Render the nudge in its open inline-input state (so it's still a one-tap, visible prompt
+  per the R2 design) but leave document focus on `<body>` — nothing to blur, so the first click on any
+  sibling lands cleanly. The hint ("Add your name so teammates see who changed what — optional, saved
+  on this device.") stays. (If product still wants the field pre-focused, then the nudge's commit-on-
+  blur must NOT re-render or move the toggles: commit name silently to localStorage/state without a
+  layout-shifting re-render, so the toggle the user clicked still resolves on that same pointer event.)
+- **Make the toggles open on the first pointer event regardless of blur.** History and the taxonomy
+  disclosure must respond to `onPointerDown`/`onClick` independently of any input blur — a blur on the
+  name field must never swallow, cancel, or pre-empt the toggle. The toggle's open state is derived
+  state that renders its content synchronously, so a single click both opens the panel AND paints its
+  contents in the same commit (no "open now, render list next click").
+- **Render content synchronously on open.** History fetches/holds its versions so that the FIRST open
+  shows the list (and the "History (N)" count) immediately — never an empty list that fills on a
+  second toggle. Likewise the taxonomy panel's per-field chip rows + "+ add value" inputs render the
+  instant it expands. Verify on a cold `/w/` load: one click History → versions + Preview/Restore
+  visible; one click Shared UTM taxonomy → chip rows + add-value input visible and typeable.
+
+**P0-2 — "Shared UTM taxonomy" panel must NOT re-hide the editable source columns (Dana 6, Priya).**
+Opening the right-rail taxonomy panel currently squeezes the grid to BASE URL + GENERATED only,
+hiding utm_source/medium/campaign — Dana's source-of-truth use breaks. In workspace mode the editable
+source columns (Base URL, utm_source, utm_medium, utm_campaign at minimum) MUST stay visible whether
+or not the taxonomy panel is open. Mechanism: the taxonomy panel must not steal grid width — keep the
+grid's bounded-internal-scroll (per the side-panel design) with the leftmost editable source columns
+as the on-screen default, OR stack the taxonomy panel BELOW the grid instead of beside it at
+constrained widths, so opening it never reflows the source columns off-screen. Opening/closing the
+panel must not change which columns are the first thing read after the banner.
+
+**P1-1 — "Editing as" name persists across reload and attributes early edits (Tomás, Sam).** The name
+currently reverts to "Anonymous" after reload, and the first autosave at workspace creation logs
+"Anonymous" before the nudge is filled. Fix: (a) the committed name is read back from per-device
+localStorage on every `/w/` load and re-applied to the banner ("Editing as: <name>") AND to the
+attribution that rides the autosave PUT — it must NOT revert to Anonymous merely because the page
+reloaded. (b) Surface the nudge BEFORE the first snapshot is attributed where possible; if the
+creation snapshot was already written as "Anonymous", the moment a name is committed, back-fill that
+first snapshot's attribution to the entered name (single PUT), so a fresh teammate's history isn't
+permanently stuck as "Anonymous". Still never blocks editing; still no login.
+
+**P2 — Clarify sync-vs-enforce (Priya, Wen, Dana; keep light).** Defining allowed values shows "Not
+enforcing — enable in Naming rules", so syncing a taxonomy and enforcing it read as two confusing
+steps. Make the relationship intentional and obvious: when the user adds the FIRST allowed value to a
+previously-empty taxonomy, offer to turn enforcement on — an inline one-tap **"Enforce these allowed
+values now"** action right by the panel's status line (flips the canonical Enforce toggle, no
+separate hunt in Naming rules). If declined/until enabled, the status reads the plain, intentional
+**"Saved, not yet enforced — turn on 'Enforce allowed values' to block off-spec values"** (names the
+exact toggle, frames two steps as a deliberate choice, not a dead end). One canonical toggle still;
+this is copy + one shortcut affordance, no new control.
+
+### 5-second check (`/w/<id>` Round 3 — unchanged first read)
+A stranger still instantly reads "a shared, synced UTM grid I can edit": the in-flow synced banner,
+the gentle name nudge, the editable source columns visible after the banner — and now, on a cold
+load, **one click opens History (versions shown) and one click opens Shared UTM taxonomy (chip field
+shown)**, with the source columns staying visible even while the taxonomy panel is open. The cold-open
+builder `/` is untouched.

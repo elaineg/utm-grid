@@ -1,16 +1,24 @@
 # Round 2 — Tester 7: Aisha (Product designer, judges craft hard)
 
-**Prior issues:**
-1. **False server copy on /w/ — RESOLVED.** /w/ now reads "Synced to a private server workspace — anyone with the secret link can view and edit. Changes save automatically" and footer "Changes are synced to the server workspace automatically." The "nothing is sent to any server" / "no network requests" lines are gone on /w/ and correctly remain only on the main/snapshot page. "Copy share link" relabeled "Frozen snapshot of the current grid." Mode-aware and honest. This was my blocker — fixed.
-2. **Duplicate "Enforce allowed values" — RESOLVED.** Exactly one control on both main and /w/ pages; redundant underlined link gone.
-3. **Cramped grid at 1280px — NOT fixed.** Measured: table scrollWidth 1469 > viewport 1280, tableRight=1494, overflowsViewport=true. GENERATED URL and ACTIONS columns are pushed off the right edge and clipped (visible "Aut…"/"C…" fragments); the Campaigns sidebar eats width so the grid still spills with no clean horizontal scroll. Same overlap I flagged in R1.
+**Prior R1 concerns re-checked:** (1) busy stacked header banners — FIXED: /w/ now shows one clean
+"Team Workspace — synced" banner, no stacking, no mid-phrase lint wrapping. (2) grid overflow / clipped
+columns at 1280px — MOSTLY FIXED: main page no longer overflows (table 1228 < 1280); /w/ table is wider
+(1629) but now lives in an `overflow-x-auto` container, so it scrolls cleanly instead of clipping off-screen.
 
-**Clarity (Yes):** Headline + "Auto-fix messy casing and typos before they split your Google Analytics" lands in ~3s.
+**New affordances — genuinely considered.** Preview is excellent: amber banner "Previewing version from 2m
+ago (by Aisha) — read-only. Cells are locked." with greyed-out (disabled) cells AND both "Restore this
+version" + "Back to current" escape hatches. Attribution flows everywhere ("Editing as: Aisha", versions
+tagged by-name vs "by Anonymous"). Taxonomy shows "Synced · saved just now". Restore is non-destructive;
+copy "Every save is kept. Restoring brings a version back without losing the current one." nails the tone.
 
-**Value (Yes):** Auto-fix diff + reversible undo, honest dual share modes, server-synced workspace verified across the create flow — considered craft.
+**Craft bug (only real ding):** on a COLD page load the History button reads "History" with no count and the
+FIRST click is dead — panel stays closed; the SECOND click opens it (label then becomes "History (3)").
+Repro: load /w/<id> fresh → click History once (nothing) → click again (opens). A first-impression miss.
+Minor: locked preview cell is only faded, not visibly badge-locked.
 
-**Advocacy (8/10):** The trust-breaking lie is gone — that was the thing stopping me cold, so I move from 6 to 8. I can't hit 9 because the grid still overflows at 1280px (a very common laptop width); for a tool whose entire pitch is data hygiene and legibility, having GENERATED URL and ACTIONS clipped off-screen on a fresh load is exactly the unconsidered detail I dock for. Fix the 1280px overflow (responsive column widths or scope the sidebar) and I'm at 9 — I'd share it unprompted.
-
-```json
-{"tester":7,"name":"Aisha","clarity":"Yes","value":"Yes","advocacy":8,"prior_blocker_resolved":true,"top_problems":["Grid still overflows at 1280px: scrollWidth 1469 > 1280 viewport, GENERATED URL + ACTIONS columns clipped off the right edge with no clean scroll — same overlap as R1, not fixed"],"likes":["/w/ copy now mode-aware and honest ('Synced to a private server workspace', 'Frozen snapshot of the current grid') — blocker resolved","Single 'Enforce allowed values' control, duplicate removed","Auto-fix green diff + reversible undo + verified server sync still feel genuinely considered"]}
-```
+CLARITY: Yes
+VALUE: Yes
+ADVOCACY: 9/10
+REASON: History + non-destructive Restore + synced taxonomy + per-edit attribution make this a trustworthy
+team source-of-truth and the craft now holds up; the dead first-click on History after a cold load is the
+one unconsidered detail keeping it off a 10.

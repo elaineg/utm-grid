@@ -175,19 +175,35 @@ export function UtmSpecPanel({
     [spec, onChange]
   );
 
-  // Fix D: no second Enforce toggle here — the canonical one is in the lint-rule group.
-  // We show a read-only status line instead.
+  // P2 (Round 3): show an "Enforce now" shortcut when values exist but enforce is off.
+  // One canonical toggle still lives in the lint-rule group; this is a shortcut only.
+  const hasValues = specHasValues(spec);
   const enforceStatusLine = (
-    <div className="flex items-center gap-2 rounded-md border border-violet-200 bg-violet-50 px-2.5 py-2">
-      <span
-        className={`h-2.5 w-2.5 rounded-full ${spec.enforceSpec ? "bg-violet-500" : "bg-gray-300"}`}
-        aria-hidden="true"
-      />
-      <span className="text-xs font-medium text-violet-800">
-        {spec.enforceSpec
-          ? "Enforcing — toggle in Naming rules"
-          : "Not enforcing — enable in Naming rules"}
-      </span>
+    <div className="flex flex-col gap-1.5 rounded-md border border-violet-200 bg-violet-50 px-2.5 py-2">
+      <div className="flex items-center gap-2">
+        <span
+          className={`h-2.5 w-2.5 rounded-full shrink-0 ${spec.enforceSpec ? "bg-violet-500" : "bg-gray-300"}`}
+          aria-hidden="true"
+        />
+        <span className="text-xs font-medium text-violet-800">
+          {spec.enforceSpec
+            ? "Enforcing — toggle in Naming rules"
+            : hasValues
+            ? "Saved, not yet enforced — turn on ‘Enforce allowed values’ to block off-spec values"
+            : "Not enforcing — enable in Naming rules"}
+        </span>
+      </div>
+      {/* P2: one-tap shortcut to turn enforcement on when values exist but enforce is off */}
+      {hasValues && !spec.enforceSpec && (
+        <button
+          type="button"
+          data-testid="enforce-now-btn"
+          onClick={() => onChange({ ...spec, enforceSpec: true })}
+          className="self-start rounded border border-violet-300 bg-white px-2.5 py-1 text-[11px] font-medium text-violet-700 hover:bg-violet-50 transition-colors"
+        >
+          Enforce these allowed values now
+        </button>
+      )}
     </div>
   );
 
@@ -257,7 +273,11 @@ export function UtmSpecPanel({
       {/* Per-field allowed-value rows */}
       {UTM_FIELDS.map((field) => {
         const values = spec.allowedValues[field];
-        const inputId = `utm-spec-add-${field}`;
+        // Suffix the id with the render context to avoid duplicate DOM ids when both
+        // desktop (desktopOnly) and mobile (mobileOnly) panels are mounted simultaneously.
+        // Per UX_BRIEF Mobile-card §2 GOTCHA: duplicate ids break e2e locators.
+        const idSuffix = desktopOnly ? "desktop" : mobileOnly ? "mobile" : "solo";
+        const inputId = `utm-spec-add-${field}-${idSuffix}`;
         return (
           <div key={field} className="flex flex-col gap-1">
             <label
@@ -319,7 +339,7 @@ export function UtmSpecPanel({
                   }}
                   placeholder="+ add value"
                   aria-label={`Add allowed value for ${field}`}
-                  data-testid={`spec-add-input-${field}`}
+                  data-testid={`spec-add-input-${field}-${idSuffix}`}
                   className="min-w-0 flex-1 rounded-md border border-gray-200 px-2 py-1 text-[11px] focus:outline-none focus:ring-1 focus:ring-violet-400 placeholder:text-gray-400"
                 />
                 <button

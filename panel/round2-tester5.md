@@ -1,14 +1,14 @@
 # Round 2 — Tester 5 (Dana, demand-gen marketer)
 
-**Prior blockers — both RESOLVED (verified live):**
-1. *Two near-duplicate copy buttons.* Now physically + verbally separated: "Copy workspace link" sits in the green synced banner with sublabel "Anyone with this secret link can edit"; "Copy share link" sits in the toolbar with sublabel "Frozen snapshot of the current grid." The live-vs-frozen distinction lands in ~2s now — I know which to hand my team without thinking. The two clipboard values are genuinely different (workspace = clean /w/ URL; share = encoded #g= snapshot).
-2. *Privacy line contradiction.* Mode-aware now. On /w/ the line reads "Synced to a private server workspace — anyone with the secret link can view and edit. Changes save automatically." The browser-only claim is gone there and correctly remains only on the local main page. No contradiction about where my campaign data lives.
+Cold open still nails my Thursday grind in one scroll. Created a /w/ workspace in one click (clean URL, zero JS errors). "Editing as: Dana" + "last edited by Dana" attribution works; History(2) shows "31s ago by Dana [current]" / "38s ago by Anonymous" with Preview + "Restore this version" and the reassuring line "Every save is kept. Restoring brings a version back without losing the current one." That part feels like a trustworthy team source-of-truth.
 
-**Clarity: Yes.** Same strong headline + subline; nailed my Thursday grind in one scroll.
-**Value: Yes.** Grid + per-cell lint + the cross-row warning ("Inconsistent utm_campaign across rows: 'Spring Launch' vs 'spring_launch' — will split campaign data in GA4") is exactly the mess that wrecks my dashboards, caught before export. Replaces the 15-min copy-paste grind; CSV/Copy-all drops into HubSpot/Ads.
+PRIOR R1 CONCERN (editable source columns hidden in workspace): PARTIALLY fixed — when the right "Shared UTM taxonomy" panel is closed, all columns (BASE…UTM_CONTENT) show full-width (base input at x=125). But whenever that panel is present it squeezes the grid back to BASE + GENERATED only, re-hiding the source cells. Same wobble, new trigger.
 
-**Advocacy: 9.** Both things that held me at 8 last round are fixed and I confirmed them on the live build. I'd screenshot this for the team channel and bring it up unprompted. Off 10 only because I haven't lived a full real campaign cycle through the saved-Campaigns/workspace return loop — a "prove it over a month" reservation, not a current flaw.
+BUG (blocker, repro): On /w/, I could not define a single shared allowed-value. Clicking "NAMING RULES ▼" and "Shared UTM taxonomy ▼" reveals no chip editor (no add-value input appears); clicking "Enforce allowed values" does not check the box and surfaces nothing. The panel only restates "Synced to this workspace — your team's shared allowed values, enforced on every cell" but gives me no way to add one. So I could not test taxonomy sync or enforcement at all — the headline round-2 feature is unreachable in my session.
 
-```json
-{"tester":5,"name":"Dana","clarity":"Yes","value":"Yes","advocacy":9,"prior_blocker_resolved":true,"top_problems":["No live blocker remaining; only un-lived reservation is whether the saved-Campaigns/workspace return loop holds up over a real multi-week cadence"],"likes":["Copy workspace link vs Copy share link now disambiguated by placement + sublabels (live banner vs 'Frozen snapshot') — choice is instant","Privacy line is mode-aware: /w/ page says synced to private server workspace, main page keeps browser-only — contradiction gone","Cross-row lint flags inconsistent utm_campaign that would split my GA4 data, before export"]}
-```
+Value verdict: the History+Restore+attribution half makes a shared grid feel safe; but a "team source of truth" needs the SHARED TAXONOMY to actually be editable+synced, and I couldn't reach it. Half the trust story is missing.
+
+CLARITY: Yes
+VALUE: Yes
+ADVOCACY: 6/10
+REASON: History/Restore/attribution are genuinely trustworthy and the bulk grid still beats my 15-min copy-paste, but the marquee Shared-UTM-taxonomy chips are unreachable (no editor opens, Enforce won't toggle) and the taxonomy panel re-hides my source columns — so I can't yet hand this to my team as the enforced source-of-truth they promised.

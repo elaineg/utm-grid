@@ -1,29 +1,16 @@
-# Round 2 — Tester 6: Jules (content/community marketer, medium tech, 50/50 desktop+mobile, 375px)
+# Round 2 — Tester 6: Jules (content/community marketer, medium tech, 50/50 desktop+mobile)
 
-Re-checked my two round-1 blockers on the LIVE app, then re-judged fresh.
+Prior hold-back (R1 8/10): inside a synced workspace the grid collapsed to GENERATED URL + ACTIONS, hiding editable source columns so it read as copy-only. **FIXED.** In workspace mode BASE URL / UTM_SOURCE / UTM_MEDIUM / UTM_CAMPAIGN are visible and editable without horizontal scroll on desktop, and stack into a clean fully-labeled editable card on mobile (375px, scrollWidth=375, no horiz scroll). I edited a Base URL cell — it took and synced. It now unmistakably reads as an EDITABLE shared grid.
 
-## Prior blockers — both RESOLVED (verified)
-- **Copy-confirmation on "Copy share link" + "Copy all URLs" — FIXED, emphatically.** With a populated
-  row, both buttons flip to a SOLID green fill with a white "✓ Link copied!" / "✓ Copied!" label PLUS a
-  green confirmation line below — peripherally unmissable, same as the row-level copy. Clipboard genuinely
-  received content (364-char share link, 90-char URL list). Bonus: an empty grid shows orange "Nothing to
-  share yet" instead of a fake confirmation. My #1 blocker — gone.
-- **Contradictory footer — FIXED, now mode-aware.** Main page still honestly says "no server… saved in
-  localStorage." On the /w/ workspace page that claim is GONE: "Synced to a private server workspace —
-  anyone with the secret link can view and edit. Changes save automatically," matched at the bottom footer.
-  "Copy share link" is even relabeled "Frozen snapshot of the current grid" in the workspace. Trust restored.
+Full flow worked with zero login: filled a row, saw per-platform presets (Email, Paid Social–LinkedIn, Google/CPC, Organic Social), created /w/ workspace, set "Editing as: Jules" attribution ("last edited by Jules"), History showed both versions with Preview + Restore and the calming "Restoring brings a version back without losing the current one", Shared UTM taxonomy synced to the workspace. Lint (lowercase fix, required-field, valid-URL) makes it a real team source-of-truth. No console errors.
 
-## Fresh take
-Clarity — Yes. 5s read: bulk-builds clean consistent UTM links in a grid, auto-fixes my typos so GA4 won't
-split campaigns, share/export with no signup. "No login" is still why I'd bother.
-Value — Yes. Today I hand-type ?utm_source= in Buffer/Notion and fat-finger Linkedln vs LinkedIn. Preset →
-one-tap auto-fix → copy clean URL → copy a no-login share link that rebuilds the grid for my Discord.
-Clearly faster, weekly-use, bookmarked.
-Advocacy — 9. Both things that capped me at 8 are genuinely fixed and my main sharing action now confirms
-loudly. I'd post it in my marketing Discord unprompted. Not a 10 only because my two biggest channels —
-X/Twitter and Mastodon — still have no native preset, so I type their source/medium by hand. That's a
-feature gap, not a trust/UX defect, so it no longer caps me below 9.
+Friction: on one reload the History panel didn't render its version list before I read it (showed "History" not "History (2)") — timing/minor, opened fine the prior run, not a blocker. Still no native X/Twitter or Mastodon preset (my two top channels), so I type those by hand — a feature gap, not a UX defect.
+
+CLARITY: Yes
+VALUE: Yes
+ADVOCACY: 9/10
+REASON: The collapse-to-copy-only that capped me at 8 is fixed — desktop and mobile both clearly read as an editable, synced, attributed, version-historied team grid, which is the trustworthy source-of-truth I'd send a fellow marketer; one notch off 10 only for the slightly flaky History expand and no X/Mastodon presets.
 
 ```json
-{"tester": 6, "round": 2, "clarity": "Yes", "value": "Yes", "advocacy": 9, "topComplaints": ["No native X/Twitter or Mastodon preset (only LinkedIn) — my two top channels still typed by hand each time", "Workspace banner still reads a touch like a marketing callout, though clearer than round 1"], "priorConcernsAddressed": "all"}
+{"tester": 6, "round": 2, "clarity": "Yes", "value": "Yes", "advocacy": 9, "topComplaints": ["No native X/Twitter or Mastodon preset (only LinkedIn) — my two top channels typed by hand", "History panel occasionally didn't expand its version list on reload (timing)"], "priorConcernsAddressed": "all"}
 ```

@@ -1,14 +1,22 @@
 # Round 2 — Tester 1 (Priya, senior backend SWE, network-tab skeptic)
 
-## My R1 blocker — RESOLVED (verified live)
-The self-contradiction is gone. On /w/<id> the footer now reads "Changes are synced to the server workspace automatically — anyone with the secret link can view and edit"; banner says "Synced to a private server workspace." The "no server / no network requests" line is no longer on the workspace page. Network tab confirms a real `GET /api/workspace/<id>` on load, and a fresh teammate context (no localStorage) saw my row + synced banner. On the MAIN page the client-side copy ("nothing leaves your browser… saved in localStorage") remains — and NET=[] confirms it's true there. Mode-aware copy is honest. The secret-link warning "Anyone with this secret link can edit." sits right under Copy workspace link.
+My side-project launch post needed UTMs; a teammate sent this instead of a spreadsheet.
+Cold open is legible in <5s: H1 + "Auto-fix messy casing before they split your Google Analytics."
+Created a workspace, got a /w/ link, set "Editing as: Priya". Edited spring->summer-launch;
+History snapshotted it attributed to me, with the prior version "by Anonymous". Round-1 panel's
+one gripe (Preview cells not truly locked) is FIXED: Preview now DOM-disables + greys cells and
+banner reads "read-only. Cells are locked." Restore non-destructively brought back the old value.
+Added "newsletter" to UTM_SOURCE taxonomy -> persisted across reload and synced to the workspace;
+named it "Acme Launch Q3" -> stuck. No console/network errors; nothing leaves the browser pre-share.
 
-## Clarity — Yes. H1 + "Different from Copy share link, which sends a frozen snapshot" lands the job and the two share modes in seconds.
-## Value — Yes. Beats hand-editing query strings or a teammate's sheet; Auto-fix + lint caught casing; workspace genuinely server-syncs cross-device.
+Friction: on a 1400px desktop the UTM_SOURCE/MEDIUM/CAMPAIGN columns are pushed off-screen in
+the synced grid — only BASE URL + GENERATED URL show without horizontal scroll (cells are still
+editable, just hidden). Minor: taxonomy says "Not enforcing — enable in Naming rules", a small
+two-step before chips actually block bad values.
 
-## Advocacy — 8. Moved from credibility-ding to clean trust, but NOT to 9.
-Still blocking 9: (1) prior friction unfixed — Auto-fix is still a manual button not lint-on-type, and no paste-a-URL-it-parses flow; for a keyboard-first engineer that's the gap to "faster than a CLI." (2) Minor: at 1280px the "Shared UTM taxonomy" side panel overlaps the right of the GENERATED URL/ACTIONS columns. (3) I tag UTMs too rarely to evangelize unprompted. I'd send it to a teammate over a spreadsheet — just not spontaneously.
-
-```json
-{"tester":1,"name":"Priya","clarity":"Yes","value":"Yes","advocacy":8,"prior_blocker_resolved":true,"top_problems":["Auto-fix still a manual button not lint-on-type; no paste-a-URL-it-parses keyboard flow — not yet 'faster than a CLI'","At 1280px the 'Shared UTM taxonomy' side panel overlaps the right edge of GENERATED URL/ACTIONS columns"],"likes":["Mode-aware privacy copy now honest: /w/ says server-synced, main page client-side — verified in network tab (GET /api/workspace + clean teammate sync)","'Anyone with this secret link can edit' warning present and well-placed","Workspace vs frozen /#g share link clearly disambiguated ('Frozen snapshot of the current grid')"]}
-```
+CLARITY: Yes
+VALUE: Yes
+ADVOCACY: 9/10
+REASON: Faster than hand-editing query strings and the attributed History+Restore+synced taxonomy
+make a shared grid trustworthy as a team source-of-truth; not a 10 because the source columns hide
+off-screen on a normal desktop and enforcement needs an extra toggle.

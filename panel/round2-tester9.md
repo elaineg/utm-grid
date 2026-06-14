@@ -1,24 +1,19 @@
 # Elena — round 2 (EM, 8 reports, 30s budget; laptop)
 
-PRIOR BLOCKER (#1): RESOLVED. The /w/ page footer no longer lies — it now reads "Changes
-are synced to the server workspace automatically — anyone with the secret link can view and
-edit," and the false "no server / nothing leaves your browser" line is GONE from the
-workspace page (it stays ONLY on the main page, where the grid really is local). The new
-"Anyone with this secret link can edit" access note is present on create AND the /w/ page.
-Verified live: created a workspace, loaded /w/FPC1CoW… in a fresh browser, read the footer.
+Skimmed between meetings. Headline + "LIVE TEAM WORKSPACE" box told me what/who-for in ~5s. Created a /w/ workspace, set "Editing as: Elena", edited cells; data survived a fully fresh browser — real server source-of-truth, not just my localStorage. That earns trust.
 
-#2 (presence/lock for concurrent edits): NOT added; last-write-wins remains. As an EM I
-judge this polish, not a blocker — the workspace persists cross-person and the copy is now
-honest, which removes the doubt that capped me at 8. Two reports clobbering the same cell in
-the same second is rare for campaign UTM prep.
+Re-check of my prior dings:
+- (a) Preview cells looking typeable though edits were discarded: FIXED, decisively. Preview now shows a yellow banner "Previewing version from 4m ago (by Anonymous) — read-only. Cells are locked," cells are visibly greyed, and my scripted attempt to type into them was BLOCKED. Restore is non-destructive ("Restoring brings a version back without losing the current one") — confirmed nothing was lost. Versions carry per-author attribution + timestamps.
+- (b) anyone-with-link-can-edit, no viewer/lock role: still the tradeoff. Accepted — History + attribution mean a bad edit is now traceable and recoverable, which removes most of my worry.
 
-CLARITY — Yes. Headline + live-workspace box answer "what / who for" in <5s.
-VALUE — Yes. One zero-onboarding live link with auto-fix lint replaces a shared dirty-UTM
-Google Sheet; an every-campaign use for my 8 reports.
-ADVOCACY — 9. I'd bring it to the report who asked, unprompted: "standardize on it." The
-trust contradiction that held me at 8 is fixed. A "who's editing" hint would make it a 10,
-but nothing now blocks the recommendation.
+Friction/bugs (exact repro):
+1. History panel needs TWO clicks to populate. Repro: open /w/ link cold, click "History" once -> version list renders EMPTY (0 Preview/Restore buttons); click "History" again -> the 2-3 versions appear. For an EM judging a *trust* feature in 30s, "History looks empty" reads as "no history" — worst first impression for the exact thing being sold.
+2. Same double-toggle on "Shared UTM taxonomy" — first click on the header didn't expand it, so I couldn't add an allowed-value chip in my patience budget. I believe it works; I just couldn't drive it first try.
+
+CLARITY — Yes. Headline + live-workspace box answer what/who-for in <5s.
+VALUE — Yes. A trustworthy zero-setup live link with locked preview, non-destructive restore, edit attribution, and a synced allowed-values taxonomy replaces our shared dirty-UTM Google Sheet. Every-campaign use for my 8 reports.
+ADVOCACY — 8/10. The data-integrity story is now solid enough that I'd tell the report who asked "yes, standardize on it." Not a 9 because the History and taxonomy panels render EMPTY on first click and need a second toggle — that flake makes the very trust feature I'm vouching for look broken in a 30-second skim. Fix the first-click render and this is a 9-10.
 
 ```json
-{"tester":9,"name":"Elena","clarity":"Yes","value":"Yes","advocacy":9,"prior_blocker_resolved":true,"top_problems":["No presence/lock indicator; last-write-wins could let two reports silently clobber a cell (polish, not a blocker)"],"likes":["/w/ footer is now mode-aware and honest about server sync — my exact round-1 fix","'Anyone with this secret link can edit' states the access model plainly","Live cross-person workspace + auto-fix lint replaces a shared dirty-UTM Sheet, zero onboarding"]}
+{"tester": 9, "round": 2, "clarity": "Yes", "value": "Yes", "advocacy": 8, "topComplaints": ["History panel renders empty on first click; needs a second toggle to show versions — makes the trust feature look broken in a 30s skim", "Shared UTM taxonomy panel has the same double-click-to-expand flake; couldn't add an allowed-value chip first try"], "priorConcernsAddressed": "some"}
 ```
