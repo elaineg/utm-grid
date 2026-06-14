@@ -1666,3 +1666,79 @@ shipped. On `/w/<id>` the three share actions now read as a clearly-labeled, gro
 distinct sublabels; clicking any copy action gives a peripherally-unmissable green "Copied ✓"; the
 grid uses full page width with config panels collapsible/stacked so editable cells + lint are
 readable at 1280px with no horizontal scroll.
+
+## Launch Check — whole-grid Compliance Report (added 2026-06-14)
+
+ONE new capability: a **"Run Launch Check"** action that runs the existing lint suite across ALL
+grid rows at once and shows a **Compliance Report** scorecard — "is this whole batch ready to
+ship?" (vs inline lint, which answers one cell). Directly delivers Wen's R1 deprioritized ask
+(export the lint violation report as CSV). Additive only — do NOT touch the headline, subhead, lint
+toggles, grid layout, Presets, Campaigns/UTM-Spec/Naming-Template panels, Bulk edit, or any share
+action. Read-only of current state: NEVER mutates the grid, NEVER autosaves, no network on `/`, no
+POST/PUT on `/w/<id>`. Each item is shaped by this app's own repeated panel failures.
+
+**1. Trigger — a FIRST-CLASS, scoped "QA / check" affordance, NOT another share (heed
+added-feature-buried-panel + share-concept-clutter, both repeat blockers here).** A primary,
+visually distinct **"Run Launch Check"** button with a **checklist/shield icon** and a one-line
+sublabel **"Check every link in this batch before you launch."** It is a top-level action in flow,
+on the FIRST scan of the page — never inside a collapsed disclosure, the sidebar, or at the bottom
+of a rail.
+- **Placement:** in its OWN slim labeled strip directly **above the grid** (in normal flow), beside
+  / just under the **"Audit URLs"** entry point — the two form one **"Check / QA"** group, kept one
+  logical group APART from the share cluster ("Copy share link" / "Create shared workspace" / "Share
+  style guide") so it never reads as a share. Tag the group **"Pre-launch QA"** so a marketer reads
+  the purpose in 5 seconds.
+- **`/w/<id>`:** same button, same strip above the grid, BELOW the synced banner — distinct from the
+  banner's share/History actions. Its "no network / read-only" claim is mode-aware (it makes no
+  write; copy never says "client-side" on the server-backed page — say "Reads this workspace without
+  changing it.").
+- **Mobile (375px):** full-label accent button in the top action stack (never icon-only, never
+  collapsed), ≥44px.
+
+**2. Verb/concept disambiguation — Launch Check ≠ Audit URLs (heed
+same-verb-adjacent-controls-read-as-broken).** The two QA-group actions carry distinct one-sentence
+helpers and never share a verb; the word **"Audit"** NEVER appears in Launch Check copy:
+- **"Audit URLs"** → helper **"Paste finished links from elsewhere to pull them into the grid."**
+  (inbound: brings external URLs IN.)
+- **"Run Launch Check"** → helper **"Check every link in this batch before you launch."**
+  (read-only: scores what's ALREADY in the grid.)
+
+**3. Compliance Report — full-width summary panel ABOVE the grid, visually DISTINCT from the violet
+paste-Audit panel (heed audit-result-feature-needs-summary-above-the-grid, R1=3/10 when violated).**
+The report renders as a full-width panel in normal page flow directly **above the grid** (pushing it
+down) — NEVER inside grid columns, never behind a sticky column or side rail, never an overlay.
+- **Distinct identity from AuditSummaryPanel:** the paste-audit panel is **violet**; the Compliance
+  Report uses a different accent — a **slate/teal "QA report" treatment** with a checklist/shield
+  glyph and a clear title **"Launch Check — Compliance Report"** so the two never read as the same
+  thing.
+- **Scorecard (top):** three big counts — **N links checked · N passing · N with issues** — passing
+  in green, issues in amber; a thin pass-ratio bar. A fully-clean grid shows the success state
+  **"All N links pass"** (green, check glyph) and lists no issues.
+- **Issues (below):** grouped by issue type/field; each line names **row # + field/cell + the
+  existing lint message** (required, lowercase, no-spaces, inconsistent, off-spec, off-template,
+  invalid-url, base-utm). Each line is a quiet jump-to-row affordance.
+- **Actions (in the panel):** **"Download report (CSV)"** (one row per violation: row #, base URL,
+  field, value, issue type, message; a single all-clear row when clean) and **"Copy summary"**
+  (plain-text summary). A small **×** dismisses the panel; re-running refreshes it in place.
+
+**4. "Copy summary" cue — peripherally unmissable, ref-stable (heed
+copy-confirmation-survives-tick-rerender, THE recurring R1 dominant blocker on this app).** On
+click, the button label flips IN PLACE to **"Copied!"**, the button fills solid green with a check,
+and holds **~1.8s** before reverting — backed by `aria-live="polite"`, on a **ref-stable timer that
+survives the grid's re-render** (reuse the exact proven pattern from "Copy share link"). Clipboard
+write uses the **execCommand/textarea fallback** when `navigator.clipboard` rejects, so the green
+"Copied!" still fires in blocked-clipboard contexts. No corner toast that scrolls off.
+
+**5. Mobile (375px) — stack, full-width, nothing occluded (heed
+mobile-sticky-overlay-occludes-tap-targets).** The trigger, the Compliance Report panel, and BOTH
+**"Download report (CSV)"** / **"Copy summary"** buttons stack full-width, each ≥44px, with no
+horizontal scroll. The report panel renders in flow above the card list, pushing cards down — never
+a sticky/fixed overlay over a card, checkbox, row control, or "Fix to <value>" chip. The green
+"Copied!" cue fires on the button itself at 375px.
+
+### 5-second check (Launch Check — unchanged above the fold)
+Cold visitor still sees the unchanged hero (headline, subhead, pre-filled example row + Copy) and no
+report (Launch Check renders nothing until clicked). The **"Run Launch Check"** button — icon +
+"Check every link in this batch before you launch." — sits in the labeled **Pre-launch QA** group
+above the grid, clearly distinct from "Audit URLs" and from every share action, so a marketer
+opening the builder cold understands in 5s: this checks my whole batch before launch.

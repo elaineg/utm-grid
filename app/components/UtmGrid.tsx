@@ -34,6 +34,11 @@ import { useLocalStorage } from "../../lib/useLocalStorage";
 import { ImportDialog, type ImportMode, type PendingImport } from "./ImportDialog";
 import { AuditDialog, type AuditMode } from "./AuditDialog";
 import { AuditSummaryPanel } from "./AuditSummaryPanel";
+import { ComplianceReportPanel } from "./ComplianceReportPanel";
+import {
+  computeLaunchCheckSummary,
+  type LaunchCheckSummary,
+} from "../../lib/launchCheck";
 import { NamingTemplatePanel } from "./NamingTemplatePanel";
 import { BuildNameComposer } from "./BuildNameComposer";
 import { parseUtmUrls, type ParsedLine } from "../../lib/utm";
@@ -143,6 +148,11 @@ export function UtmGrid({
   } | null>(null);
   // Ref for the table container — used to auto-scroll to the first utm_* column after audit
   const tableContainerRef = useRef<HTMLDivElement | null>(null);
+
+  // ── Launch Check / Compliance Report state ────────────────────────────────
+  // Initialized null (no report on cold open). Set ONLY in the button's event handler
+  // so there is no SSR/hydration mismatch (no browser read in render or useState lazy init).
+  const [complianceReport, setComplianceReport] = useState<LaunchCheckSummary | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -750,6 +760,16 @@ export function UtmGrid({
       setCopyAllCopied(false);
       copyAllTimer.current = null;
     }, 1800);
+  };
+
+  // ── Launch Check handler ──────────────────────────────────────────────────
+  // Runs the full existing lint suite over ALL current rows, then renders the
+  // Compliance Report. READ-ONLY: never mutates rows, never triggers autosave or
+  // any network request (no setRows / setStoredRows call here).
+  const runLaunchCheck = () => {
+    const allWarnings = Array.from(warnings.values()).flat();
+    const summary = computeLaunchCheckSummary(rows, allWarnings);
+    setComplianceReport(summary);
   };
 
   const exportCsv = () => {
@@ -1644,6 +1664,77 @@ export function UtmGrid({
             ))}
           </datalist>
         ) : null
+      )}
+
+      {/* ── Pre-launch QA group ─────────────────────────────────────────────────
+          Contains:
+          1. "Audit URLs" entry point (already in toolbar above; sub-caption below)
+          2. "Run Launch Check" button — a FIRST-CLASS QA action, distinct from Audit URLs
+             (which is inbound/paste) and from every share action.
+          Placement: its own slim labeled strip in normal page flow, one group APART from
+          the share cluster ("Copy share link" / "Create shared workspace" / "Share style guide").
+          Full-width, never a collapsed disclosure (brief §1: must be on the first scan).
+          Mobile: full-label accent button, ≥44px, never icon-only. */}
+      <div
+        data-testid="prelaunch-qa-strip"
+        className="flex flex-col sm:flex-row sm:items-center gap-3 rounded-lg border border-teal-100 bg-teal-50/60 px-4 py-3"
+      >
+        <div className="min-w-0 flex-1">
+          <span className="text-xs font-semibold text-teal-900 uppercase tracking-wide">
+            Pre-launch QA
+          </span>
+          <p className="mt-0.5 text-xs text-teal-700">
+            <strong>Audit URLs</strong> — Paste finished links from elsewhere to pull them into the grid.{" "}
+            <span className="mx-1 text-teal-300">|</span>{" "}
+            <strong>Launch Check</strong> — Check every link in this batch before you launch.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2 shrink-0">
+          {/* "Audit URLs" shortcut — keeps both QA actions together in this group */}
+          <button
+            type="button"
+            data-testid="prelaunch-audit-btn"
+            onClick={() => setAuditDialogOpen(true)}
+            className="min-h-[44px] rounded-md border border-teal-300 bg-white px-4 py-2 text-sm font-medium text-teal-800 hover:bg-teal-50 active:bg-teal-100"
+          >
+            Audit URLs
+          </button>
+          {/* "Run Launch Check" — distinct verb, distinct accent (slate/teal) */}
+          <button
+            type="button"
+            data-testid="run-launch-check-btn"
+            onClick={runLaunchCheck}
+            className="min-h-[44px] inline-flex items-center gap-2 rounded-md bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700 active:bg-teal-800"
+          >
+            {/* Shield/checklist icon — distinct from magnifying-glass (Audit URLs) */}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              aria-hidden="true"
+              className="w-4 h-4 shrink-0"
+            >
+              <path
+                fillRule="evenodd"
+                d="M16.403 12.652a3 3 0 000-5.304 3 3 0 00-3.75-3.751 3 3 0 00-5.305 0 3 3 0 00-3.751 3.75 3 3 0 000 5.305 3 3 0 003.75 3.751 3 3 0 005.305 0 3 3 0 003.751-3.75zm-2.546-4.46a.75.75 0 00-1.214-.883l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
+                clipRule="evenodd"
+              />
+            </svg>
+            Run Launch Check
+          </button>
+        </div>
+      </div>
+
+      {/* ── Compliance Report — above grid, full-width, in normal page flow.
+          Visually DISTINCT from AuditSummaryPanel (violet) — slate/teal palette.
+          READ-ONLY: complianceReport is set only in runLaunchCheck() (event handler);
+          it is never set via setRows / setStoredRows so no autosave fires. */}
+      {complianceReport && (
+        <ComplianceReportPanel
+          summary={complianceReport}
+          isWorkspaceMode={isWorkspaceMode}
+          onDismiss={() => setComplianceReport(null)}
+        />
       )}
 
       {/* Fix 1/2/3/4: Post-audit grouped summary — above grid, full-width, in normal flow.

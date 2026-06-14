@@ -1,1 +1,1 @@
-2026-06-14 round 2 — PASSED 10/10 (all testers advocacy 9, clarity Yes, value Yes). Feature: Campaign Naming Template. Prod https://utm-grid.vercel.app commit f0ece07.
+2026-06-14 round3 PASS 9/10 (advocacy>=9, clarity+value all Yes): Marcus 9, Wen 9, Dana 9, Rob 9, Jules 9, Aisha 9, Tomas 10, Elena 10, Sam 9; Priya 8 (out-of-scope single-link ask). Feature: Team UTM Style Guide (/w/<id>/guide) + share disambiguation + 1280px grid-width/Generated-URL fix. Prod https://utm-grid.vercel.app commit ea17859.
