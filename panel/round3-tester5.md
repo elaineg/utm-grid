@@ -1,13 +1,8 @@
-# Round 3 — Tester 5 (Dana, demand-gen marketer) — grid-layout re-check (desktop)
+# Round 3 — Tester 5 (Dana, demand-gen marketer) — taxonomy re-test
 
-**Layout change verdict: minor regression, not a blocker.** The new fixed-layout table clips hard: UTM input cells are ~87px and show only ~6-7 chars ("paid_sc", "spring_", "linkedi"), and the GENERATED URL column reads "https://acme.com…". So I CANNOT eyeball-verify a value or a final URL inline anymore — I have to click into a cell or hit Copy. At 30-50 rows that's real friction. BUT: per-row **Copy puts the full, correct URL on the clipboard** (verified: `...?utm_source=linkedin&utm_medium=paid_social&utm_campaign=spring_launch_2026`), and **Copy all URLs** dumped all rows clean. Verification still works — just by copy, not by sight. Typing is fine; reading-back is the cost.
-**Bulk Set column works** — set utm_source=linkedin across all 4 rows in one click; find&replace present. Grid stayed fast, 0 console errors.
-**Round-2 wins all hold:** distinct "Copy share link" vs "LIVE TEAM WORKSPACE / Create shared workspace" (frozen vs live cleanly separated), mode-aware sync copy, per-row Copy. Nothing I flagged before regressed.
+Both R2 blockers FIXED. Fresh /w/ workspace in one click. Clicked "Shared UTM taxonomy ▼" ONCE → a per-field "+ add value / Add" editor appeared immediately for all six fields — no more dead panel. SOURCE COLUMNS STILL VISIBLE: taxonomy now sits BELOW the grid full-width, so my editable UTM_SOURCE/MEDIUM/CAMPAIGN cells stayed on screen (UTM_SOURCE header 5→6, grid did NOT collapse). Added "newsletter" → chip rendered. ENFORCE works: "Enforcing — toggle in Naming rules" badge lit, top "Enforce allowed values" box checked itself, grid surfaced "utm_source is required" flags — real enforcement, synced to server, 0 console errors. This is finally the trustworthy enforced shared taxonomy I'd hand my team for Thursday batches. Minor: per-field add boxes are repetitive and the "Paste a list" shortcut is easy to miss.
 
-**Clarity: Yes.** Same headline nailed my Thursday grind in one scroll.
-**Value: Yes.** Still kills the 15-min grind; bulk Set is exactly my batch workflow.
-**Advocacy: 8.** Down one, honestly: the cell/URL truncation means I can't scan the grid to sanity-check values before export — I trust Copy, but editing 40 rows I want to SEE the campaign string and the generated URL without clicking each cell. Give the GENERATED URL column hover-to-expand or wider min-width and I'm back to 9.
-
-```json
-{"tester":5,"name":"Dana","clarity":"Yes","value":"Yes","advocacy":8,"prior_blocker_resolved":true,"top_problems":["Fixed-layout clips UTM cells (~87px, ~6 chars) and GENERATED URL column ('https://acme.com…') — can't eyeball-verify values/final URLs inline at 30-50 rows; must click in or Copy","No hover/expand on truncated generated-URL cell to confirm the full link by sight"],"likes":["Bulk Set column applied across all rows in one click — matches my weekly batch","Per-row Copy and Copy all URLs deliver full correct URLs despite visual truncation","Round-2 wins intact: distinct share vs live-workspace buttons, mode-aware sync copy, no regression"]}
-```
+CLARITY: Yes
+VALUE: Yes
+ADVOCACY: 9/10
+REASON: The marquee feature now fully works — define allowed values once, enforce them, columns stay visible, all synced — so I can confidently make this my team's UTM source-of-truth; a hair shy of 10 only because the per-field add-value boxes are repetitive and the paste-a-list affordance is buried.

@@ -1,13 +1,9 @@
-# Round 3 — Tester 4 (Tomás, Ops Analyst, Edge/Windows, wary of data leaving the browser)
+# Round 3 — Tomás (ops analyst, Excel power user, wary of pasting company data)
 
-**Re-check of the collapse change (my prior 9 was about bulk buttons reading as buttons):** Not hurt. "BULK EDIT — set or replace a column across rows" sits as a clearly labeled header with a visible chevron; ONE click expanded it to reveal the column dropdown, the blue **Set column** button, the **Find & replace in column** purple button, and Match case — identical to before, just one tap away. The label tells me exactly what's inside before I open it, so I never hunted. The lighter first screen is actually nicer: I see the grid sooner. Discoverable, no regression.
+Both round-2 blockers are FIXED. Taxonomy panel: ONE click on "Shared UTM taxonomy" immediately revealed a per-field "+ add value" input with an Add button (no second click). I added "newsletter" under utm_source, reloaded — the chip persisted. Name: set "Editing as: Tomás", reloaded — persists, now shown as "✏ Editing as: **Tomás**". Bonus: a "Saved, not yet enforced — turn on Enforce" nudge with a one-click "Enforce these allowed values now" button. CSV export round-trips clean (standard headers, cells verbatim, generated_url column) — opens straight into Excel, the dealmaker for me.
+Friction (minor, not a blocker): the synced workspace says "anyone with the secret link can view and edit" and data goes to a private server (unlike the browser-only cold grid). For real company campaign data I'd want a word on link entropy / who can reach it before I'd fully replace my Excel tab with it.
 
-**Privacy (#1 worry) re-verified:** Imported a company-style CSV, mapped columns, exported. Watched the network the whole time — ZERO POST/PUT/PATCH/DELETE. Footer still states "no account, no server, no network requests after page load." I'd trust this with a real campaign sheet.
-
-**CSV round-trip re-verified, still flawless:** `"Q3, Ops Push"` re-quoted (comma kept), `café_term` preserved literally and encoded `caf%C3%A9_term` in the generated URL, `00123` leading zeros NOT coerced. Map-CSV dialog auto-mapped headers and offered Append/Replace with Undo.
-
-CLARITY (purpose clear in 5s): Yes — H1 + "no login, nothing leaves your browser" still nails it.
-VALUE (saves real time): Yes — replaces my hand-built Excel UTM concat and round-trips CSV without mangling commas, zeros, or unicode.
-ADVOCACY (0-10): 9 — collapsing the panels didn't cost discoverability; no-network + clean round-trip hold, so I'd still raise it with ops peers unprompted.
-PRIOR CONCERNS ADDRESSED: Yes — bulk Set column / Find & replace remain solid colored buttons, now one labeled tap away; still obviously clickable.
-TOP FRICTION: Still the "Unsaved grid" pill on a typed-but-unsaved grid — an ops user might close the tab assuming localStorage didn't catch it. Minor, non-blocking.
+CLARITY: Yes
+VALUE: Yes
+ADVOCACY: 9/10
+REASON: Both my prior bugs are gone and it now does what my Excel UTM tab does — a shared, enforced source-of-truth with per-person attribution and clean CSV round-trip; one point off only because "anyone with the secret link can edit" makes me cautious putting real company data in the synced workspace.

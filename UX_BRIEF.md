@@ -1156,3 +1156,105 @@ the gentle name nudge, the editable source columns visible after the banner — 
 load, **one click opens History (versions shown) and one click opens Shared UTM taxonomy (chip field
 shown)**, with the source columns staying visible even while the taxonomy panel is open. The cold-open
 builder `/` is untouched.
+
+## Paste & Audit existing UTM URLs — added 2026-06-13
+
+ONE new capability: the audit-INBOUND counterpart to the build-OUTBOUND grid. A marketer pastes a
+list of already-tagged full URLs (one per line — inherited from a campaign sheet, or pre-launch QA);
+the app parses each back into a grid row (base URL + utm_* columns) and immediately lints the whole
+set against the active rules + UTM Spec, surfacing every casing/spelling/off-spec inconsistency at
+once for bulk-fix + re-export. Additive only — do NOT touch the headline, subhead, lint toggles, grid
+layout, Presets, Campaigns/UTM-Spec panels, Bulk edit, the two share actions, or the mobile card
+view. Every item below designs out a recorded utm-grid panel failure (verb collision, buried features,
+375px occlusion, perceptually-invisible confirmation, unsafe replace). This goes in the BUILDER toolbar
+group (alongside Import CSV / Add row / Export), NOT in the `/w/<id>` banner group.
+
+**1. VERB COLLISION — the entry point must never read as a sibling of Import / Copy (this app's
+lowest-scoring failure mode).** Two adjacent controls sharing a verb have twice read as one broken
+feature here. So:
+- **Label (verbatim):** **"Paste & Audit URLs"** — verb is *audit* (judge existing), object is
+  *URLs*. Never "Import", "Paste links", "Add", "Copy", or a bare "Audit". The word *Audit* is the
+  whole differentiator: Import CSV builds NEW rows from a file; Paste & Audit JUDGES existing tagged
+  URLs you already have. They must never blur.
+- **Icon:** a **magnifying-glass-over-list / checklist-with-checkmark** glyph (inspection), distinct
+  from Import's down-arrow/file-in and from Copy's two-squares glyph. No arrow, no file, no clipboard.
+- **Placement:** put it as a distinct accented chip in the toolbar **with one logical group's gap from
+  "Import CSV"** — never immediately adjacent. Order: [Add row · Import CSV] ··gap·· [**Paste & Audit
+  URLs**] ··gap·· [Export · Copy share link]. Adjacency to Import is exactly what reads as a duplicate;
+  the gap + the accent + the inspection icon make it a separate, heavier-intent action.
+
+**2. DISCOVERABILITY — a cold user must NOTICE it on the first screen, desktop AND 375px, without
+crowding the toolbar (added features have shipped invisible here and burned 1–2 panel rounds just
+being found).**
+- **Desktop:** the chip carries a 2–3 word value tag baked into its styling — render it as
+  **"Paste & Audit URLs"** with a quiet sub-caption beneath the toolbar row (one muted line, in flow):
+  **"Already have tagged links? Paste them to find every inconsistency at once."** This single skim
+  line names the inbound job so a scanner who came to QA existing links sees the feature exists in the
+  5-second read — without expanding the toolbar.
+- **375px:** it joins the top action bar as a **full-label accent button "Paste & Audit URLs"** (never
+  an icon-only, never collapsed inside a disclosure) so a phone user finds it on the first scan. It is
+  the only NEW always-visible toolbar button; the existing Bulk/Spec/Campaigns disclosures stay
+  collapsed and quiet so the screen doesn't crowd.
+
+**3. The dialog + textarea affordance — legible, reassuring parse summary, safe replace-vs-append.**
+Clicking opens a **centered modal dialog** (focus-trapped, Esc closes, returns focus to the chip —
+this one IS a modal because pasting is a deliberate detour, not an in-flow grid edit):
+- **Title:** **"Paste your existing tagged URLs"**. Sub-line: **"One full URL per line. We'll parse
+  each back into the grid and flag every inconsistency."**
+- **A large pre-focused textarea** (≥6 rows, monospace) with **example content as the placeholder**
+  showing the outcome before typing — three realistic lines that include a deliberate inconsistency so
+  the value is shown not described:
+  `https://acme.com/sale?utm_source=Newsletter&utm_medium=email&utm_campaign=Spring_Sale`
+  `https://acme.com/sale?utm_source=newsletter&utm_medium=Email&utm_campaign=spring-sale`
+  `https://acme.com/blog?utm_source=twitter&utm_medium=social&utm_campaign=spring sale`
+  (placeholder is muted/illustrative; an empty submit is blocked with the inline hint **"Paste at least
+  one URL to audit."**).
+- **Primary CTA (verbatim):** **"Audit N URLs"** — the button's count updates live as the user pastes/
+  types (counts non-empty lines): "Audit 0 URLs" (disabled) → "Audit 3 URLs". The verb stays *Audit*,
+  reinforcing the inbound job right on the action.
+- **Parse SUMMARY before commit (legible + reassuring).** On clicking Audit, the dialog shows an inline
+  summary panel BEFORE writing to the grid: **"3 parsed · 1 skipped"**, with the skipped lines listed
+  by line number + reason (**"Line 4: not a valid URL — skipped"**) so nothing fails silently. A line
+  with no utm_* params parses as a base-URL-only row (counts as parsed, not skipped). This summary is
+  the reassurance that the paste did the right thing.
+- **Replace-vs-append guard (the unsaved-edits safety — reuse the Import §D / Campaigns §6 pattern).**
+  The commit step offers **Append / Replace** (default **Append**), shown as two clear radio/segmented
+  options with the live grid's current count named: **"Append to current grid (5 rows)"** /
+  **"Replace current grid (5 rows)"**. Either way the whole paste is a **single Undo step** so it never
+  silently destroys the grid. If Replace is chosen AND the working grid has unsaved edits, fire the
+  same native `confirm()` guard the app already uses: **`Replace your current grid (5 links)? This
+  can't be undone (one Undo will restore it).`**
+- On commit: dialog closes, the new rows land in the grid, **lint re-runs immediately on the whole
+  set**, and a **peripherally-unmissable** confirmation fires (heed copy-confirmation-survives-tick-
+  rerender): a persistent ~5s status **"Audited N URLs — M cells flagged. Undo"** (ref-stable timer,
+  `aria-live="polite"`), and every flagged cell carries its existing amber/violet/cross-row warning so
+  the inconsistencies are visible at a glance. The user's natural next move is the already-shipped
+  **Auto-fix naming** / **"Fix to <value>"** — so audit flows straight into bulk-fix + re-export with
+  zero new fix UI.
+
+**4. 375px — entry, dialog, textarea, summary, and resulting linted rows all reachable, ≥44px, no
+horizontal scroll, nothing occluded (this app's recurring mobile-overlay failure).**
+- The dialog is **full-width (inset ~12px), vertically scrollable in its own bounds**, never wider than
+  the viewport. Textarea full-width ≥6 rows; the **"Audit N URLs"** CTA and **Append/Replace** options
+  are ≥44px and stack vertically (no side-by-side clipping). The parse summary renders in flow inside
+  the dialog, pushing the CTA down — never an overlay over the CTA.
+- On commit the dialog closes and the audited rows render in the **mobile CARD view** (the ≤640px
+  pure-CSS cards), each flagged field showing its inline warning + the inline "Fix to <value>" chip in
+  card flow — no sticky column, no sideways scroll. Verify at 375px with elementFromPoint that no
+  dialog/summary/status pixel covers a card field, checkbox, row control, or Fix chip.
+
+**5. VALUE legible in 5s — "paste your existing tagged links → see what's inconsistent" (distinct from
+"build new links").** The toolbar chip **"Paste & Audit URLs"** + its sub-caption **"Already have
+tagged links? Paste them to find every inconsistency at once."** + the dialog placeholder showing three
+real URLs with a visible casing mismatch tell a cold marketer the inbound job in one read: this is
+where you QA links you already have, not where you build new ones. The grid hero, headline, and
+above-the-fold first read are unchanged — the audit entry is a single quiet-but-discoverable accented
+chip until clicked.
+
+### 5-second check (Paste & Audit — added 2026-06-13)
+Cold visitor still sees the unchanged hero (headline, subhead, pre-filled example row + Copy). The new
+**"Paste & Audit URLs"** chip is visible in the builder toolbar one group apart from Import CSV, with
+its sub-caption naming the inbound QA job; on 375px it's a full-label accent button in the top action
+bar. Opening it shows a pre-focused textarea with three example tagged URLs (one deliberately
+inconsistent), a live **"Audit N URLs"** CTA, a **"N parsed · M skipped"** summary, and a default-Append
+(vs guarded-Replace) commit that lands the rows and lints them on the spot.

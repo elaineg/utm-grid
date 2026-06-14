@@ -27,6 +27,8 @@ import { DEFAULT_SPEC, SAMPLE_SPEC, nearestAllowedValue, type UtmSpec } from "..
 import { buildUtmUrl } from "../../lib/utm";
 import { useLocalStorage } from "../../lib/useLocalStorage";
 import { ImportDialog, type ImportMode, type PendingImport } from "./ImportDialog";
+import { AuditDialog, type AuditMode } from "./AuditDialog";
+import { parseUtmUrls } from "../../lib/utm";
 import { PresetsBar } from "./PresetsBar";
 import { CampaignsSidebar } from "./CampaignsSidebar";
 import { BulkEditBar, type BulkColumn } from "./BulkEditBar";
@@ -120,6 +122,9 @@ export function UtmGrid({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [pendingImport, setPendingImport] = useState<PendingImport | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
+  const [auditDialogOpen, setAuditDialogOpen] = useState(false);
+  const [auditStatus, setAuditStatus] = useState<string | null>(null);
+  const auditStatusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -724,6 +729,57 @@ export function UtmGrid({
     );
   };
 
+  const confirmAudit = (text: string, mode: AuditMode) => {
+    const { rows: parsed, skipped } = parseUtmUrls(text, () => newId());
+    if (parsed.length === 0) {
+      setAuditDialogOpen(false);
+      return;
+    }
+
+    // Guard: Replace mode with unsaved edits.
+    if (mode === "replace" && workingGridIsDirty()) {
+      const ok = window.confirm(
+        `Replace your current grid (${rows.length} link${rows.length === 1 ? "" : "s"})? This can't be undone (one Undo will restore it).`
+      );
+      if (!ok) return;
+    }
+
+    pushUndo("Audit URLs", rows);
+    if (mode === "append") {
+      const currentNonEmpty = rows.filter(
+        (r) => r.baseUrl.trim() || UTM_FIELDS.some((f) => r[f].trim())
+      );
+      setRows([...currentNonEmpty, ...parsed]);
+    } else {
+      setRows(parsed.length > 0 ? parsed : [emptyRow(newId())]);
+    }
+
+    setAuditDialogOpen(false);
+
+    // Peripherally-unmissable confirmation (ref-stable timer).
+    const flaggedCount = Array.from(
+      groupWarnings(lintRows(
+        mode === "append"
+          ? [...rows.filter((r) => r.baseUrl.trim() || UTM_FIELDS.some((f) => r[f].trim())), ...parsed]
+          : parsed,
+        settings,
+        spec
+      )).values()
+    ).flat().length;
+
+    const skippedNote = skipped.length > 0
+      ? ` · ${skipped.length} line${skipped.length === 1 ? "" : "s"} skipped`
+      : "";
+    const msg = `Audited ${parsed.length} URL${parsed.length === 1 ? "" : "s"} — ${flaggedCount} cell${flaggedCount === 1 ? "" : "s"} flagged${skippedNote}. Undo`;
+
+    if (auditStatusTimer.current) clearTimeout(auditStatusTimer.current);
+    setAuditStatus(msg);
+    auditStatusTimer.current = setTimeout(() => {
+      setAuditStatus(null);
+      auditStatusTimer.current = null;
+    }, 5000);
+  };
+
   const applyPresetToSelected = (presetId: string) => {
     const preset = allPresets.find((p) => p.id === presetId);
     if (!preset) return;
@@ -1109,6 +1165,45 @@ export function UtmGrid({
           className="hidden"
           onChange={onFileChosen}
         />
+
+        {/* "Paste & Audit URLs" — distinct verb/icon/gap from Import CSV (UX brief §1).
+            Inspection glyph (magnifying glass), violet accent, one logical group gap. */}
+        <span className="inline-flex flex-col items-start gap-0.5">
+          <button
+            type="button"
+            data-testid="audit-urls-btn"
+            onClick={() => setAuditDialogOpen(true)}
+            className="min-h-[44px] rounded-md border border-violet-400 bg-violet-50 px-4 py-2 text-sm font-semibold text-violet-800 hover:bg-violet-100 flex items-center gap-1.5"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              aria-hidden="true"
+              className="w-4 h-4 shrink-0"
+            >
+              <path
+                fillRule="evenodd"
+                d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z"
+                clipRule="evenodd"
+              />
+            </svg>
+            Paste &amp; Audit URLs
+          </button>
+          {/* Sub-caption — discoverable value tag for cold skimmers */}
+          {!auditStatus && (
+            <span className="text-[11px] text-gray-400 leading-tight max-w-[14rem]">
+              Already have tagged links? Paste them to find every inconsistency at once.
+            </span>
+          )}
+          {/* Audit status — peripherally unmissable (ref-stable timer) */}
+          {auditStatus && (
+            <span role="status" aria-live="polite" className="text-xs font-medium text-violet-700">
+              {auditStatus}
+            </span>
+          )}
+        </span>
+
         <button
           type="button"
           onClick={exportCsv}
@@ -2006,6 +2101,14 @@ export function UtmGrid({
           pending={pendingImport}
           onConfirm={confirmImport}
           onCancel={() => setPendingImport(null)}
+        />
+      )}
+
+      {auditDialogOpen && (
+        <AuditDialog
+          currentGridCount={rows.length}
+          onCommit={confirmAudit}
+          onCancel={() => setAuditDialogOpen(false)}
         />
       )}
     </div>

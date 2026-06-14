@@ -1,1 +1,1 @@
-20260613-171855-daily round4: 9/10 PASS (Wen,Tomás,Dana,Jules,Rob,Elena,Sam,Marcus,Aisha ≥9; Priya structural 8). Feature: Team Workspace (Turso-backed shared /w/<id>). Verified preview: https://utm-grid-fq49igqhc-elainegao.vercel.app
+20260613-195837-daily round3: 10/10 PASS (all ≥9; Aisha 10). Feature: Workspace History & Attribution (server-side version snapshots + non-destructive Restore + read-only Preview + optional "Editing as" attribution on /w/<id>). Arc 1/10→7/10→10/10. Verified preview commit 432f79b; prod https://utm-grid.vercel.app (dpl utm-grid-bybxaen9i).

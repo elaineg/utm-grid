@@ -1,64 +1,58 @@
-# Panel Synthesis — Round 3 (utm-grid)
+# UTM-Grid — Panel Synthesis, Round 3 (Team Workspace) — FINAL
 
-**Count at the 9-bar: 7/10.** Clarity = Yes 10/10, Value = Yes 10/10. The cap is craft +
-one P0 regression on the viral-loop landing, not comprehension.
+## 1. Full 10-tester score table
 
-## 1. Score table
+Six testers carry forward their round-2 advocacy of 9 (surfaces untouched by the round-3
+fixes). Four holdouts were delta re-tested against their round-2 blockers.
 
-| Tester | Persona | Advocacy | Status | Top friction |
-|--------|---------|----------|--------|--------------|
-| Priya  | senior backend SWE, keyboard-first | 8 | sub-bar | messy values stay messy until you click Fix (no lint-on-type); shared link opens as plain homepage, no "shared with you" cue |
-| Marcus | frontend eng | 9 | PASS | no scroll affordance (fade/scrollbar) when sidebar open — "UTM_" clip until you scroll |
-| Wen    | data analyst | 9 | PASS | no real team sync — spec is localStorage, "share" is a link copy |
-| Tomás  | ops analyst | 9 | PASS | "Unsaved grid" pill on a typed-but-unsaved grid (minor) |
-| Dana   | demand-gen marketer (375px) | 9 | PASS | allowed values/campaigns localStorage-only, no cross-device sync |
-| Jules  | mobile (375px) | 9 | CARRIED (untouched surfaces) | — |
-| Aisha  | craft/design reviewer | 9 | CARRIED (untouched surfaces) | — |
-| Rob    | freelance designer | 8 | sub-bar | "Enforce your team's UTM taxonomy" + "teammates" copy pitches a solo at marketing-ops; trailing space → trailing underscore |
-| Elena  | EM (375px) | 9 | PASS | Fix normalizes to naming-rule format (`paid_social`) not spec's allowed value (`paid-social`); toast count wrong |
-| Sam    | PM, mobile-heavy | 6 | sub-bar (REGRESSION 9→6) | shared-link recipient lands on full marketing page, NO "Loaded shared grid" banner |
+| # | Persona | Clarity | Value | Advocacy | Note |
+|---|---------|---------|-------|----------|------|
+| 1 | Priya  | Yes | Yes | 9/10 | carried from round 2 |
+| 2 | Marcus | Yes | Yes | 9/10 | carried from round 2 |
+| 3 | Wen    | Yes | Yes | 9/10 | carried from round 2 |
+| 4 | Tomás  | Yes | Yes | **9/10** | re-tested R3 — "Both my prior bugs are gone and it now does what my Excel UTM tab does — a shared, enforced source-of-truth with per-person attribution and clean CSV round-trip" |
+| 5 | Dana   | Yes | Yes | **9/10** | re-tested R3 — "The marquee feature now fully works — define allowed values once, enforce them, columns stay visible, all synced — so I can confidently make this my team's UTM source-of-truth" |
+| 6 | Jules  | Yes | Yes | 9/10 | carried from round 2 |
+| 7 | Aisha  | Yes | Yes | **10/10** | re-tested R3 — "My one craft nit is gone… History+Restore+synced taxonomy make it a trustworthy team source-of-truth, and it now feels considered end to end. I'd bring it up unprompted in a design channel." |
+| 8 | Rob    | Yes | Yes | 9/10 | carried from round 2 |
+| 9 | Elena  | Yes | Yes | **9/10** | re-tested R3 — "The empty-panel flake that made history read as 'no history' is fixed on first click, so it's now a trustworthy zero-setup team source-of-truth I'd recommend to my reports unprompted" |
+| 10 | Sam   | Yes | Yes | 9/10 | carried from round 2 |
 
-PASS (≥9): Marcus, Wen, Tomás, Dana, Elena + carried Jules, Aisha = **7/10**.
-Sub-bar: Priya 8, Rob 8, Sam 6.
+## 2. Exit condition
 
-## 2. CRITICAL — share-banner contradiction (the run's headline finding)
+Exit bar: ≥9/10 testers at Advocacy ≥9 AND Clarity=Yes AND Value=Yes.
 
-Two testers directly contradict each other on whether the shared-grid banner even appears:
-- **Elena (PASS):** clean recipient context. Banner rendered correctly —
-  "Loaded shared grid (1 link) · enforces a UTM spec — 3 allowed-value rules" + a working
-  one-tap "Fix all naming". The R2 P0-3 fix demonstrably shipped.
-- **Sam (9→6) and Priya (8):** NO banner — shared grid reads as the generic marketing
-  homepage; the "· enforces a UTM spec — N rules" clause and the "Fix all naming" button are
-  absent (Sam searched by role + text, 0 matches). Both had **built a grid first**, so their
-  localStorage was already pre-populated.
+**MET — 10/10 testers pass.** Every persona Clarity=Yes, Value=Yes; advocacy =
+{9,9,9,9,9,9,10,9,9,9}, all ≥9. Re-tested holdouts came back 9 (Tomás), 9 (Dana),
+10 (Aisha), 9 (Elena).
 
-**Root cause:** the `#g=` share fragment does NOT take display precedence when the visitor
-already has a saved localStorage grid — the localStorage hydration wins the first paint and
-suppresses the shared state + banner. Elena's context was clean, so the fragment had nothing
-to compete with. This is invisible to clean-context e2e (17/17 green) because the harness
-never pre-populates localStorage before opening a share link. It is the single biggest score
-lever: it is the literal viral-loop landing and it cost Sam 3 points (a regression from his
-prior 9).
+Round-over-round arc: **round 1: 1/10 → round 2: 7/10 → round 3: 10/10.**
 
-## 3. Grouped complaints
+## 3. Round-2 blockers cleared by the round-3 fixes (the 4 re-tested holdouts)
 
-**RECUR (multiple testers / structural):**
-- **No real cross-device team sync** — Wen, Dana (and Elena's spec-format nit borders it).
-  Each holds their off-10 here. This is the accepted structural ceiling (needs accounts +
-  server, blocked on credential, regresses zero-network prop). Out of scope; ceiling is 9.
-- **Team/taxonomy framing alienates solos** — Rob (8), the long-standing C1/P1 thread.
-  "Enforce your team's UTM taxonomy" still verbatim; the subhead adds "teammates".
+- **Tomás — first-click panel open + name persistence.** "ONE click on 'Shared UTM taxonomy'
+  immediately revealed a per-field '+ add value' input with an Add button (no second click)…
+  Name: set 'Editing as: Tomás', reloaded — persists." Both round-2 blockers FIXED.
+- **Dana — taxonomy reachable + source columns visible.** "Clicked 'Shared UTM taxonomy ▼'
+  ONCE → a per-field editor appeared immediately… SOURCE COLUMNS STILL VISIBLE: taxonomy now
+  sits BELOW the grid full-width, so my editable cells stayed on screen (grid did NOT
+  collapse)." Enforce confirmed working and synced. Both R2 blockers FIXED.
+- **Aisha — first-click panel open (History).** "Clicked 'History' exactly ONCE — the Version
+  history panel opened immediately (Restore/Preview present, 0→2 panel tokens). Fixed." No
+  second click needed on a cold /w/ load.
+- **Elena — first-click panel open (history reads empty) + enforce reachable.** "ONE click on
+  'History (1)' rendered the version list immediately… ONE click on 'Shared UTM taxonomy'
+  expanded the full panel immediately. Both panels now populate on the first click; the
+  'History looks empty' flake is gone."
 
-**QUIRK (single-tester, cheap correctness):**
-- Auto-fix doesn't trim leading/trailing whitespace: `Instagram ` → `instagram_` (Rob).
-- Auto-fix toast count wrong: "Auto-fixed 1 cell" when 3 changed (Elena).
-- Fix normalizes to naming-rule format, not the spec's allowed value `paid-social` (Elena).
-- No scroll-discoverability cue when sidebar open (Marcus — "not enough to hold a 9").
-- Lint-on-type not implemented; Fix still manual (Priya — a want, not a blocker).
-- "Unsaved grid" pill on a typed grid (Tomás — minor).
+## 4. Residual non-blocking nits (for friction record / backlog)
 
-## 4. Verdict
-
-7/10 at the 9-bar. The share-precedence regression (P0) is the gate: fixing it recovers Sam
-(6→9 expected) and removes Priya's strongest cap, plausibly reaching 9/10. Rob's solo-framing
-(P1) and the whitespace / count / spec-format quirks (P1/P2) are cheap, high-confidence flips.
+- **Tomás — link-security reassurance.** Synced workspace says "anyone with the secret link
+  can view and edit" and data hits a private server; wants a word on link entropy / who can
+  reach it before putting real company campaign data in.
+- **Dana — paste-a-list affordance + repetitive add boxes.** Per-field "+ add value" boxes are
+  repetitive and the "Paste a list" shortcut is easy to miss/buried.
+- **Aisha — slide-over polish.** History/taxonomy panels stack vertically and push the grid
+  down on open; a slide-over would feel tighter. Explicitly "not a flaw."
+- **Elena — enforce default-on.** Taxonomy defaults to "Not enforcing — enable in Naming
+  rules," so the shared vocabulary is advisory until someone flips enforce; she'd default it on.

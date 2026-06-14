@@ -1,13 +1,11 @@
-# Round 3 — Tester 7: Aisha (Product designer, judges craft hard)
+# Round 3 — Aisha (tester 7), product designer who judges craft hard
 
-**Prior blocker (1280px grid overflow) — RESOLVED.** At 1280px with the Campaigns sidebar present: page-level horizontal overflow is gone (R2 measured table scrollWidth 1469 > 1280 viewport; now 973, no page scroll). All 8 columns render within the viewport — GENERATED URL (right=867) and ACTIONS (right=983) no longer clipped off the edge. The action cluster Copy / ⧉ duplicate / 🗑 delete are all visible and reachable (right edges 925/959/998, none cut). The rebalance pulled width out of the generated-URL column back into the grid; layout fits cleanly. Copy verified visually; clipboard read blocked in test env (my environment, not the app).
+Re-checked my lone round-2 nit: the "dead first-click" on History. Cold-loaded a fresh /w/ link, clicked "History" exactly ONCE — the Version history panel opened immediately (Restore/Preview present, 0→2 panel tokens). Fixed. Non-destructive copy ("Every save is kept. Restoring brings a version back without losing the current one.") is reassuring; "by Anonymous" attribution, the "current" chip, and inline amber lint ("utm_campaign is required") are exactly the affordances I advocate for. Zero console errors on a fresh server-backed workspace.
 
-**Clarity (Yes):** Headline + "Auto-fix messy casing and typos before they split your Google Analytics" lands in ~3s.
+FIRST-CLICK RESULT: History opened on the FIRST click from a cold load — confirmed, panel populated, no second click needed.
+REMAINING CRAFT NIT: none blocking. Minor polish only: History/taxonomy panels stack vertically and push the grid down on open; a slide-over would feel tighter. Not a flaw.
 
-**Value (Yes):** Auto-fix green diff + reversible undo, honest dual share modes, server-synced workspace — considered craft I'd still vouch for.
-
-**Advocacy (9/10):** The overflow that capped me at 8 is genuinely fixed — at a common laptop width the grid now reads as considered rather than clipped, so I move to 9 and would share it unprompted. Not a 10 only on a minor craft nit: the rebalanced columns are acceptable but the UTM input cells run on the narrow side and the ACTIONS cluster sits tight against the sidebar gutter — usable, just not generous breathing room.
-
-```json
-{"tester":7,"name":"Aisha","clarity":"Yes","value":"Yes","advocacy":9,"prior_blocker_resolved":true,"top_problems":["UTM input cells feel slightly narrow and the ACTIONS cluster sits tight against the Campaigns sidebar gutter at 1280px — usable but not generous spacing"],"likes":["1280px overflow fully resolved: no page scroll, all 8 columns in viewport, GENERATED URL + ACTIONS no longer clipped, Copy/duplicate/delete all reachable","Column rebalance gave grid cells room without breaking the table — reads considered","Auto-fix green diff + reversible undo, honest dual share modes still feel genuinely crafted"]}
-```
+CLARITY: Yes
+VALUE: Yes
+ADVOCACY: 10/10
+REASON: My one craft nit is gone and the rest holds — History+Restore+synced taxonomy make it a trustworthy team source-of-truth, and it now feels considered end to end. I'd bring it up unprompted in a design channel.
