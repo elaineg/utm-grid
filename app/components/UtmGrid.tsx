@@ -736,8 +736,13 @@ export function UtmGrid({
       return;
     }
 
-    // Guard: Replace mode with unsaved edits.
-    if (mode === "replace" && workingGridIsDirty()) {
+    // Guard: Replace mode with a non-empty grid (dirty campaign OR non-empty scratch grid).
+    // workingGridIsDirty() covers open-campaign dirty state; the second clause covers
+    // a scratch grid that has content but no campaign open (same guard as handleLoadSample).
+    const scratchHasContent = rows.some(
+      (r) => r.baseUrl.trim() || UTM_FIELDS.some((f) => r[f].trim())
+    );
+    if (mode === "replace" && (workingGridIsDirty() || scratchHasContent)) {
       const ok = window.confirm(
         `Replace your current grid (${rows.length} link${rows.length === 1 ? "" : "s"})? This can't be undone (one Undo will restore it).`
       );
@@ -1487,8 +1492,11 @@ export function UtmGrid({
               while the middle UTM columns scroll under them. The Actions column is
               116px wide; sticky offset for Generated URL matches that exactly. */}
           <div className="hidden sm:block overflow-x-auto rounded-lg border border-gray-200 bg-white">
-          {/* Table min-width: 1050px in workspace mode (Generated URL is 200px), 1100px default (250px). */}
-          <table className="border-collapse text-sm" style={{ minWidth: isWorkspaceMode ? "1050px" : "1100px" }}>
+          {/* Table min-width: 1050px. Generated URL is 200px in both modes.
+              At 1280px, sidebar=192px (w-48), gap=16px, page-padding=48px → grid≈976px.
+              Sticky cols: 200px+116px=316px. Visible scroll area≈660px.
+              UTM cols start at 224px and span 120px×3=360px → utm_campaign ends at 584px < 660px: all visible. */}
+          <table className="border-collapse text-sm" style={{ minWidth: "1050px" }}>
             <thead>
               <tr className="border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase">
                 {/* Bulk-selection checkbox header
@@ -1524,7 +1532,7 @@ export function UtmGrid({
                     columns left of sticky), 250px in default mode.
                     Solid bg (bg-gray-50) so scrolling middle columns slide under cleanly.
                     z-30 so header cells float above body sticky cells (z-20) + scrolling cells (z-[11]). */}
-                <th className="sticky right-[116px] z-30 bg-gray-50 px-2 py-2.5 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] whitespace-nowrap" style={{ minWidth: isWorkspaceMode ? "200px" : "250px", width: isWorkspaceMode ? "200px" : "250px" }}>
+                <th className="sticky right-[116px] z-30 bg-gray-50 px-2 py-2.5 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] whitespace-nowrap" style={{ minWidth: "200px", width: "200px" }}>
                   Generated URL
                 </th>
                 {/* Actions: sticky right-0, 116px wide. z-30 same as Generated URL header. */}
@@ -1699,7 +1707,7 @@ export function UtmGrid({
                         right-[116px] pins it 116px from the container's right edge (= Actions width).
                         bg-white (solid opaque) so scrolling middle columns slide cleanly under.
                         z-20 so it floats above scrolling cells (z-[11]) but below the checkbox col (z-20 same level). */}
-                    <td className="sticky right-[116px] z-20 px-2 py-2 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] overflow-hidden bg-white" style={{ minWidth: isWorkspaceMode ? "200px" : "250px", width: isWorkspaceMode ? "200px" : "250px" }}>
+                    <td className="sticky right-[116px] z-20 px-2 py-2 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] overflow-hidden bg-white" style={{ minWidth: "200px", width: "200px" }}>
                       <output
                         aria-label={`Generated URL row ${i + 1}`}
                         title={generated}
@@ -2000,10 +2008,13 @@ export function UtmGrid({
         {/* Desktop sidebar — hidden in workspace mode (UTM Spec is below grid in workspace mode
             to avoid squeezing source columns off-screen — Round 3 P0-2 fix).
             In non-workspace mode: hidden on mobile (<900px); inline flex column at ≥900px.
-            At 1280px viewport (sidebar 256px + gap 16px + page padding 48px = 320px),
-            the grid gets ~960px. Campaigns hidden in workspace mode (local-only). */}
+            Sidebar is w-48 (192px) at 900px–1535px and w-64 (256px) at ≥1536px.
+            At 1280px: sidebar 192px + gap 16px + page padding 48px = 256px overhead →
+            grid gets ~976px. Sticky cols 316px → 660px visible scroll area → all 3
+            primary UTM columns (224–584px) stay visible without horizontal scrolling.
+            Campaigns hidden in workspace mode (local-only). */}
         {!isWorkspaceMode && (
-          <div className="hidden min-[900px]:flex flex-col w-64 shrink-0 gap-0">
+          <div className="hidden min-[900px]:flex flex-col w-48 min-[1536px]:w-64 shrink-0 gap-0">
             <CampaignsSidebar
               campaigns={campaigns}
               openCampaignId={openCampaignId}

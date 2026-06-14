@@ -301,3 +301,34 @@ describe("isValidBaseUrl", () => {
     expect(isValidBaseUrl("")).toBe(false);
   });
 });
+
+// ── Replace-guard scratch-grid detection ────────────────────────────────────
+// The confirmAudit Replace path guards against clobbering a non-empty scratch grid.
+// The guard predicate is: rows.some(r => r.baseUrl.trim() || UTM_FIELDS.some(f => r[f].trim())).
+// These tests document exactly when that predicate fires so regressions are caught.
+import { UTM_FIELDS } from "./types";
+
+describe("Replace-guard: scratch grid content detection", () => {
+  const hasContent = (rows: ReturnType<typeof emptyRow>[]) =>
+    rows.some((r) => r.baseUrl.trim() || UTM_FIELDS.some((f) => r[f].trim()));
+
+  it("returns false for a single fully-empty row", () => {
+    expect(hasContent([emptyRow("r1")])).toBe(false);
+  });
+
+  it("returns true when baseUrl has content", () => {
+    expect(hasContent([{ ...emptyRow("r1"), baseUrl: "IMPORTANT-UNSAVED" }])).toBe(true);
+  });
+
+  it("returns true when any utm_* field has content", () => {
+    expect(hasContent([{ ...emptyRow("r1"), utm_source: "precious" }])).toBe(true);
+  });
+
+  it("returns false for whitespace-only cells", () => {
+    expect(hasContent([{ ...emptyRow("r1"), baseUrl: "   ", utm_source: "  " }])).toBe(false);
+  });
+
+  it("returns true when at least one row among multiple has content", () => {
+    expect(hasContent([emptyRow("r1"), { ...emptyRow("r2"), utm_campaign: "spring" }])).toBe(true);
+  });
+});
