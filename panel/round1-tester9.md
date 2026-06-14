@@ -1,42 +1,36 @@
-# Round 1 — Tester 9 (Elena, Engineering Manager, 30s patience)
+# Round (re-test) — Tester 9 (Elena, Engineering Manager, 30s patience)
 
-## 1. CLARITY — Yes
-Headline "Clean UTM links for your whole campaign — in one grid" + subhead
-"Auto-fix messy casing and typos before they split your Google Analytics" told me
-in ~3s what it is and why I'd care. I'd tell a report: "bulk UTM builder that lints
-a whole batch for GA4-splitting inconsistencies before launch, no login." Good enough
-that I didn't have to think.
+## Prior concerns re-checked
+1. "Launch Check report has no shareable URL" — STILL NOT addressed for the cold/anonymous
+   user: after Run Launch Check the only export is "Download report (CSV)". The shareable
+   read-only /check link only exists once you spin up a team workspace, which is exactly the
+   setup step I won't do on a phone skim. NOT fixed for my use.
+2. "375px mobile grid too cramped" — partially improved: the grid now collapses into a
+   stacked labeled card (BASE URL / UTM_SOURCE...) which is readable. But it's buried at the
+   very bottom under the headline + ~6 feature cards, so it's still review-only / slow to reach.
 
-## 2. VALUE — Yes (for the team-governance job)
-Today my team eyeballs UTMs in a Google Sheet and we still get google/Google and
-Summer_Sale/summer-sale splits showing up as two campaigns in GA4 weeks later.
-"Run Launch Check" is the feature I was sent to find: it checks every row, groups
-issues by type (Inconsistent values, Uppercase letters, Invalid URL, Missing required),
-names the exact rows, and explains "these will split campaign data in GA4."
-"Download report" gives a real CSV (row #, base URL, field, value, issue type, message)
-I can drop into a Linear ticket or paste in Slack — that is the artifact I'd enforce on.
-Distinct from the others: "Copy share link" = a frozen /#g= grid snapshot; "Audit URLs"
-= paste finished links FROM elsewhere INTO the grid; "Launch Check" = QA gate over the
-batch already in the grid + exportable report. The labels and the PRE-LAUNCH QA framing
-made the difference clear without me reading docs. Verified it also runs inside a team
-workspace (/w/<id>) — created one, Launch Check ran there identically.
-
-## 3. ADVOCACY — 8/10
-Why high: it does the one thing that actually burns my team (silent GA4 campaign splits)
-and produces a shareable/exportable report, setup-free, no login. I'd recommend it to the
-report who asked, and I'd standardize the team on the workspace + Launch Check.
-Single biggest thing holding it down: the Launch Check report has NO shareable URL of its
-own — only Download CSV / Copy summary. For enforcement I want to paste a link in Slack that
-shows "3 issues, here they are," not attach a CSV. The frozen /#g= snapshot share doesn't
-carry the report. Also, on my phone (375px) the 6-col grid sits under a tall button stack
-and is too cramped to actually fix rows between meetings — it's review-only on mobile.
-Fixing the report into a shareable read-only link would make this a 9.
-
-## What would raise advocacy
-- Give the compliance report its own shareable read-only link (like the /guide page).
-- A one-line pass/fail badge I can screenshot ("Batch failed: 3 issues").
+## NEW: QR feature, skimmed on my phone
+Tapping the per-row "QR" button after filling a row JUMPED the page from scroll ~1508 back to
+the top (~63) and the only feedback was a tiny green "1 QR code generated" — no QR image ever
+rendered on screen (0 svg/canvas/img >40px in the DOM). It felt broken. The top-level
+"Download QR codes" does work (downloads utm-qr-codes.zip), but a zip of PNGs is dead weight on
+a phone — I can't open or use it from iOS.
 
 ```json
-{"tester": 9, "round": 1, "clarity": "Yes", "value": "Yes",
- "advocacy": 8, "topComplaints": ["Launch Check report has no shareable URL — only CSV/summary; can't drop a live report link in Slack", "375px mobile grid too cramped to edit a batch between meetings (review-only)"], "priorConcernsAddressed": "n/a"}
+{
+ "name":"Elena",
+ "clarity":"Yes",
+ "value":"No",
+ "advocacy":4,
+ "qr_reaction":"Per-row 'QR' on mobile bounced me to the top with no visible QR code to look at or save — felt broken; the bulk 'Download QR codes' gives a .zip that's useless on a phone.",
+ "likes":["Headline still tells me what it is in ~2s","Mobile now stacks each row into a labeled card (readable)","No login, Copy URL is right there"],
+ "complaints":[
+   "Per-row QR is broken UX on mobile: filled a row, scrolled to it, tapped 'QR' — page jumped from scrollY 1508 to ~63 (top) and showed only a small '1 QR code generated' note; no QR graphic anywhere in the DOM. I tapped QR and got nothing to view or save.",
+   "'Download QR codes' produces utm-qr-codes.zip — a zip can't be opened/used on iOS, so the QR feature has no usable mobile path at all.",
+   "Still no shareable read-only Launch Check report link for the cold user (only CSV); and the editable grid sits under the headline + ~6 feature cards, so 30s is gone before I reach it."
+ ],
+ "verdict_summary":"I still get what it is instantly, and at a desk it's probably solid. But I skimmed it the way I actually would — on my phone — and the new QR feature felt broken: per-row QR bounced me to the top with no code shown, and the bulk option hands me a zip my phone can't open. My prior ask (a shareable live report link) still isn't there for a cold user. Not standardizing my team on this off a phone skim.",
+ "advocacy_note":"dropped from 8 to 4: the QR feature I was sent to evaluate is unusable on mobile and my prior blocker is unfixed for cold users",
+ "priorConcernsAddressed":"none"
+}
 ```

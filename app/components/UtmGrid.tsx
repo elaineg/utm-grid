@@ -57,7 +57,13 @@ import {
 import { extractNamingTemplateFromPayload } from "../../lib/share";
 import type { WorkspacePayload } from "../../lib/workspace";
 import { QrPopover } from "./QrPopover";
-import { filterValidQrRows, buildQrResultMessage, stableQrFilename } from "../../lib/qr";
+import {
+  filterValidQrRows,
+  buildQrResultMessage,
+  stableQrFilename,
+  contactSheetLabel,
+  BLOCKING_QR_LINT_RULES,
+} from "../../lib/qr";
 
 type EditableField = "baseUrl" | UtmField;
 const COLUMNS: EditableField[] = ["baseUrl", ...UTM_FIELDS];
@@ -505,6 +511,29 @@ export function UtmGrid({
     () => groupWarnings(lintRows(rows, settings, spec, namingTemplate)),
     [rows, settings, spec, namingTemplate]
   );
+
+  /**
+   * Per-row QR eligibility: true when a row has NO blocking lint error
+   * (rule "required" or "invalid-url"). Style/consistency warnings don't block QR.
+   * Derived from the same warnings map the grid already renders — no extra lint pass.
+   */
+  const qrEligibilityMap = useMemo<Map<string, boolean>>(() => {
+    const map = new Map<string, boolean>();
+    for (const row of rows) {
+      // A row is blocked if ANY of its cells carries a blocking lint rule.
+      let blocked = false;
+      for (const [key, cellWarnings] of warnings) {
+        if (!key.startsWith(row.id + " ")) continue;
+        if (cellWarnings.some((w) => BLOCKING_QR_LINT_RULES.has(w.rule))) {
+          blocked = true;
+          break;
+        }
+      }
+      map.set(row.id, !blocked);
+    }
+    return map;
+  }, [rows, warnings]);
+
   const selectedRow = rows.find((r) => r.id === selectedId) ?? null;
 
   const flashCopied = (key: string) => {
@@ -634,6 +663,9 @@ export function UtmGrid({
   // openQrRowId: which row's QR popover is open (null = none). One at a time.
   // Initialized null (cold open shows no popover — SSR safe, no browser reads in render).
   const [openQrRowId, setOpenQrRowId] = useState<string | null>(null);
+  // Fix 4: the trigger button's DOMRect for desktop popover anchoring.
+  // Null = no popover open. Measured in the onClick handler (client-side only).
+  const [qrTriggerRect, setQrTriggerRect] = useState<DOMRect | null>(null);
   // qrResultMessage: green-fill-in-place result message after bulk QR download.
   // ref-stable timer so it survives re-render (same pattern as shareLinkCopied).
   const [qrResultMessage, setQrResultMessage] = useState<string | null>(null);
@@ -650,9 +682,30 @@ export function UtmGrid({
 
   /** Bulk download QR codes as a ZIP — called from BulkEditBar's QR export button.
    *  READ-ONLY: never mutates rows, never fires any POST/PUT.
-   *  Uses the same row-selection model as other bulk ops. */
+   *  Uses the same row-selection model as other bulk ops.
+   *  Fix 1: QR eligibility = no blocking lint (required/invalid-url).
+   *  Eligibility is recomputed inline from the freshest rows/settings/spec/namingTemplate
+   *  to avoid any stale-closure issue with the captured qrEligibilityMap. */
   const handleBulkDownloadQr = useCallback(async () => {
-    const { valid, skippedCount } = filterValidQrRows(rows, selectedRowIds.size > 0 ? selectedRowIds : undefined);
+    // Recompute eligibility fresh at click time — immune to any closure-staleness.
+    const freshWarnings = groupWarnings(lintRows(rows, settings, spec, namingTemplate));
+    const freshEligibilityMap = new Map<string, boolean>();
+    for (const row of rows) {
+      let blocked = false;
+      for (const [wKey, cellWarnings] of freshWarnings) {
+        if (!wKey.startsWith(row.id + " ")) continue;
+        if (cellWarnings.some((w) => BLOCKING_QR_LINT_RULES.has(w.rule))) {
+          blocked = true;
+          break;
+        }
+      }
+      freshEligibilityMap.set(row.id, !blocked);
+    }
+    const { valid, skippedCount } = filterValidQrRows(
+      rows,
+      freshEligibilityMap,
+      selectedRowIds.size > 0 ? selectedRowIds : undefined
+    );
 
     if (valid.length === 0) {
       showQrResult(buildQrResultMessage(0, skippedCount));
@@ -668,16 +721,25 @@ export function UtmGrid({
 
       const zip = new JSZip();
 
-      // Build one PNG per valid row (named by stable scheme).
+      // Build one PNG per valid row (named by stable, channel-aware scheme).
       // We need a row-index that matches the 1-based position in the FULL rows array.
       const rowIndexMap = new Map(rows.map((r, i) => [r.id, i + 1]));
 
-      const qrEntries: { filename: string; url: string; rowIndex: number; campaign: string; pngDataUrl: string }[] = [];
+      const qrEntries: {
+        filename: string;
+        url: string;
+        rowIndex: number;
+        campaign: string;
+        source: string;
+        medium: string;
+        pngDataUrl: string;
+      }[] = [];
 
       for (const row of valid) {
         const url = buildUtmUrl(row);
         const rowIndex = rowIndexMap.get(row.id) ?? 0;
-        const filename = stableQrFilename(rowIndex, row.utm_campaign);
+        // Fix 3: channel-aware filename (campaign + source + medium)
+        const filename = stableQrFilename(rowIndex, row.utm_campaign, row.utm_source, row.utm_medium);
         const pngDataUrl = await QRCode.toDataURL(url, {
           width: 200,
           margin: 1,
@@ -686,7 +748,15 @@ export function UtmGrid({
         // Convert data URL to binary for ZIP
         const base64 = pngDataUrl.split(",")[1] ?? "";
         zip.file(filename, base64, { base64: true });
-        qrEntries.push({ filename, url, rowIndex, campaign: row.utm_campaign, pngDataUrl });
+        qrEntries.push({
+          filename,
+          url,
+          rowIndex,
+          campaign: row.utm_campaign,
+          source: row.utm_source,
+          medium: row.utm_medium,
+          pngDataUrl,
+        });
       }
 
       // Build contact-sheet PNG using canvas
@@ -723,10 +793,14 @@ export function UtmGrid({
               img.src = entry.pngDataUrl;
             });
 
-            // Draw label: "01 spring_sale" or "01 <url truncated>"
-            const label = entry.campaign
-              ? `${String(entry.rowIndex).padStart(2, "0")} ${entry.campaign}`
-              : `${String(entry.rowIndex).padStart(2, "0")} ${entry.url.slice(0, 30)}…`;
+            // Fix 3: channel-aware contact-sheet label: "01 · campaign · source/medium"
+            const label = contactSheetLabel(
+              entry.rowIndex,
+              entry.campaign,
+              entry.source,
+              entry.medium,
+              entry.url
+            );
             ctx.fillStyle = "#374151";
             ctx.fillText(label, x, y + 200 + 18, cellSize);
           }
@@ -749,7 +823,7 @@ export function UtmGrid({
       console.error("Bulk QR download failed:", err);
       showQrResult("QR download failed — please try again.");
     }
-  }, [rows, selectedRowIds, showQrResult]);
+  }, [rows, settings, spec, namingTemplate, selectedRowIds, showQrResult]);
 
   /** Toggle a single row checkbox. */
   const toggleRowSelection = useCallback((rowId: string) => {
@@ -896,7 +970,10 @@ export function UtmGrid({
   };
 
   const exportCsv = () => {
-    const blob = new Blob([rowsToCsv(rows)], { type: "text/csv" });
+    // Fix 5a: UTF-8 BOM prefix so Excel on Windows doesn't mojibake non-ASCII campaign names.
+    // Matches the BOM already used by Launch Check CSV (launchCheck.ts).
+    const BOM = "﻿";
+    const blob = new Blob([BOM + rowsToCsv(rows)], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -1996,6 +2073,13 @@ export function UtmGrid({
                 const generated = buildUtmUrl(row);
                 const isSelected = row.id === selectedId;
                 const isBulkChecked = selectedRowIds.has(row.id);
+                // Fix 1: QR eligible only when there is a generated URL AND no blocking lint
+                const isQrEligible = !!(generated) && (qrEligibilityMap.get(row.id) ?? true);
+                const qrBtnTitle = !generated
+                  ? "Add a valid URL to make a QR."
+                  : !isQrEligible
+                  ? "Fix required fields to make a QR."
+                  : `QR code for row ${i + 1}`;
                 return (
                   <tr
                     key={row.id}
@@ -2251,13 +2335,24 @@ export function UtmGrid({
                           >
                             Copy
                           </button>
-                          {/* QR button — icon + "QR" label, disabled with tooltip when URL empty */}
+                          {/* QR button — icon + "QR" label, disabled with tooltip when URL empty or blocking lint.
+                              Fix 1: disabled when row has missing required params or invalid URL.
+                              Fix 4: captures the trigger's DOMRect so the popover can anchor beside it. */}
                           <button
                             type="button"
-                            onClick={() => setOpenQrRowId(openQrRowId === row.id ? null : row.id)}
-                            disabled={!generated}
+                            onClick={(e) => {
+                              const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
+                              if (openQrRowId === row.id) {
+                                setOpenQrRowId(null);
+                                setQrTriggerRect(null);
+                              } else {
+                                setOpenQrRowId(row.id);
+                                setQrTriggerRect(rect);
+                              }
+                            }}
+                            disabled={!isQrEligible}
                             aria-label={`QR code for row ${i + 1}`}
-                            title={generated ? `QR code for row ${i + 1}` : "Add a valid URL to make a QR."}
+                            title={qrBtnTitle}
                             aria-expanded={openQrRowId === row.id}
                             className="inline-flex items-center gap-0.5 rounded-md border border-gray-200 px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-300"
                           >
@@ -2289,17 +2384,16 @@ export function UtmGrid({
                           </span>
                         )}
                       </span>
-                      {/* QR popover — z-50, above sticky header (z-30) and sticky body (z-20).
-                          Positioned absolutely relative to this cell so it opens beside it.
-                          On click-out / Esc the popover closes. One open at a time (controlled by openQrRowId). */}
-                      {openQrRowId === row.id && generated && (
-                        <div className="absolute right-0 top-full z-50 mt-1">
-                          <QrPopover
-                            url={generated}
-                            rowIndex={i + 1}
-                            onClose={() => setOpenQrRowId(null)}
-                          />
-                        </div>
+                      {/* QR popover — Fix 4: rendered via portal anchored to trigger, clamped in viewport.
+                          Passes triggerRect so QrPopover can position itself beside (not below) the trigger.
+                          On click-out / Esc the popover closes. One open at a time. */}
+                      {openQrRowId === row.id && isQrEligible && generated && (
+                        <QrPopover
+                          url={generated}
+                          rowIndex={i + 1}
+                          onClose={() => { setOpenQrRowId(null); setQrTriggerRect(null); }}
+                          triggerRect={qrTriggerRect}
+                        />
                       )}
                     </td>
                   </tr>
@@ -2332,6 +2426,13 @@ export function UtmGrid({
             {rows.map((row, i) => {
               const generated = buildUtmUrl(row);
               const isBulkChecked = selectedRowIds.has(row.id);
+              // Fix 1: QR eligible only when URL is present AND no blocking lint
+              const isQrEligibleCard = !!(generated) && (qrEligibilityMap.get(row.id) ?? true);
+              const qrBtnTitleCard = !generated
+                ? "Add a valid URL to make a QR."
+                : !isQrEligibleCard
+                ? "Fix required fields to make a QR."
+                : `QR code for row ${i + 1}`;
               return (
                 <div
                   key={row.id}
@@ -2365,14 +2466,18 @@ export function UtmGrid({
                     </div>
                     {!isPreview && (
                       <div className="flex items-center gap-1.5">
-                        {/* QR button — icon + "QR" label, ≥44px touch target */}
+                        {/* QR button — icon + "QR" label, ≥44px touch target.
+                            Fix 1: disabled when row has blocking lint (required/invalid-url). */}
                         <button
                           type="button"
-                          onClick={() => setOpenQrRowId(openQrRowId === row.id ? null : row.id)}
-                          disabled={!generated}
+                          onClick={() => {
+                            // Fix 2: prevent scroll-jump by not changing focus to top.
+                            setOpenQrRowId(openQrRowId === row.id ? null : row.id);
+                          }}
+                          disabled={!isQrEligibleCard}
                           aria-label={`QR code for row ${i + 1}`}
                           aria-expanded={openQrRowId === row.id}
-                          title={generated ? `QR code for row ${i + 1}` : "Add a valid URL to make a QR."}
+                          title={qrBtnTitleCard}
                           className="flex min-h-[44px] min-w-[44px] items-center justify-center gap-0.5 rounded-md border border-gray-200 px-2 text-xs font-medium text-gray-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-300"
                         >
                           <span aria-hidden="true">⊞</span>{" "}QR
@@ -2614,10 +2719,10 @@ export function UtmGrid({
                     )}
                   </div>
 
-                  {/* QR panel — stacked BELOW the card's fields, in normal card flow.
+                  {/* QR panel — Fix 2: stacked BELOW the card's fields, in normal card flow.
                       Never overlays a field, checkbox, or button. Full-width at ≤640px.
-                      z-10 is within the card (above cell affordances, below sticky header which is hidden on mobile). */}
-                  {openQrRowId === row.id && generated && (
+                      Renders only when QR-eligible (no blocking lint). */}
+                  {openQrRowId === row.id && isQrEligibleCard && generated && (
                     <div className="mt-1">
                       <QrPopover
                         url={generated}

@@ -1,19 +1,20 @@
-# Round 1 — Tester 2 (Marcus, frontend engineer, 2yr, Chrome+devtools, desktop)
+# Round 2 — Tester 2 (Marcus, frontend eng, 2yr, Chrome+devtools, desktop)
 
-Task: tag a product-launch announcement across email/Twitter/blog; wanted a way to QA a whole batch of links before launch. Remembered this app and previously flagged grid-width overflow.
+Task: tag a product launch across email/Twitter/blog AND generate QR codes for the print/poster collateral. Re-checking my two prior complaints first, then fresh.
+
+## Prior concerns
+- "Two near-identical audit entry points (Paste & Audit URLs vs Audit URLs in QA band)" — FIXED. Only one audit-labeled button now ("Paste & Audit URLs"); the QA band is just "Run Launch Check". No more which-one-do-I-click moment.
+- "Top toolbar crams ~7 buttons" — PARTIALLY. Still ~8 top buttons and this round ADDED "Download QR codes", so the toolbar is if anything denser. QR is a logical add, but the grid I came for still sits below QA / Team Workspace / Presets / Bulk Edit banners.
 
 ## 1. CLARITY — Yes
-H1 "Clean UTM links for your whole campaign — in one grid." plus subline ("Auto-fix messy casing and typos before they split your Google Analytics") told me in ~3s what it is and who it's for. Grid with UTM_SOURCE/MEDIUM/CAMPAIGN headers + a "PRE-LAUNCH QA" band confirmed it. No ambiguity.
+H1 + subline ("Auto-fix messy casing and typos before they split your Google Analytics... nothing leaves your browser") nails what + who in ~3s. Grid headers and per-cell lint confirm it.
 
 ## 2. VALUE — Yes
-Today I hand-build query strings or copy last quarter's links and edit them — easy to ship `Social` vs `social` or "spring launch" with a space and split GA4 data. I filled 3 messy rows (Email/Twitter/blog launch); it flagged uppercase source/medium, a space in campaign, inconsistent campaign casing across rows, and a missing `https://`. The Launch Check is real batch QA: "3 links checked / 0 passing / 3 with issues", grouped by issue type with row refs and GA4-impact text. Beats hand-fiddling clearly.
+Today I hand-build query strings or copy last quarter's links and edit them — easy to ship `Twitter` vs `twitter` or a space in the campaign and split GA4. Filled 3 launch rows; Auto-fix turned `Twitter`/`Spring Launch 2026` into `twitter`/`spring_launch_2026` instantly, and Copy URL read back the exact clean string. Beats fiddling by hand, full stop.
 
-## 3. ADVOCACY — 8/10
-I'd share this in team Slack unprompted for a launch — the Launch Check + CSV is the killer feature for "don't ship broken UTMs."
-- Found the batch check easily: PRE-LAUNCH QA band → "Run Launch Check" → Compliance Report. CSV download works (`utm-launch-check.csv`; columns: row #, base URL, field, value, issue type, message — paste-ready into a launch ticket). Copy button also present.
-- Prior complaint FIXED: no horizontal overflow at any desktop width. Measured docScrollWidth == clientWidth at 1280/1440/1680; table right edge 1255/1335/1455 px, always inside viewport. No column squeeze/overlap, chips wrap cleanly. 0 console errors.
-- Holds at 8 not 9: top toolbar is BUSY — Add row / Auto-fix naming / Import CSV / Paste & Audit URLs / Export CSV / Copy share link / Copy all URLs, then a SEPARATE "Audit URLs" AND "Run Launch Check" in the QA band. "Paste & Audit URLs" (top) vs "Audit URLs" (QA band) read as the same action; I had to stop and figure out which to use. Consolidate/relabel the two audit entry points and thin the toolbar → 9.
+## 3. ADVOCACY — 9/10
+The QR feature is the thing that makes me paste it in team Slack unprompted. Checked the Network tab: ZERO external requests on QR open OR on the ZIP export — fully client-side encoding, inline data-URI PNG, real vector SVG, and a ZIP of slug-named per-row PNGs (01-spring-launch.png) plus a printable contact-sheet.png. Clean aria-labels everywhere, responsive table/card swap, 0 console errors, no CSS jank. Held off 10 only because the grid is buried under four feature banners (grid should be first, advanced panels collapsed below), and I couldn't phone-scan the QR in my headless env to 100% confirm the payload (matrix is structurally valid — not a defect, just unverified by me).
 
 ```json
-{"tester": 2, "round": 1, "clarity": "Yes", "value": "Yes", "advocacy": 8, "topComplaints": ["Two near-identical audit entry points ('Paste & Audit URLs' toolbar vs 'Audit URLs' QA band) are confusing", "Top toolbar crams 7 buttons — hierarchy unclear for a first-timer"], "priorConcernsAddressed": "all"}
+{"tester": 2, "round": 2, "clarity": "Yes", "value": "Yes", "advocacy": 9, "qr_reaction": "Discoverable (per-row 'QR code for row 1' + toolbar 'Download QR codes'), genuinely useful, well-crafted — crisp inline QR, PNG+vector-SVG, slug-named ZIP with printable contact sheet; ZERO network on open or export per devtools, all client-side.", "topComplaints": ["Grid is buried below 4 feature banners (QA / Team Workspace / Presets / Bulk Edit) — put the grid first, collapse advanced panels", "Top toolbar now ~8 buttons after QR added; hierarchy still flat for a first-timer", "Couldn't scan-verify QR payload in headless test env (encoding structurally correct, just unconfirmed by me)"], "priorConcernsAddressed": "some"}
 ```

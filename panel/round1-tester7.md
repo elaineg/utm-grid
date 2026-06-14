@@ -1,31 +1,24 @@
-# utm-grid — Round 1, Tester 7 (Aisha, Product Designer)
-A teammate shared this; I judge craft hard (empty states, copy tone, visual hierarchy) and advocate loudly only if it holds up. This round I focused on the batch pre-launch check.
-
-## Prior concerns re-checked
-1. Workspace tall-empty-row dead space — FIXED. A single data row now renders ~47px; no more ~200px white block. Clean.
-2. Share-guide button gives no visible "copied" confirmation — STILL NOT FIXED. Label stays "Share style guide" after click (it does copy the correct /guide URL). Note: the workspace-LINK copy now shows a green "✓ Copied ✓" — so the affordance exists; it just wasn't applied to the guide button.
-3. Busy home toolbar — slightly better grouped, but still no single "start here."
+# utm-grid — Round 1, Tester 7 (Aisha, Product Designer) — QR feature
+A teammate shared this; I judge craft hard (empty states, copy tone, affordances) and advocate loudly only if it holds up. This round I exercised the new QR feature specifically.
 
 ## Clarity — Yes
-H1 + casing/typos subline land in seconds.
+H1 "Clean UTM links for your whole campaign — in one grid." + the casing/typos subline land in seconds. "nothing leaves your browser" is a nice trust touch.
 
 ## Value — Yes
-Today I'd eyeball a list of links in a Notion doc before a launch and hope nothing's mistyped. The Launch Check does what I can't do by eye: it caught cross-row inconsistency ("Email" vs "email" — these will split campaign data in GA4"), invalid URL, and missing-required, grouped by issue type with row refs. That cross-row catch is the real win — better than my manual scan.
+I don't build UTMs daily, but the inline lint (uppercase warning with one-click "Fix") already beats the bare Google URL builder a teammate would otherwise use. QR-per-link + ZIP is a real reason to come back.
 
-## The batch report (this round's focus) — well done
-- Placement: renders directly below the PRE-LAUNCH QA strip, ABOVE the grid. Correct — I read it before touching rows.
-- Distinct: teal/green left-accent header ("✓ Launch Check — Compliance Report"), a colored summary counter ("3 links checked / 0 passing / 3 with issues"), grouped issue cards. Does NOT blur with the gray Presets/Bulk-Edit panels above it.
-- Success state is considered: all-pass shows a green progress bar + tinted "✓ All 3 links pass" callout, not a blank box. Exactly the polish I look for.
-- "Download report (CSV)" + "Copy summary" both work; Copy summary put a clean 970-char text report on the clipboard.
+## QR craft — mostly considered, one rough edge
+Verified:
+- Per-row QR button DISABLED on an invalid row, tooltip "Add a valid URL to make a QR." — thoughtful.
+- Popover: heading "QR Code — Row 1", an ENCODES label with the FULL encoded URL (https://acme.com/launch?utm_source=newsletter&utm_medium=email&utm_campaign=spring_sale), a 160px QR, Download PNG / Download SVG. Downloads fire with clean names qr-row-1.png / qr-row-1.svg.
+- Toolbar "Download QR codes" → utm-qr-codes.zip with slugified, numbered PNGs (01-spring-sale.png, 02-summer-promo.png) + contact-sheet.png. Result message "1 QR code generated, 1 row skipped — no valid URL" / "4 QR codes generated" — specific and warm, exactly the tone I want.
+- Contact sheet: clean QR grid, monospace labels "01 spring_sale". Printable, considered.
 
-## Friction (holds it down from 9–10)
-1. P2 — No visible confirmation on two copy buttons. "Copy summary" (report) and "Share style guide" both keep their label after click — I clicked twice unsure. The green "✓ Copied" pattern already exists on the workspace-link button; apply it to these two.
-2. P3 — Report header uses a bare "✓" glyph left of the title rather than a styled badge; minor, but not the 9-level polish of the rest of the panel.
-3. P3 — Home toolbar still has no clear primary "start here" action.
-
-## To reach 9–10
-Reuse the existing "✓ Copied" confirmation on Copy summary and Share style guide. The report panel itself is already 9-level craft and well-placed; the only thing repeatedly undercutting trust is copy buttons that give zero feedback.
+## Friction (holds it down from 9)
+1. P1 — Per-row popover anchoring looks off. On 1280–1440px the popover's QR image lands at the page's bottom-right overlapping the "Allowed values" panel rather than floating cleanly beside the QR trigger (repro: fill a valid row, click QR, inspect — img rect ~x1127/y810, not adjacent to button). Element renders fine, but it doesn't sit where my eye expects. A clumsy popover is exactly what nags me.
+2. P3 — Contact sheet lays QRs in a single non-wrapping row — fine for 4, overflows for a 20-row batch.
+3. P3 — "⊞ QR" button reads grey/muted enough to look secondary/disabled even when active.
 
 ```json
-{"tester": 7, "round": 1, "clarity": "Yes", "value": "Yes", "advocacy": 8, "topComplaints": ["Copy summary and Share style guide buttons give no visible 'copied' confirmation — label never flips, though the workspace-link button already has this pattern", "Launch Check header uses a bare ✓ glyph rather than a styled badge — reads slightly unfinished next to the otherwise polished panel", "Home toolbar still has no clear primary 'start here' action"], "priorConcernsAddressed": "some"}
+{"tester": 7, "round": 1, "clarity": "Yes", "value": "Yes", "advocacy": 8, "topComplaints": ["Per-row QR popover anchoring is off — on 1280–1440px the QR/popover overlaps the lower 'Allowed values' panel area instead of floating cleanly beside its trigger button", "Contact sheet uses a single non-wrapping row of QRs, which will overflow for large batches", "'⊞ QR' button label is muted enough to read as disabled even when active"], "priorConcernsAddressed": "n/a"}
 ```

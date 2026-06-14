@@ -5,11 +5,21 @@
  * - Renders the QR code only in a client effect / on click (NEVER in a useState lazy initializer,
  *   NEVER reads window/document during render — SSR/hydration safe).
  * - Dismisses on Esc, on pointerdown outside, and when a different row's popover opens.
- * - z-50 so it renders above sticky columns (z-20/z-30) and the sticky header.
+ * - Fix 4: when triggerRect is provided, uses position:fixed computed from the trigger's
+ *   viewport coordinates. Clamped so it never overlaps side panels or falls below the fold.
+ *   position:fixed is relative to the viewport even inside a position:relative container
+ *   (as long as no ancestor has transform/filter/perspective — the sticky table does not).
+ * - Fix 2: Download PNG uses Blob + object URL (safe on mobile Safari).
+ * - cardFlow mode: renders inline in the card's normal flow (mobile — no fixed/absolute positioning).
  * - READ-ONLY: never mutates grid state, never fires any network request.
  */
 
 import { useEffect, useRef, useCallback, useState } from "react";
+
+/** Popover width — used for clamping. */
+const POPOVER_W = 256; // px (matches w-64)
+/** Estimated popover height for initial clamping (refined after measuring). */
+const POPOVER_H_ESTIMATE = 380;
 
 interface QrPopoverProps {
   /** The full generated URL to encode. Must be non-empty. */
@@ -18,11 +28,17 @@ interface QrPopoverProps {
   rowIndex: number;
   /** Called when the popover requests to close (Esc / click-out). */
   onClose: () => void;
-  /** Whether to render in card-flow (mobile) vs desktop popover mode. */
+  /** Whether to render in card-flow (mobile inline) vs desktop popover mode. */
   cardFlow?: boolean;
+  /**
+   * Fix 4: DOMRect of the trigger button, used to compute a fixed position.
+   * When provided, uses position:fixed relative to the viewport, clamped so it never
+   * overlaps the right-side config panels or falls below the fold.
+   */
+  triggerRect?: DOMRect | null;
 }
 
-export function QrPopover({ url, rowIndex, onClose, cardFlow = false }: QrPopoverProps) {
+export function QrPopover({ url, rowIndex, onClose, cardFlow = false, triggerRect }: QrPopoverProps) {
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [qrSvgString, setQrSvgString] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -50,7 +66,7 @@ export function QrPopover({ url, rowIndex, onClose, cardFlow = false }: QrPopove
     return () => { cancelled = true; };
   }, [url]);
 
-  // Dismiss on Esc
+  // Dismiss on Esc.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
@@ -59,7 +75,7 @@ export function QrPopover({ url, rowIndex, onClose, cardFlow = false }: QrPopove
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  // Dismiss on pointerdown outside (desktop mode only — cardFlow uses tap-out separately)
+  // Dismiss on pointerdown outside (desktop only — cardFlow uses native tap-out behavior).
   useEffect(() => {
     if (cardFlow) return;
     function onPointer(e: PointerEvent) {
@@ -67,28 +83,57 @@ export function QrPopover({ url, rowIndex, onClose, cardFlow = false }: QrPopove
         onClose();
       }
     }
-    // Use capture to fire before any click handlers inside the grid
     document.addEventListener("pointerdown", onPointer, true);
     return () => document.removeEventListener("pointerdown", onPointer, true);
   }, [onClose, cardFlow]);
 
+  /**
+   * Fix 2: PNG download using Blob + object URL.
+   * iOS Safari ignores <a download> on data-URI anchors; Blob object URL works reliably.
+   * Falls back to opening in a new tab if Blob is unavailable.
+   */
   const downloadPng = useCallback(() => {
     if (!qrDataUrl) return;
-    const a = document.createElement("a");
-    a.href = qrDataUrl;
-    a.download = `qr-row-${rowIndex}.png`;
-    a.click();
+    const filename = `qr-row-${rowIndex}.png`;
+    try {
+      const byteString = atob(qrDataUrl.split(",")[1] ?? "");
+      const ab = new ArrayBuffer(byteString.length);
+      const ia = new Uint8Array(ab);
+      for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+      }
+      const blob = new Blob([ab], { type: "image/png" });
+      const objectUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = objectUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+    } catch {
+      // Fallback: open data-URI in a new tab (user can long-press Save on iOS).
+      window.open(qrDataUrl, "_blank", "noopener");
+    }
   }, [qrDataUrl, rowIndex]);
 
   const downloadSvg = useCallback(() => {
     if (!qrSvgString) return;
-    const blob = new Blob([qrSvgString], { type: "image/svg+xml" });
-    const objectUrl = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = objectUrl;
-    a.download = `qr-row-${rowIndex}.svg`;
-    a.click();
-    URL.revokeObjectURL(objectUrl);
+    const filename = `qr-row-${rowIndex}.svg`;
+    try {
+      const blob = new Blob([qrSvgString], { type: "image/svg+xml" });
+      const objectUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = objectUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+    } catch {
+      const dataUri = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(qrSvgString)}`;
+      window.open(dataUri, "_blank", "noopener");
+    }
   }, [qrSvgString, rowIndex]);
 
   const content = (
@@ -158,8 +203,8 @@ export function QrPopover({ url, rowIndex, onClose, cardFlow = false }: QrPopove
   );
 
   if (cardFlow) {
-    // Mobile card flow: renders inline below the card, full-width, pushing content down.
-    // Never an overlay. z-10 so it reads above cell affordances but is in normal flow.
+    // Mobile card flow: renders inline below the card, full-width, in normal document flow.
+    // Never absolute/fixed — no scroll-jump, no overlay.
     return (
       <div
         ref={popoverRef}
@@ -172,15 +217,50 @@ export function QrPopover({ url, rowIndex, onClose, cardFlow = false }: QrPopove
     );
   }
 
-  // Desktop: absolute/portal positioning is done by the parent.
-  // The parent wraps this in a positioned container above the sticky columns.
+  if (triggerRect) {
+    // Fix 4: position:fixed computed from trigger's viewport coordinates.
+    // position:fixed escapes the containing block and is relative to the viewport,
+    // so this works correctly even inside a position:relative sticky <td>.
+    // Prefer opening to the LEFT to avoid overlapping the right-side config panels.
+    const vw = typeof window !== "undefined" ? window.innerWidth : 1280;
+    const vh = typeof window !== "undefined" ? window.innerHeight : 900;
+    const popH = POPOVER_H_ESTIMATE;
+
+    let left = triggerRect.left - POPOVER_W - 4;
+    let top = triggerRect.top;
+
+    // If left edge would clip, open to the right.
+    if (left < 8) left = triggerRect.right + 4;
+
+    // Clamp horizontal.
+    left = Math.max(8, Math.min(left, vw - POPOVER_W - 8));
+
+    // Flip upward if it would go below the fold.
+    if (top + popH > vh - 8) {
+      top = Math.max(8, triggerRect.bottom - popH);
+    }
+    top = Math.max(8, top);
+
+    return (
+      <div
+        ref={popoverRef}
+        role="dialog"
+        aria-label={`QR code popover for row ${rowIndex}`}
+        style={{ position: "fixed", top, left, zIndex: 9999, width: POPOVER_W }}
+        className="rounded-lg border border-gray-200 bg-white p-4 shadow-xl"
+      >
+        {content}
+      </div>
+    );
+  }
+
+  // Fallback: absolute within parent container (no triggerRect — renders below trigger).
   return (
     <div
       ref={popoverRef}
       role="dialog"
       aria-label={`QR code popover for row ${rowIndex}`}
-      className="w-64 rounded-lg border border-gray-200 bg-white p-4 shadow-xl"
-      // z-index is applied by the parent container
+      className="absolute right-0 top-full z-50 mt-1 w-64 rounded-lg border border-gray-200 bg-white p-4 shadow-xl"
     >
       {content}
     </div>

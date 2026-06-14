@@ -1836,3 +1836,87 @@ QR popover (nothing renders until a QR button is clicked). On the example row, t
 (icon + label) is visible beside Copy in the row-actions column, and **"Download QR codes"** sits
 labeled in the Bulk-edit bar with its live "Apply to: …" scope — so a marketer instantly sees both
 the per-row and whole-batch ways to turn tagged links into scannable codes, without hunting.
+
+### Bulk QR — Round 1 fixes (panel R1: 2/10 at the 9-bar — Marcus, Tomás)
+
+Clarity 10/10 Yes, value 9/10 Yes (Elena the lone value=No, caused entirely by broken mobile QR);
+the QR CRAFT (zero-network client-side gen, true-vector SVG, printable contact sheet, popover showing
+the exact encoded URL) tested WELL — do NOT regress it. The gap is one data-integrity bug across 4
+testers plus three craft fixes and two cheap carries. Additive / logic / CSS / copy only — do NOT
+touch the headline, subhead, lint toggles, grid layout, the QR concept/placement/verbs, or any other
+panel. Each fix maps to a synthesis group; fixes ranked by testers unblocked.
+
+**Fix 1 — QR eligibility = no BLOCKING lint error (P0; Group 1: Wen, Dana, Rob, Sam — biggest
+lever, 4 testers).** Today "skip" only drops blank/unparseable generated URLs, so an INCOMPLETE row
+(missing required utm_source/medium/campaign, or an invalid URL) still ships a QR — a printed code
+pointing to an UNTRACKED link, and an overcounted "N generated." Redefine eligibility, both paths:
+- A row is **QR-eligible ONLY if** it has a non-empty parseable generated URL **AND** no BLOCKING lint
+  error (missing-required-param OR invalid-URL). Rows with only **style/consistency warnings** (case,
+  cross-row, off-spec taxonomy, off-template) **still generate** — those are quality nags, not
+  link-breaking errors. **Reuse the existing lint engine (`lintRows`)** to decide blocking-vs-warning;
+  add NO new lint logic.
+- **Bulk:** generate ONLY for eligible targeted rows; skip the rest and name the reason in the result:
+  **"N QR codes generated, M skipped — incomplete or invalid URL"** (drop the skipped clause at M=0).
+  The count must mean VALID, never "parseable." An all-skipped scope reads the existing
+  **"No QR codes — no rows have a valid URL yet."**
+- **Per-row:** the per-row **"QR" button is disabled (with a tooltip)** on a non-eligible row by the
+  SAME rule — extend the existing "Add a valid URL to make a QR." disabled state to cover the
+  missing-required-param case, not only empty/invalid URLs.
+
+**Fix 2 — Mobile per-row QR: inline, visible, no scroll-jump, real downloads (P0; Group 2: Elena
+value=No adv 4, Sam — the value=No fix).** On a phone, tapping a card's **"QR"** today bounces the
+page to the top and renders no visible QR (only a toast); per-row Download PNG/SVG fire no file.
+Fix all three:
+- Clicking **"QR"** on a card MUST render the QR image **inline in the card's flow** (the panel
+  stacked below that card's fields, per the existing mobile design) with **NO scroll-jump** — do NOT
+  move focus or scroll to the page top; the tapped card stays put and the QR appears beneath it.
+- The rendered QR must be a **genuinely visible image** on screen (so a phone user has a usable path
+  even when they can't open a ZIP on iOS) — this is the path Elena needs; a toast alone is not it.
+- **Download PNG / Download SVG must actually produce a file on mobile Safari + Chrome:** use a
+  **blob URL + a programmatic anchor with the `download` attribute** (not a bare `data:` URI, which
+  iOS Safari frequently blocks), with an **open-in-new-tab fallback** if the browser blocks the
+  download so the user can long-press-save. Verify a file lands at 375px on Safari and Chrome.
+
+**Fix 3 — Channel-aware filenames + contact-sheet labels (P1; Group 3: Dana, Jules).** Today QR PNG
+filenames and contact-sheet labels use **utm_campaign only**, so multiple rows of ONE campaign across
+channels are indistinguishable on a printed sheet. Add channel context:
+- **PNG filename** includes **utm_source and/or utm_medium** alongside row # and campaign, e.g.
+  **`01-spring_sale-newsletter-email.png`**. **Contact-sheet label** likewise, e.g.
+  **`01 · spring_sale · newsletter/email`**.
+- Keep all values **slugified (filesystem-safe)** and the row-# zero-padded so ordering is **stable**;
+  fall back gracefully (omit an empty source/medium segment) so a row missing a channel field still
+  produces a valid, distinct name.
+
+**Fix 4 — Desktop popover anchored beside its trigger, clamped in viewport (P1; Group 4: Aisha,
+Jules).** Today the per-row popover lands at page bottom-right overlapping the Allowed-values panel /
+below the fold, so it reads as "nothing happened" on first click. Anchor it **adjacent to its trigger
+row** and **flip/clamp it to stay within the viewport** (open toward the cell's free side; flip
+up/left when there's no room below/right) so it NEVER lands at page-bottom and **never overlaps the
+Allowed-values / Campaigns / UTM-Spec / Naming-Template config panels**. The QR + encoded URL +
+Download buttons must be fully visible at the click position on 1280–1440px with the sidebar open,
+without scrolling.
+
+**Fix 5 — Cheap carried (P2; Group 5: Wen, Tomás, Sam).** (a) Add a **UTF-8 BOM (`EF BB BF`)** to the
+**Export CSV** download so non-ASCII campaign names don't mojibake on double-click into Excel —
+match whatever the Launch Check Compliance-Report CSV already does (keep them consistent). (b) Ensure
+**Launch Check "Copy summary"** shows the peripherally-unmissable **green-fill-in-place + `aria-live`**
+confirmation on **mobile** too (the cue currently doesn't fire at 375px) — reuse the proven
+copy-confirmation-survives-tick-rerender pattern; no corner toast that scrolls off.
+
+**Do NOT build this round (deprioritized, with reason):** Priya's read-only `/guide` "Open the
+editable workspace" link is the BY-DESIGN viral on-ramp (secret-link = the access-control capability)
+— keep it, it is not a bug; Priya's Launch Check typo "did-you-mean" suggestion and Rob's PNG-DPI
+option are out-of-scope feature requests (the true-vector SVG already covers print); Marcus's "busy
+toolbar" is a longstanding separate concern and he passes at 9. Single-persona P3s (Aisha's
+contact-sheet single-row overflow + muted "QR" styling, Tomás's PNG/SVG accessible-name collision) —
+address only if free.
+
+#### 5-second check (Bulk QR Round 1 — unchanged above the fold)
+Cold visitor still sees the unchanged hero and no QR popover. On the example row the **"QR"** button
+sits beside Copy; it is now **disabled (tooltip)** on any row with a blocking lint error so a printed
+QR can never point to an untracked link, and the bulk result honestly reads **"N QR codes generated,
+M skipped — incomplete or invalid URL"**. On a phone, tapping **"QR"** renders a **visible QR inline
+below the card** with working PNG/SVG downloads and no scroll-jump; QR filenames and contact-sheet
+labels now name the channel (`01-spring_sale-newsletter-email.png`); the desktop popover opens beside
+its trigger within the viewport; Export CSV carries a UTF-8 BOM and Launch Check "Copy summary"
+confirms on mobile.

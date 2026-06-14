@@ -1,47 +1,20 @@
-# Round (re-test) — Tester 3 (Wen, marketing data analyst)
-
-## Prior complaints — re-checked first
-1. "No CSV export of lint violations (one row per violation: row#, URL, field, value, issue, message)."
-   FIXED. "Run Launch Check" produces a Compliance Report with **Download report (CSV)**. CSV header is
-   literally `row #,base URL,field,value,issue type,message` — one row per violation, properly quoted
-   (embedded quotes doubled, em-dash messages intact). 14 violation rows for my 5-URL dirty batch.
-   This is exactly the schema I asked for. (saved: validator-workspace/round1-tester3/dl-utm-launch-check.csv)
-2. "No bulk Fix-all; fixing lint per-cell is tedious on a large import." FIXED. **Auto-fix naming**
-   normalized every row in one click (LinkedIn→linkedin, Paid_Social→paid_social, "Summer Sale 2026"→
-   summer_sale_2026) — zero uppercase/space dirt left afterward.
-3. "Campaigns localStorage-only, can't sync/share." ADDRESSED. New **Live Team Workspace** ("changes save
-   to a private link and sync across devices") is the cross-device path I wanted.
-
-## Long-value integrity — the thing I distrust most
-PASS. My 96-char utm_campaign (`summer_sale_2026_...holdout_control_group`) survived verbatim through:
-paste→audit→grid, Export CSV (grep confirms full 96 chars, untruncated), generated_url, and after
-Auto-fix. It is correctly ABSENT from the violation CSV because row 1 is the canonical clean value —
-that's right behavior, not data loss. No silent transforms anywhere; raw cells preserved (`Facebook`
-stays `Facebook` until I fix). 0 console/page errors across every flow.
-
-## Batch checker — does it catch what wrecks my GA4 dashboards?
-Yes, and it names the failure mode: `Inconsistent utm_campaign across rows: "summer_sale_2026" vs
-"Summer Sale 2026" — these will split campaign data in GA4.` Grouped by field, severity counts
-(8 failing / 6 warnings), row #, offending value, message. This is a pre-launch QA report I'd
-actually attach in Slack before a campaign goes live.
-
-## 1. CLARITY — Yes
-Headline + "Auto-fix messy casing and typos before they split your Google Analytics" = my exact pain in 5s.
-
-## 2. VALUE — Yes
-Today I eyeball a Sheet + a broken VLOOKUP and only catch casing splits after GA4 shows two rows. This
-catches cross-row inconsistency before publish, and the violation CSV drops straight into BigQuery/Sheets
-as an audit log. Strict CSV in/out + per-violation export is the data-hygiene loop I demand. I'd run it weekly.
-
-## 3. ADVOCACY — 9
-Both my blockers are gone and the violation CSV is exactly to spec — I'll bring this up unprompted in my
-marketing-ops Slack. Single thing holding it from 10: the violation report's `base URL` column strips the
-UTM params (shows clean base only), so for a paste-audit batch I can't pivot the CSV back to the exact
-original tagged URL that failed — I'd want the full original URL as a column alongside the clean base. Minor,
-but for an analyst that's the join key. Everything else is best-in-class for a free tool.
-
 ```json
-{"tester": 3, "round": 1, "clarity": "Yes", "value": "Yes", "advocacy": 9,
- "topComplaints": ["Violation CSV 'base URL' column strips UTM params — no full original tagged URL as a join key for the failing row", "Live Team Workspace exists but I didn't pressure-test multi-device sync this round"],
- "priorConcernsAddressed": "all"}
+{
+ "name": "Wen",
+ "clarity": "Yes",
+ "value": "Yes",
+ "advocacy": 8,
+ "qr_reaction": "QR encodes the EXACT URL-encoded tagged link (a&b in content -> %26/%20, so no fake params), and ZIP gives real per-campaign PNGs plus a contact sheet. But the skip/count is misleading: a row missing REQUIRED utm_source got a QR counted as 'generated' while only the empty row was 'skipped'.",
+ "likes": [
+   "Lint catches uppercase AND spaces per-field with the exact offending value, and flags required-field misses",
+   "Auto-fix naming normalizes Google->google, 'CPC '->cpc, 'Summer Sale'->summer_sale in one click",
+   "CSV round-trip is lossless with an explicit column-mapping dialog (auto-matched headers, Append/Replace, Undo) — no invisible transforms",
+   "QR popover shows the correctly URL-encoded tagged URL; ZIP names files by campaign (01-q3-launch.png)"
+ ],
+ "complaints": [
+   "DATA-INTEGRITY: ZIP says '2 QR codes generated, 1 row skipped — no valid URL', but the skipped one was the empty row; the incomplete row (example.com/two?utm_medium=email, lint says 'utm_source is required' + 'utm_campaign is required') was COUNTED as generated. Repro: row1 full+valid, row2 base+medium only (no source), row3 empty -> Download QR codes -> message counts row2 as generated. 'generated' != 'valid', so the reassuring count can let a QR ship for a tool-flagged-invalid URL.",
+   "Export CSV has no UTF-8 BOM (xxd of export.csv starts at 'base_url', no EF BB BF) — non-ASCII campaign names can mangle when opened in Excel."
+ ],
+ "verdict_summary": "This nails my core data-hygiene loop: real lint, one-click auto-fix, and a lossless CSV round-trip with zero silent transforms — and the QR genuinely encodes the exact tagged URL. What stops me at an 8 is the skip/count message: it labels a row missing a REQUIRED field as 'generated' rather than 'skipped', and for a data person an inflated 'all good' number is worse than no number. Make 'generated' mean 'valid' and add a CSV BOM and it's a 9-10."
+}
 ```

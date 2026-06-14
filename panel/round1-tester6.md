@@ -1,37 +1,22 @@
-{"name":"Jules","clarity":"Yes","value":"Yes","advocacy":8}
-
-# Jules — Content & community marketer (50/50 desktop/mobile, allergic to logins)
-
-## Re-check of MY prior complaint (silent copy buttons) — FIXED
-Last round "Share style guide" / copy buttons gave NO visible confirmation. This round every
-copy button I tested flips to a solid GREEN "✓ Copied!" pill that holds ~0.7s: Copy share
-link, Copy all URLs, AND the new Launch Check "Copy summary". A hurried person sees it.
-(Clipboard read succeeded — 1306 chars on Copy summary — so the copy genuinely fired.) Done.
-
-## This round's task — batch link check before launch
-1. CLARITY — Yes. H1 "Clean UTM links for your whole campaign — in one grid" + "no login,
-   nothing leaves your browser" told me in ~3s. Exactly the no-account bulk tool I bookmark.
-2. VALUE — Yes. Today I hand-edit UTMs in Notion and eyeball casing — which is how I get
-   "social" vs "Social" splitting my GA4. I built a dirty 3-row launch (twitter/linkedin/
-   mastodon) and hit **Run Launch Check** (green button in the PRE-LAUNCH QA strip — found it
-   without hunting; discoverable). It caught everything: inconsistent utm_campaign/utm_medium
-   across rows, uppercase, spaces, missing https://, each with "these will split campaign data
-   in GA4." That's the silent mistake nothing else free flags. Real time saved.
-   **Download report (CSV)** delivered a clean, usable file (row#, field, value, issue type,
-   message) — I'd attach it when handing a launch to a teammate.
-
-## ADVOCACY — 8
-The Launch Check is the feature that makes me bookmark this. Buttons are now honest. What
-holds it at 8, not 9–10:
-1. The grid ALSO shows per-row "3 warnings / Fix" chips, and it's not obvious they're the
-   same engine as the big Launch Check report — I briefly thought I needed both. One source of
-   truth (or "see full Launch Check" tying them together) closes it.
-2. No one-click jump from a report finding back to the offending grid cell to fix it — I have
-   to eyeball-match row numbers. A "Fix in grid" link per finding gets me to 9.
-3. Still no X(twitter)/Mastodon presets — the two platforms I post to most. The pitch is
-   "presets per platform"; I type them by hand. Add those and I recommend it unprompted in my
-   marketing Discord.
-
 ```json
-{"tester": 6, "round": 1, "clarity": "Yes", "value": "Yes", "advocacy": 8, "topComplaints": ["Per-row 'N warnings/Fix' chips feel disconnected from the big Launch Check report — unclear it's the same check", "No one-click 'fix in grid' jump from a report finding to the offending cell", "Still no X(twitter)/Mastodon presets despite the 'presets per platform' pitch"], "priorConcernsAddressed": "all"}
+{
+ "name":"Jules",
+ "clarity":"Yes",
+ "value":"Yes",
+ "advocacy":8,
+ "qr_reaction":"QR works and is genuinely useful for Discord/event/print drops — per-row QR + Download PNG/SVG, plus a top-level ZIP with a real printable contact sheet, and the codes decode to the full tagged URL with every UTM intact. But the QR popover renders BELOW the row off the initial fold, and the files/labels are campaign-only (01-spring, 02-spring, 03-spring) so my LinkedIn/X/Mastodon codes are indistinguishable without scanning each.",
+ "likes":[
+   "No login, nothing leaves the browser — exactly my allergy; I'd bookmark this for tagging links across X/LinkedIn/Mastodon",
+   "QR ZIP + printable contact sheet is a real bonus for events and Discord drops; a QR decoded cleanly to the full UTM URL (cv2 confirmed)",
+   "Mobile is a proper stacked card per row with big tap targets + a Copy URL button — not a squished table",
+   "Auto-fix naming + inline lint ('utm_campaign is required', 'Not a valid http(s) URL') catch the casing/typo mess that splits my GA"
+ ],
+ "complaints":[
+   "QR files & contact-sheet labels use ONLY the campaign name — 3 platform rows download as 01-spring / 02-spring / 03-spring with no platform/source in the name, so for one campaign across LinkedIn/X/Mastodon I can't tell which QR is which without scanning. Repro: tag 3 rows, same campaign, diff sources → 'Download QR codes' → unzip → all named *-spring.png.",
+   "QR popover opens below the grid row, off a normal laptop viewport — on 1280x900 the QR preview + Download buttons sit at y~760-1085, so clicking row 'QR' looks like nothing happens until you scroll. Felt broken on first click. Repro: fill row, click row 'QR' at default scroll position.",
+   "Presets are generic (Email / Paid Social–LinkedIn / Google CPC / Organic Social) — no X, no Mastodon, no Buffer; the pitch is presets per platform and I only got one LinkedIn one.",
+   "Per-row QR was finicky to trigger on mobile in my testing — took a couple taps before the popover came up."
+ ],
+ "verdict_summary":"This is the no-account bulk UTM builder I'd actually bookmark — fast, private, lints my messy casing, and the QR codes are a legit nice-to-have for Discord and print. It loses points because the QR popover hides below the fold so it feels broken on first click, and the QR/file labels are campaign-only, which kills the exact distinction I need when running one campaign across four platforms. Source-named QR files plus real per-platform presets and this is a 9 I'd tweet about."
+}
 ```

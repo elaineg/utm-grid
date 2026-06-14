@@ -1,52 +1,36 @@
-# Sam (PM, tester 10) — re-test (Launch Check focus, mobile 375px)
+Sam (Product manager, mobile-heavy) — QR-codes round
 
-{"name":"Sam","clarity":"Yes","value":"Yes","advocacy":8}
+PRIOR-CONCERN RE-CHECK (my two repeat asks):
+1. "Copy summary gives no 'Copied' confirmation" — STILL NOT FIXED. On the Launch Check
+   report I clicked Copy summary; clipboard received the full report text, but the button
+   label stayed "Copy summary", no toast, no checkmark. (Clipboard read worked in my test,
+   so this is a genuinely missing confirmation, not an env quirk.) Two rounds running.
+2. "Run Launch Check buried far below the fold on mobile" — IMPROVED. It now sits at ~Y=841
+   of a 2418px page (upper third), no longer under Workspace/Presets/Campaigns. Good fix.
 
-## Prior-concern re-check
-Last round my two complaints were: (1) copy/share buttons give NO visible "Copied" confirmation,
-and (2) the shared guide is unbranded.
-- (1) NOT fixed. I clicked **Copy summary** on the Launch Check report; clipboard DID receive the
-  text, but the button stayed "Copy summary" — no "Copied ✓", no toast. Same uneasy feeling as
-  before. **Not addressed.**
-- (2) Branding: didn't re-exercise the guide this round; leaving as-is. So overall: **some**.
+THIS ROUND on my phone (375px): built a 3-link launch batch, auto-fixed naming (cleaned
+Twitter→twitter, "Social Post"→social_post, Spring_Launch→spring_launch — the consistency I
+nag the team for), exported a clean CSV, and exercised both QR paths. 0 console errors.
 
-## What I did this round
-Cold home (375px) → built a 3-link launch batch (one deliberately messy: "Facebook", blank medium,
-"Summer Sale 2026") → found **Run Launch Check** under a "PRE-LAUNCH QA" section → ran it →
-tested **Copy summary** and **Download report (CSV)**. 0 console errors.
+QR verdict: the per-row QR popover renders a real scannable code with the tagged URL under
+it. The top-level "Download QR codes" produced a ZIP of named PNGs (01-spring-launch.png …)
+PLUS a printable contact-sheet.png with labeled codes (01 spring_launch, 02 spring_launch,
+03 …). That contact sheet is exactly the handoff artifact that makes me look organized — I'd
+drop it straight into the launch doc. Discoverable: "Download QR codes" is a top toolbar
+button, no debugging needed.
 
-## 1. CLARITY — Yes
-H1 "Clean UTM links for your whole campaign — in one grid" + "before they split your Google
-Analytics" = instant. I'd tell a teammate: "builds a whole batch of consistent UTMs, flags the
-broken ones, gives you a CSV/summary to hand off — no login."
-
-## 2. VALUE — Yes
-Today: a Google Sheet with a formula column nobody checks, so typos split Amplitude. The **Launch
-Check** is exactly what I wanted. Messy batch returned "3 links checked / 2 passing / 1 with issues",
-grouped by rule (Uppercase letters / Contains spaces / Missing required), per-row, WITH suggested
-fixes ("summer_sale_2026"). Artifacts are real:
-- Copy summary → clean plaintext, Slack-ready ("Total: 2 links checked | Passing: 1 | With issues: 1"
-  + one line per issue).
-- Download report → `utm-launch-check.csv`, headers `row #,base URL,field,value,issue type,message`.
-  I'd attach this to a launch ticket as-is.
-Launch Check vs Audit vs Share is now clearly disambiguated ("Audit URLs — paste finished links from
-elsewhere | Launch Check — check every link in this batch before you launch"). That resolves the
-exact confusion I'd have had. My sheet can't produce any of this.
-
-## 3. ADVOCACY — 8/10
-The Launch Check + handoff artifacts are genuinely the feature that makes me look organized — a real
-9-worthy capability. Two things hold it at 8:
-1. **Still no "Copied" confirmation on Copy summary** (my repeat complaint). A PM who won't debug
-   clicks it 3x unsure it worked. Download at least fires an OS download so I trust it.
-2. **Discoverability on mobile:** "Run Launch Check" / "PRE-LAUNCH QA" sit far below the fold, under
-   Workspace, Presets, Naming Template, Campaigns, Allowed values, and Bulk Edit. The single most
-   valuable action is buried; I scrolled a long way to find it.
-
-### To reach 9–10
-1. Add a visible "Copied ✓" state/toast to Copy summary (and all Copy buttons) — this is now my
-   two-round-running ask.
-2. Promote "Run Launch Check" into the top action cluster (next to Export CSV) on mobile.
+Gripes: (1) the per-row "Download PNG"/"Download SVG" buttons inside the popover fired no
+file and no error for me — the ZIP downloaded fine in the same session, so the single-row
+buttons specifically look dead. (2) "Skips invalid rows" only skips blank-base-URL rows; a
+row with a real URL but ZERO utm tags still got a QR (labeled by raw URL) into the ZIP — an
+untagged link can slip into a handoff.
 
 ```json
-{"name":"Sam","round":1,"clarity":"Yes","value":"Yes","advocacy":8,"topComplaints":["Copy summary still gives no 'Copied' confirmation (repeat complaint) — looks like nothing happened","Run Launch Check (the best feature) is buried far below the fold on mobile"],"priorConcernsAddressed":"some","mobile375":"0 console errors; Launch Check report renders clean; CSV + summary artifacts both work"}
+{
+ "name":"Sam","clarity":"Yes","value":"Yes","advocacy":8,
+ "qr_reaction":"The QR popover plus the labeled, printable contact-sheet PNG are a genuinely shareable launch-handoff artifact I'd paste into a launch doc to look organized; only the per-row Download PNG/SVG buttons let me down.",
+ "likes":["Auto-fix naming gives the team the consistency I normally nag for","Clean CSV export with generated URLs, zero re-entry","Download QR codes = ZIP of named PNGs + printable labeled contact sheet, instant handoff","Run Launch Check is now near the top on mobile (my prior 'buried' complaint is fixed)","Whole flow worked on my phone, no signup"],
+ "complaints":["Per-row 'Download PNG'/'Download SVG' in the QR popover fire nothing — no file, no error (the ZIP download worked in the same mobile session, so these single-row buttons specifically look dead)","'Skips invalid rows' only drops blank-base-URL rows: a row with a real URL but no utm tags still gets a QR (labeled by raw URL) in the ZIP/contact sheet, so an untagged link can slip into the handoff","REPEAT: Copy summary still shows no 'Copied' confirmation — clipboard fills but the button never changes, so I click it twice unsure it worked"],
+ "verdict_summary":"This nails my launch-coordination job — batch, auto-fix, clean CSV, and a labeled QR contact sheet I'd actually hand off, all on my phone with no login, and Launch Check is finally easy to find. The dead per-row PNG/SVG buttons plus my still-unfixed 'no Copied confirmation' gripe keep me at 8, but I'd recommend it to other PMs."
+}
 ```
