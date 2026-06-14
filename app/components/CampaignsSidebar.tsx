@@ -343,7 +343,7 @@ export function CampaignsSidebar({
   if (desktopOnly) {
     return (
       <aside
-        className="flex flex-col w-64 shrink-0 rounded-lg border border-gray-200 bg-white p-4"
+        className="flex flex-col w-full rounded-lg border border-gray-200 bg-white p-4"
         aria-label="Campaigns sidebar"
         data-testid="campaigns-sidebar"
       >
@@ -385,7 +385,7 @@ export function CampaignsSidebar({
     <>
       {/* Desktop sidebar */}
       <aside
-        className="hidden min-[900px]:flex flex-col w-64 shrink-0 rounded-lg border border-gray-200 bg-white p-4"
+        className="hidden min-[900px]:flex flex-col w-full rounded-lg border border-gray-200 bg-white p-4"
         aria-label="Campaigns sidebar"
         data-testid="campaigns-sidebar"
       >

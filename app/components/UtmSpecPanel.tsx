@@ -406,7 +406,7 @@ export function UtmSpecPanel({
     return (
       <aside
         ref={panelRef}
-        className="w-64 shrink-0 rounded-lg border border-violet-100 bg-white p-3 mt-3"
+        className="w-full rounded-lg border border-violet-100 bg-white p-3 mt-3"
         aria-label="UTM Spec panel"
         data-testid="utm-spec-panel"
       >
