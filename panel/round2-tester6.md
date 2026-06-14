@@ -1,16 +1,46 @@
-# Round 2 — Tester 6: Jules (content/community marketer, medium tech, 50/50 desktop+mobile)
+# utm-grid — Round 2, Tester 6 (Jules, content & community marketer)
 
-Prior hold-back (R1 8/10): inside a synced workspace the grid collapsed to GENERATED URL + ACTIONS, hiding editable source columns so it read as copy-only. **FIXED.** In workspace mode BASE URL / UTM_SOURCE / UTM_MEDIUM / UTM_CAMPAIGN are visible and editable without horizontal scroll on desktop, and stack into a clean fully-labeled editable card on mobile (375px, scrollWidth=375, no horiz scroll). I edited a Base URL cell — it took and synced. It now unmistakably reads as an EDITABLE shared grid.
+Re-test of "Paste & Audit URLs" on desktop (1280px) and mobile (375px). Cold open
+unchanged: the violet "Paste & Audit URLs" chip sits next to Import CSV with subtext naming
+it as the audit path. I pasted 5 already-tagged URLs: a Twitter/Social/Spring_Sale row, its
+casing-only twin (twitter/social/spring_sale), a LinkedIn row missing utm_campaign, one
+garbage line, and a Mastodon row.
 
-Full flow worked with zero login: filled a row, saw per-platform presets (Email, Paid Social–LinkedIn, Google/CPC, Organic Social), created /w/ workspace, set "Editing as: Jules" attribution ("last edited by Jules"), History showed both versions with Preview + Restore and the calming "Restoring brings a version back without losing the current one", Shared UTM taxonomy synced to the workspace. Lint (lowercase fix, required-field, valid-URL) makes it a real team source-of-truth. No console errors.
+## Did my two Round-1 complaints get fixed?
 
-Friction: on one reload the History panel didn't render its version list before I read it (showed "History" not "History (2)") — timing/minor, opened fine the prior run, not a blocker. Still no native X/Twitter or Mastodon preset (my two top channels), so I type those by hand — a feature gap, not a UX defect.
+1. **Mobile warning verbosity → FIXED.** There is now a GROUPED SUMMARY panel sitting
+   directly above the grid. It lists each field ONCE, deduped, with counts:
+   - `utm_source: Inconsistent values (2 cells): "Twitter" vs "twitter" · Contains
+     uppercase (3 cells) — Auto-fix can normalize`
+   - `utm_medium: …` and `utm_campaign: … · Missing required value (1 row)`
+   On my phone I read the whole audit verdict in one compact box at the top — three lines —
+   instead of scrolling past a repeated "will split campaign data in GA4" sentence per row.
+   That repeated-scroll dread is gone.
 
-CLARITY: Yes
-VALUE: Yes
-ADVOCACY: 9/10
-REASON: The collapse-to-copy-only that capped me at 8 is fixed — desktop and mobile both clearly read as an editable, synced, attributed, version-historied team grid, which is the trustworthy source-of-truth I'd send a fellow marketer; one notch off 10 only for the slightly flaky History expand and no X/Mastodon presets.
+2. **"Which line skipped" → FIXED.** The summary spells it out:
+   `1 line skipped (no valid URL found): Line 4: "this is not a url at all blah blah" — not
+   a valid URL`. The banner now reads `Audited 4 URLs · 1 line skipped — see summary above.
+   Undo` and points me up to that detail. For a 40-link paste I'd now know exactly which row
+   got dropped. Trust earned.
+
+## Regression check — none
+Parse still correct, original casing preserved so the dupe is actually caught, one-tap
+Auto-fix, Append/Replace chosen up front, Undo in toolbar. Zero console errors on both
+viewports. Grid, presets, Export CSV, Copy share link, shared workspace all intact, no login
+wall. Mobile dialog ("Audit 5 URLs", Append/Replace, undo note) fits cleanly at 375px.
+
+## Remaining friction (minor)
+The old per-row warning lines still render down inside the grid as well, so the long scroll
+technically still exists below — but I no longer NEED to read it, because the summary up top
+answers everything. Collapsing those duplicated row lines would be polish, not a blocker.
+Nothing here holds me back now.
+
+## Verdict
+Both things that kept me at 8 are genuinely resolved, and resolved in marketer language. A
+grouped, deduped summary that names the skipped line makes a 40-link audit feel effortless on
+a phone — that's the bar where I'd bring this up unprompted in my marketing-ops channels.
+Raising to 9.
 
 ```json
-{"tester": 6, "round": 2, "clarity": "Yes", "value": "Yes", "advocacy": 9, "topComplaints": ["No native X/Twitter or Mastodon preset (only LinkedIn) — my two top channels typed by hand", "History panel occasionally didn't expand its version list on reload (timing)"], "priorConcernsAddressed": "all"}
+{"tester": 6, "round": 2, "clarity": "Yes", "value": "Yes", "advocacy": 9, "topComplaints": ["Per-row GA4 warning lines still duplicate down inside the grid (harmless now that the summary leads, but could be collapsed)", "No native X/Twitter or Mastodon preset — my two top channels still typed by hand"], "priorConcernsAddressed": "all"}
 ```

@@ -7,6 +7,7 @@ import {
   deleteCampaign,
   deserializeCampaigns,
   duplicateCampaign,
+  extractNamingTemplateFromCampaign,
   findCampaign,
   findCampaignByName,
   relativeTime,
@@ -16,6 +17,7 @@ import {
   serializeCampaigns,
   type Campaign,
 } from "./campaigns";
+import { DEFAULT_NAMING_TEMPLATE, type NamingTemplate } from "./namingTemplate";
 import { DEFAULT_LINT_SETTINGS, emptyRow } from "./types";
 
 // ── Fixtures ───────────────────────────────────────────────────────────────────
@@ -504,5 +506,114 @@ describe("relativeTime", () => {
     // Should be a non-empty string that doesn't match the "ago" pattern
     expect(result).not.toContain("ago");
     expect(result.length).toBeGreaterThan(0);
+  });
+});
+
+// ── namingTemplate in Campaign ────────────────────────────────────────────────
+
+const NAMING_TEMPLATE: NamingTemplate = {
+  segments: [
+    { name: "quarter", allowedTokens: [] },
+    { name: "channel", allowedTokens: ["paidsocial", "email"] },
+    { name: "audience", allowedTokens: [] },
+  ],
+  separator: "_",
+  enforceTemplate: true,
+};
+
+describe("namingTemplate serialized in Campaign round-trip", () => {
+  it("saveCampaign stores namingTemplate in the campaign object", () => {
+    const { campaign } = saveCampaign(
+      [],
+      "Black Friday",
+      [ROW_A],
+      DEFAULT_LINT_SETTINGS,
+      undefined,
+      undefined,
+      NAMING_TEMPLATE
+    );
+    expect(campaign.namingTemplate).toBeDefined();
+    expect(campaign.namingTemplate!.segments).toHaveLength(3);
+    expect(campaign.namingTemplate!.enforceTemplate).toBe(true);
+  });
+
+  it("namingTemplate round-trips through serializeCampaigns / deserializeCampaigns", () => {
+    const { campaigns } = saveCampaign(
+      [],
+      "Black Friday",
+      [ROW_A],
+      DEFAULT_LINT_SETTINGS,
+      undefined,
+      undefined,
+      NAMING_TEMPLATE
+    );
+    const result = roundTripCampaigns(campaigns);
+    expect(result).toHaveLength(1);
+    const rt = result[0].namingTemplate;
+    expect(rt).toBeDefined();
+    expect(rt!.segments).toHaveLength(3);
+    expect(rt!.segments[1].name).toBe("channel");
+    expect(rt!.segments[1].allowedTokens).toEqual(["paidsocial", "email"]);
+    expect(rt!.enforceTemplate).toBe(true);
+    expect(rt!.separator).toBe("_");
+  });
+
+  it("namingTemplate with dash separator round-trips correctly", () => {
+    const dashTemplate: NamingTemplate = { ...NAMING_TEMPLATE, separator: "-" };
+    const { campaigns } = saveCampaign(
+      [],
+      "Summer",
+      [ROW_A],
+      DEFAULT_LINT_SETTINGS,
+      undefined,
+      undefined,
+      dashTemplate
+    );
+    const result = roundTripCampaigns(campaigns);
+    expect(result[0].namingTemplate!.separator).toBe("-");
+  });
+
+  it("namingTemplate is absent when not passed to saveCampaign (backward compat: no junk field)", () => {
+    const { campaign } = saveCampaign([], "Spring", [ROW_A], DEFAULT_LINT_SETTINGS);
+    // namingTemplate should be undefined (not stored) when not passed
+    expect(campaign.namingTemplate).toBeUndefined();
+  });
+});
+
+describe("extractNamingTemplateFromCampaign — backward compat", () => {
+  it("returns DEFAULT_NAMING_TEMPLATE for a campaign without namingTemplate (old campaigns)", () => {
+    const result = extractNamingTemplateFromCampaign(CAMP_BLACK_FRIDAY);
+    expect(result).toEqual(DEFAULT_NAMING_TEMPLATE);
+    expect(result.segments).toHaveLength(0);
+    expect(result.enforceTemplate).toBe(false);
+  });
+
+  it("returns the correct namingTemplate for a campaign with one", () => {
+    const campaignWithTemplate: Campaign = {
+      ...CAMP_BLACK_FRIDAY,
+      namingTemplate: NAMING_TEMPLATE,
+    };
+    const result = extractNamingTemplateFromCampaign(campaignWithTemplate);
+    expect(result.segments).toHaveLength(3);
+    expect(result.enforceTemplate).toBe(true);
+    expect(result.segments[1].allowedTokens).toEqual(["paidsocial", "email"]);
+  });
+
+  it("old campaign (deserialized without namingTemplate): extractNamingTemplateFromCampaign returns DEFAULT", () => {
+    // Simulate an old campaign JSON without namingTemplate field
+    const oldCampaignJson = JSON.stringify({
+      id: "camp-old",
+      name: "Old Campaign",
+      rows: [ROW_A],
+      settings: DEFAULT_LINT_SETTINGS,
+      savedAt: 1_700_000_000_000,
+      // No namingTemplate field
+    });
+    const campaigns = deserializeCampaigns(oldCampaignJson.replace("[", "[").replace("]", "]"));
+    // Wrap in array for deserialization
+    const arrayCampaigns = deserializeCampaigns(`[${oldCampaignJson}]`);
+    expect(arrayCampaigns).toHaveLength(1);
+    const nt = extractNamingTemplateFromCampaign(arrayCampaigns[0]);
+    expect(nt).toEqual(DEFAULT_NAMING_TEMPLATE);
   });
 });

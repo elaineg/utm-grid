@@ -1335,3 +1335,95 @@ summary — **"Audited N URLs — M issues across K fields"** with one line per 
 ("utm_source: 'Facebook' vs 'facebook' (2 rows)…"), the named skipped lines, and scoped one-tap fixes
 — no horizontal scroll needed to see the payoff; the grid auto-scrolls to the first flagged utm_*
 column beneath it, and the issue count updates live as fixes are applied.
+
+## Campaign Naming Template — added 2026-06-14
+
+ONE new capability: define the STRUCTURE of `utm_campaign` (an ordered list of named segments + a
+separator), then build compliant names per row from a composer and lint off-template values. This is
+DISTINCT from UTM Spec: UTM Spec governs allowed VALUES per field; the Naming Template governs the
+COMPOSITION of one field (utm_campaign) — `quarter_channel_audience`, not "is this value allowed."
+Additive only — do NOT touch the headline, subhead, lint toggles, grid layout, Presets, Campaigns/
+UTM-Spec panels, Bulk edit, the two share actions, Paste & Audit, or the mobile card view. Every item
+below designs out a recorded utm-grid panel failure (buried feature, width-stealing panel, 375px
+occlusion). The cold-open grid stays the hero; this panel is quiet-but-discoverable until opened.
+
+**1. ENTRY POINT — first-class, visually DIFFERENT from UTM Spec (buried-feature failure has burned
+1–2 panel rounds here twice).** The Naming Template panel is a **sibling disclosure in the right-hand
+sidebar, directly UNDER the "UTM Spec" panel** (same disclosure styling so it reads as a peer config
+surface, NOT nested inside UTM Spec). Make the two unmistakably different at a glance:
+- **Header label (verbatim):** **"Campaign Naming Template"** with a **structure/blocks icon** (e.g.
+  three joined segment chips `[ ]_[ ]_[ ]`), distinct from UTM Spec's allowed-values/checklist glyph.
+- **Sub-line (verbatim):** **"The STRUCTURE of utm_campaign — its parts and their order (e.g.
+  quarter_channel_audience). Different from UTM Spec, which sets allowed values. Saved on this
+  device."** This one line names the difference in plain words so a tester never reads it as a
+  duplicate of UTM Spec.
+- **Discoverability:** collapsed by default on a true cold open (grid stays hero), but **expanded by
+  default once a template has ≥1 segment** (same rule as UTM Spec) so a returning user sees their
+  structure is live. When Enforce naming template is on and any cell is off-template, add a top-level
+  **"N off-template"** indicator in the lint bar (in the off-template warning color — see item 5) that
+  scrolls to / opens this panel on click, advertising the feature is working — mirrors the "N cells
+  off-spec" indicator already shipped for UTM Spec.
+
+**2. PANEL LAYOUT — segment rows, stacked BELOW at constrained width, never a width-stealing sidebar
+(width-steal-hides-editable-columns failure).** The panel renders like the UTM Spec panel: as the
+inline right-rail column at wide widths, but at constrained widths (≤1535px / 1280px laptops with the
+sidebar open, and in workspace mode) it must NOT squeeze the grid — the editable source columns (Base
+URL, utm_source, utm_medium, utm_campaign at minimum) stay the on-screen default; if the rail would
+collapse them, **stack the Naming Template panel BELOW the grid** rather than beside it (the same
+resolution applied to the taxonomy panel in "Workspace History R3 P0-2"). Inside the panel, expanded:
+- **A separator control** at the top: a small segmented picker **`_` / `-`** (default `_`), labeled
+  **"Join parts with"**, with a live one-line preview of the assembled pattern (e.g.
+  **"quarter_channel_audience"**) that updates as segments/separator change.
+- **An ordered list of SEGMENT ROWS**, one per part, each showing: a drag-handle/order number, a
+  **segment-name input** (placeholder "e.g. quarter"), an **optional allowed-token list** (reuse the
+  UTM Spec chip UX exactly — removable chips + a "+ add token" input that accepts comma/newline paste;
+  a row with zero chips reads a muted **"any text"**), and a **remove (×)** for that segment. A
+  **"+ Add segment"** button below the list. All inline, no modal, like the UTM Spec field rows.
+- **The "Enforce naming template" toggle** surfaced at the top of the panel AND placed as a rule in
+  the lint-rule group alongside required-params / lowercase / no-spaces / Enforce allowed values
+  (canonical single control, shared state) — independent of "Enforce UTM Spec" (flipping one never
+  touches the other).
+
+**3. EMPTY / FIRST-USE state.** With no segments defined, the panel body shows ONE quiet line, no
+empty box, no nag: **"No naming template yet — add segments (e.g. quarter, channel, audience) to build
+consistent campaign names and flag ones that don't match."** The **"+ Add segment"** button stays
+enabled above it so the invitation IS the action.
+
+**4. PER-ROW "Build name" COMPOSER — compact inline popover, one control per segment, joined preview,
+Apply.** Each grid row exposes a small **"Build name"** affordance ON the utm_campaign cell (a tiny
+segment-blocks icon button inside/under the cell — NOT adjacent to the row Duplicate/Delete or Bulk
+controls, to avoid the same-verb-adjacency failure). Clicking it opens a **compact popover anchored to
+that cell** (in-flow on mobile cards), titled **"Build campaign name"**, containing:
+- **One control per segment in order:** a **dropdown** when that segment has an allowed-token list
+  (options = its tokens), a **free-text input** otherwise, each labeled with the segment name.
+- A **live joined preview** of the assembled value (e.g. **`2026q3_paidsocial_retargeting`**) updating
+  as the user fills controls, using the chosen separator — so the outcome is seen before applying.
+- An **"Apply"** primary button that writes the joined value into that row's utm_campaign cell, closes
+  the popover, flashes the cell green, and re-lints. A **"Cancel"** / Esc closes without writing.
+- It opens toward the cell's free side so it never covers the cell or row controls; the popover and its
+  controls are ≥44px at 375px and render in card flow on mobile (no sticky/overlay occlusion).
+
+**5. OFF-TEMPLATE LINT — additive, consistent with the existing warning styling, names the EXACT
+problem.** An off-template utm_campaign is a lint warning like the others — it folds into the cell's
+single collapsed warning pill (per Fix E), never a competing control. Give it its own **distinct color
+(a teal/cyan accent)** so the four warning classes stay tellable apart at a glance — amber = case/space,
+violet = off-spec taxonomy, cross-row = its color, **teal = off-template structure** (add it to the
+tiny lint legend near the lint bar so the new color reads as intentional). The expanded message names
+exactly what's wrong, matching the off-spec "names the problem" pattern:
+- Wrong count: **"Off-template — expected 3 segments, found 2"**.
+- Bad token: **"Off-template — segment 'channel' must be one of: paidsocial, email"** (names the
+  offending segment + its allowed tokens).
+There is NO blind "Fix" for off-template (the right value is the user's choice of parts) — instead the
+warning offers a **"Build name…"** link that opens the per-row composer (item 4) pre-filled with any
+parseable existing segments, so the fix path is the composer, scoped and named, never a bare adjacent
+button. Folds into the shared Undo; clears when the value matches the pattern. At 375px the warning +
+"Build name…" link render in card flow above the sticky/over nothing, ≥44px, verified non-occluded.
+
+### 5-second check (Campaign Naming Template — added 2026-06-14)
+Cold visitor still sees the unchanged hero. The **"Campaign Naming Template"** disclosure is visible in
+the sidebar directly under UTM Spec, its sub-line naming it as the campaign-name STRUCTURE (distinct
+from UTM Spec's allowed values); opening it shows the separator picker, ordered segment rows (name +
+optional token chips), the "Enforce naming template" toggle, and the empty-state hint when no template
+exists. On a row, a **"Build name"** composer opens a compact popover with one control per segment, a
+live joined preview, and Apply; off-template values flag in the distinct teal lint color naming the
+exact mismatch ("expected 3 segments, found 2"). All reachable, ≥44px, non-occluded at 375px.

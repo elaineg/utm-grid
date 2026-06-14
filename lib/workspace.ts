@@ -4,6 +4,7 @@
  */
 import { UTM_FIELDS, type LintSettings, type UtmRow } from "./types";
 import { deserializeSpec, type UtmSpec } from "./spec";
+import { deserializeNamingTemplate, type NamingTemplate } from "./namingTemplate";
 
 // ── Payload type ──────────────────────────────────────────────────────────────
 
@@ -11,6 +12,11 @@ export interface WorkspacePayload {
   rows: UtmRow[];
   settings: LintSettings;
   spec: UtmSpec;
+  /**
+   * Optional NamingTemplate — absent in workspaces created before this feature
+   * (backward compat: treated as empty/unenforced).
+   */
+  namingTemplate?: NamingTemplate;
   /** Optional user-visible name for the workspace (e.g. "Q3 Paid Campaigns"). */
   name?: string;
 }
@@ -117,6 +123,8 @@ export function parseWorkspacePayload(raw: string): WorkspacePayload | null {
       settings: parsed.settings,
       // Normalize spec through deserializeSpec for backward compat
       spec: deserializeSpec(parsed.spec as unknown),
+      // Normalize namingTemplate for backward compat (absent → DEFAULT_NAMING_TEMPLATE)
+      namingTemplate: deserializeNamingTemplate(parsed.namingTemplate as unknown),
       // Preserve optional workspace name (trim to 120 chars max)
       name: typeof parsed.name === "string" ? parsed.name.trim().slice(0, 120) || undefined : undefined,
     };

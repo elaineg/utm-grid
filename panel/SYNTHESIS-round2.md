@@ -1,72 +1,71 @@
-# UTM-Grid — Panel Synthesis, Round 2
+# Paste & Audit URLs — Panel Synthesis, Round 2
 
-## 1. Score table (roster coverage confirmed — round-1 off-by-one is fixed; all 10 distinct personas covered)
+## Headline
+**9 pass / 1 sub-bar (Rob 8). Clarity = Yes 10/10, Value = Yes 10/10. PASS at the 9/10
+advocacy bar.** Every round-1 grouped complaint was designed out by the post-audit grouped
+SUMMARY panel; the seven re-tested personas all moved up, and the three round-1 passers
+carry forward. The only residual is Rob's wide-width grid overflow — reachable via the
+summary now, so polish, not a blocker.
 
-| Tester | Persona | CLARITY | VALUE | ADVOCACY |
-|--------|---------|---------|-------|----------|
-| 1 | Priya (senior backend SWE) | Yes | Yes | 9/10 |
-| 2 | Marcus (frontend eng) | Yes | Yes | 9/10 |
-| 3 | Wen (marketing data analyst) | Yes | Yes | 9/10 |
-| 4 | Tomás (ops analyst, Excel) | Yes | Yes | 8/10 |
-| 5 | Dana (demand-gen marketer) | Yes | Yes | 6/10 |
-| 6 | Jules (content/community mktr) | Yes | Yes | 9/10 |
-| 7 | Aisha (product designer) | Yes | Yes | 9/10 |
-| 8 | Rob (freelance brand designer) | Yes | Yes | 9/10 |
-| 9 | Elena (EM, 30s budget) | Yes | Yes | 8/10 |
-| 10 | Sam (PM, mobile-heavy) | Yes | Yes | 9/10 |
+## Score table (carried vs re-tested)
 
-All 10 roster personas (Priya, Marcus, Wen, Tomás, Dana, Jules, Aisha, Rob, Elena, Sam) are each embodied exactly once — coverage is complete and the round-1 off-by-one is corrected.
+| Tester | Persona                         | Clarity | Value | R1 | R2 | Status                |
+|--------|---------------------------------|---------|-------|----|----|-----------------------|
+| 1      | Priya (senior backend eng)      | Yes     | Yes   | 8  | 9  | re-tested → passes    |
+| 2      | Marcus (frontend eng)           | Yes     | Yes   | 9  | 9  | carried (R1 passer)   |
+| 3      | Wen (marketing data analyst)    | Yes     | Yes   | 8  | 9  | re-tested → passes    |
+| 4      | Tomás (ops analyst, Excel)      | Yes     | Yes   | 8  | 9  | re-tested → passes    |
+| 5      | Dana (demand-gen marketer)      | Yes     | Yes   | 9  | 9  | carried (R1 passer)   |
+| 6      | Jules (content/community mktr)  | Yes     | Yes   | 8  | 9  | re-tested → passes    |
+| 7      | Aisha (product designer)        | Yes     | Yes   | 10 | 10 | carried (R1 passer)   |
+| 8      | Rob (freelance brand designer)  | Yes     | Yes   | 7  | 8  | re-tested → sub-bar   |
+| 9      | Elena (engineering manager)     | Yes     | Yes   | 8  | 9  | re-tested → passes    |
+| 10     | Sam (product manager)           | Yes     | Yes   | 8  | 9  | re-tested → passes    |
 
-## 2. Exit condition
+**Advocacy ≥ 9: 9/10.** Re-tested 7 (Priya, Wen, Tomás, Jules, Rob, Elena, Sam); carried 3
+(Marcus, Dana, Aisha). Lowest: Rob 8 (up from 7).
 
-Exit bar = **9 of 10 testers at advocacy ≥9 with CLARITY=Yes AND VALUE=Yes.**
-**Passing this round: 7/10** (testers 1, 2, 3, 6, 7, 8, 10). Holdouts: Tomás (8), Dana (6), Elena (8).
-**The round does NOT yet pass** (7 < 9). This is up sharply from **1/10 in round 1.**
+## Round-1 grouped complaints — resolution
 
-## 3. Complaints behind every advocacy <9, grouped by cause
+### Cause 1 — POST-AUDIT PAYOFF HIDDEN (R1: Priya, Tomás, Rob, Elena) → RESOLVED
+The grouped SUMMARY panel above the grid surfaces every flagged value without horizontal
+scroll; auto-scroll jumps to the first flagged column.
+- Priya (8→9): "the one thing keeping me off a 9 last round (payoff hidden behind horizontal
+  scroll) is genuinely fixed."
+- Tomás (8→9): "the summary above carries everything actionable. The fix turned that into a
+  non-issue."
+- Elena (8→9): "the top summary + live 'All audited URLs are clean' means I never touch the
+  grid to know the state… that held me at 8… is gone."
 
-### Cluster A — DOMINANT: Shared-taxonomy AND History panels don't open / render empty on FIRST click (need a 2nd click)
-The single biggest blocker. Matches the **verifier's flagged diagnosis: the name-nudge auto-focused input's `onBlur` swallows the first click on sibling toggles** — the first click lands as a blur on the focused name field instead of activating the panel toggle.
-- **Tomás (8/10):** "Shared UTM taxonomy panel would not open… it toggles but no chip/value-entry field appears (visible inputs actually dropped 19→18 on click)." Could not add a chip — the feature he most needed.
-- **Dana (6/10):** "Clicking 'NAMING RULES ▼' and 'Shared UTM taxonomy ▼' reveals no chip editor… the headline round-2 feature is unreachable in my session." (her primary reason for the 6)
-- **Elena (8/10):** "History panel needs TWO clicks to populate… renders EMPTY (0 Preview/Restore buttons)" AND "Same double-toggle on 'Shared UTM taxonomy'… couldn't add an allowed-value chip first try." Calls it the worst first impression for the exact trust feature being sold.
-- **Aisha (9/10, named nit):** "on a COLD page load… the FIRST click is dead — panel stays closed; the SECOND click opens it." Her one ding off a 10.
-- **Jules (9/10, brushed it as flaky):** "the History panel didn't render its version list before I read it" — same symptom, treated as minor timing.
-- Recurrence: **5 testers** (Tomás, Dana, Elena, Aisha, Jules) — by far the most-raised cause.
+### Cause 2 — WARNING VERBOSITY: full GA4 sentence repeated per row (R1: Wen, Jules, Sam, Elena) → RESOLVED
+The summary groups issues BY FIELD — the natural dedupe — so the conflict-pair reads once,
+not once per row.
+- Wen (8→9): "the panel is genuinely well-built (grouped, counted, names skipped lines)."
+- Jules (8→9): "A grouped, deduped summary… makes a 40-link audit feel effortless on a phone."
+- Sam (8→9): "summary-above-grid is the right design… both things that would have bitten me
+  at scale are genuinely fixed."
 
-### Cluster B — Taxonomy side-panel re-hides editable source columns when open
-- **Dana (6/10):** "whenever that panel is present it squeezes the grid back to BASE + GENERATED only, re-hiding the source cells. Same wobble, new trigger."
-- **Priya (9/10):** related — "UTM_SOURCE/MEDIUM/CAMPAIGN columns are pushed off-screen… only BASE URL + GENERATED URL show without horizontal scroll."
-- Recurrence: 2 testers (Dana primary, Priya secondary).
+### Cause 3 — "1 LINE SKIPPED" DOESN'T SAY WHICH (R1: Marcus, Dana, Tomás, Jules, Sam) → RESOLVED
+The summary names each skipped line. Confirmed by re-tested Tomás/Jules/Sam (above); carried
+Marcus/Dana were already passers. Rob's R2 toast: "Audited 4 URLs · 1 line skipped — see
+summary above."
 
-### Cluster C — Sync-vs-enforce two-step (allowed values defined but "Not enforcing" until a separate toggle)
-- **Priya (9/10):** "taxonomy says 'Not enforcing — enable in Naming rules', a small two-step before chips actually block bad values."
-- **Wen (9/10):** "it shows 'Not enforcing — enable in Naming rules,' so syncing the allowed list and actually enforcing it are two separate steps… I'd want a defined taxonomy to auto-enforce." (her one point off)
-- Recurrence: 2 testers (Wen primary, Priya secondary).
+### Cause 4 — STALE FLAG COUNTER after normalize (R1: Elena only) → RESOLVED
+Now a live flag count.
+- Elena (8→9): "live 'All audited URLs are clean'… I never touch the grid to know the state."
 
-### Cluster D — "Editing as" name reverts to Anonymous (after reload / first-save-before-name)
-- **Tomás (8/10):** "'Editing as' reverts to Anonymous after a page reload (name is device-local, not re-applied)." (secondary reason for his 8)
-- **Sam (9/10):** "the creation auto-save lands as 'Anonymous' before the name nudge is filled." (his one ding)
-- Recurrence: 2 testers (Tomás secondary, Sam primary).
+## Residual (Rob, 8 — not blocking)
+The wide GENERATED-URL column still pushes utm_campaign/term/content off-screen at ~1680px
+with the Campaigns sidebar open, forcing horizontal grid scroll.
+- Rob: "Both my blockers are genuinely gone; I can read AND fix the data without it looking
+  broken. Held at 8 (not 9) only because the GENERATED URL column still forces horizontal
+  scroll on the grid, which a designer notices."
 
-### Cluster E — Discoverability / craft nits (non-blocking; no <9 caused solely by these)
-- Rob (9): rename "+"/pencil affordance easy to miss. Marcus (9): collapsed taxonomy chevron easy to miss + duplicate `id` DOM smell. Jules (9): no X/Mastodon presets. Aisha (9): locked cell faded not badge-locked.
+Why not blocking: the grouped summary is now the source of truth for the audit payoff, so the
+flagged values are reachable without ever touching the grid. Two other R2 passers (Wen 9,
+Sam 9) flagged the related "fix-from-summary" gap as polish while still scoring 9. Queued as
+polish (revisit GENERATED-URL/sidebar width at laptop widths; one-click normalize inside the
+summary panel), not a ship blocker.
 
-## 4. Prioritized fix list (P0/P1/P2), ranked by holdouts unblocked (holdouts = Tomás, Dana, Elena)
-
-- **P0 — Fix first-click panel-open (Cluster A): stop the name-nudge auto-focused input's `onBlur` from swallowing the first click on sibling toggles (per verifier diagnosis).**
-  Unblocks **all 3 holdouts** — Tomás, Dana, AND Elena (sole or dominant blocker for each) — and removes Aisha's named nit plus Jules's flaky-History note. **Highest lever by a wide margin.**
-- **P1 — Stop the taxonomy side-panel from re-hiding editable source columns when open (Cluster B).** Clears Dana's second blocker (she needs both A and B to reach 9); also lifts Priya's residual. Required to fully flip Dana.
-- **P2 — Default-enforce a defined taxonomy / collapse the sync-vs-enforce two-step (Cluster C).** Blocks no holdout directly; lifts Wen and Priya toward 10. Polish.
-- **P2 — Persist "Editing as" across reload and apply it before the first creation auto-save (Cluster D).** Tomás's *secondary* reason; with P0 restoring his taxonomy access this likely flips him to 9. Also clears Sam's nit. Pairs with P0 for Tomás.
-- **P3 — Craft/discoverability nits (Cluster E):** dedupe DOM `id`s, surface the rename affordance, badge-lock preview cells, add X/Mastodon presets. None gate the exit bar.
-
-## 5. Carry-forward note
-
-**Carry verdicts (7 passing, untouched by P0/P1):** Testers 1 (Priya), 2 (Marcus), 3 (Wen), 6 (Jules), 8 (Rob), 10 (Sam) are already ≥9 and their residual nits are P2/P3 outside the planned-fix path, so their round-2 verdicts carry. (Priya/Wen's enforcement nit is P2 polish that does not change their pass state.)
-
-**Re-test in round 3 (4 testers):**
-- **Tomás, Dana, Elena** — the 3 holdouts directly targeted by P0 (plus P1/D for Dana and Tomás). Re-run to confirm they clear ≥9.
-- **Aisha** — already 9, but her single named nit (dead first click on History) is exactly what P0 touches, so re-test to confirm the fix lifts her toward 10 without regression.
-
-Re-testing these 4 and carrying the 7 passing should put round 3 at 9–10/10 if P0+P1 land cleanly.
+## Verdict
+**PASS — 9/10 at advocacy ≥ 9, clarity Yes 10/10, value Yes 10/10.** Ship.

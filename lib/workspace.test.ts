@@ -12,6 +12,7 @@ import {
   MAX_PAYLOAD_BYTES,
 } from "./workspace";
 import type { WorkspacePayload } from "./workspace";
+import { DEFAULT_NAMING_TEMPLATE, type NamingTemplate } from "./namingTemplate";
 
 // ── Regression: GET-body wire format (P0-1) ───────────────────────────────────
 // The GET /api/workspace/[id] route returns { data: "<JSON-string>" }
@@ -418,5 +419,126 @@ describe("Workspace name survives payload round-trip (P1-2)", () => {
     expect(result).not.toBeNull();
     // "   ".trim() === "" → undefined
     expect(result!.name).toBeUndefined();
+  });
+});
+
+// ── namingTemplate in WorkspacePayload ───────────────────────────────────────
+
+const NAMING_TEMPLATE: NamingTemplate = {
+  segments: [
+    { name: "quarter", allowedTokens: [] },
+    { name: "channel", allowedTokens: ["paidsocial", "email"] },
+    { name: "audience", allowedTokens: [] },
+  ],
+  separator: "_",
+  enforceTemplate: true,
+};
+
+const BASE_PAYLOAD_ROWS = VALID_PAYLOAD.rows;
+
+describe("namingTemplate round-trips in WorkspacePayload (P1-naming)", () => {
+  it("namingTemplate field is included in the serialized payload", () => {
+    const payload: WorkspacePayload = { ...VALID_PAYLOAD, namingTemplate: NAMING_TEMPLATE };
+    const raw = JSON.stringify(payload);
+    expect(raw).toContain('"namingTemplate"');
+    expect(raw).toContain("channel");
+    expect(raw).toContain("paidsocial");
+    expect(raw).toContain("enforceTemplate");
+  });
+
+  it("namingTemplate round-trips through parseWorkspacePayload", () => {
+    const payload: WorkspacePayload = { ...VALID_PAYLOAD, namingTemplate: NAMING_TEMPLATE };
+    const raw = JSON.stringify(payload);
+    const result = parseWorkspacePayload(raw);
+    expect(result).not.toBeNull();
+    const nt = result!.namingTemplate;
+    expect(nt).toBeDefined();
+    expect(nt!.segments).toHaveLength(3);
+    expect(nt!.segments[0].name).toBe("quarter");
+    expect(nt!.segments[1].name).toBe("channel");
+    expect(nt!.segments[1].allowedTokens).toEqual(["paidsocial", "email"]);
+    expect(nt!.segments[2].name).toBe("audience");
+    expect(nt!.enforceTemplate).toBe(true);
+    expect(nt!.separator).toBe("_");
+  });
+
+  it("namingTemplate with dash separator round-trips correctly", () => {
+    const dashTemplate: NamingTemplate = { ...NAMING_TEMPLATE, separator: "-" };
+    const payload: WorkspacePayload = { ...VALID_PAYLOAD, namingTemplate: dashTemplate };
+    const result = parseWorkspacePayload(JSON.stringify(payload));
+    expect(result).not.toBeNull();
+    expect(result!.namingTemplate!.separator).toBe("-");
+  });
+
+  it("namingTemplate with enforceTemplate=false round-trips correctly", () => {
+    const unenforced: NamingTemplate = { ...NAMING_TEMPLATE, enforceTemplate: false };
+    const payload: WorkspacePayload = { ...VALID_PAYLOAD, namingTemplate: unenforced };
+    const result = parseWorkspacePayload(JSON.stringify(payload));
+    expect(result).not.toBeNull();
+    expect(result!.namingTemplate!.enforceTemplate).toBe(false);
+  });
+});
+
+describe("namingTemplate backward compat in WorkspacePayload", () => {
+  it("payload without namingTemplate field parses correctly (old workspaces)", () => {
+    // Simulate a workspace saved before namingTemplate feature
+    const withoutNaming = { ...VALID_PAYLOAD };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    delete (withoutNaming as any).namingTemplate;
+    const raw = JSON.stringify(withoutNaming);
+    const result = parseWorkspacePayload(raw);
+    expect(result).not.toBeNull();
+    // namingTemplate should be DEFAULT_NAMING_TEMPLATE (empty, unenforced)
+    const nt = result!.namingTemplate;
+    expect(nt).toBeDefined();
+    expect(nt!.segments).toHaveLength(0);
+    expect(nt!.enforceTemplate).toBe(false);
+    expect(nt!.separator).toBe("_");
+    expect(nt).toEqual(DEFAULT_NAMING_TEMPLATE);
+  });
+
+  it("full client→server→client wire format round-trip with namingTemplate", () => {
+    const payload: WorkspacePayload = { ...VALID_PAYLOAD, namingTemplate: NAMING_TEMPLATE };
+    // Client serializes as PUT body:
+    const putBody = JSON.stringify(payload);
+    // Server returns { data: putBody }; client reads body.data:
+    const recovered = parseWorkspacePayload(putBody);
+    expect(recovered).not.toBeNull();
+    expect(recovered!.namingTemplate!.segments).toHaveLength(3);
+    expect(recovered!.namingTemplate!.enforceTemplate).toBe(true);
+    expect(recovered!.namingTemplate!.segments[1].allowedTokens).toEqual(["paidsocial", "email"]);
+  });
+
+  it("namingTemplate added AFTER initial load still serializes into next PUT payload", () => {
+    // User starts without a namingTemplate, then adds one
+    const initialPayload: WorkspacePayload = { ...VALID_PAYLOAD };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    delete (initialPayload as any).namingTemplate;
+
+    const updatedPayload: WorkspacePayload = {
+      ...initialPayload,
+      namingTemplate: NAMING_TEMPLATE,
+    };
+    const putRaw = JSON.stringify(updatedPayload);
+    expect(putRaw).toContain('"channel"');
+    expect(putRaw).toContain('"enforceTemplate":true');
+
+    const recovered = parseWorkspacePayload(putRaw);
+    expect(recovered).not.toBeNull();
+    expect(recovered!.namingTemplate!.segments[1].name).toBe("channel");
+  });
+});
+
+describe("workspace localStorage key: naming-template key documented (P1-naming)", () => {
+  it("documents the correct prefixed key for namingTemplate that UtmGrid reads in workspace mode", () => {
+    const wsId = "ABCDEFGHIJKLMNOPQRSTUVw";
+    const storageKeyPrefix = `ws:${wsId}:`;
+    const utmGridKey = (k: string) => `${storageKeyPrefix}${k}`;
+
+    // The naming template key must be consistent between workspace page write
+    // and UtmGrid read
+    expect(utmGridKey("utm-grid:naming-template")).toBe(`ws:${wsId}:utm-grid:naming-template`);
+    // Ensure it's different from the non-prefixed version
+    expect(utmGridKey("utm-grid:naming-template")).not.toBe("utm-grid:naming-template");
   });
 });

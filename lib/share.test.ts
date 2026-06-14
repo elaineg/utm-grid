@@ -8,10 +8,12 @@ import { describe, expect, it } from "vitest";
 import {
   decodeSharePayload,
   encodeSharePayload,
+  extractNamingTemplateFromPayload,
   parseShareHash,
   rawStoredHasContent,
   type SharePayload,
 } from "./share";
+import { DEFAULT_NAMING_TEMPLATE, type NamingTemplate } from "./namingTemplate";
 import { DEFAULT_LINT_SETTINGS, emptyRow } from "./types";
 
 function makeRow(id: string, overrides: Partial<ReturnType<typeof emptyRow>> = {}) {
@@ -239,5 +241,91 @@ describe("parseShareHash", () => {
     expect(decoded).not.toBeNull();
     expect(decoded!.rows).toEqual(payload.rows);
     expect(decoded!.settings).toEqual(payload.settings);
+  });
+});
+
+// ── namingTemplate in SharePayload ────────────────────────────────────────────
+
+const NAMING_TEMPLATE: NamingTemplate = {
+  segments: [
+    { name: "quarter", allowedTokens: [] },
+    { name: "channel", allowedTokens: ["paidsocial", "email"] },
+    { name: "audience", allowedTokens: [] },
+  ],
+  separator: "_",
+  enforceTemplate: true,
+};
+
+describe("namingTemplate round-trip in SharePayload", () => {
+  it("round-trips a payload with namingTemplate through encode/decode", () => {
+    const payload: SharePayload = {
+      rows: ROWS,
+      settings: DEFAULT_LINT_SETTINGS,
+      namingTemplate: NAMING_TEMPLATE,
+    };
+    const encoded = encodeSharePayload(payload);
+    const decoded = decodeSharePayload(encoded);
+    expect(decoded).not.toBeNull();
+    expect(decoded!.namingTemplate).toBeDefined();
+    expect(decoded!.namingTemplate!.segments).toHaveLength(3);
+    expect(decoded!.namingTemplate!.segments[1].name).toBe("channel");
+    expect(decoded!.namingTemplate!.segments[1].allowedTokens).toEqual(["paidsocial", "email"]);
+    expect(decoded!.namingTemplate!.enforceTemplate).toBe(true);
+    expect(decoded!.namingTemplate!.separator).toBe("_");
+  });
+
+  it("round-trips a payload with dash separator namingTemplate", () => {
+    const payload: SharePayload = {
+      rows: ROWS,
+      settings: DEFAULT_LINT_SETTINGS,
+      namingTemplate: { ...NAMING_TEMPLATE, separator: "-" },
+    };
+    const decoded = decodeSharePayload(encodeSharePayload(payload));
+    expect(decoded!.namingTemplate!.separator).toBe("-");
+  });
+
+  it("round-trips a payload with enforceTemplate=false", () => {
+    const payload: SharePayload = {
+      rows: ROWS,
+      settings: DEFAULT_LINT_SETTINGS,
+      namingTemplate: { ...NAMING_TEMPLATE, enforceTemplate: false },
+    };
+    const decoded = decodeSharePayload(encodeSharePayload(payload));
+    expect(decoded!.namingTemplate!.enforceTemplate).toBe(false);
+  });
+});
+
+describe("extractNamingTemplateFromPayload — backward compat", () => {
+  it("returns DEFAULT_NAMING_TEMPLATE when namingTemplate is absent (old share links)", () => {
+    const payload: SharePayload = { rows: ROWS, settings: DEFAULT_LINT_SETTINGS };
+    // No namingTemplate field
+    const result = extractNamingTemplateFromPayload(payload);
+    expect(result.segments).toHaveLength(0);
+    expect(result.enforceTemplate).toBe(false);
+    expect(result.separator).toBe("_");
+    expect(result).toEqual(DEFAULT_NAMING_TEMPLATE);
+  });
+
+  it("returns the correct namingTemplate when present", () => {
+    const payload: SharePayload = {
+      rows: ROWS,
+      settings: DEFAULT_LINT_SETTINGS,
+      namingTemplate: NAMING_TEMPLATE,
+    };
+    const result = extractNamingTemplateFromPayload(payload);
+    expect(result.segments).toHaveLength(3);
+    expect(result.enforceTemplate).toBe(true);
+    expect(result.segments[1].allowedTokens).toEqual(["paidsocial", "email"]);
+  });
+
+  it("old share link (no namingTemplate): decoded payload passes extractNamingTemplateFromPayload safely", () => {
+    // Simulate an old share link encoded WITHOUT namingTemplate
+    const oldPayload = { rows: ROWS, settings: DEFAULT_LINT_SETTINGS };
+    const oldEncoded = LZString.compressToEncodedURIComponent(JSON.stringify(oldPayload));
+    const decoded = decodeSharePayload(oldEncoded);
+    expect(decoded).not.toBeNull();
+    // extractNamingTemplateFromPayload must not throw and must return DEFAULT_NAMING_TEMPLATE
+    const nt = extractNamingTemplateFromPayload(decoded!);
+    expect(nt).toEqual(DEFAULT_NAMING_TEMPLATE);
   });
 });

@@ -233,6 +233,10 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
         writeValue(`${wsPrefix}utm-grid:rows`, data.rows, data.rows, 0);
         writeValue(`${wsPrefix}utm-grid:lint-settings`, data.settings, data.settings, 0);
         writeValue(`${wsPrefix}utm-grid:utm-spec`, data.spec, data.spec, 0);
+        // namingTemplate added 2026-06-14 — backward compat: may be absent in old workspaces
+        if (data.namingTemplate) {
+          writeValue(`${wsPrefix}utm-grid:naming-template`, data.namingTemplate, data.namingTemplate, 0);
+        }
 
         // P1-2: restore workspace name from payload
         const loadedName = data.name ?? "";

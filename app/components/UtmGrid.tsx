@@ -24,11 +24,18 @@ import {
   type UtmRow,
 } from "../../lib/types";
 import { DEFAULT_SPEC, SAMPLE_SPEC, nearestAllowedValue, type UtmSpec } from "../../lib/spec";
+import {
+  DEFAULT_NAMING_TEMPLATE,
+  deserializeNamingTemplate,
+  type NamingTemplate,
+} from "../../lib/namingTemplate";
 import { buildUtmUrl } from "../../lib/utm";
 import { useLocalStorage } from "../../lib/useLocalStorage";
 import { ImportDialog, type ImportMode, type PendingImport } from "./ImportDialog";
 import { AuditDialog, type AuditMode } from "./AuditDialog";
 import { AuditSummaryPanel } from "./AuditSummaryPanel";
+import { NamingTemplatePanel } from "./NamingTemplatePanel";
+import { BuildNameComposer } from "./BuildNameComposer";
 import { parseUtmUrls, type ParsedLine } from "../../lib/utm";
 import { PresetsBar } from "./PresetsBar";
 import { CampaignsSidebar } from "./CampaignsSidebar";
@@ -37,10 +44,12 @@ import { UtmSpecPanel } from "./UtmSpecPanel";
 import {
   deserializeCampaigns,
   extractSpecFromCampaign,
+  extractNamingTemplateFromCampaign,
   serializeCampaigns,
   findCampaign,
   type Campaign,
 } from "../../lib/campaigns";
+import { extractNamingTemplateFromPayload } from "../../lib/share";
 import type { WorkspacePayload } from "../../lib/workspace";
 
 type EditableField = "baseUrl" | UtmField;
@@ -138,6 +147,9 @@ export function UtmGrid({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Build-name composer: rowId of the open popover (null = closed).
+  const [composerOpenRowId, setComposerOpenRowId] = useState<string | null>(null);
+
   // ── Share link state ───────────────────────────────────────────────────────
   const [shareLinkCopied, setShareLinkCopied] = useState(false);
   const shareCopyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -170,11 +182,13 @@ export function UtmGrid({
     // visitor edits a cell (commitSharedToStorage / setRows does that).
 
     const payloadSpec = extractSpecFromPayload(payload);
+    const payloadNamingTemplate = extractNamingTemplateFromPayload(payload);
     pendingSharedState.current = { rows: payload.rows, settings: payload.settings };
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setSharedRows(payload.rows);
     setSharedSettings(payload.settings);
     setSharedSpec(payloadSpec);
+    setSharedNamingTemplate(payloadNamingTemplate);
     setIsUsingSharedState(true);
     // P0-3a: count actual allowed-value rules (sum of allowed values per field), independent of enforceSpec flag.
     const specRuleCount = Object.values(payloadSpec.allowedValues).reduce((sum, arr) => sum + arr.length, 0);
@@ -250,6 +264,14 @@ export function UtmGrid({
     key("utm-grid:utm-spec"),
     DEFAULT_SPEC
   );
+
+  // ── Naming Template state ──────────────────────────────────────────────────
+  const [storedNamingTemplate, setStoredNamingTemplate] = useLocalStorage<NamingTemplate>(
+    key("utm-grid:naming-template"),
+    DEFAULT_NAMING_TEMPLATE
+  );
+  // Shared-state overlay for namingTemplate (analogous to sharedSpec).
+  const [sharedNamingTemplate, setSharedNamingTemplate] = useState<NamingTemplate | null>(null);
 
   // Campaigns + presets stay LOCAL-only. In workspace mode, skip them (not part of workspace payload).
   // storageKeyPrefix === "" means default mode; non-empty means workspace mode.
@@ -357,10 +379,16 @@ export function UtmGrid({
     setSavedFlash(false);
   }, []);
 
-  // ── Effective rows / settings / spec (shared or stored) ──────────────────
+  // ── Effective rows / settings / spec / namingTemplate (shared or stored) ──
   const rows: UtmRow[] = isUsingSharedState && sharedRows ? sharedRows : storedRowsNormalized;
   const settings: LintSettings = isUsingSharedState && sharedSettings ? sharedSettings : storedSettings;
   const spec: UtmSpec = isUsingSharedState && sharedSpec ? sharedSpec : storedSpec;
+  // SSR-safe: storedNamingTemplate from useLocalStorage starts as DEFAULT_NAMING_TEMPLATE
+  // until the client snapshot fires; this is fine (same pattern as storedSpec).
+  const namingTemplate: NamingTemplate =
+    isUsingSharedState && sharedNamingTemplate
+      ? sharedNamingTemplate
+      : (storedNamingTemplate ?? DEFAULT_NAMING_TEMPLATE);
 
   const newId = (current: UtmRow[] = rows) => {
     for (const r of current) {
@@ -376,13 +404,15 @@ export function UtmGrid({
     setStoredRows(sRows);
     setStoredSettings(sSettings);
     if (sharedSpec) setStoredSpec(sharedSpec);
+    if (sharedNamingTemplate) setStoredNamingTemplate(sharedNamingTemplate);
     pendingSharedState.current = null;
     setSharedRows(null);
     setSharedSettings(null);
     setSharedSpec(null);
+    setSharedNamingTemplate(null);
     setIsUsingSharedState(false);
     setSharedBanner(null);
-  }, [isUsingSharedState, setStoredRows, setStoredSettings, sharedSpec, setStoredSpec]);
+  }, [isUsingSharedState, setStoredRows, setStoredSettings, sharedSpec, setStoredSpec, sharedNamingTemplate, setStoredNamingTemplate]);
 
   const setRows = useCallback(
     (next: UtmRow[] | ((prev: UtmRow[]) => UtmRow[])) => {
@@ -393,10 +423,12 @@ export function UtmGrid({
         setStoredRows(nextRows);
         setStoredSettings(sSettings);
         if (sharedSpec) setStoredSpec(sharedSpec);
+        if (sharedNamingTemplate) setStoredNamingTemplate(sharedNamingTemplate);
         pendingSharedState.current = null;
         setSharedRows(null);
         setSharedSettings(null);
         setSharedSpec(null);
+        setSharedNamingTemplate(null);
         setIsUsingSharedState(false);
         setSharedBanner(null);
       } else {
@@ -407,7 +439,7 @@ export function UtmGrid({
       setIsDirty(true);
       clearSavedFlash();
     },
-    [isUsingSharedState, storedRowsNormalized, storedSettings, sharedSpec, setStoredSpec, setStoredRows, setStoredSettings, clearSavedFlash]
+    [isUsingSharedState, storedRowsNormalized, storedSettings, sharedSpec, setStoredSpec, sharedNamingTemplate, setStoredNamingTemplate, setStoredRows, setStoredSettings, clearSavedFlash]
   );
 
   const setSettings = useCallback(
@@ -426,8 +458,8 @@ export function UtmGrid({
   const allPresets = useMemo(() => [...SEEDED_PRESETS, ...userPresets], [userPresets]);
 
   const warnings = useMemo(
-    () => groupWarnings(lintRows(rows, settings, spec)),
-    [rows, settings, spec]
+    () => groupWarnings(lintRows(rows, settings, spec, namingTemplate)),
+    [rows, settings, spec, namingTemplate]
   );
   const selectedRow = rows.find((r) => r.id === selectedId) ?? null;
 
@@ -657,7 +689,7 @@ export function UtmGrid({
       }, 2500);
       return;
     }
-    const url = buildShareUrl({ rows, settings, spec });
+    const url = buildShareUrl({ rows, settings, spec, namingTemplate });
     try {
       await writeClipboard(url);
     } catch {
@@ -873,6 +905,8 @@ export function UtmGrid({
       setStoredSettings(campaign.settings);
       // Restore the campaign's UTM Spec (backward compat: absent → empty/unenforced)
       setStoredSpec(extractSpecFromCampaign(campaign));
+      // Restore the campaign's NamingTemplate (backward compat: absent → DEFAULT_NAMING_TEMPLATE)
+      setStoredNamingTemplate(extractNamingTemplateFromCampaign(campaign));
       setOpenCampaignId(campaign.id);
       setStoredOpenId(campaign.id); // Fix E: persist across reload
       setIsDirty(false);
@@ -883,6 +917,7 @@ export function UtmGrid({
       setStoredRows,
       setStoredSettings,
       setStoredSpec,
+      setStoredNamingTemplate,
       setStoredOpenId,
     ]
   );
@@ -898,6 +933,19 @@ export function UtmGrid({
       clearSavedFlash();
     },
     [isUsingSharedState, commitSharedToStorage, setStoredSpec, clearSavedFlash]
+  );
+
+  /** Setter for the NamingTemplate (marks working grid dirty). */
+  const setNamingTemplate = useCallback(
+    (next: NamingTemplate) => {
+      if (isUsingSharedState) {
+        commitSharedToStorage();
+      }
+      setStoredNamingTemplate(next);
+      setIsDirty(true);
+      clearSavedFlash();
+    },
+    [isUsingSharedState, commitSharedToStorage, setStoredNamingTemplate, clearSavedFlash]
   );
 
   /** Called by CampaignsSidebar when a save completes. */
@@ -987,9 +1035,9 @@ export function UtmGrid({
       didMountOnStateChange.current = true;
       return;
     }
-    onStateChangeRef.current({ rows, settings, spec });
+    onStateChangeRef.current({ rows, settings, spec, namingTemplate });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rows, settings, spec]);
+  }, [rows, settings, spec, namingTemplate]);
 
   // ── "Create shared workspace" state ──────────────────────────────────────
   const [creatingWorkspace, setCreatingWorkspace] = useState(false);
@@ -1000,7 +1048,7 @@ export function UtmGrid({
     setCreatingWorkspace(true);
     setCreateWorkspaceError(null);
     try {
-      const payload: WorkspacePayload = { rows, settings, spec };
+      const payload: WorkspacePayload = { rows, settings, spec, namingTemplate };
       const res = await fetch("/api/workspace", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1320,6 +1368,18 @@ export function UtmGrid({
               />
               Enforce allowed values
             </label>
+            {/* Canonical "Enforce naming template" toggle — independent of Enforce UTM Spec */}
+            <label className="flex items-center gap-1.5 text-sm text-teal-700">
+              <input
+                type="checkbox"
+                data-testid="enforce-template-toggle"
+                checked={!!namingTemplate.enforceTemplate}
+                onChange={(e) =>
+                  setNamingTemplate({ ...namingTemplate, enforceTemplate: e.target.checked })
+                }
+              />
+              Enforce naming template
+            </label>
             {/* Fix C: "N cells off-spec" indicator — always visible when relevant */}
             {spec.enforceSpec && (() => {
               const offSpecCount = Array.from(warnings.values()).flat().filter((w) => w.rule === "off-spec").length;
@@ -1341,6 +1401,27 @@ export function UtmGrid({
                 </button>
               ) : null;
             })()}
+            {/* "N off-template" indicator — always visible when relevant */}
+            {namingTemplate.enforceTemplate && (() => {
+              const offTemplateCount = Array.from(warnings.values()).flat().filter((w) => w.rule === "off-template").length;
+              return offTemplateCount > 0 ? (
+                <button
+                  type="button"
+                  data-testid="off-template-indicator"
+                  aria-label={`${offTemplateCount} cell${offTemplateCount === 1 ? "" : "s"} off-template — click to open Naming Template panel`}
+                  onClick={() => {
+                    const panel = document.querySelector("[data-testid='naming-template-panel']");
+                    if (panel) {
+                      panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                      panel.dispatchEvent(new CustomEvent("naming-template-open"));
+                    }
+                  }}
+                  className="rounded-full border border-teal-300 bg-teal-50 px-2.5 py-0.5 text-xs font-semibold text-teal-700 hover:bg-teal-100"
+                >
+                  {offTemplateCount} cell{offTemplateCount === 1 ? "" : "s"} off-template
+                </button>
+              ) : null;
+            })()}
           </div>
           {/* Collapsible: the remaining three toggles + legend */}
           {lintRulesExpanded && (
@@ -1348,14 +1429,25 @@ export function UtmGrid({
               {toggle("requiredParams", "Require source/medium/campaign")}
               {toggle("lowercaseOnly", "Lowercase only")}
               {toggle("noSpaces", "No spaces")}
-              {/* Fix A: enforcing legend */}
-              {spec.enforceSpec && (
+              {/* Fix A: enforcing legend — extended with teal for off-template */}
+              {(spec.enforceSpec || namingTemplate.enforceTemplate) && (
                 <span className="text-[10px] text-gray-400">
-                  <span className="inline-block w-2 h-2 rounded-sm bg-violet-300 align-middle mr-0.5" aria-hidden="true" />{" "}
-                  violet = off-spec
-                  <span className="mx-1.5 text-gray-300">|</span>
                   <span className="inline-block w-2 h-2 rounded-sm bg-amber-300 align-middle mr-0.5" aria-hidden="true" />{" "}
                   amber = casing/spaces
+                  {spec.enforceSpec && (
+                    <>
+                      <span className="mx-1.5 text-gray-300">|</span>
+                      <span className="inline-block w-2 h-2 rounded-sm bg-violet-300 align-middle mr-0.5" aria-hidden="true" />{" "}
+                      violet = off-spec
+                    </>
+                  )}
+                  {namingTemplate.enforceTemplate && (
+                    <>
+                      <span className="mx-1.5 text-gray-300">|</span>
+                      <span className="inline-block w-2 h-2 rounded-sm bg-teal-300 align-middle mr-0.5" aria-hidden="true" />{" "}
+                      teal = off-template
+                    </>
+                  )}
                 </span>
               )}
             </div>
@@ -1446,6 +1538,7 @@ export function UtmGrid({
             rows={rows}
             settings={settings}
             spec={spec}
+            namingTemplate={namingTemplate}
             savedFlash={savedFlash}
             mobileOnly
           />
@@ -1460,6 +1553,16 @@ export function UtmGrid({
           workspaceMode={isWorkspaceMode}
           syncStatus={isWorkspaceMode ? specSyncStatus : undefined}
           syncSavedAt={isWorkspaceMode ? specSavedAt : undefined}
+          mobileOnly
+        />
+        {/* Campaign Naming Template mobile disclosure — always shown, all modes */}
+        <NamingTemplatePanel
+          template={namingTemplate}
+          onChange={setNamingTemplate}
+          enforceTemplate={!!namingTemplate.enforceTemplate}
+          onEnforceTemplateChange={(v) =>
+            setNamingTemplate({ ...namingTemplate, enforceTemplate: v })
+          }
           mobileOnly
         />
       </div>
@@ -1648,6 +1751,9 @@ export function UtmGrid({
                         : null;
                       // Fix A: violet border/bg whenever ANY warning is off-spec (not just when it's the only one)
                       const hasOffSpec = !!offSpecWarning;
+                      const hasOffTemplate = cellWarnings?.some((w) => w.rule === "off-template") ?? false;
+                      // Show composer button on utm_campaign cell when template has segments
+                      const showComposer = field === "utm_campaign" && namingTemplate.segments.length > 0 && !isPreview;
                       return (
                         /* relative z-[11]: creates stacking context above sticky right
                            columns (z-10) so warning popovers and "Fix to" chips are
@@ -1674,6 +1780,8 @@ export function UtmGrid({
                                 ? "border-gray-200 bg-slate-100 text-gray-400 cursor-not-allowed focus:outline-none"
                                 : isFlashing
                                 ? "border-green-400 bg-green-50 focus:outline-none"
+                                : cellWarnings && hasOffTemplate
+                                ? "border-teal-400 bg-teal-50 focus:outline-none focus:border-teal-500"
                                 : cellWarnings && hasOffSpec
                                 ? "border-violet-400 bg-violet-50 focus:outline-none focus:border-violet-500"
                                 : cellWarnings
@@ -1683,6 +1791,59 @@ export function UtmGrid({
                                 : "border-gray-200 bg-white focus:outline-none focus:border-blue-500"
                             }`}
                           />
+                          {/* "Build name" composer button — on utm_campaign cell when template has segments.
+                              NOT adjacent to Dup/Delete row controls (those are in the Actions column).
+                              Teal segment-blocks icon, clearly naming its scope. */}
+                          {showComposer && (
+                            <div className="relative">
+                              <button
+                                type="button"
+                                data-testid={`build-name-btn-${row.id}-table`}
+                                aria-label={`Build campaign name for row ${i + 1}`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setComposerOpenRowId((prev) =>
+                                    prev === row.id ? null : row.id
+                                  );
+                                }}
+                                className="mt-0.5 inline-flex items-center gap-1 rounded border border-teal-200 bg-teal-50 px-2 py-0.5 text-[10px] font-medium text-teal-700 hover:bg-teal-100"
+                              >
+                                <span>⊞</span>
+                                <span>Build name</span>
+                              </button>
+                              {composerOpenRowId === row.id && (
+                                <BuildNameComposer
+                                  template={namingTemplate}
+                                  currentValue={row.utm_campaign}
+                                  onApply={(value) => {
+                                    pushUndo("Build campaign name", rows);
+                                    setRows((prev) =>
+                                      prev.map((r) =>
+                                        r.id === row.id ? { ...r, utm_campaign: value } : r
+                                      )
+                                    );
+                                    flashCellKeys([`${row.id}:utm_campaign`]);
+                                  }}
+                                  onClose={() => setComposerOpenRowId(null)}
+                                  testIdSuffix={`${row.id}-table`}
+                                />
+                              )}
+                            </div>
+                          )}
+                          {/* Off-template "Build name…" link — opens composer */}
+                          {hasOffTemplate && field === "utm_campaign" && !isPreview && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setComposerOpenRowId(row.id);
+                              }}
+                              className="mt-0.5 inline-flex min-h-[44px] items-center rounded-full border border-teal-300 bg-teal-100 px-2.5 py-1 text-[11px] font-medium text-teal-800 hover:bg-teal-200"
+                              aria-label={`Build campaign name to fix off-template value in row ${i + 1}`}
+                            >
+                              Build name…
+                            </button>
+                          )}
                           {/* Fix B: inline "Fix to <value>" chip — auto-revealed, ≥44px tap target,
                               NOT gated behind the warnings pill, rendered above sticky columns (z-[11] from td).
                               Named to target value so it never reads as Dup/Delete/Set column. */}
@@ -1907,6 +2068,8 @@ export function UtmGrid({
                       ? nearestAllowedValue(row[field as UtmField] ?? "", spec.allowedValues[field as UtmField])
                       : null;
                     const hasOffSpec = !!offSpecWarning;
+                    const hasOffTemplateCard = cellWarnings?.some((w) => w.rule === "off-template") ?? false;
+                    const showComposerCard = field === "utm_campaign" && namingTemplate.segments.length > 0 && !isPreview;
                     return (
                       <div key={field} className="flex flex-col gap-1">
                         <label
@@ -1939,6 +2102,8 @@ export function UtmGrid({
                               ? "border-gray-200 bg-slate-100 text-gray-400 cursor-not-allowed focus:outline-none"
                               : isFlashing
                               ? "border-green-400 bg-green-50 focus:outline-none"
+                              : cellWarnings && hasOffTemplateCard
+                              ? "border-teal-400 bg-teal-50 focus:outline-none focus:border-teal-500"
                               : cellWarnings && hasOffSpec
                               ? "border-violet-400 bg-violet-50 focus:outline-none focus:border-violet-500"
                               : cellWarnings
@@ -1948,6 +2113,57 @@ export function UtmGrid({
                               : "border-gray-200 bg-white focus:outline-none focus:border-blue-500"
                           }`}
                         />
+                        {/* Build name composer button for utm_campaign in card view */}
+                        {showComposerCard && (
+                          <div className="relative">
+                            <button
+                              type="button"
+                              data-testid={`build-name-btn-${row.id}-card`}
+                              aria-label={`Build campaign name for row ${i + 1}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setComposerOpenRowId((prev) =>
+                                  prev === `${row.id}-card` ? null : `${row.id}-card`
+                                );
+                              }}
+                              className="inline-flex min-h-[44px] items-center gap-1.5 rounded-md border border-teal-200 bg-teal-50 px-3 py-2 text-xs font-medium text-teal-700 hover:bg-teal-100"
+                            >
+                              <span>⊞</span>
+                              <span>Build name</span>
+                            </button>
+                            {composerOpenRowId === `${row.id}-card` && (
+                              <BuildNameComposer
+                                template={namingTemplate}
+                                currentValue={row.utm_campaign}
+                                onApply={(value) => {
+                                  pushUndo("Build campaign name", rows);
+                                  setRows((prev) =>
+                                    prev.map((r) =>
+                                      r.id === row.id ? { ...r, utm_campaign: value } : r
+                                    )
+                                  );
+                                  flashCellKeys([`${row.id}:utm_campaign`]);
+                                }}
+                                onClose={() => setComposerOpenRowId(null)}
+                                testIdSuffix={`${row.id}-card`}
+                              />
+                            )}
+                          </div>
+                        )}
+                        {/* Off-template "Build name…" link in card view */}
+                        {hasOffTemplateCard && field === "utm_campaign" && !isPreview && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setComposerOpenRowId(`${row.id}-card`);
+                            }}
+                            className="inline-flex min-h-[44px] items-center self-start rounded-full border border-teal-300 bg-teal-100 px-3 py-2 text-[12px] font-medium text-teal-800 hover:bg-teal-200"
+                            aria-label={`Build campaign name to fix off-template value in row ${i + 1}`}
+                          >
+                            Build name…
+                          </button>
+                        )}
                         {/* Inline "Fix to <value>" chip — in normal flow, never overlay */}
                         {offSpecNearest && (
                           <button
@@ -2057,6 +2273,7 @@ export function UtmGrid({
               rows={rows}
               settings={settings}
               spec={spec}
+              namingTemplate={namingTemplate}
               savedFlash={savedFlash}
               desktopOnly
             />
@@ -2068,6 +2285,16 @@ export function UtmGrid({
               onShareSpec={() => void copyShareLink()}
               specLinkCopied={shareLinkCopied}
               workspaceMode={false}
+              desktopOnly
+            />
+            {/* Campaign Naming Template panel — sibling to UTM Spec, directly below */}
+            <NamingTemplatePanel
+              template={namingTemplate}
+              onChange={setNamingTemplate}
+              enforceTemplate={!!namingTemplate.enforceTemplate}
+              onEnforceTemplateChange={(v) =>
+                setNamingTemplate({ ...namingTemplate, enforceTemplate: v })
+              }
               desktopOnly
             />
           </div>
@@ -2085,6 +2312,17 @@ export function UtmGrid({
             workspaceMode={true}
             syncStatus={specSyncStatus}
             syncSavedAt={specSavedAt}
+            desktopOnly
+          />
+          {/* Campaign Naming Template panel — stacked below UTM Spec in workspace mode
+              (never a width-stealing sidebar when grid has constrained width) */}
+          <NamingTemplatePanel
+            template={namingTemplate}
+            onChange={setNamingTemplate}
+            enforceTemplate={!!namingTemplate.enforceTemplate}
+            onEnforceTemplateChange={(v) =>
+              setNamingTemplate({ ...namingTemplate, enforceTemplate: v })
+            }
             desktopOnly
           />
         </div>

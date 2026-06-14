@@ -6,12 +6,18 @@
 import LZString from "lz-string";
 import { UTM_FIELDS, type LintSettings, type UtmRow } from "./types";
 import { deserializeSpec, type UtmSpec } from "./spec";
+import { deserializeNamingTemplate, type NamingTemplate } from "./namingTemplate";
 
 export interface SharePayload {
   rows: UtmRow[];
   settings: LintSettings;
   /** Optional UTM Spec — absent in old share links (backward compat: treated as empty/unenforced). */
   spec?: UtmSpec;
+  /**
+   * Optional NamingTemplate — absent in old share links (backward compat: treated as empty/unenforced).
+   * When present, the recipient's grid adopts this campaign name structure.
+   */
+  namingTemplate?: NamingTemplate;
 }
 
 /**
@@ -156,4 +162,13 @@ function isSharePayload(v: unknown): v is SharePayload {
  */
 export function extractSpecFromPayload(payload: SharePayload): UtmSpec {
   return deserializeSpec(payload.spec);
+}
+
+/**
+ * Parse a SharePayload's namingTemplate field (may be absent in old links).
+ * Returns deserializeNamingTemplate(payload.namingTemplate) — defaults to
+ * empty/unenforced on absence (backward compat).
+ */
+export function extractNamingTemplateFromPayload(payload: SharePayload): NamingTemplate {
+  return deserializeNamingTemplate(payload.namingTemplate);
 }

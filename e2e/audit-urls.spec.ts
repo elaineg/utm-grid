@@ -124,11 +124,14 @@ test("malformed line shows parse summary '1 line skipped', valid lines import, n
   await expect(cell(page, "Base URL", 2)).toHaveValue("https://example.com/buy");
   await expect(cell(page, "Base URL", 3)).toHaveCount(0);
 
-  // Status banner says "1 line skipped"
-  const status = page.getByRole("status");
-  await expect(status.filter({ hasText: "1 line" })).toBeVisible({ timeout: 5000 });
-  // More specifically it says "skipped"
-  await expect(status.filter({ hasText: "skipped" })).toBeVisible();
+  // Audit summary panel (above the grid) names the skipped line.
+  // Use the testid to avoid strict-mode violation — round 2 added audit-summary-panel
+  // (role="status") ABOVE the grid in addition to the inline status banner, so a bare
+  // getByRole('status').filter(...) now resolves to multiple elements.
+  const summaryPanel = page.locator('[data-testid="audit-summary-panel"]');
+  await expect(summaryPanel).toBeVisible({ timeout: 5000 });
+  await expect(summaryPanel).toContainText("1 line");
+  await expect(summaryPanel).toContainText("skipped");
 });
 
 test("Audit URLs triggers no network request after page load", async ({ page }) => {

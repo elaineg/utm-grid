@@ -1,22 +1,45 @@
-# Round 2 — Tester 1 (Priya, senior backend SWE, network-tab skeptic)
+# utm-grid — Round 2, Tester 1 (Priya, senior backend eng, keyboard-first, skeptical)
+## Re-test: "Paste & Audit URLs" — grouped summary fix
 
-My side-project launch post needed UTMs; a teammate sent this instead of a spreadsheet.
-Cold open is legible in <5s: H1 + "Auto-fix messy casing before they split your Google Analytics."
-Created a workspace, got a /w/ link, set "Editing as: Priya". Edited spring->summer-launch;
-History snapshotted it attributed to me, with the prior version "by Anonymous". Round-1 panel's
-one gripe (Preview cells not truly locked) is FIXED: Preview now DOM-disables + greys cells and
-banner reads "read-only. Cells are locked." Restore non-destructively brought back the old value.
-Added "newsletter" to UTM_SOURCE taxonomy -> persisted across reload and synced to the workspace;
-named it "Acme Launch Q3" -> stuck. No console/network errors; nothing leaves the browser pre-share.
+## Re-check of my round-1 complaint (the one thing holding me at 8)
+**Round-1 dock:** after an audit, the utm_source/medium/campaign columns + per-cell flags
+were pushed off to the right — the audit payoff required horizontal scrolling, so the
+signal wasn't visible above the fold.
 
-Friction: on a 1400px desktop the UTM_SOURCE/MEDIUM/CAMPAIGN columns are pushed off-screen in
-the synced grid — only BASE URL + GENERATED URL show without horizontal scroll (cells are still
-editable, just hidden). Minor: taxonomy says "Not enforcing — enable in Naming rules", a small
-two-step before chips actually block bad values.
+**Now: RESOLVED.** I re-pasted 6 lines cold — casing-only dupes (Newsletter/newsletter,
+email/Email, Spring-Sale/spring_sale/spring-sale) plus a garbage non-URL line. A full-width
+**"Audit complete — 5 URLs parsed · 9 cells flagged"** summary panel now renders ABOVE the
+grid, grouped by field, exactly as described:
+- `utm_source: Inconsistent values (4 cells): "Newsletter" vs "newsletter" · Contains uppercase (2 cells) — Auto-fix can normalize`
+- `utm_medium: Inconsistent values (2 cells): "email" vs "Email" ...`
+- `utm_campaign: Inconsistent values (3 cells): "Spring-Sale" vs "spring_sale" vs "spring-sale" ...`
+- Skipped line named explicitly: `Line 6: "this is not a url at all -- garbage line" — not a valid URL`
 
-CLARITY: Yes
-VALUE: Yes
-ADVOCACY: 9/10
-REASON: Faster than hand-editing query strings and the attributed History+Restore+synced taxonomy
-make a shared grid trustworthy as a team source-of-truth; not a 10 because the source columns hide
-off-screen on a normal desktop and enforcement needs an extra toggle.
+I confirmed `document.scrollWidth == innerWidth` (1440 == 1440): **NO horizontal page scroll**
+to read the payoff. The whole verdict — what's inconsistent, by field, with the actual
+conflicting values, plus what got skipped — is legible at the fold. The submit button even
+shows a live count ("Audit N URLs"). This is the fix I asked for, done right: it reads the
+inconsistencies for me instead of making me eyeball cells.
+
+## Skeptic checks (re-run — I never take this on faith)
+- Network tab: **ZERO POST/PUT/PATCH** the whole session. "nothing leaves your browser" holds.
+- Console: **0 errors**. Casing preserved as-typed (not silently mangled). Malformed line
+  skipped, not crashed.
+
+## Remaining friction
+- Toolbar is still dense (Add row, Auto-fix, Undo, Import, Paste&Audit, Export, Copy share,
+  Copy all, + a "Create shared workspace"). Slightly crowded on first glance, but it's no
+  longer load-bearing for the audit payoff — cosmetic now.
+- No regression on the core build or the audit flow.
+
+## Verdict — prior concern: ADDRESSED
+clarity: Yes — headline + audit purpose clear in <30s, unchanged.
+value: Yes — I'd reach for this to vet inherited/QA links; the grouped summary makes the
+payoff instant, which is what I'd actually want.
+advocacy: **9** — the one thing keeping me off a 9 last round (payoff hidden behind
+horizontal scroll) is genuinely fixed; precise lint, nothing touches the network, input not
+mangled. I'd send this to a teammate unprompted instead of telling them to use a sheet.
+
+```json
+{"name":"Priya","clarity":"Yes","value":"Yes","advocacy":9}
+```

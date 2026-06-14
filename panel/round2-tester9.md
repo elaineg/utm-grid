@@ -1,19 +1,42 @@
-# Elena — round 2 (EM, 8 reports, 30s budget; laptop)
+# Round 2 (re-test) — Tester 9 (Elena, Engineering manager, 30-sec budget)
 
-Skimmed between meetings. Headline + "LIVE TEAM WORKSPACE" box told me what/who-for in ~5s. Created a /w/ workspace, set "Editing as: Elena", edited cells; data survived a fully fresh browser — real server source-of-truth, not just my localStorage. That earns trust.
+Re-opened cold, went straight to "Paste & Audit URLs", pasted 4 casing-dupe URLs
+(Facebook/facebook, Newsletter/newsletter, Email/email, Summer_Sale/summer_sale) + one
+garbage line. Audited, then hit Auto-fix naming. Zero console/page errors throughout.
 
-Re-check of my prior dings:
-- (a) Preview cells looking typeable though edits were discarded: FIXED, decisively. Preview now shows a yellow banner "Previewing version from 4m ago (by Anonymous) — read-only. Cells are locked," cells are visibly greyed, and my scripted attempt to type into them was BLOCKED. Restore is non-destructive ("Restoring brings a version back without losing the current one") — confirmed nothing was lost. Versions carry per-author attribution + timestamps.
-- (b) anyone-with-link-can-edit, no viewer/lock role: still the tradeoff. Accepted — History + attribution mean a bad edit is now traceable and recoverable, which removes most of my worry.
+## Prior concerns — both ADDRESSED.
 
-Friction/bugs (exact repro):
-1. History panel needs TWO clicks to populate. Repro: open /w/ link cold, click "History" once -> version list renders EMPTY (0 Preview/Restore buttons); click "History" again -> the 2-3 versions appear. For an EM judging a *trust* feature in 30s, "History looks empty" reads as "no history" — worst first impression for the exact thing being sold.
-2. Same double-toggle on "Shared UTM taxonomy" — first click on the header didn't expand it, so I couldn't add an allowed-value chip in my patience budget. I believe it works; I just couldn't drive it first try.
+1. **Clipped warnings / no top summary — FIXED.** There is now a full-width GROUPED SUMMARY
+   panel ABOVE the grid: "Audit complete — 4 URLs parsed · 10 cells flagged", with issues
+   grouped by field in plain sentences — `utm_source: Inconsistent values (4 cells):
+   "Facebook" vs "facebook" · Contains uppercase letters (2 cells) — Auto-fix can normalize`,
+   same for utm_medium and utm_campaign, plus a "1 line skipped (no valid URL found)" callout
+   naming Line 5. I read the whole what's-wrong picture in well under 30 seconds with NO
+   horizontal scroll and no squeezed 40px cells. Exactly the skim affordance I asked for.
 
-CLARITY — Yes. Headline + live-workspace box answer what/who-for in <5s.
-VALUE — Yes. A trustworthy zero-setup live link with locked preview, non-destructive restore, edit attribution, and a synced allowed-values taxonomy replaces our shared dirty-UTM Google Sheet. Every-campaign use for my 8 reports.
-ADVOCACY — 8/10. The data-integrity story is now solid enough that I'd tell the report who asked "yes, standardize on it." Not a 9 because the History and taxonomy panels render EMPTY on first click and need a second toggle — that flake makes the very trust feature I'm vouching for look broken in a 30-second skim. Fix the first-click render and this is a 9-10.
+2. **Stale "N cells flagged" count — FIXED.** After Auto-fix naming the same panel recomputed
+   LIVE to "Audit complete — 4 URLs parsed · All audited URLs are clean" (green). The
+   "10 cells flagged" number is gone, not frozen. A toast confirmed "Auto-fixed 5 cells —
+   Undo", and grid cells now read lowercase facebook/social. No stale number anywhere.
+
+## Remaining friction (minor, does not block recommend)
+- The one-click fix is the top-bar "Auto-fix naming" button, not a button inside the summary
+  panel; the panel says "Auto-fix can normalize" but carries no fix button, so the eye travels
+  up to the toolbar. Tiny — I found it instantly.
+- Generated-URL column is still wide and the grid scrolls horizontally, but that no longer
+  matters for triage now that the summary panel is the source of truth.
+
+## Prior value — no regression.
+Build-new, presets, CSV, share link, team workspace all still present and working.
+
+**Bottom line:** This is the fix I asked for. Triaging inherited links before a launch, the
+top summary + live "All audited URLs are clean" means I never touch the grid to know the
+state. The one nit that held me at 8 (clipped warnings, no top list) is gone. I'd now bring
+this up unprompted when a report asks "should we standardize on a UTM tool." 9.
+
+priorConcernsAddressed: all
 
 ```json
-{"tester": 9, "round": 2, "clarity": "Yes", "value": "Yes", "advocacy": 8, "topComplaints": ["History panel renders empty on first click; needs a second toggle to show versions — makes the trust feature look broken in a 30s skim", "Shared UTM taxonomy panel has the same double-click-to-expand flake; couldn't add an allowed-value chip first try"], "priorConcernsAddressed": "some"}
+{"tester": 9, "round": 2, "clarity": "Yes", "value": "Yes", "advocacy": 9, "topComplaints": ["One-click fix lives in the top toolbar (Auto-fix naming), not inside the summary panel that says 'Auto-fix can normalize' — eye has to travel up", "Generated-URL column still forces horizontal grid scroll (no longer blocks triage since summary panel is source of truth)"], "priorConcernsAddressed": "all"}
 ```
+{"name":"Elena","clarity":"Yes","value":"Yes","advocacy":9}

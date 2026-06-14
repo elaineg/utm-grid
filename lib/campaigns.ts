@@ -6,6 +6,7 @@
  */
 import type { LintSettings, UtmRow } from "./types";
 import { deserializeSpec, type UtmSpec } from "./spec";
+import { deserializeNamingTemplate, type NamingTemplate } from "./namingTemplate";
 
 export interface Campaign {
   /** Stable nanoid-style key (not the display name). */
@@ -20,6 +21,12 @@ export interface Campaign {
    * (backward compat).
    */
   spec?: UtmSpec;
+  /**
+   * NamingTemplate (segments + separator + enforceTemplate) captured at save time.
+   * Absent in campaigns saved before this feature — treated as empty/unenforced
+   * (backward compat).
+   */
+  namingTemplate?: NamingTemplate;
 }
 
 // ── Serialization ──────────────────────────────────────────────────────────────
@@ -64,7 +71,8 @@ export function saveCampaign(
   rows: UtmRow[],
   settings: LintSettings,
   existingId?: string,
-  spec?: UtmSpec
+  spec?: UtmSpec,
+  namingTemplate?: NamingTemplate
 ): { campaigns: Campaign[]; campaign: Campaign } {
   const trimmed = name.trim();
   const idx = campaigns.findIndex((c) => c.name === trimmed);
@@ -75,6 +83,7 @@ export function saveCampaign(
     settings,
     savedAt: Date.now(),
     ...(spec !== undefined ? { spec } : {}),
+    ...(namingTemplate !== undefined ? { namingTemplate } : {}),
   };
   if (idx >= 0) {
     // Update in-place at the same position
@@ -186,6 +195,13 @@ export function relativeTime(ms: number): string {
  */
 export function extractSpecFromCampaign(campaign: Campaign): UtmSpec {
   return deserializeSpec(campaign.spec);
+}
+
+/**
+ * Extract the NamingTemplate from a campaign (backward compat: absent → DEFAULT_NAMING_TEMPLATE).
+ */
+export function extractNamingTemplateFromCampaign(campaign: Campaign): NamingTemplate {
+  return deserializeNamingTemplate(campaign.namingTemplate);
 }
 
 // ── Type guard ─────────────────────────────────────────────────────────────────

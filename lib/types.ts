@@ -37,6 +37,12 @@ export interface LintSettings {
    * Default false (no enforcement when the spec is empty or toggle is off).
    */
   enforceSpec?: boolean;
+  /**
+   * When true: non-empty utm_campaign values that don't match the NamingTemplate
+   * structure are flagged off-template. Independent of enforceSpec.
+   * Default false (no off-template warnings when the template has no segments or toggle is off).
+   */
+  enforceTemplate?: boolean;
 }
 
 export const DEFAULT_LINT_SETTINGS: LintSettings = {

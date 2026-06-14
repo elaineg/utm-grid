@@ -12,6 +12,7 @@ import {
 } from "../../lib/campaigns";
 import type { LintSettings, UtmRow } from "../../lib/types";
 import type { UtmSpec } from "../../lib/spec";
+import type { NamingTemplate } from "../../lib/namingTemplate";
 
 interface CampaignsSidebarProps {
   campaigns: Campaign[];
@@ -29,6 +30,8 @@ interface CampaignsSidebarProps {
   settings: LintSettings;
   /** Current UTM Spec (needed for Save — persisted inside campaign). */
   spec?: UtmSpec;
+  /** Current NamingTemplate (needed for Save — persisted inside campaign). */
+  namingTemplate?: NamingTemplate;
   /** Flash state: true for ~2s after a successful save. */
   savedFlash: boolean;
   /** Render only the mobile disclosure variant (used in UtmGrid mobile slot). */
@@ -47,6 +50,7 @@ export function CampaignsSidebar({
   rows,
   settings,
   spec,
+  namingTemplate,
   savedFlash,
   mobileOnly,
   desktopOnly,
@@ -121,13 +125,14 @@ export function CampaignsSidebar({
       settings,
       // When saving as new, always generate a fresh id (don't re-use the open campaign's id)
       isSaveAsNewRef.current ? (existing?.id ?? undefined) : (existing?.id ?? openCampaignId ?? undefined),
-      spec
+      spec,
+      namingTemplate
     );
     onSave(next, campaign);
     setShowNameField(false);
     setNameValue("");
     isSaveAsNewRef.current = false;
-  }, [nameValue, campaigns, openCampaignId, rows, settings, onSave]);
+  }, [nameValue, campaigns, openCampaignId, rows, settings, spec, namingTemplate, onSave]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") { e.preventDefault(); commitSave(); }
