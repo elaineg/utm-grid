@@ -1,46 +1,19 @@
-# utm-grid — Round 2, Tester 6 (Jules, content & community marketer)
+# Round 2 — Tester 6 (Jules, content & community marketer)
 
-Re-test of "Paste & Audit URLs" on desktop (1280px) and mobile (375px). Cold open
-unchanged: the violet "Paste & Audit URLs" chip sits next to Import CSV with subtext naming
-it as the audit path. I pasted 5 already-tagged URLs: a Twitter/Social/Spring_Sale row, its
-casing-only twin (twitter/social/spring_sale), a LinkedIn row missing utm_campaign, one
-garbage line, and a Mastodon row.
-
-## Did my two Round-1 complaints get fixed?
-
-1. **Mobile warning verbosity → FIXED.** There is now a GROUPED SUMMARY panel sitting
-   directly above the grid. It lists each field ONCE, deduped, with counts:
-   - `utm_source: Inconsistent values (2 cells): "Twitter" vs "twitter" · Contains
-     uppercase (3 cells) — Auto-fix can normalize`
-   - `utm_medium: …` and `utm_campaign: … · Missing required value (1 row)`
-   On my phone I read the whole audit verdict in one compact box at the top — three lines —
-   instead of scrolling past a repeated "will split campaign data in GA4" sentence per row.
-   That repeated-scroll dread is gone.
-
-2. **"Which line skipped" → FIXED.** The summary spells it out:
-   `1 line skipped (no valid URL found): Line 4: "this is not a url at all blah blah" — not
-   a valid URL`. The banner now reads `Audited 4 URLs · 1 line skipped — see summary above.
-   Undo` and points me up to that detail. For a 40-link paste I'd now know exactly which row
-   got dropped. Trust earned.
-
-## Regression check — none
-Parse still correct, original casing preserved so the dupe is actually caught, one-tap
-Auto-fix, Append/Replace chosen up front, Undo in toolbar. Zero console errors on both
-viewports. Grid, presets, Export CSV, Copy share link, shared workspace all intact, no login
-wall. Mobile dialog ("Audit 5 URLs", Append/Replace, undo note) fits cleanly at 375px.
-
-## Remaining friction (minor)
-The old per-row warning lines still render down inside the grid as well, so the long scroll
-technically still exists below — but I no longer NEED to read it, because the summary up top
-answers everything. Collapsing those duplicated row lines would be polish, not a blocker.
-Nothing here holds me back now.
-
-## Verdict
-Both things that kept me at 8 are genuinely resolved, and resolved in marketer language. A
-grouped, deduped summary that names the skipped line makes a 40-link audit feel effortless on
-a phone — that's the bar where I'd bring this up unprompted in my marketing-ops channels.
-Raising to 9.
+Re-tested cold, desktop + mobile (I'm 50/50). My R1 friction was the buried Naming Template.
+Now it auto-expands at the TOP of the right rail with a structure-blocks icon, the sub-label
+"Define your campaign-name structure — its parts and their order", a self-contained explainer
+("Defines the STRUCTURE of utm_campaign … Different from Allowed Values, which sets allowed
+field values"), and a "Define structure →" pointer right under the top Enforce toggle that
+expands it. Campaigns + Allowed values now sit clearly BELOW and apart. I found it in under
+5s and never confused the three "naming" surfaces — fully fixed. Build-name composer is a
+solid teal ≥44px button; reload restored my quarter/channel/audience segments; 0 console
+errors on any run, desktop or 375px mobile (where the template is one tap from the toggle).
 
 ```json
-{"tester": 6, "round": 2, "clarity": "Yes", "value": "Yes", "advocacy": 9, "topComplaints": ["Per-row GA4 warning lines still duplicate down inside the grid (harmless now that the summary leads, but could be collapsed)", "No native X/Twitter or Mastodon preset — my two top channels still typed by hand"], "priorConcernsAddressed": "all"}
+{ "name":"Jules", "clarity":"Yes", "value":"Yes", "advocacy":9,
+  "prior_concerns_addressed":"Yes — template auto-expands at top of rail with distinct icon, sub-label, 'Different from Allowed Values' explainer, and a 'Define structure →' pointer; no longer buried or confusable.",
+  "likes":["No-login bulk grid I'd bookmark — H1 sells it in <10s","Naming Template now front-and-center, auto-expanded, with clear 'different from Allowed Values' copy that kills the disambiguation problem","Solid teal Build-name composer builds consistent names from my segments/tokens","Reload restored my full template — switching cost I actually want","Template reachable one tap from the mobile toggle too"],
+  "frictions":[{"severity":"P3","issue":"In-grid 'Build name' composer only surfaces once a template exists / utm_campaign is empty — first-timers may not see it before defining segments; a persistent hint would help."},{"severity":"P3","issue":"Per-platform presets (X/LinkedIn/Mastodon one-click) still hidden behind a collapsed 'Presets' bar — the thing I personally want most isn't obvious."}],
+  "verdict_sentence":"The template panel is now exactly where it should be — discoverable, auto-expanded, and clearly distinct from Allowed Values — turning a tool I'd bookmark into one I'd actually recommend to other multi-platform marketers." }
 ```

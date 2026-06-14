@@ -1,71 +1,35 @@
-# Paste & Audit URLs — Panel Synthesis, Round 2
+# utm-grid — Campaign Naming Template — Panel SYNTHESIS (Round 2)
 
-## Headline
-**9 pass / 1 sub-bar (Rob 8). Clarity = Yes 10/10, Value = Yes 10/10. PASS at the 9/10
-advocacy bar.** Every round-1 grouped complaint was designed out by the post-audit grouped
-SUMMARY panel; the seven re-tested personas all moved up, and the three round-1 passers
-carry forward. The only residual is Rob's wide-width grid overflow — reachable via the
-summary now, so polish, not a blocker.
+**Result: PASS.** 10/10 testers at the 9 advocacy bar, clarity Yes, value Yes. Exit condition met.
 
-## Score table (carried vs re-tested)
+## Round-2 score table
 
-| Tester | Persona                         | Clarity | Value | R1 | R2 | Status                |
-|--------|---------------------------------|---------|-------|----|----|-----------------------|
-| 1      | Priya (senior backend eng)      | Yes     | Yes   | 8  | 9  | re-tested → passes    |
-| 2      | Marcus (frontend eng)           | Yes     | Yes   | 9  | 9  | carried (R1 passer)   |
-| 3      | Wen (marketing data analyst)    | Yes     | Yes   | 8  | 9  | re-tested → passes    |
-| 4      | Tomás (ops analyst, Excel)      | Yes     | Yes   | 8  | 9  | re-tested → passes    |
-| 5      | Dana (demand-gen marketer)      | Yes     | Yes   | 9  | 9  | carried (R1 passer)   |
-| 6      | Jules (content/community mktr)  | Yes     | Yes   | 8  | 9  | re-tested → passes    |
-| 7      | Aisha (product designer)        | Yes     | Yes   | 10 | 10 | carried (R1 passer)   |
-| 8      | Rob (freelance brand designer)  | Yes     | Yes   | 7  | 8  | re-tested → sub-bar   |
-| 9      | Elena (engineering manager)     | Yes     | Yes   | 8  | 9  | re-tested → passes    |
-| 10     | Sam (product manager)           | Yes     | Yes   | 8  | 9  | re-tested → passes    |
+| # | Name | Persona | Clarity | Value | Advocacy | Prior concerns addressed |
+|---|------|---------|---------|-------|----------|--------------------------|
+| 1 | Priya | Senior backend SWE | Yes | Yes | 9 | Yes — panel→top w/ icon+sublabel+pointer; toggles separated; reload restores full template; editable cols stay visible w/ warning |
+| 2 | Marcus | Frontend eng, 1280px | Yes | Yes | 9 | Partly — panel-buried fully fixed; long-URL column squeeze only partly fixed (P2 below) |
+| 3 | Wen | Marketing data analyst | Yes | Yes | 9 | Yes — reload now hydrates FULL template (segments+tokens+separator+enforce), verified two ways; R1 P1 fixed |
+| 4 | Tomás | Ops analyst, Edge/Win | Yes | Yes | 9 | Yes — empty leading/middle/trailing segments now flagged off-template; valid name stays clean |
+| 5 | Dana | Demand-gen marketer | Yes | Yes | 9 | Yes — Build name now 106×44 solid teal; reload restores full template into expanded panel |
+| 6 | Jules | Content/community mktr | Yes | Yes | 9 | Yes — panel auto-expands at top w/ distinct icon, sublabel, "Different from Allowed Values" explainer + pointer |
+| 7 | Aisha | Product designer | Yes | Yes | 9 | Yes — panel top/auto-expanded w/ pointers; solid 44px teal Build-name on every row; composer portaled/unclipped |
+| 8 | Rob | Brand/visual designer | Yes | Yes | 9 | Yes — panel pinned top, above fold cold; icon/sublabel/pointer; columns still fit at 1440px |
+| 9 | Elena | Eng manager (mobile) | Yes | Yes | 9 | Yes — panel top-of-rail, auto-expands, "Define structure →" pointer above fold on laptop AND mobile |
+| 10 | Sam | PM (laptop+mobile) | Yes | Yes | 9 | Yes — composer portaled & unclipped on laptop and 375px; template top of rail w/ pointer |
 
-**Advocacy ≥ 9: 9/10.** Re-tested 7 (Priya, Wen, Tomás, Jules, Rob, Elena, Sam); carried 3
-(Marcus, Dana, Aisha). Lowest: Rob 8 (up from 7).
+**Advocacy ≥ 9: 10/10. Clarity Yes 10/10. Value Yes 10/10.**
 
-## Round-1 grouped complaints — resolution
+## Remaining non-blocking frictions
 
-### Cause 1 — POST-AUDIT PAYOFF HIDDEN (R1: Priya, Tomás, Rob, Elena) → RESOLVED
-The grouped SUMMARY panel above the grid surfaces every flagged value without horizontal
-scroll; auto-scroll jumps to the first flagged column.
-- Priya (8→9): "the one thing keeping me off a 9 last round (payoff hidden behind horizontal
-  scroll) is genuinely fixed."
-- Tomás (8→9): "the summary above carries everything actionable. The fix turned that into a
-  non-issue."
-- Elena (8→9): "the top summary + live 'All audited URLs are clean' means I never touch the
-  grid to know the state… that held me at 8… is gone."
+- **P2 (Marcus, 1280px):** with Enforce on + a long generated URL the table overflows its
+  container (~1982px in ~1022px); the GENERATED URL column squeezes UTM_MEDIUM/CAMPAIGN/TERM
+  out of view, so the flagged campaign cell + its inline off-template warning still need a
+  horizontal scroll to read. DOM-correct, not deleted/clipped — a layout tension, not a defect.
+  Logged as next-deepen residual (sticky/clamped generated-URL column or pinned row-level banner).
+- **P3 (Tomás / Wen / Sam-mobile):** cold-load / reload auto-expand of the Naming Template
+  panel does not reliably fire — it sometimes returns collapsed (and on 375px the pointer
+  scrolls-to + highlights but needs one extra tap). State is preserved, just occasionally hidden.
+- **P3 (Aisha):** a segment name typed but not committed via "Add" is silently dropped when
+  Build name opens — designers expect Enter/commit-on-blur to capture it.
 
-### Cause 2 — WARNING VERBOSITY: full GA4 sentence repeated per row (R1: Wen, Jules, Sam, Elena) → RESOLVED
-The summary groups issues BY FIELD — the natural dedupe — so the conflict-pair reads once,
-not once per row.
-- Wen (8→9): "the panel is genuinely well-built (grouped, counted, names skipped lines)."
-- Jules (8→9): "A grouped, deduped summary… makes a 40-link audit feel effortless on a phone."
-- Sam (8→9): "summary-above-grid is the right design… both things that would have bitten me
-  at scale are genuinely fixed."
-
-### Cause 3 — "1 LINE SKIPPED" DOESN'T SAY WHICH (R1: Marcus, Dana, Tomás, Jules, Sam) → RESOLVED
-The summary names each skipped line. Confirmed by re-tested Tomás/Jules/Sam (above); carried
-Marcus/Dana were already passers. Rob's R2 toast: "Audited 4 URLs · 1 line skipped — see
-summary above."
-
-### Cause 4 — STALE FLAG COUNTER after normalize (R1: Elena only) → RESOLVED
-Now a live flag count.
-- Elena (8→9): "live 'All audited URLs are clean'… I never touch the grid to know the state."
-
-## Residual (Rob, 8 — not blocking)
-The wide GENERATED-URL column still pushes utm_campaign/term/content off-screen at ~1680px
-with the Campaigns sidebar open, forcing horizontal grid scroll.
-- Rob: "Both my blockers are genuinely gone; I can read AND fix the data without it looking
-  broken. Held at 8 (not 9) only because the GENERATED URL column still forces horizontal
-  scroll on the grid, which a designer notices."
-
-Why not blocking: the grouped summary is now the source of truth for the audit payoff, so the
-flagged values are reachable without ever touching the grid. Two other R2 passers (Wen 9,
-Sam 9) flagged the related "fix-from-summary" gap as polish while still scoring 9. Queued as
-polish (revisit GENERATED-URL/sidebar width at laptop widths; one-click normalize inside the
-summary panel), not a ship blocker.
-
-## Verdict
-**PASS — 9/10 at advocacy ≥ 9, clarity Yes 10/10, value Yes 10/10.** Ship.
+These are cosmetic/edge-case and below the advocacy bar; none gated a 9. **Exit condition met — ship.**

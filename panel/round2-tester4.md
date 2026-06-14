@@ -1,45 +1,39 @@
-# Round 2 (re-test) — Tomás (ops analyst, Excel power user, Edge/Windows, data-wary)
+# Round 2 — Tomás (Ops analyst, Edge/Windows, Excel power user)
 
-Re-opened cold at my realistic Edge window width (1100px, Teams docked on the side) and
-re-ran my exact round-1 test: 4 already-tagged URLs (utm_medium "Email"/"email"/"EMAIL",
-utm_campaign "spring_sale"/"Spring_Sale", one row missing medium) + one malformed line.
+**Prior concern re-check (empty-segment enforcement):** FIXED. With segments quarter/channel/audience
+defined and Enforce naming template ON, I typed each empty-segment case at the new preview and the
+campaign cell + a "N cell off-template" badge flagged correctly: `_email_` (lead+trail) → flagged,
+`q3__retargeting` (middle empty) → flagged, `q3_email_` (trailing) → flagged, `_email_smb` (leading) →
+flagged, while the legit `q3_email_smb` stayed clean and `randomjunk` flagged. Exactly the
+partial/empty-segment lint I asked for in round 1. Zero console errors across every run.
 
-## My two round-1 docks — status
-1. "Grid hid the utm_* columns at my width, so I had to trust the banner, not see issues."
-   FIXED. A full-width violet GROUPED SUMMARY panel now sits ABOVE the grid and reads with
-   NO horizontal scroll (verified: doc scrollWidth == clientWidth, no h-overflow at 1100px).
-   It groups every problem by field exactly how I'd want to read it:
-   - "utm_medium: Inconsistent values (3 cells): 'Email' vs 'email' vs 'EMAIL' · Contains
-     uppercase letters (2 cells) — Auto-fix can normalize · Missing required value (1 row)"
-   - "utm_campaign: Inconsistent values (4 cells): 'spring_sale' vs 'Spring_Sale' ..."
-   That casing-drift diff is the fragile LOWER()/COUNTIF helper I build in Excel, handed to
-   me in one panel. I no longer widen my window or trust a bare count.
-2. "'1 line skipped' didn't tell me WHICH line." FIXED, and done right. The panel says:
-   "1 line skipped (no valid URL found): Line 4: 'this is not a url at all just garbage I
-   fat-fingered' — not a valid URL." Line number + offending text + reason — exactly so I
-   can tell a real fat-fingered link from intended garbage. No guessing.
+**Clarity — Yes.** Same strong headline + "no login, nothing leaves your browser" answers my
+data-paranoia in 10s. The naming panel now leads the rail with a distinct grid icon and the sub-label
+"Define your campaign-name structure — its parts and their order," and the "Different from Allowed Values"
+helper is still there. Unambiguous which panel does what.
 
-priorConcernsAddressed: both of my round-1 nits — ADDRESSED.
+**Value — Yes.** I hand-build these with Excel CONCAT and still get inconsistent names across the team.
+This now enforces the convention AND rejects malformed/empty-segment names BEFORE they reach GA — that's
+the adoption case for my ops team. CSV export still quoted commas/ampersands and encoded the URL (no
+mangling), which is the whole reason I'd switch off my sheet.
 
-## Regression check — clean
-Undo button still present after audit; Export CSV present; Presets/Auto-fix/Create
-workspace all render; ZERO console errors across every run. Casing left as-typed (correct
-for an audit — don't silently rewrite my data). My CSV round-trip is intact.
+**Remaining friction:** The round-2 note claimed the template panel "auto-expands" — it does NOT on cold
+load; the segment editor is collapsed and I had to click "Define structure →" (clearly pointed-to, so P3,
+not blocking). My other round-1 want is still open: Import CSV doesn't lint imported rows against the
+template on the way in — off-template imported rows aren't flagged.
 
-## Remaining friction (small)
-- Header reads "8 cells flagged" while I pasted 5 lines / 4 parsed — that's cells, not rows,
-  and is clear once I read the per-field breakdown, but the number-vs-line-count made me
-  pause a beat on first glance.
-- Grid row cells below the summary are still narrow at my width, but it no longer matters:
-  the summary above carries everything actionable. The fix turned that into a non-issue.
-
-clarity: Yes — "paste your tagged links, it flags every casing/missing-param issue before
-they split your GA4 data, and names any line it couldn't parse."
-value: Yes — replaces my manual Excel casing-diff, names skipped lines, won't mangle data.
-advocacy: 9 — both things that held me at 8 are genuinely fixed, and the summary is exactly
-how an analyst reads errors (grouped by field, named skipped line). I'd raise this with my
-ops team unprompted now. Not a 10 only for the minor cells-vs-rows count phrasing.
+**Advocacy — 9.** The thing that capped me at 8 last round (loose empty-segment enforcement) is genuinely
+fixed and verified across leading/middle/trailing cases. I'd raise this with my ops team unprompted for
+naming consistency on a locked-down corporate laptop. Not a 10 only because Import-CSV still doesn't lint
+against the template.
 
 ```json
-{"name":"Tomás","clarity":"Yes","value":"Yes","advocacy":9}
+{ "name":"Tomás", "clarity":"Yes", "value":"Yes", "advocacy":9,
+  "prior_concerns_addressed":"Yes + empty leading/middle/trailing segments (_email_, q3__retargeting, q3_email_, _email_smb) now flagged off-template with enforce on, while a valid 3-segment name stays clean",
+  "likes":["Empty-segment enforcement fixed — verified _email_, q3__retargeting, q3_email_, _email_smb all flagged","Naming Template panel leads the rail with distinct icon + 'Define your campaign-name structure' sub-label","Reload restores full template (quarter/channel/audience) and keeps Enforce on","Solid teal Build-name button is easy to hit","CSV export still quotes commas/ampersands and encodes URL — no data mangling","Runs fully in-browser, no login — fits my locked-down Edge/Windows setup"],
+  "frictions":[
+    {"severity":"P3","issue":"Template panel does NOT auto-expand on cold load (claim says it does); segment editor stays collapsed until you click 'Define structure →'"},
+    {"severity":"P3","issue":"Import CSV still doesn't lint imported rows against the naming template on the way in — off-template imported rows aren't flagged"}
+  ],
+  "verdict_sentence":"The loose empty-segment enforcement that held me at 8 is genuinely fixed and verified across leading/middle/trailing cases, making this a browser-native, Excel-friendly UTM grid that now reliably enforces our campaign naming convention without touching a server — a 9." }
 ```

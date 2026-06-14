@@ -168,6 +168,10 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
   const [workspaceLinkCopied, setWorkspaceLinkCopied] = useState(false);
   const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Copy style-guide link state
+  const [styleGuideCopied, setStyleGuideCopied] = useState(false);
+  const styleGuideCopyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Mount the workspace link copied state on entry (if we just navigated from "Create shared workspace")
   // Check sessionStorage for a pending copy-on-load signal
   const didMountCopyCheck = useRef(false);
@@ -383,6 +387,22 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
     }, 1800);
   }, [id]);
 
+  const copyStyleGuideLink = useCallback(async () => {
+    if (!id) return;
+    const url = `${window.location.origin}/w/${id}/guide`;
+    try {
+      await writeClipboard(url);
+    } catch {
+      // execCommand fallback already tried inside writeClipboard
+    }
+    if (styleGuideCopyTimer.current) clearTimeout(styleGuideCopyTimer.current);
+    setStyleGuideCopied(true);
+    styleGuideCopyTimer.current = setTimeout(() => {
+      setStyleGuideCopied(false);
+      styleGuideCopyTimer.current = null;
+    }, 1800);
+  }, [id]);
+
   // ── Preview handler ────────────────────────────────────────────────────────
   const handleHistoryPreview = useCallback(
     (p: WorkspacePayload | null, v: HistoryVersion | null) => {
@@ -573,7 +593,7 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
     : "Team Workspace — synced";
 
   return (
-    <main className="mx-auto w-full max-w-7xl flex-1 p-6">
+    <main className="mx-auto w-full max-w-7xl flex-1 p-6 overflow-x-hidden">
       {/* Team Workspace banner — in normal document flow, NEVER fixed/sticky.
           Pushes the grid DOWN. Full-width, cool-neutral strip.
           At 375px: stacks label+status on first line, full-width button beneath.
@@ -623,34 +643,60 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
             )}
             {renderSyncStatus()}
           </div>
-          <div className="flex flex-col items-start sm:items-end gap-1 shrink-0">
-            <button
-              type="button"
-              data-testid="copy-workspace-link"
-              aria-label="Copy workspace link"
-              onClick={() => void copyWorkspaceLink()}
-              className={`rounded-md border px-4 py-2 text-sm font-medium transition-colors duration-200 min-h-[44px] ${
-                workspaceLinkCopied
-                  ? "border-green-500 bg-green-500 text-white"
-                  : "border-blue-400 bg-white text-blue-700 hover:bg-blue-50"
-              }`}
-            >
-              {workspaceLinkCopied ? (
-                <span className="inline-flex items-center gap-1.5">
-                  <span>✓</span>{" "}
-                  <span>Workspace link copied!</span>
-                </span>
-              ) : (
-                "Copy workspace link"
-              )}
-            </button>
-            {/* Fix 2: permission note — anyone with the link can edit */}
+          <div className="flex flex-col items-start sm:items-end gap-2 shrink-0">
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              <button
+                type="button"
+                data-testid="copy-workspace-link"
+                aria-label="Copy workspace link"
+                onClick={() => void copyWorkspaceLink()}
+                className={`rounded-md border px-4 py-2 text-sm font-medium transition-colors duration-200 min-h-[44px] ${
+                  workspaceLinkCopied
+                    ? "border-green-500 bg-green-500 text-white"
+                    : "border-blue-400 bg-white text-blue-700 hover:bg-blue-50"
+                }`}
+              >
+                {workspaceLinkCopied ? (
+                  <span className="inline-flex items-center gap-1.5">
+                    <span>✓</span>{" "}
+                    <span>Workspace link copied!</span>
+                  </span>
+                ) : (
+                  "Copy workspace link"
+                )}
+              </button>
+              {/* Share style guide — FIRST-CLASS, visually distinct button */}
+              <button
+                type="button"
+                data-testid="share-style-guide-btn"
+                aria-label="Share style guide link"
+                onClick={() => void copyStyleGuideLink()}
+                className={`rounded-md border px-4 py-2 text-sm font-medium transition-colors duration-200 min-h-[44px] ${
+                  styleGuideCopied
+                    ? "border-green-500 bg-green-500 text-white"
+                    : "border-violet-400 bg-violet-50 text-violet-700 hover:bg-violet-100"
+                }`}
+              >
+                {styleGuideCopied ? (
+                  <span className="inline-flex items-center gap-1.5">
+                    <span>✓</span>{" "}
+                    <span>Copied!</span>
+                  </span>
+                ) : (
+                  "Share style guide"
+                )}
+              </button>
+            </div>
+            {/* Permission note + style guide sublabel */}
             <span className="text-[10px] text-blue-600 text-right leading-tight">
               Anyone with this secret link can edit.
             </span>
-            {/* aria-live region for screen readers on copy */}
+            <span className="text-[10px] text-violet-500 text-right leading-tight">
+              Share style guide: a read-only page teammates can read without editing.
+            </span>
+            {/* aria-live regions for screen readers */}
             <span role="status" aria-live="polite" className="sr-only">
-              {workspaceLinkCopied ? "Workspace link copied!" : ""}
+              {workspaceLinkCopied ? "Workspace link copied!" : styleGuideCopied ? "Style guide link copied!" : ""}
             </span>
           </div>
         </div>

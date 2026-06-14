@@ -1141,7 +1141,7 @@ export function UtmGrid({
   const canUndo = undoCount > 0;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 overflow-x-hidden">
       {/* P0-2: CSS rule — when the hero has data-shared-landing, collapse it to a quiet one-liner.
           This is pure CSS, set by the share-hash useEffect on the hero DOM element.
           SSR-safe: the data attribute is absent on first render, so SSR and client match. */}

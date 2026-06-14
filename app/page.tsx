@@ -2,7 +2,7 @@ import { UtmGrid } from "./components/UtmGrid";
 
 export default function Home() {
   return (
-    <main className="mx-auto w-full max-w-7xl flex-1 p-6">
+    <main className="mx-auto w-full max-w-7xl flex-1 p-6 overflow-x-hidden">
       {/* Hero — collapsed to data-hero-block so UtmGrid can hide it on shared-link landing.
           Mobile: headline text-xl leading-snug (≤2 lines at 375px), subhead text-sm (≤3 lines),
           total block pt-3 pb-2 ≈ ≤120px so the first grid card is near the fold on a phone. */}

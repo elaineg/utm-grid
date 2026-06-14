@@ -1518,3 +1518,79 @@ parts and their order"** — impossible to scroll past. The "Enforce naming temp
 carries a **"Define structure →"** pointer to it. On a row, an un-subtle teal **"Build name"**
 chip opens a composer popover that is never clipped (portaled, viewport-aware) and renders in
 card flow at 375px; every control is ≥44px and non-occluded.
+
+## Team UTM Style Guide — new read-only page (2026-06-14)
+
+ONE new capability: a shareable, READ-ONLY governance reference at **`/w/<id>/guide`**, derived
+entirely from the existing Team Workspace payload (reuse GET `/api/workspace/<id>` — no new
+schema/table/credential). Audience: a teammate / agency / contractor who needs to KNOW how this
+team tags links WITHOUT editing. It is a DOCUMENT, not a tool. Additive only — do NOT redesign the
+app, the grid, the `/w/<id>` editor, or any panel. The page makes ZERO writes (no PUT/POST, no
+autosave, no localStorage) — read-only or it can clobber the workspace.
+
+**1. Problem statement (the page's own 5-second read).** "See exactly how this team tags its links
+— the approved values, names, and rules — without touching anything." A stranger opening
+`/w/<id>/guide` cold must understand within 5 seconds: *this is <team>'s UTM tagging standard, here
+are the rules.* Lead with a clear **h1 title** + a **one-line description**. NO editable inputs
+anywhere — it must READ like a typeset reference, not the editor with disabled fields.
+
+**2. Emotional tone.** Authoritative and calm — an internal wiki / style guide. Document feel:
+real headings + body prose (not grid chrome), a centered reading column (~720px max-width),
+generous vertical spacing, neutral/cool palette consistent with the app. Allowed values render as
+quiet labeled chips, never as form controls.
+
+**3. Sections, in this exact order.**
+- **(a) What & why** — ONE short line: consistent UTM tags keep campaign data from silently
+  splitting in GA4.
+- **(b) Allowed values** — per UTM field, render ONLY fields that have a non-empty allowed-value
+  list (utm_source / utm_medium / utm_campaign / utm_term / utm_content). Each as a labeled value
+  list / chip set. Skip fields with no list (don't show empty rows).
+- **(c) Campaign naming template** — show the ORDERED segments + the separator + each segment's
+  allowed tokens, AND a **worked concrete example string** assembled from the template (first
+  allowed token per segment, else a `<segment-name>` placeholder), e.g.
+  `2026q3_paidsocial_retargeting`, so the reader sees a real compliant name, not just a schema.
+- **(d) Conventions** — plain language, listing ONLY the lint rules that are ON (e.g. "lowercase
+  only", "no spaces", "utm_source / utm_medium / utm_campaign required", "values must be from the
+  allowed list", "campaign names must follow the template"). State the casing/separator
+  conventions in words.
+- **(e) CTA card** — prominent **"Open the editable workspace →"** linking to `/w/<id>`. This is
+  the viral on-ramp turning a recipient into a user; make it a real card, not a footer link.
+
+**4. Empty state (graceful, never blank).** If the workspace has NO UTM Spec values AND no naming
+template: still render section (d) Conventions (the active lint rules) + section (a) + the CTA, plus
+one friendly line — **"This team hasn't defined a custom value or naming taxonomy yet — the
+conventions below still apply."** Never a blank page.
+
+**5. Mode-aware copy (server-backed page — trust bomb if wrong).** NO "nothing leaves your browser"
+/ "client-side only" wording anywhere on the guide (it's a server fetch). If privacy is mentioned at
+all, say the secret link is the access control: **"Anyone with this secret link can view this page."**
+
+**6. Not-found state.** `/w/<bad-id>/guide` shows a clean **"Workspace not found"** message with a
+link back to the builder (`/`) — mirror the existing `/w/<id>` not-found, never a crash or blank.
+
+**7. Discoverability FROM the editable `/w/<id>` (friction: added features get buried, panels burn
+rounds surfacing them).** Add a FIRST-CLASS, visually distinct **"Share style guide"** action near
+the **"Team Workspace — synced"** banner — NOT buried at the bottom of a rail. One-line sublabel or
+tooltip: **"A read-only page teammates can read without editing."** Clicking COPIES the
+`/w/<id>/guide` link and shows a **peripherally-unmissable green-fill-in-place "Copied!"**
+confirmation that **survives re-render** (ref-stable timer, `aria-live="polite"`, execCommand/
+textarea clipboard fallback) — reuse this app's established copy-cue pattern; do NOT regress to a
+fast-fading corner toast for this button.
+
+**8. Layout residual to FIX on the editable `/w/<id>` + main grid (call-out for builder).** At
+~1280px with Enforce on and a long generated-URL column the table overflows horizontally and inline
+warnings need sideways scroll. Fix direction: ensure NO child carries a hardcoded `w-NN shrink-0`
+that escapes the container (container-resize-leaves-hardcoded-width-children lesson); the
+generated-URL column must truncate/wrap, OR the table scrolls WITHIN its own container — never the
+page. **No horizontal PAGE scroll at 1280px.**
+
+**9. Mobile (375px).** The guide is fully legible top-to-bottom with NO horizontal scroll; all
+sections stack; value chips wrap.
+
+### 5-second check (the guide page, above the fold)
+- **Headline (h1):** "<editor-label or 'Team'> UTM Tagging Standard".
+- **Subtitle (one line):** "How this team tags campaign links so reporting stays clean. Read-only reference."
+- **Primary action:** none to perform — the page IS the outcome (the reader reads); the prominent
+  **"Open the editable workspace →"** CTA card is the on-ramp and is visible near the top.
+- **Pre-filled example:** the first visible content is real workspace data — allowed-value chips and
+  the worked naming-template example string (e.g. `2026q3_paidsocial_retargeting`) — never a blank box.

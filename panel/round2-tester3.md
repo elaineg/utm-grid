@@ -1,47 +1,45 @@
 # Round 2 — Wen (Marketing data analyst, GA4 reporting, lives in data hygiene)
-# Focus: re-test the GROUPED SUMMARY fix for "Paste & Audit URLs"
 
-## Prior concern (R1, advocacy 8): RESOLVED
-Last round my only real dock was that the warning list REPEATED the same casing pair once
-per offending row — noisy at 50 links. Re-opened cold and pasted 12 valid lines (Facebook/
-facebook on source, cpc/CPC on medium, Spring_2026/spring_2026 on campaign, one missing
-utm_medium) + 2 malformed lines.
+## Prior concern re-check — the reload hydration bug
+RIGOROUSLY verified two ways. (1) Defined channel/audience segments + tokens + "_" separator +
+Enforce in the UI, reloaded — LS held the full template incl enforceTemplate:true. (2) Seeded LS with a
+clean 2-segment template [channel:{paid,organic}, audience:{newusers,retarget}] + "_" + enforce,
+reloaded, read inputs with NO clicks: segment-name inputs came back ["channel","audience"] and Enforce
+restored checked:true. The FULL template hydrates now — not just the toggle. My round-1 P1 is FIXED.
+(My earlier "empty" reads were my own artifact: clicking the panel header collapses an already-expanded
+panel; the values were in the DOM the whole time.)
 
-A grouped summary panel now sits ABOVE the grid, deduped to ONE line per field — exactly
-what I asked for:
-- `utm_source: Inconsistent values (6 cells): "Facebook" vs "facebook" · Contains uppercase
-  letters (3 cells) — Auto-fix can normalize`
-- `utm_medium: Inconsistent values (5 cells): "cpc" vs "CPC" ... · Missing required value (1 row)`
-- `utm_campaign: Inconsistent values (10 cells): "Spring_2026" vs "spring_2026" ...`
-- Header live count "Audit complete — 10 URLs parsed · 22 cells flagged"
-- "2 lines skipped (no valid URL found)" then names Line 11 and Line 12 verbatim with the
-  reason. No silent swallow — the transparency I distrust other tools for.
+## Clarity — Yes
+Same strong cold open. New: Naming Template panel sits at TOP of the rail with a distinct teal block-
+icon, header "Campaign Naming Template", sub-label "Define your campaign-name structure — its parts and
+their order", and explicit "Different from Allowed Values" copy. Never confused the two. "Build name" is
+now a solid teal button on the utm_campaign cell — reads as the primary action.
 
-The repeated-per-row noise is GONE from the summary. Each field's casing conflict reads
-once, cell counts attached, the missing-value and skipped lines surfaced. At 50 links this
-now scans in seconds instead of scrolling a wall of identical warnings.
+## Value — Yes
+I lint UTM casing in BigQuery + a Sheet of allowed values and dirty names still split my Looker rows.
+This catches casing + structure in-session, speaks GA4, strict honest CSV (clean header, generated_url
+matches, source cells untouched). With the reload fix, "define my convention once, enforce it next week"
+finally holds — the difference between a demo and a tool I'd keep open.
 
-## My other R1 ask — partially answered
-I also wanted a one-click normalize FROM a lint warning. The summary panel itself is
-read-only (no button inside it), so that exact ask isn't there. BUT the summary says
-"Auto-fix can normalize," each flagged cell has a per-cell "Fix" affordance, and the global
-"Auto-fix naming" button works: I clicked it and every Facebook/CPC/Spring_2026 collapsed to
-lowercase canonical (verified all source inputs read "facebook"/"newsletter"). The loop
-closes in two clicks; I'd still love a "normalize this field" link directly on each summary
-row, but the path is clear and labeled, not buried.
+## Friction
+- P3 — rail Naming Template panel doesn't reliably auto-expand on reload; sometimes comes back collapsed
+  (the down-chevron) and I click the header to reveal my segments. State preserved, just hidden.
+- P3 — token-add still commits on Enter/blur; "+ add token (optional)" placeholder is clearer, but a
+  less technical marketer may not realize Enter commits.
 
-## Regression check
-Per-cell warnings + per-cell Fix still present; parse is still EXACT (Facebook stayed
-Facebook until I chose to fix; missing medium came in BLANK, not guessed). Generated URLs
-intact. CSV in/out intact. 0 console errors across the whole paste→audit→auto-fix flow.
-
-clarity: Yes
-value: Yes
-advocacy: 9 — my one standing dock from R1 is fixed and the panel is genuinely well-built
-(grouped, counted, names skipped lines). I'd bring this up unprompted to other GA4 owners
-fighting dirty-UTM campaign splits. Held off a 10 only because the one-click normalize lives
-one layer away from the summary rather than on the summary rows themselves.
+## Advocacy — 9
+The one thing that had to work for a returning daily analyst now works: my template survives reload
+intact. With strict CSV, casing lint, and a clearly-distinct naming template, this is the UTM hygiene
+tool I've wanted and I'd bring it up unprompted to my analytics team. Only the cosmetic auto-expand nit
+keeps it off a 10.
 
 ```json
-{"name":"Wen","clarity":"Yes","value":"Yes","advocacy":9}
+{ "name":"Wen", "clarity":"Yes", "value":"Yes", "advocacy":9,
+ "prior_concerns_addressed":"Yes + reload now restores full template (segments+tokens+separator+enforce), verified via UI-define reload AND seed-LS-then-load with no clicks; round-1 P1 fixed",
+ "likes":["Naming Template hydrates fully on reload — segments [channel,audience] + tokens + separator + enforce all restore","Template panel promoted to top of rail with distinct teal icon, sub-label, and explicit 'Different from Allowed Values' copy","Build name composer is now a solid teal primary button on the utm_campaign cell","Strict honest CSV unchanged — clean header, generated_url matches, source cells left as typed","Define-once-reuse-next-week promise finally holds"],
+ "frictions":[
+   {"severity":"P3","issue":"Rail Naming Template panel doesn't reliably auto-expand on reload — sometimes comes back collapsed and I must click the header to see my restored segments; state is preserved, just hidden."},
+   {"severity":"P3","issue":"Token commit on Enter/blur is implicit; '+ add token (optional)' helps but a less technical marketer may not realize Enter commits a token."}
+ ],
+ "verdict_sentence":"The reload hydration bug that dropped me to a 6 is genuinely fixed — my multi-segment template plus tokens, separator, and enforce all survive a reload (verified by both defining-in-UI and seeding localStorage then loading) — so define-once-reuse-next-week finally holds, and this is now the UTM hygiene tool I'd recommend to my analytics team." }
 ```

@@ -1,42 +1,28 @@
-# Round 2 (re-test) — Tester 9 (Elena, Engineering manager, 30-sec budget)
+# Elena — Engineering manager, 30-sec patience, half the day on phone between meetings (Round 2)
 
-Re-opened cold, went straight to "Paste & Audit URLs", pasted 4 casing-dupe URLs
-(Facebook/facebook, Newsletter/newsletter, Email/email, Summer_Sale/summer_sale) + one
-garbage line. Audited, then hit Auto-fix naming. Zero console/page errors throughout.
+Re-checked my round-1 gripe COLD at the new preview.
 
-## Prior concerns — both ADDRESSED.
+PRIOR P2 (naming-template power buried in a scrollable right rail, not above the fold) — FIXED.
+On laptop cold-open the "Campaign Naming Template" panel sits at the TOP of the right rail with a
+teal grid icon + "Define your campaign-name structure — its parts and their order", and the top
+Naming Rules block carries an "Enforce naming template" toggle with a teal "Define structure →"
+pointer. Clicking it auto-expands the panel, which keeps the exact disambiguation copy that sold
+me in r1: "Different from Allowed Values, which sets allowed field values." A 30-sec skimmer now
+sees the power without scrolling.
 
-1. **Clipped warnings / no top summary — FIXED.** There is now a full-width GROUPED SUMMARY
-   panel ABOVE the grid: "Audit complete — 4 URLs parsed · 10 cells flagged", with issues
-   grouped by field in plain sentences — `utm_source: Inconsistent values (4 cells):
-   "Facebook" vs "facebook" · Contains uppercase letters (2 cells) — Auto-fix can normalize`,
-   same for utm_medium and utm_campaign, plus a "1 line skipped (no valid URL found)" callout
-   naming Line 5. I read the whole what's-wrong picture in well under 30 seconds with NO
-   horizontal scroll and no squeezed 40px cells. Exactly the skim affordance I asked for.
+PRIOR P3 (mobile: power below a long fold) — IMPROVED. On 375px the Naming Rules toggles +
+"Define structure →" sit right under the action buttons, within a thumb-skim between meetings.
 
-2. **Stale "N cells flagged" count — FIXED.** After Auto-fix naming the same panel recomputed
-   LIVE to "Audit complete — 4 URLs parsed · All audited URLs are clean" (green). The
-   "10 cells flagged" number is gone, not frozen. A toast confirmed "Auto-fixed 5 cells —
-   Undo", and grid cells now read lowercase facebook/social. No stale number anywhere.
+Regression check: zero console errors; headline/share copy unchanged; Add row + toggles work.
 
-## Remaining friction (minor, does not block recommend)
-- The one-click fix is the top-bar "Auto-fix naming" button, not a button inside the summary
-  panel; the panel says "Auto-fix can normalize" but carries no fix button, so the eye travels
-  up to the toolbar. Tiny — I found it instantly.
-- Generated-URL column is still wide and the grid scrolls horizontally, but that no longer
-  matters for triage now that the summary panel is the source of truth.
-
-## Prior value — no regression.
-Build-new, presets, CSV, share link, team workspace all still present and working.
-
-**Bottom line:** This is the fix I asked for. Triaging inherited links before a launch, the
-top summary + live "All audited URLs are clean" means I never touch the grid to know the
-state. The one nit that held me at 8 (clipped warnings, no top list) is gone. I'd now bring
-this up unprompted when a report asks "should we standardize on a UTM tool." 9.
-
-priorConcernsAddressed: all
+Value vs today: still beats my reports' Google Sheet CONCATENATE — enforces a shared naming
+convention via one link, the part a sheet can't do. Now that enforcement is visible in 30s, I'd
+bring it up to my report unprompted.
 
 ```json
-{"tester": 9, "round": 2, "clarity": "Yes", "value": "Yes", "advocacy": 9, "topComplaints": ["One-click fix lives in the top toolbar (Auto-fix naming), not inside the summary panel that says 'Auto-fix can normalize' — eye has to travel up", "Generated-URL column still forces horizontal grid scroll (no longer blocks triage since summary panel is source of truth)"], "priorConcernsAddressed": "all"}
+{ "name":"Elena", "clarity":"Yes", "value":"Yes", "advocacy":9,
+  "prior_concerns_addressed":"Yes — naming-template panel now top-of-rail, auto-expands, with a 'Define structure →' pointer above the fold on both laptop and mobile",
+  "likes":["Naming Template panel moved to TOP of right rail with teal icon + 'Define your campaign-name structure' sub-label","'Define structure →' pointer under the Enforce toggle expands the panel in one click","r1 disambiguation copy preserved: 'Different from Allowed Values, which sets allowed field values'","Naming Rules toggles now above the fold on 375px mobile","no console errors, no regression in headline/share/Add-row"],
+  "frictions":[{"severity":"P3","issue":"Promise of structure-enforcement is now above the fold, but actually configuring segments / Build name still requires scrolling into the right rail or grid — the last mile"}],
+  "verdict_sentence":"My one real gripe is fixed — the naming-template power is now obvious in a 30-second skim on laptop and phone, so this clears my bar and I'd recommend standardizing on it to my report." }
 ```
-{"name":"Elena","clarity":"Yes","value":"Yes","advocacy":9}

@@ -1,14 +1,42 @@
-# Round 2 — Tester 2 (Marcus, frontend eng, Chrome + devtools, 1280px)
+# Round 2 — Tester 2 (Marcus, frontend engineer, desktop Chrome 1280px, devtools open)
 
-Re-checked my round-1 nits first. (a) **Preview cells DOM-disabled — FIXED.** Amber banner "Previewing version from Ns ago (by X) — read-only. Cells are locked." and every grid cell is disabled+readonly (verified 6/6, typing blocked). Clean CSS, not janky. (b) **Edit attribution — FIXED.** "Editing as: Marcus" in the header, "last edited by Marcus", and per-version "by Marcus"/"by Anonymous" in History. (c) **Clipped "Copy" button @1280 — FIXED.** Renders full "Copy", fully on-screen (right edge 898 in a 958px area). Residual: the grid still has internal horizontal scroll (table 1356px in 958px area) once all 6 UTM cols + actions show — acceptable for a wide data table, no longer clips controls.
+Re-checked my two round-1 frictions cold, then re-ran the full template→enforce→off-template flow.
 
-Full flow worked: created /w/ workspace, History(5) snapshotted every save, Previewed an old version (locked), Restored it via a clear non-destructive native confirm ("...becomes the current grid for everyone... your current version is saved in history first, nothing is lost"), grid editable again after with the restored values. Added taxonomy chips (marcus_test_chip, newsletter) to UTM_SOURCE — both **persisted across a brand-new browser session** (server-synced, real team source-of-truth, not localStorage). Grid data synced cross-session too. Zero console/page errors.
+**Prior concern 1 (template panel buried at bottom of sidebar):** FIXED. The "Campaign Naming
+Template" card is now the TOP of the right rail, teal-bordered, auto-expanded cold, with a
+distinct grid icon and a "Define your campaign-name structure — its parts and their order"
+sub-label, plus a "Define structure →" pointer right under the top Enforce-naming toggle. I'd
+find it by scanning now, not by accident.
 
-Friction/bugs (minor):
-- Duplicate `id="utm-spec-add-utm_source"` (+ sibling field ids) in the DOM — invalid HTML, looks like a responsive duplicate of the taxonomy panel. Caught in devtools; no user-facing effect but it's a smell.
-- Taxonomy panel collapses on a subtle chevron; first-timers may miss the per-field allowed-value editor.
+**Prior concern 2 (flagged cell hidden when grid collapses on a long URL):** PARTLY fixed. Good:
+the off-template warning now renders inline in the row ("⚠ Off-template — expected 3 segments,
+found 1", confirmed in the DOM), the composer popover is no longer clipped, columns aren't
+deleted. But on my actual 1280px laptop, with Enforce on and a real long generated URL the table
+grows to ~1982px inside a ~1022px overflow-x-auto container, so the GENERATED URL column
+dominates and squeezes UTM_MEDIUM/UTM_CAMPAIGN/UTM_TERM out of the viewport — even scrolled fully
+left I see BASE URL, a truncated UTM_SOURCE, then it jumps straight to GENERATED URL. The flagged
+campaign cell + its warning are in the DOM but I still have to horizontal-scroll to read them.
+Improved, not fully solved at a standard laptop width.
 
-CLARITY: Yes
-VALUE: Yes
-ADVOCACY: 9/10
-REASON: All three of my round-1 concerns are resolved, and History + non-destructive Restore + server-synced shared taxonomy with editor attribution genuinely make this a trustworthy no-login team UTM source-of-truth — I'd drop it in our launch Slack today. Holding the 10 only on a duplicate-id DOM smell and the easy-to-miss collapsed taxonomy panel: polish, not substance.
+**Clarity** — Yes. H1 + subhead still land in 5s; the new top template card closes the one
+disambiguation gap I had.
+
+**Value** — Yes. Still beats hand-typing query params and a wiki convention nobody follows;
+segment-structure enforcement + the Build-name composer is the thing I'd actually adopt.
+
+**Advocacy** — 9. The discoverability fix was my single biggest blocker and it's genuinely
+resolved; zero console errors, share link round-trips, polished. I'd drop it in our launch Slack
+now. Not a 10 only because the GENERATED URL column still overflows the grid on a normal laptop
+width with a long URL, so the flagged cell needs a horizontal scroll to see — a sticky/clamped
+generated-URL column or a row-level warning banner pinned left would earn the 10.
+
+```json
+{ "name":"Marcus", "clarity":"Yes", "value":"Yes", "advocacy":9,
+  "prior_concerns_addressed":"Partly — panel-buried fully fixed (now top, auto-expanded, distinct icon+sub-label+pointer); long-URL column squeeze only partly fixed: warning renders in DOM but GENERATED URL column still overflows the 1280px grid so the flagged utm cell needs horizontal scroll",
+  "likes":["Naming Template now top of rail, auto-expanded, teal-bordered, 'Define your campaign-name structure' sub-label + 'Define structure →' pointer from the Enforce toggle","Off-template warning now renders inline in the row ('expected 3 segments, found 1') and is no longer clipped/portaled","Build-name composer is a solid teal ≥44px filled button — easy to hit","Share link round-trips the template, no login, zero console errors, core flow unregressed"],
+  "frictions":[
+    {"severity":"P2","issue":"At 1280px with Enforce on and a long generated URL the table overflows its container (~1982px in ~1022px); the GENERATED URL column squeezes UTM_MEDIUM/CAMPAIGN/TERM out of view, so the flagged campaign cell + its warning require horizontal scroll to read inline"},
+    {"severity":"P3","issue":"JOIN PARTS WITH / separator still only offers _ or - presets; a custom separator (e.g. |) would be nice, not blocking"}
+  ],
+  "verdict_sentence":"My buried-panel blocker is genuinely fixed — the naming template is now the first thing you see — so this is a 9 I'd share in Slack; the only thing between it and a 10 is that a long generated URL still overflows the desktop grid and pushes the flagged cell out of view until you scroll." }
+```
