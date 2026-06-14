@@ -1,1 +1,29 @@
-{"clarity":"Yes","value":"Yes","advocacy":8,"priorConcernsAddressed":"some","notes":"Re-tested at 375px. The example-spec quick-start is a real mobile win: from a collapsed empty UTM Spec panel, one tap on the violet 'Try an example spec' loads a full taxonomy (source: newsletter/facebook/google, medium: email/paid_social/cpc, campaign: spring_sale/black_friday/onboarding), auto-flips Enforce ON, drops a toast 'Loaded example spec — tap Fix on the off-spec cell to see the taxonomy magic,' and the grid immediately shows an off-spec cell with a violet 'Fix to facebook' chip + a '1 cell off-spec' pill. I tapped Fix once: cell went green/valid, chip 1->0. Fastest 'see the magic' path yet and exactly what a cold mobile visitor needs — clarity stays a strong Yes. 'Share this spec with your team' works and genuinely copies a spec-bearing #g= link (clipboard verified); value stays a clear Yes (beats my Notion-table-of-conventions + hand-typing). Inline Fix-to and copy-share-link both still work; copy-share-link only confirms when the grid has content (empty default row = no toast, which is sensible), and both share-spec and share-link clipboards received real URLs. HOLDING BELOW 9-10: the team consciously deferred the mobile card redesign — fair, and I judged as-is — but the row grid STILL horizontal-scrolls hard at 375px (the URL/value scroll container is scrollWidth ~1533px in a ~325px viewport). A cell, its Fix chip, and the row's actions still don't all sit on one phone screen, so after the example-spec wow I'm side-scrolling to actually edit a row. It's livable now (the example flow front-loads the value so I'm never lost), but it's the one thing keeping me from posting about it unprompted. Per-row cards on mobile = my 9-10."}
+{"name":"Jules","clarity":"Yes","value":"Yes","advocacy":9}
+
+# Jules — Content & community marketer (50/50 desktop/mobile, allergic to logins)
+
+## Re-check of MY round-2 complaint (silent "Copy summary") — FIXED
+This was the whole reason I sat at 7. I ran Launch Check on a dirty twitter/linkedin/mastodon
+batch, then clicked the single "Copy summary" at the TOP of the Compliance Report and watched
+it. It flips to a SOLID-GREEN pill with white "✓ Copied!" and HOLDS — green from ~160ms
+through past 1.6s (lab green, white text), the same treatment as "Copy share link" / "Copy all
+URLs". A hurried person absolutely sees it; I did, instantly. No duplicate button anymore.
+Clipboard genuinely fired (1451 chars). My silent-button allergy is resolved.
+
+## Fresh pass
+1. CLARITY — Yes. H1 "Clean UTM links for your whole campaign — in one grid" + "no login,
+   nothing leaves your browser" lands in ~3s. The no-account bulk tool I bookmark.
+2. VALUE — Yes. Today I hand-edit UTMs in Notion and eyeball casing — which is how "Social"
+   vs "social" splits my GA4. Run Launch Check caught the cross-row utm_campaign inconsistency
+   ("Launch" vs "launch"), uppercase, and the missing https:// — each with the GA4 warning
+   spelled out per row. Download report (CSV) is teammate-ready. Beats my eyeballing.
+
+## ADVOCACY — 9
+The button is honest now, the Launch Check is the feature that earns the bookmark, and I'd
+post it in my marketing Discord. The single biggest remaining thing keeping it off a 10: still
+no X/Twitter or Mastodon presets — the pitch is "presets per platform" and those two (the ones
+I post to most) I still type by hand every launch. Add them and it's a genuine unprompted 10.
+
+```json
+{"tester": 6, "round": 3, "clarity": "Yes", "value": "Yes", "advocacy": 9, "topComplaints": ["Still no X/Twitter or Mastodon presets despite the 'presets per platform' pitch — the two platforms I post to most, I type by hand every launch"], "priorConcernsAddressed": "all"}
+```

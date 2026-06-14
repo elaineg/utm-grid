@@ -1742,3 +1742,97 @@ report (Launch Check renders nothing until clicked). The **"Run Launch Check"** 
 "Check every link in this batch before you launch." — sits in the labeled **Pre-launch QA** group
 above the grid, clearly distinct from "Audit URLs" and from every share action, so a marketer
 opening the builder cold understands in 5s: this checks my whole batch before launch.
+
+## Bulk QR codes for tagged links (added 2026-06-14)
+
+ONE new capability: a **per-row QR popover** and a **bulk "Download QR codes"** action, both 100%
+client-side over the existing generated-URL column. A marketer pastes a tagged link into a deck,
+a print flyer, or a retail/event sign by scanning instead of retyping. Additive only — do NOT
+redesign the app; do NOT touch the headline, subhead, lint toggles, grid layout, Presets,
+Campaigns/UTM-Spec/Naming-Template panels, the Bulk-edit bar's existing two verbs, CSV, Audit URLs,
+Launch Check, or any share action. Read-only-safe everywhere: QR generation only READS already-
+loaded grid state — it NEVER mutates the grid, NEVER autosaves, NEVER POSTs/PUTs (zero network after
+page load on `/`; no write on `/w/<id>`). Cold open shows no popover until a QR button is clicked.
+Each item is shaped by this app's repeated panel failures (buried-but-working features; verb
+collision; mobile occlusion; copy/result cues that don't survive a re-render).
+
+**1. Per-row "QR" button — discoverable on the row, never a bare glyph (heed
+added-feature-buried-panel).** Each row whose generated URL is valid/non-empty exposes an inline
+**"QR"** button (small **QR-square icon + the literal word "QR"** — never an unlabeled glyph) inside
+the existing **fixed-width row-actions column to the RIGHT of the Generated-URL cell** (the Fix F
+column that already holds Copy / Duplicate row / Delete row), placed **immediately beside the per-row
+Copy** so it reads as "do something with this URL." Same secondary button styling/weight as its
+neighbors. A row with an empty/invalid generated URL shows the QR button **disabled with a tooltip
+"Add a valid URL to make a QR."** — never hidden silently, never crashing.
+- **On click → a small popover/inline panel anchored to that row** renders the QR (generated in a
+  client effect / on the click via the `qrcode` lib — NEVER in a useState lazy initializer, no
+  window/document reads during render) of that row's **FULL generated tagged URL including every
+  `utm_*` param**. The panel contains, top to bottom: the rendered QR (~160px), the **exact URL
+  string it encodes** (small, mono, selectable, wrapping — so the user can verify what's encoded),
+  and two buttons **"Download PNG"** and **"Download SVG"**.
+- **Dismiss + z-stack:** the popover closes on **click-out** (pointerdown outside it) AND on **Esc**,
+  and on opening a different row's QR (only one open at a time). It z-stacks **ABOVE all cell
+  affordances and the sticky/pinned column** (z-index over the Fix F actions column + sticky header),
+  rendered so it is NOT occluded and never sits behind a cell. On desktop it opens toward the cell's
+  free side (won't clip off the right edge of the grid container).
+
+**2. Bulk "Download QR codes" — distinct verb, in the Bulk-edit bar, scope stated inline (heed
+same-verb-adjacent-controls-read-as-broken + verb-collision, the recurring bulk blocker).** A
+**"Download QR codes"** action (QR-square + download icon) lives in the existing **Bulk-edit bar**,
+visually **set apart from the bar's two edit verbs** ("Set column" / "Find & replace in column") by a
+thin divider and its own small "Export" sub-label — and distinct from every share/export/check
+control (Copy share link / Create shared workspace / Copy workspace link / Share style guide / Run
+Launch Check / Audit URLs / Import CSV / Export CSV). The word "QR" + the download glyph keep it from
+ever reading as a column edit or a duplicate of CSV export.
+- **Selection semantics inline, mirroring the existing bulk ops:** it uses the SAME row-selection
+  model and shows the SAME live **"Apply to:"** indicator — **"Apply to: all 5 rows"** (none selected)
+  / **"Apply to: 2 selected rows"** (accent-tinted, heavier weight when narrowed), so the user knows
+  before clicking that none-selected = all rows. On click it generates a QR for every TARGETED row
+  with a valid generated URL and downloads a **ZIP** (`jszip`): one PNG per row named by the stable
+  scheme (zero-padded row # + slugified `utm_campaign`, falling back to the zero-padded row # when
+  campaign is empty), PLUS one printable **contact-sheet PNG**. Rows with empty/invalid URLs are
+  **skipped**, never dropped silently, never a crash.
+- **Confirmation cue — peripherally unmissable, ref-stable, survives re-render (heed
+  copy-confirmation-survives-tick-rerender, THE dominant blocker on this app).** After the download
+  the bar shows a **green-fill-in-place result message** reading e.g. **"5 QR codes generated, 1 row
+  skipped — no valid URL"** (drop the skipped clause when zero skipped: "5 QR codes generated").
+  It is **NOT a corner toast**: it renders in flow on/beside the button, fills solid green with a
+  check, is backed by **`aria-live="polite"`**, and is held on a **ref-stable timer (~3s) that
+  survives the grid's re-render** (reuse the proven Copy-share-link / Copy-summary pattern). An
+  all-skipped run (no valid URLs in scope) reads **"No QR codes — no rows have a valid URL yet."**
+
+**3. Discoverability is FIRST-CLASS (this app has repeatedly burned panel rounds on buried-but-
+working features).** Concretely: the per-row **"QR"** (icon + label) sits in the Fix F row-actions
+column right next to Copy on EVERY valid row — obvious on the row without hunting. The bulk
+**"Download QR codes"** (icon + label + "Export" sub-label) sits in the always-present Bulk-edit bar
+above the grid header — obvious in the toolbar. Neither is behind a hover-reveal or a collapsed
+disclosure on desktop. Crowding guard: the row already carries Copy/Dup/Delete, so QR is the row's
+4th icon — keep the actions column fixed-width with the URL cell truncating to ellipsis (Fix F) so
+adding QR never pushes buttons onto the URL text; if width is tight, the QR button is icon+"QR" at
+the same compact size as the others, not a wider pill.
+
+**4. Mobile (375px card view) — reachable, operable, nothing occluded (heed
+mobile-sticky-overlay-occludes-tap-targets).** In the ≤640px card view the per-row **"QR"** button
+joins the card's **top-bar row-action cluster** (alongside Duplicate row / Delete row), each ≥44px,
+icon+label, in normal card flow — no sticky/pinned anything. Tapping it opens the QR panel **stacked
+BELOW that card's fields at constrained width, in flow** (pushing content down) — it NEVER overlays a
+field, checkbox, or button, NEVER squeezes the editable inputs, and the QR + URL + PNG/SVG buttons
+fit the 375px width with **no horizontal scroll**; the panel z-stacks above any cell affordance.
+Esc/tap-out dismisses. The bulk **"Download QR codes"** lives in the **"Bulk edit"** disclosure under
+the top action stack, full-width and ≥44px when expanded; its green result message renders full-width
+in flow under the button, never a corner toast that scrolls off.
+
+**5. Identical on `/` and `/w/<id>`, read-only-safe (heed read-only-page-must-not-write).** Both
+surfaces work the same on the main builder and on workspace pages. On `/w/<id>` the QR button sits in
+the same row-actions / card top-bar position, BELOW the synced banner, and generating a QR (per-row
+OR bulk) fires **NO POST/PUT** — a `GET /api/workspace/<id>` before equals one after; QR reads only
+the already-loaded workspace state and does not trip autosave. Any "client-side / no network" wording
+is mode-aware: on `/w/<id>` say "Built here without changing this workspace," never a stale
+zero-network claim.
+
+### 5-second check (Bulk QR — unchanged above the fold)
+Cold visitor still sees the unchanged hero (headline, subhead, pre-filled example row + Copy) and no
+QR popover (nothing renders until a QR button is clicked). On the example row, the **"QR"** button
+(icon + label) is visible beside Copy in the row-actions column, and **"Download QR codes"** sits
+labeled in the Bulk-edit bar with its live "Apply to: …" scope — so a marketer instantly sees both
+the per-row and whole-batch ways to turn tagged links into scannable codes, without hunting.

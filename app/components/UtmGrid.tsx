@@ -56,6 +56,8 @@ import {
 } from "../../lib/campaigns";
 import { extractNamingTemplateFromPayload } from "../../lib/share";
 import type { WorkspacePayload } from "../../lib/workspace";
+import { QrPopover } from "./QrPopover";
+import { filterValidQrRows, buildQrResultMessage, stableQrFilename } from "../../lib/qr";
 
 type EditableField = "baseUrl" | UtmField;
 const COLUMNS: EditableField[] = ["baseUrl", ...UTM_FIELDS];
@@ -627,6 +629,127 @@ export function UtmGrid({
       bulkNoMatchTimer.current = null;
     }, 4000);
   }, []);
+
+  // ── QR state ──────────────────────────────────────────────────────────────
+  // openQrRowId: which row's QR popover is open (null = none). One at a time.
+  // Initialized null (cold open shows no popover — SSR safe, no browser reads in render).
+  const [openQrRowId, setOpenQrRowId] = useState<string | null>(null);
+  // qrResultMessage: green-fill-in-place result message after bulk QR download.
+  // ref-stable timer so it survives re-render (same pattern as shareLinkCopied).
+  const [qrResultMessage, setQrResultMessage] = useState<string | null>(null);
+  const qrResultTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showQrResult = useCallback((message: string) => {
+    if (qrResultTimer.current) clearTimeout(qrResultTimer.current);
+    setQrResultMessage(message);
+    qrResultTimer.current = setTimeout(() => {
+      setQrResultMessage(null);
+      qrResultTimer.current = null;
+    }, 3000);
+  }, []);
+
+  /** Bulk download QR codes as a ZIP — called from BulkEditBar's QR export button.
+   *  READ-ONLY: never mutates rows, never fires any POST/PUT.
+   *  Uses the same row-selection model as other bulk ops. */
+  const handleBulkDownloadQr = useCallback(async () => {
+    const { valid, skippedCount } = filterValidQrRows(rows, selectedRowIds.size > 0 ? selectedRowIds : undefined);
+
+    if (valid.length === 0) {
+      showQrResult(buildQrResultMessage(0, skippedCount));
+      return;
+    }
+
+    try {
+      // Dynamic imports — client-side only, never during SSR render.
+      const [QRCode, JSZip] = await Promise.all([
+        import("qrcode").then((m) => m.default),
+        import("jszip").then((m) => m.default),
+      ]);
+
+      const zip = new JSZip();
+
+      // Build one PNG per valid row (named by stable scheme).
+      // We need a row-index that matches the 1-based position in the FULL rows array.
+      const rowIndexMap = new Map(rows.map((r, i) => [r.id, i + 1]));
+
+      const qrEntries: { filename: string; url: string; rowIndex: number; campaign: string; pngDataUrl: string }[] = [];
+
+      for (const row of valid) {
+        const url = buildUtmUrl(row);
+        const rowIndex = rowIndexMap.get(row.id) ?? 0;
+        const filename = stableQrFilename(rowIndex, row.utm_campaign);
+        const pngDataUrl = await QRCode.toDataURL(url, {
+          width: 200,
+          margin: 1,
+          color: { dark: "#111827", light: "#ffffff" },
+        });
+        // Convert data URL to binary for ZIP
+        const base64 = pngDataUrl.split(",")[1] ?? "";
+        zip.file(filename, base64, { base64: true });
+        qrEntries.push({ filename, url, rowIndex, campaign: row.utm_campaign, pngDataUrl });
+      }
+
+      // Build contact-sheet PNG using canvas
+      if (qrEntries.length > 0) {
+        const canvas = document.createElement("canvas");
+        const cols = Math.min(4, qrEntries.length);
+        const rows_count = Math.ceil(qrEntries.length / cols);
+        const cellSize = 220; // QR 200px + label area
+        const labelHeight = 32;
+        const padding = 12;
+        canvas.width = cols * (cellSize + padding) + padding;
+        canvas.height = rows_count * (cellSize + labelHeight + padding) + padding;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.font = "11px monospace";
+          ctx.fillStyle = "#374151";
+
+          for (let idx = 0; idx < qrEntries.length; idx++) {
+            const entry = qrEntries[idx];
+            const col = idx % cols;
+            const row_n = Math.floor(idx / cols);
+            const x = padding + col * (cellSize + padding);
+            const y = padding + row_n * (cellSize + labelHeight + padding);
+
+            // Draw QR image
+            const img = new Image();
+            await new Promise<void>((resolve) => {
+              img.onload = () => {
+                ctx.drawImage(img, x, y, 200, 200);
+                resolve();
+              };
+              img.src = entry.pngDataUrl;
+            });
+
+            // Draw label: "01 spring_sale" or "01 <url truncated>"
+            const label = entry.campaign
+              ? `${String(entry.rowIndex).padStart(2, "0")} ${entry.campaign}`
+              : `${String(entry.rowIndex).padStart(2, "0")} ${entry.url.slice(0, 30)}…`;
+            ctx.fillStyle = "#374151";
+            ctx.fillText(label, x, y + 200 + 18, cellSize);
+          }
+        }
+        const sheetDataUrl = canvas.toDataURL("image/png");
+        const sheetBase64 = sheetDataUrl.split(",")[1] ?? "";
+        zip.file("contact-sheet.png", sheetBase64, { base64: true });
+      }
+
+      const blob = await zip.generateAsync({ type: "blob" });
+      const objectUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = objectUrl;
+      a.download = "utm-qr-codes.zip";
+      a.click();
+      URL.revokeObjectURL(objectUrl);
+
+      showQrResult(buildQrResultMessage(valid.length, skippedCount));
+    } catch (err) {
+      console.error("Bulk QR download failed:", err);
+      showQrResult("QR download failed — please try again.");
+    }
+  }, [rows, selectedRowIds, showQrResult]);
 
   /** Toggle a single row checkbox. */
   const toggleRowSelection = useCallback((rowId: string) => {
@@ -1696,6 +1819,8 @@ export function UtmGrid({
         onFindReplace={handleBulkFindReplace}
         resultMessage={bulkResultMessage}
         noMatchMessage={bulkNoMatchMessage}
+        onDownloadQr={handleBulkDownloadQr}
+        qrResultMessage={qrResultMessage}
       />
       {/* Undo affordance note: undo is in the toolbar above; bulk ops always append
           "— Undo" to the result message so Dana's Undo request is unmissable. */}
@@ -1753,15 +1878,16 @@ export function UtmGrid({
           {/* ── TABLE VIEW (sm and up) ──────────────────────────────────────── */}
           {/* Bounded-internal-scroll design (Fix 2a update):
               Panels moved below the grid, so the overflow-x-auto container is bounded by the
-              FULL PAGE width (~1232px at 1280px minus padding). Table min-width 1180px fits
+              FULL PAGE width (~1232px at 1280px minus padding). Table min-width 1212px fits
               within the container at 1280px — all 6 editable columns visible with no scroll.
               table-fixed prevents warning badges/chips from stretching td widths beyond header.
-              Generated URL (sticky right-[116px]) and Actions (sticky right-0) are
+              Generated URL (sticky right-[148px]) and Actions (sticky right-0) are
               pinned to THIS container's right edge with a solid opaque background and
               z-index above the scrolling middle columns — they no longer overlap editable cells
               because the container is now ~274px wider than before the fix. */}
           <div ref={tableContainerRef} className="hidden sm:block overflow-x-auto rounded-lg border border-gray-200 bg-white">
-          {/* Table min-width: 1180px (32+32+160+5×120+240+116); w-full fills wider containers.
+          {/* Table min-width: 1212px (32+32+160+5×120+240+148); w-full fills wider containers.
+              Actions column widened from 116px to 148px to accommodate the new QR button beside Copy.
               table-fixed: column widths are set by headers, content cannot expand td width.
               Fix 6: explicit widths ensure UTM cols never collapse even when enforce warnings
               and "Build name" buttons add height. The overflow-x-auto container handles scroll. */}
@@ -1770,9 +1896,9 @@ export function UtmGrid({
               This prevents warning badges / "Fix to" chips from stretching td widths and
               pushing editable columns out of the 1280px viewport.
               Column budget at 1280px (≈1217px container after padding+scrollbar):
-                checkbox 32 + row# 32 + baseUrl 160 + 5×utm 120 = 600 + genUrl 240 + actions 116 = 1180px
-              1180 < 1217 → all columns visible with no horizontal scroll. */}
-          <table className="w-full border-collapse text-sm table-fixed" style={{ minWidth: "1180px" }}>
+                checkbox 32 + row# 32 + baseUrl 160 + 5×utm 120 = 600 + genUrl 240 + actions 148 = 1212px
+              1212 < 1217 → all columns visible with no horizontal scroll. */}
+          <table className="w-full border-collapse text-sm table-fixed" style={{ minWidth: "1212px" }}>
             <thead>
               <tr className="border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase">
                 {/* Bulk-selection checkbox header
@@ -1803,16 +1929,16 @@ export function UtmGrid({
                       )}
                   </th>
                 ))}
-                {/* Generated URL: sticky, pinned 116px from right (= Actions width).
+                {/* Generated URL: sticky, pinned 148px from right (= Actions width after QR button addition).
                     Capped at 240px — enough for a truncated URL preview; full value shown
                     via title tooltip on hover and via the Copy button (copies full URL).
                     Solid bg (bg-gray-50) so scrolling middle columns slide under cleanly.
                     z-30 so header cells float above body sticky cells (z-20) + scrolling cells (z-[11]). */}
-                <th className="sticky right-[116px] z-30 bg-gray-50 px-2 py-2.5 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] whitespace-nowrap" style={{ width: "240px" }}>
+                <th className="sticky right-[148px] z-30 bg-gray-50 px-2 py-2.5 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] whitespace-nowrap" style={{ width: "240px" }}>
                   Generated URL
                 </th>
-                {/* Actions: sticky right-0, 116px wide. z-30 same as Generated URL header. */}
-                <th className="sticky right-0 z-30 bg-gray-50 px-2 py-2.5 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] whitespace-nowrap" style={{ width: "116px" }}>
+                {/* Actions: sticky right-0, 148px wide (widened from 116px for QR button). z-30 same as Generated URL header. */}
+                <th className="sticky right-0 z-30 bg-gray-50 px-2 py-2.5 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] whitespace-nowrap" style={{ width: "148px" }}>
                   Actions
                 </th>
               </tr>
@@ -2050,7 +2176,7 @@ export function UtmGrid({
                         bg-white (solid opaque) so scrolling middle columns slide cleanly under.
                         z-20 so it floats above scrolling cells (z-[11]) but below the checkbox col (z-20 same level).
                         overflow-hidden + truncate on output: visual-only clipping, copy is unaffected. */}
-                    <td className="sticky right-[116px] z-20 px-2 py-2 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] overflow-hidden bg-white" style={{ width: "240px" }}>
+                    <td className="sticky right-[148px] z-20 px-2 py-2 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] overflow-hidden bg-white" style={{ width: "240px" }}>
                       <output
                         aria-label={`Generated URL row ${i + 1}`}
                         title={generated}
@@ -2061,11 +2187,13 @@ export function UtmGrid({
                         {generated || "—"}
                       </output>
                     </td>
-                    {/* Sticky Actions — 116px wide, right-0, solid opaque bg.
-                        z-20 ensures it floats above scrolling cells. */}
-                    <td className="sticky right-0 z-20 px-3 py-2 whitespace-nowrap shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] bg-white" style={{ width: "116px" }}>
+                    {/* Sticky Actions — widened to 148px to fit QR button beside Copy.
+                        z-20 ensures it floats above scrolling cells.
+                        relative: anchor for the absolute-positioned QR popover (z-50, above z-20/z-30 sticky cols).
+                        The QR popover is rendered with z-50 so it appears above this column. */}
+                    <td className="relative sticky right-0 z-20 px-3 py-2 whitespace-nowrap shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] bg-white" style={{ width: "148px" }}>
                       <span className="inline-flex flex-col gap-1">
-                        <span className="inline-flex items-center gap-1.5">
+                        <span className="inline-flex items-center gap-1">
                           <button
                             type="button"
                             onClick={() => void copyText(generated, row.id)}
@@ -2074,6 +2202,18 @@ export function UtmGrid({
                             className="rounded-md border border-gray-200 px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-300"
                           >
                             Copy
+                          </button>
+                          {/* QR button — icon + "QR" label, disabled with tooltip when URL empty */}
+                          <button
+                            type="button"
+                            onClick={() => setOpenQrRowId(openQrRowId === row.id ? null : row.id)}
+                            disabled={!generated}
+                            aria-label={`QR code for row ${i + 1}`}
+                            title={generated ? `QR code for row ${i + 1}` : "Add a valid URL to make a QR."}
+                            aria-expanded={openQrRowId === row.id}
+                            className="inline-flex items-center gap-0.5 rounded-md border border-gray-200 px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-300"
+                          >
+                            <span aria-hidden="true">⊞</span> QR
                           </button>
                           {/* Icon-only with tooltips — Fix A: never reads "Dup"/"Del" */}
                           <button
@@ -2101,6 +2241,18 @@ export function UtmGrid({
                           </span>
                         )}
                       </span>
+                      {/* QR popover — z-50, above sticky header (z-30) and sticky body (z-20).
+                          Positioned absolutely relative to this cell so it opens beside it.
+                          On click-out / Esc the popover closes. One open at a time (controlled by openQrRowId). */}
+                      {openQrRowId === row.id && generated && (
+                        <div className="absolute right-0 top-full z-50 mt-1">
+                          <QrPopover
+                            url={generated}
+                            rowIndex={i + 1}
+                            onClose={() => setOpenQrRowId(null)}
+                          />
+                        </div>
+                      )}
                     </td>
                   </tr>
                 );
@@ -2165,6 +2317,18 @@ export function UtmGrid({
                     </div>
                     {!isPreview && (
                       <div className="flex items-center gap-1.5">
+                        {/* QR button — icon + "QR" label, ≥44px touch target */}
+                        <button
+                          type="button"
+                          onClick={() => setOpenQrRowId(openQrRowId === row.id ? null : row.id)}
+                          disabled={!generated}
+                          aria-label={`QR code for row ${i + 1}`}
+                          aria-expanded={openQrRowId === row.id}
+                          title={generated ? `QR code for row ${i + 1}` : "Add a valid URL to make a QR."}
+                          className="flex min-h-[44px] min-w-[44px] items-center justify-center gap-0.5 rounded-md border border-gray-200 px-2 text-xs font-medium text-gray-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-300"
+                        >
+                          <span aria-hidden="true">⊞</span>{" "}QR
+                        </button>
                         <button
                           type="button"
                           onClick={() => duplicateRow(row.id)}
@@ -2401,6 +2565,20 @@ export function UtmGrid({
                       </span>
                     )}
                   </div>
+
+                  {/* QR panel — stacked BELOW the card's fields, in normal card flow.
+                      Never overlays a field, checkbox, or button. Full-width at ≤640px.
+                      z-10 is within the card (above cell affordances, below sticky header which is hidden on mobile). */}
+                  {openQrRowId === row.id && generated && (
+                    <div className="mt-1">
+                      <QrPopover
+                        url={generated}
+                        rowIndex={i + 1}
+                        onClose={() => setOpenQrRowId(null)}
+                        cardFlow
+                      />
+                    </div>
+                  )}
                 </div>
               );
             })}

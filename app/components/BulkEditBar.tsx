@@ -27,6 +27,10 @@ interface BulkEditBarProps {
   resultMessage: string | null;
   /** Message shown on zero matches or empty-find validation. Cleared by parent. */
   noMatchMessage: string | null;
+  /** Handler for bulk QR download. Async; parent owns the logic. */
+  onDownloadQr?: () => Promise<void>;
+  /** Green-fill result message after bulk QR download. ref-stable ~3s from parent. */
+  qrResultMessage?: string | null;
 }
 
 export function BulkEditBar({
@@ -36,6 +40,8 @@ export function BulkEditBar({
   onFindReplace,
   resultMessage,
   noMatchMessage,
+  onDownloadQr,
+  qrResultMessage,
 }: BulkEditBarProps) {
   // P1: collapsed by default on cold open (desktop + mobile). Payoff label visible when collapsed.
   const [isExpanded, setIsExpanded] = useState(false);
@@ -134,6 +140,59 @@ export function BulkEditBar({
           {noMatchMessage && (
             <p role="alert" className="text-xs text-amber-700">
               {noMatchMessage}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* QR export section — divider-separated, visually distinct from Set/Find verbs.
+          Only rendered when expanded AND onDownloadQr is provided. */}
+      {isExpanded && onDownloadQr && (
+        <div className="border-t border-gray-200 px-4 py-2.5 flex flex-col gap-1.5">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-1.5">
+              {/* QR-square + download icon glyph */}
+              <span aria-hidden="true" className="text-base leading-none">⊞⬇</span>
+              <div className="flex flex-col gap-0">
+                <span className="text-xs font-semibold text-gray-700">Download QR codes</span>
+                <span className="text-[10px] text-gray-400 leading-tight">Export</span>
+              </div>
+            </div>
+            {/* Scope pill — same "Apply to:" model as Set/Find */}
+            <span
+              className={`text-xs rounded-full px-2.5 py-0.5 ${
+                selectedRowIds.size > 0
+                  ? "bg-blue-600 text-white font-semibold border border-blue-700"
+                  : "bg-gray-100 text-gray-500 font-medium border border-gray-200"
+              }`}
+              aria-live="polite"
+              role="status"
+            >
+              {selectedRowIds.size > 0
+                ? `Apply to: ${selectedRowIds.size} selected row${selectedRowIds.size === 1 ? "" : "s"}`
+                : `Apply to: all ${rows.length} row${rows.length === 1 ? "" : "s"}`}
+            </span>
+            <button
+              type="button"
+              onClick={() => void onDownloadQr()}
+              aria-label="Download QR codes as ZIP"
+              className="cursor-pointer rounded border border-teal-600 bg-teal-50 px-3 py-1.5 text-xs font-semibold text-teal-700 hover:bg-teal-100 shadow-sm active:scale-95 transition-transform whitespace-nowrap"
+            >
+              Download QR codes
+            </button>
+          </div>
+          {/* Green-fill result message — peripherally unmissable, ref-stable ~3s */}
+          {qrResultMessage && (
+            <p
+              role="status"
+              aria-live="polite"
+              className={`text-xs font-medium px-2 py-1 rounded ${
+                qrResultMessage.startsWith("No QR")
+                  ? "text-amber-700 bg-amber-50"
+                  : "text-green-700 bg-green-50"
+              }`}
+            >
+              {qrResultMessage}
             </p>
           )}
         </div>
