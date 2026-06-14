@@ -1,27 +1,37 @@
-{"name":"Jules","clarity":"Yes","value":"Yes","advocacy":9}
+{"name":"Jules","clarity":"Yes","value":"Yes","advocacy":7}
 
-# Jules — Content & community marketer (mobile 390px, allergic to logins)
+# Jules — Content & community marketer (50/50 desktop/mobile, allergic to logins)
 
-## Round-1 blocker re-check: FIXED
-Built a real X link (twitter/social/spring_launch_2026), created my OWN Team Workspace
-(/w/dSeU…), clicked "Share style guide". The button now fills bright GREEN and the label
-flips to "✓ Copied ✓" for ~2s, then reverts — plus a polite aria-live "Style guide link
-copied!" and the correct /guide URL on my clipboard. Last round it was dead silent and I'd
-click 3x; now the confirmation is unmissable. Verified live, not an env artifact.
+## Re-check of MY round-1 complaints
+1. "Copy summary" cue (was a ~0.7s flash; brief says it should now be a SOLID-GREEN "Copied!"
+   holding ~2s): NOT FIXED. After Run Launch Check I clicked "Copy summary" and polled it
+   every 25ms for 2.5s: the label stayed "Copy summary" the ENTIRE time and the background
+   never went green (stayed white). The clipboard DID fire (634 chars copied), so the action
+   works — but a hurried person sees ZERO confirmation. Telling contrast: the OLDER buttons
+   "Copy share link" and "Copy all URLs" DO flash green on click at 250ms — so "Copy summary"
+   specifically never got (or lost) the green treatment. This is my exact silent-button gripe.
+2. Per-row "Fix" chips disconnected from Launch Check: IMPROVED. Clicking a row "Fix" chip now
+   auto-fixes the cell and shows "Fixed 1 cell" + an Undo — a real action, not just a label.
+   Still two surfaces (chips vs the big report), but the chips finally DO something.
 
-## Guide as a sendable artifact: yes
-The /guide page is genuinely send-ready — "Why UTM tags matter" (Newsletter vs newsletter),
-required-field + lowercase + no-spaces conventions, read-only, no login. I'd drop this link
-to a guest poster instead of writing my own "please tag links like this" note.
+## Fresh pass
+1. CLARITY — Yes. H1 "Clean UTM links for your whole campaign — in one grid" + "no login,
+   nothing leaves your browser" nails it in ~3s. The no-account bulk tool I bookmark.
+2. VALUE — Yes. Built a dirty twitter/linkedin launch; Run Launch Check caught the casing +
+   cross-row inconsistency splits ("Social Media" vs "social", "Twitter" vs "linkedin") with
+   GA4 warnings, and the Fix chips cleaned them one click each. CSV report is teammate-ready.
+   Beats hand-eyeballing UTMs in Notion. Presets now exist (Google/Email/LinkedIn).
 
-## Core flow: still clean
-Zero login anywhere, mobile renders well, create-workspace gates sensibly ("add at least
-one row"), 0 console errors.
+## ADVOCACY — 7
+Holds at 7, not higher, because the ONE thing I was asked to verify — an unmissable green
+"Copied!" on "Copy summary" — is simply not there. I copied the summary to paste into my
+launch doc and got no signal; I'd click it twice and still doubt it. A silent copy button is
+my allergy, and it's odd because the sibling copy buttons already flash green. Biggest
+remaining thing: give "Copy summary" the SAME solid-green "✓ Copied!" state the other copy
+buttons have, held ~2s. Secondary: still no X/Twitter or Mastodon presets despite the
+"presets per platform" pitch — the two I post to most. Fix the cue + add those and I'm at a
+genuine 9 and post it in my marketing Discord.
 
-## What still keeps me a hair below 10 (minor, not blockers)
-- My platforms are X and Mastodon; preset lineup still feels LinkedIn/Google/Email-centric
-  for a tool pitched as "presets per platform." I can type them, but native X/Mastodon
-  presets would make me recommend it with zero caveat.
-- Auto-fix still didn't strip trailing punctuation last round (casing/spaces only).
-Neither holds the score — the silent-copy bug that capped me at 8 is gone, so I'm
-comfortable at 9 and would bring this up unprompted in my marketing Discord.
+```json
+{"tester": 6, "round": 2, "clarity": "Yes", "value": "Yes", "advocacy": 7, "topComplaints": ["'Copy summary' shows NO confirmation — label stays 'Copy summary', no green, no 'Copied!' (clipboard fires but a hurried user sees nothing); the other copy buttons DO flash green", "Still no X/Twitter or Mastodon presets despite the 'presets per platform' pitch"], "priorConcernsAddressed": "some"}
+```

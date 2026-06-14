@@ -230,7 +230,7 @@ test("LC-3a — Download report (CSV) on dirty grid has per-violation rows with 
   await expect(page.locator('[data-testid="compliance-report-panel"]')).toBeVisible({ timeout: 5000 });
 
   const downloadPromise = page.waitForEvent("download");
-  await page.getByTestId("compliance-download-csv").first().click();
+  await page.getByTestId("compliance-download-csv").click();
   const download = await downloadPromise;
   const csvPath = await download.path();
   const csv = await fs.readFile(csvPath!, "utf8");
@@ -269,7 +269,7 @@ test("LC-3b — Download report (CSV) on clean grid has single all-clear row", a
   await expect(page.locator('[data-testid="compliance-report-panel"]')).toBeVisible({ timeout: 5000 });
 
   const downloadPromise = page.waitForEvent("download");
-  await page.getByTestId("compliance-download-csv").first().click();
+  await page.getByTestId("compliance-download-csv").click();
   const download = await downloadPromise;
   const csv = await fs.readFile((await download.path())!, "utf8");
 
@@ -312,11 +312,11 @@ test("LC-4a — Copy summary: 'Copied!' cue shows even when clipboard API is blo
     });
   });
 
-  await page.getByTestId("compliance-copy-summary").first().click();
+  await page.getByTestId("compliance-copy-summary").click();
 
   // "Copied!" must appear even though the native clipboard was blocked
   // (the component uses a textarea execCommand fallback)
-  const btn = page.getByTestId("compliance-copy-summary").first();
+  const btn = page.getByTestId("compliance-copy-summary");
   await expect(btn).toContainText("Copied!", { timeout: 2000 });
 });
 
@@ -335,10 +335,10 @@ test("LC-4b — Copy summary 'Copied!' cue survives re-render during live /w/<id
   // Grant clipboard so copy path goes through without permission error
   await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
 
-  await page.getByTestId("compliance-copy-summary").first().click();
+  await page.getByTestId("compliance-copy-summary").click();
 
   // Assert Copied! cue is visible immediately
-  const btn = page.getByTestId("compliance-copy-summary").first();
+  const btn = page.getByTestId("compliance-copy-summary");
   await expect(btn).toContainText("Copied!", { timeout: 2000 });
 
   // Wait ~1.2s (simulate a re-render tick from autosave state update) and assert it's STILL there
@@ -371,7 +371,7 @@ test("LC-5 — Run Launch Check on builder '/' triggers NO network request", asy
 
   // Download CSV (blob download, no network)
   const downloadPromise = page.waitForEvent("download");
-  await page.getByTestId("compliance-download-csv").first().click();
+  await page.getByTestId("compliance-download-csv").click();
   await downloadPromise;
 
   expect(networkRequests).toEqual([]);
@@ -499,12 +499,12 @@ test("LC-8 — 375px: Run Launch Check trigger, report, Download CSV, and Copy s
   expect(bodyScrollWidth).toBeLessThanOrEqual(375 + 5); // ±5px tolerance
 
   // Download CSV button visible and reachable
-  const downloadBtn = page.getByTestId("compliance-download-csv").first();
+  const downloadBtn = page.getByTestId("compliance-download-csv");
   await downloadBtn.scrollIntoViewIfNeeded();
   await expect(downloadBtn).toBeVisible();
 
   // Copy summary button visible and reachable
-  const copyBtn = page.getByTestId("compliance-copy-summary").first();
+  const copyBtn = page.getByTestId("compliance-copy-summary");
   await copyBtn.scrollIntoViewIfNeeded();
   await expect(copyBtn).toBeVisible();
 

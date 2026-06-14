@@ -294,10 +294,6 @@ export function ComplianceReportPanel({
         </div>
       )}
 
-      {/* F2: Secondary action buttons at bottom — additional access point after scrolling the report */}
-      <div className="mt-4 flex flex-wrap gap-3">
-        {actionButtons}
-      </div>
     </div>
   );
 }

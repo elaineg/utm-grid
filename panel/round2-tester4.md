@@ -1,13 +1,40 @@
-{"name":"Tomás","clarity":"Yes","value":"Yes","advocacy":10}
+# Round 2 (re-test) — Tester 4 (Tomás, Ops analyst, Edge on corporate laptop)
 
-I'm Tomás, ops analyst on a locked-down Edge laptop — I build tagged links in Excel and won't paste company data into a tool that mangles it or quietly ships it to a server I wasn't told about.
+## Prior concern — RESOLVED (priorConcernsAddressed = all)
+My single 9-not-10 ding: report CSV had no UTF-8 BOM, so em-dashes (—) in messages could
+mojibake on a double-click open in Excel on Windows. FIXED. Re-downloaded the Launch Check
+report and read the raw bytes:
+- First three bytes are `EF BB BF` — a proper UTF-8 BOM. A double-click into Excel/Edge now
+  picks the right codepage automatically; no more Data > From Text/CSV dance.
+- The em-dash is real UTF-8 (`E2 80 94`): `…"june_ops" — these will split…`. No `â€`
+  mojibake anywhere. Opens clean.
 
-FLAG 1 — share-button clarity: RESOLVED. Each action now carries a sublabel I read in one pass: "Copy share link → frozen snapshot of current grid", "Team Workspace — synced → live, synced for the team", "Share style guide → read-only reference page", plus an inline "(Different from 'Copy share link', which sends a frozen snapshot.)". A non-power-user on my team would pick the right one first try.
+## Still well-formed — no regression
+- Header `row #,base URL,full URL,field,value,issue type,message` (now also a full-URL col,
+  a nice add). One row PER ISSUE (13 issue rows for my 3 messy grid rows).
+- RFC-4180 quoting intact: doubled quotes (`""june_ops""`) escaped; blank value = empty
+  cell (`,,required`), not "undefined". Every data row parses to exactly 7 columns.
+- NON-GET REQUESTS = [] across full build + Launch Check + CSV download — still zero
+  data-carrying traffic. Safe for company campaign data.
 
-FLAG 2 — server-data note: RESOLVED, stronger than I asked. The instant I created a workspace, explicit notices appeared, e.g. "Workspace data is stored on the server — anyone with this secret link can view and edit. The secret link is the access control." That's the honest distinction I wanted before sharing company taxonomy.
+## 1. CLARITY — Yes (<5s)
+H1 + "PRE-LAUNCH QA / Run Launch Check" still say it in one line: clean a whole batch of UTM
+links in a grid, catch mistakes before launch, round-trip CSV, nothing leaves the browser.
 
-LAYOUT: Full-width grid with Naming Template / Campaigns / Allowed values panels below — cleaner than round 1, no regression, all columns visible, zero console errors.
+## 2. VALUE — Yes
+Same core win: cross-row consistency ("June Ops" vs "june_ops") + per-field casing/space/
+required flags my Excel CONCAT sheet never catches. Now the report drops into Excel with a
+true double-click, zero cleanup. That was the last friction; it's gone.
 
-REGRESSION CHECK: PASS. Auto-fix lowercased Google→google and "Summer Sale 2026"→summer_sale_2026 but left base URL/path alone; generated URL = https://example.com/landing?id=5&utm_source=google&utm_medium=cpc&utm_campaign=summer_sale_2026 — existing ?id=5 appended with &, not overwritten. Won't mangle my data.
+## 3. ADVOCACY — 10
+The thing between 9 and 10 — the missing BOM — is fixed, verified at the byte level on my
+exact Windows-Excel double-click path. It does the one job I'd switch for and exports a file
+I open without thinking. I'd bring this up unprompted to ops peers.
 
-GOING HIGHER THAN 9: Yes — 10. Both blockers fixed cleanly, data round-trips, privacy story now explicit. Only nit (not score-affecting): style guide still has no Download CSV/PDF of the allowed-values table; the read-only link is fine for Teams.
+### Biggest remaining thing
+Minor now: single-purpose tool I reach for 2–4x/month, not a daily driver — a category
+ceiling, not a flaw. Nothing in the flow holds it back for me anymore.
+
+```json
+{"tester": 4, "round": 2, "clarity": "Yes", "value": "Yes", "advocacy": 10, "topComplaints": ["Single-purpose tool used 2-4x/month — category ceiling, not a flaw"], "priorConcernsAddressed": "all"}
+```
