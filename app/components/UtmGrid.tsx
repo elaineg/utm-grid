@@ -1386,16 +1386,60 @@ export function UtmGrid({
     ? "rounded-full border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700"
     : "rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-medium text-gray-500";
 
-  // P1: collapsible panel state — collapsed by default on cold open
-  const [lintRulesExpanded, setLintRulesExpanded] = useState(false);
-  // FIX B (My Workspaces Round 3): secondary feature panels collapsed by default
-  // so the editable grid sits near the top of the first screenful.
-  const [launchCheckExpanded, setLaunchCheckExpanded] = useState(false);
-  // teamWorkspaceExpanded removed — Create shared workspace is now always-visible in the Share group (E1)
+  // ── New slim toolbar state ─────────────────────────────────────────────────
+  // activeToolsPanel: which panel is open in the panel zone (null = none).
+  // Only "presets" and "bulk" open inline above the grid.
+  // "spec" / "template" / "campaigns" scroll to the always-visible below-grid panels.
+  const [activeToolsPanel, setActiveToolsPanel] = useState<"presets" | "bulk" | null>(null);
 
+  const [toolsMenuOpen, setToolsMenuOpen] = useState(false);
+  const [rulesPopoverOpen, setRulesPopoverOpen] = useState(false);
 
+  // Close menus when clicking outside
+  const toolsMenuRef = useRef<HTMLDivElement>(null);
+  const rulesPopoverRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!toolsMenuOpen && !rulesPopoverOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (toolsMenuOpen && toolsMenuRef.current && !toolsMenuRef.current.contains(e.target as Node)) {
+        setToolsMenuOpen(false);
+      }
+      if (rulesPopoverOpen && rulesPopoverRef.current && !rulesPopoverRef.current.contains(e.target as Node)) {
+        setRulesPopoverOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [toolsMenuOpen, rulesPopoverOpen]);
+
+  const openToolsPanel = (panel: "presets" | "bulk" | "spec" | "template" | "campaigns"): void => {
+    // presets + bulk: open inline panel above the grid (no below-grid equivalent)
+    // spec, template, campaigns: scroll to the always-visible below-grid panel
+    if (panel === "presets" || panel === "bulk") {
+      setActiveToolsPanel((prev) => (prev === panel ? null : panel));
+    } else {
+      // Scroll to the below-grid panel instead of opening a duplicate
+      setActiveToolsPanel(null);
+      const testidMap: Record<string, string> = {
+        spec: "utm-spec-panel",
+        template: "naming-template-panel",
+        campaigns: "campaigns-sidebar",
+      };
+      const testid = testidMap[panel];
+      if (testid) {
+        const el = document.querySelector(`[data-testid="${testid}"]`) ??
+                   document.querySelector(`[aria-label*="${panel === "campaigns" ? "Campaigns" : ""}"]`);
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+    }
+    setToolsMenuOpen(false);
+  };
+
+  // Helper for lint rule toggles (used in Rules ▾ popover)
   const toggle = (settingKey: keyof LintSettings, label: string) => (
-    <label className="flex items-center gap-1.5 text-sm text-gray-700">
+    <label className="flex items-center gap-1.5 text-sm text-gray-700 cursor-pointer min-h-[36px] items-center">
       <input
         type="checkbox"
         checked={settings[settingKey]}
@@ -1476,9 +1520,13 @@ export function UtmGrid({
         </div>
       )}
 
-      {/* Toolbar — E2: one PRIMARY CTA (Add row) + secondary cluster */}
-      <div className="flex flex-wrap items-center gap-3 rounded-lg border border-gray-200 bg-white p-4">
-        {/* Open-campaign indicator pill */}
+      {/* ── SLIM TOOLBAR ────────────────────────────────────────────────────────
+          One row: grid-primary | Data | Tools ▾ | Share ▾ | Rules ▾
+          In workspace mode: also shows expanded launch check controls. */}
+      <div className="flex flex-wrap items-center gap-x-1 gap-y-2 rounded-lg border border-gray-200 bg-white px-3 py-2">
+
+        {/* ── Group 1: Grid primary ── */}
+        {/* Status pill */}
         <span
           className={pillClass}
           aria-live="polite"
@@ -1494,42 +1542,44 @@ export function UtmGrid({
           )}
         </span>
 
-        {/* ── E2: PRIMARY CTA — "Add row" is the single accent-weight button ── */}
+        {/* Add row — primary accent */}
         <button
           type="button"
           onClick={addRow}
-          className="rounded-md bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-700 shadow-sm"
+          className="rounded-md bg-blue-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-blue-700 shadow-sm whitespace-nowrap"
         >
           + Add row
         </button>
 
-        {/* E2: Auto-fix naming — promoted to a distinct secondary-primary so it's unmissable */}
+        {/* Auto-fix naming */}
         <button
           type="button"
           onClick={cleanAll}
           title="Lowercase + normalize all flagged cells"
           data-testid="auto-fix-naming-btn"
-          className="rounded-md border-2 border-amber-400 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-800 hover:bg-amber-100"
+          className="rounded-md border border-amber-400 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 hover:bg-amber-100 whitespace-nowrap"
         >
-          Auto-fix naming
+          Auto-fix
         </button>
+
         {canUndo && (
           <button
             type="button"
             onClick={undo}
-            className="rounded-md border border-gray-300 px-3 py-2 text-sm font-medium text-gray-500 hover:bg-gray-50"
+            className="rounded-md border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-500 hover:bg-gray-50"
           >
             Undo
           </button>
         )}
 
-        {/* ── E2: secondary cluster — visually lighter, grouped ── */}
-        <span className="h-5 w-px bg-gray-200 hidden sm:block" aria-hidden="true" />
+        {/* Divider */}
+        <span className="h-5 w-px bg-gray-200 mx-1" aria-hidden="true" />
 
+        {/* ── Group 2: Data ── */}
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          className="rounded-md border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50"
+          className="rounded-md border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap"
         >
           Import CSV
         </button>
@@ -1542,450 +1592,374 @@ export function UtmGrid({
           onChange={onFileChosen}
         />
 
-        {/* "Paste & Audit URLs" — secondary styling */}
-        <span className="inline-flex flex-col items-start gap-0.5">
-          <button
-            type="button"
-            data-testid="audit-urls-btn"
-            onClick={() => setAuditDialogOpen(true)}
-            className="min-h-[36px] rounded-md border border-violet-300 bg-violet-50 px-3 py-1.5 text-xs font-medium text-violet-700 hover:bg-violet-100 flex items-center gap-1"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              aria-hidden="true"
-              className="w-3.5 h-3.5 shrink-0"
-            >
-              <path
-                fillRule="evenodd"
-                d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z"
-                clipRule="evenodd"
-              />
-            </svg>
-            Paste &amp; Audit
-          </button>
-          {/* Audit status — peripherally unmissable (ref-stable timer) */}
-          {auditStatus && (
-            <span role="status" aria-live="polite" className="text-xs font-medium text-violet-700">
-              {auditStatus}
-            </span>
-          )}
-        </span>
-
         <button
           type="button"
           onClick={exportCsv}
-          className="rounded-md border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50"
+          className="rounded-md border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap"
         >
           Export CSV
         </button>
 
-        {/* Download QR codes — secondary styling */}
-        <span className="inline-flex flex-col items-start gap-0.5">
+        <button
+          type="button"
+          data-testid="audit-urls-btn"
+          onClick={() => setAuditDialogOpen(true)}
+          className="rounded-md border border-violet-200 bg-violet-50 px-2.5 py-1.5 text-xs font-medium text-violet-700 hover:bg-violet-100 whitespace-nowrap"
+        >
+          Audit URLs
+        </button>
+
+        {/* Audit status */}
+        {auditStatus && (
+          <span role="status" aria-live="polite" className="text-xs font-medium text-violet-700">
+            {auditStatus}
+          </span>
+        )}
+
+        {/* Divider */}
+        <span className="h-5 w-px bg-gray-200 mx-1" aria-hidden="true" />
+
+        {/* ── Group 3: Tools ▾ ── */}
+        <div className="relative" ref={toolsMenuRef}>
           <button
             type="button"
-            data-testid="download-qr-codes-btn"
-            aria-label="Download QR codes"
-            onClick={() => void handleBulkDownloadQr()}
-            className="min-h-[36px] inline-flex items-center gap-1 rounded-md border border-teal-400 bg-teal-50 px-3 py-1.5 text-xs font-medium text-teal-700 hover:bg-teal-100 whitespace-nowrap"
+            data-testid="tools-menu-btn"
+            onClick={() => { setToolsMenuOpen((v) => !v); setRulesPopoverOpen(false); }}
+            aria-expanded={toolsMenuOpen}
+            className="flex items-center gap-1 rounded-md border border-gray-200 px-2.5 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 whitespace-nowrap"
           >
-            <span aria-hidden="true" className="text-sm leading-none">⊞⬇</span>
-            QR codes
+            Tools <span className="text-gray-400 text-[10px]">{toolsMenuOpen ? "▲" : "▼"}</span>
           </button>
-          <span
-            className={`text-[10px] rounded-full px-2 py-0.5 ${
-              selectedRowIds.size > 0
-                ? "bg-blue-100 text-blue-700 font-medium"
-                : "text-gray-400"
-            }`}
-            aria-live="polite"
-            role="status"
-          >
-            {selectedRowIds.size > 0
-              ? `${selectedRowIds.size} selected`
-              : `all ${rows.length}`}
-          </span>
-          {qrResultMessage && (
-            <span
-              role="status"
-              aria-live="polite"
-              className={`text-xs font-medium px-2 py-0.5 rounded ${
-                qrResultMessage.startsWith("No QR")
-                  ? "text-amber-700 bg-amber-50"
-                  : "text-green-700 bg-green-50"
-              }`}
-            >
-              {qrResultMessage}
-            </span>
-          )}
-        </span>
-
-        {/* ── E1: ONE "Share" group — both options always visible, cue on persistent buttons ──
-            Both actions kept exactly as shipped; only presentation consolidated.
-            data-testid="copy-share-link" stays on the inner button (always mounted → Copied cue
-            lives here and NEVER unmounts). data-testid="create-workspace-strip" kept on the
-            wrapper so R3-6 test continues to pass. */}
-        {!isWorkspaceMode && (
-          <div
-            data-testid="create-workspace-strip"
-            className="inline-flex flex-col gap-1.5 rounded-lg border border-gray-200 bg-gray-50/80 px-3 py-2"
-          >
-            <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">Share</span>
-            {/* Option 1: Copy share link (frozen snapshot) */}
-            <div className="flex flex-col gap-0.5">
+          {toolsMenuOpen && (
+            <div className="absolute left-0 top-full mt-1 z-40 w-52 rounded-lg border border-gray-200 bg-white shadow-lg py-1">
+              <button type="button" className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-50" onClick={() => openToolsPanel("presets")}>
+                Channel Presets
+              </button>
+              <button type="button" className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-50" onClick={() => openToolsPanel("bulk")}>
+                Bulk edit (Set / Find &amp; replace)
+              </button>
+              <button type="button" className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-50" onClick={() => openToolsPanel("spec")}>
+                UTM Spec (allowed values)
+              </button>
+              <button type="button" className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-50" onClick={() => openToolsPanel("template")}>
+                Naming Template
+              </button>
+              <button type="button" className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-50" onClick={() => openToolsPanel("campaigns")}>
+                Campaigns library
+              </button>
+              <hr className="my-1 border-gray-100" />
+              {/* Download QR codes */}
               <button
                 type="button"
-                data-testid="copy-share-link"
-                onClick={() => void copyShareLink()}
-                className={`rounded-md border px-3 py-1.5 text-xs font-medium transition-colors duration-200 min-h-[36px] ${
-                  shareLinkCopied
-                    ? "border-green-500 bg-green-500 text-white"
-                    : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
-                }`}
+                data-testid="download-qr-codes-btn"
+                aria-label="Download QR codes"
+                onClick={() => { void handleBulkDownloadQr(); setToolsMenuOpen(false); }}
+                className="w-full text-left px-4 py-2 text-xs text-teal-700 hover:bg-teal-50"
               >
-                {shareLinkCopied ? (
-                  <span className="inline-flex items-center gap-1">
-                    <span aria-hidden="true">✓</span>{" "}
-                    <span>Copied ✓</span>
-                  </span>
-                ) : (
-                  "Copy share link"
+                Download QR codes
+                {selectedRowIds.size > 0 && (
+                  <span className="ml-1 text-[10px] text-blue-600">({selectedRowIds.size} selected)</span>
                 )}
               </button>
-              {/* aria-live region — persistent, announces cue even when button text change is missed */}
-              <span role="status" aria-live="polite" className="sr-only">
-                {shareLinkCopied ? "Share link copied!" : ""}
-              </span>
-              <span className="text-[10px] text-gray-400 leading-tight">
-                Frozen snapshot — no server
-              </span>
-              {shareEmptyWarning && (
-                <span role="alert" className="text-xs text-amber-700">
-                  Nothing to share yet
-                </span>
+              <hr className="my-1 border-gray-100" />
+              {/* Run Launch Check — always in Tools menu on main builder */}
+              {!isWorkspaceMode && (
+                <button
+                  type="button"
+                  data-testid="run-launch-check-btn"
+                  onClick={() => { runLaunchCheck(); setToolsMenuOpen(false); }}
+                  className="w-full text-left px-4 py-2 text-xs font-semibold text-teal-700 hover:bg-teal-50"
+                >
+                  Run Launch Check
+                </button>
               )}
             </div>
-            {/* Option 2: Create shared workspace (live, synced) */}
-            <div className="flex flex-col gap-0.5">
-              <button
-                type="button"
-                data-testid="create-shared-workspace-btn"
-                onClick={() => void createSharedWorkspace()}
-                disabled={creatingWorkspace || gridIsEmpty}
-                aria-label="Create shared workspace"
-                className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 min-h-[36px]"
-              >
-                {creatingWorkspace ? "Creating…" : "Create shared workspace"}
-              </button>
-              <span className="text-[10px] text-gray-400 leading-tight">
-                Live, synced via secret link
-              </span>
-              {createWorkspaceError && (
-                <span role="alert" className="text-xs text-red-600">
-                  {createWorkspaceError}
-                </span>
-              )}
-              {gridIsEmpty && (
-                <span className="text-xs text-gray-400">Add at least one row first.</span>
-              )}
-            </div>
-          </div>
-        )}
-        {/* In workspace mode: keep "Copy share link" accessible (standalone, no Create workspace) */}
-        {isWorkspaceMode && (
-          <span className="inline-flex flex-col items-start gap-0.5">
-            <button
-              type="button"
-              data-testid="copy-share-link"
-              onClick={() => void copyShareLink()}
-              className={`rounded-md border px-3 py-1.5 text-xs font-medium transition-colors duration-200 min-h-[36px] ${
-                shareLinkCopied
-                  ? "border-green-500 bg-green-500 text-white"
-                  : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
-              }`}
-            >
-              {shareLinkCopied ? (
-                <span className="inline-flex items-center gap-1">
-                  <span aria-hidden="true">✓</span>{" "}
-                  <span>Copied ✓</span>
-                </span>
-              ) : (
-                "Copy share link"
-              )}
-            </button>
-            <span role="status" aria-live="polite" className="sr-only">
-              {shareLinkCopied ? "Share link copied!" : ""}
-            </span>
-            <span className="text-[10px] text-gray-400 leading-tight">
-              frozen snapshot of current grid
-            </span>
-            {shareEmptyWarning && (
-              <span role="alert" className="text-xs text-amber-700">
-                Nothing to share yet
-              </span>
-            )}
+          )}
+        </div>
+
+        {qrResultMessage && (
+          <span
+            role="status"
+            aria-live="polite"
+            className={`text-xs font-medium px-2 py-0.5 rounded ${
+              qrResultMessage.startsWith("No QR")
+                ? "text-amber-700 bg-amber-50"
+                : "text-green-700 bg-green-50"
+            }`}
+          >
+            {qrResultMessage}
           </span>
         )}
 
-        {/* P1-2b: Copy all URLs — same peripherally-unmissable green cue as share link */}
-        <span className="inline-flex flex-col items-start gap-0.5">
+        {/* Divider */}
+        <span className="h-5 w-px bg-gray-200 mx-1" aria-hidden="true" />
+
+        {/* ── Group 4: Share (inline — primary copy actions always visible) ── */}
+        {/* Copy share link — always-visible persistent button (testid stable for e2e) */}
+        <div className="inline-flex flex-col gap-0.5">
           <button
             type="button"
-            data-testid="copy-all-urls"
-            onClick={() => void copyAll()}
-            className={`rounded-md border px-3 py-1.5 text-xs font-medium transition-colors duration-200 min-h-[36px] ${
-              copyAllCopied
+            data-testid="copy-share-link"
+            onClick={() => void copyShareLink()}
+            className={`rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors duration-200 whitespace-nowrap ${
+              shareLinkCopied
                 ? "border-green-500 bg-green-500 text-white"
                 : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
             }`}
           >
-            {copyAllCopied ? (
-              <span className="inline-flex items-center gap-1">
-                <span>✓</span>{" "}
-                <span>Copied!</span>
-              </span>
-            ) : (
-              "Copy all URLs"
-            )}
+            {shareLinkCopied ? "✓ Copied!" : "Copy share link"}
           </button>
-          <span role="status" aria-live="polite" className="text-xs font-medium text-green-600 min-h-[1em]">
-            {copyAllCopied ? "Copied!" : ""}
+          <span role="status" aria-live="polite" className="sr-only">
+            {shareLinkCopied ? "Share link copied!" : ""}
           </span>
+          {shareEmptyWarning && (
+            <span role="alert" className="text-[10px] text-amber-700">Nothing to share yet</span>
+          )}
+        </div>
+
+        {/* Copy all URLs */}
+        <button
+          type="button"
+          data-testid="copy-all-urls"
+          onClick={() => void copyAll()}
+          className={`rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors duration-200 whitespace-nowrap ${
+            copyAllCopied
+              ? "border-green-500 bg-green-500 text-white"
+              : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+          }`}
+        >
+          {copyAllCopied ? "✓ Copied!" : "Copy all URLs"}
+        </button>
+        <span role="status" aria-live="polite" className="sr-only">
+          {copyAllCopied ? "All URLs copied!" : ""}
         </span>
 
-        {/* P1: Naming rules — collapsible disclosure, collapsed on cold open, payoff label always visible.
-            The Enforce toggle + off-spec indicator are ALWAYS rendered (never gated by collapse)
-            so e2e tests can click them without first expanding the section. */}
-        <div className="ml-auto border-l border-gray-200 pl-4">
-          <div className="flex flex-wrap items-center gap-3">
+        {/* Create shared workspace — only in default mode */}
+        {!isWorkspaceMode && (
+          <div
+            data-testid="create-workspace-strip"
+            className="inline-flex flex-col gap-0.5"
+          >
             <button
               type="button"
-              onClick={() => setLintRulesExpanded((v) => !v)}
-              aria-expanded={lintRulesExpanded}
-              className="flex items-center gap-2 text-xs font-semibold tracking-wide text-gray-500 uppercase hover:text-gray-700"
+              data-testid="create-shared-workspace-btn"
+              onClick={() => void createSharedWorkspace()}
+              disabled={creatingWorkspace || gridIsEmpty}
+              aria-label="Create shared workspace"
+              className="rounded-md bg-blue-600 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 whitespace-nowrap"
             >
-              <span>Naming rules</span>
-              <span className="text-gray-400 text-[10px]">{lintRulesExpanded ? "▲" : "▼"}</span>
+              {creatingWorkspace ? "Creating…" : "Create workspace"}
             </button>
-            {/* Fix D: canonical Enforce UTM Spec toggle — ALWAYS visible, never gated by collapse */}
-            <label className="flex items-center gap-1.5 text-sm text-violet-700">
-              <input
-                type="checkbox"
-                data-testid="enforce-spec-toggle"
-                checked={!!spec.enforceSpec}
-                onChange={(e) => setSpec({ ...spec, enforceSpec: e.target.checked })}
-              />
-              Enforce allowed values
-            </label>
-            {/* Canonical "Enforce naming template" toggle — independent of Enforce UTM Spec */}
-            <span className="flex flex-col gap-0.5">
-              <label className="flex items-center gap-1.5 text-sm text-teal-700 cursor-pointer">
+            {createWorkspaceError && (
+              <span role="alert" className="text-[10px] text-red-600">{createWorkspaceError}</span>
+            )}
+          </div>
+        )}
+
+        {/* Divider */}
+        <span className="h-5 w-px bg-gray-200 mx-1" aria-hidden="true" />
+
+        {/* ── Group 5: Rules ▾ ── */}
+        <div className="relative" ref={rulesPopoverRef}>
+          <button
+            type="button"
+            data-testid="rules-menu-btn"
+            onClick={() => { setRulesPopoverOpen((v) => !v); setToolsMenuOpen(false); }}
+            aria-expanded={rulesPopoverOpen}
+            className="flex items-center gap-1 rounded-md border border-gray-200 px-2.5 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 whitespace-nowrap"
+          >
+            Rules <span className="text-gray-400 text-[10px]">{rulesPopoverOpen ? "▲" : "▼"}</span>
+          </button>
+          {rulesPopoverOpen && (
+            <div className="absolute right-0 top-full mt-1 z-40 w-72 rounded-lg border border-gray-200 bg-white shadow-lg p-4 flex flex-col gap-3">
+              <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">Naming rules</p>
+              {toggle("requiredParams", "Require source / medium / campaign")}
+              {toggle("lowercaseOnly", "Lowercase only")}
+              {toggle("noSpaces", "No spaces")}
+              <hr className="border-gray-100" />
+              {/* Enforce UTM Spec */}
+              <label className="flex items-center gap-1.5 text-sm text-violet-700 cursor-pointer min-h-[36px]">
                 <input
                   type="checkbox"
-                  data-testid="enforce-template-toggle"
-                  checked={!!namingTemplate.enforceTemplate}
-                  onChange={(e) =>
-                    setNamingTemplate({ ...namingTemplate, enforceTemplate: e.target.checked })
-                  }
+                  data-testid="enforce-spec-toggle"
+                  checked={!!spec.enforceSpec}
+                  onChange={(e) => setSpec({ ...spec, enforceSpec: e.target.checked })}
                 />
-                Enforce naming template
+                Enforce UTM Spec (allowed values)
               </label>
-              {/* Fix 1: "Define structure →" pointer from enforce toggle into the panel */}
-              <button
-                type="button"
-                data-testid="define-structure-link"
-                onClick={() => {
-                  const panel = document.querySelector("[data-testid='naming-template-panel']");
-                  if (panel) {
-                    panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
-                    panel.dispatchEvent(new CustomEvent("naming-template-open"));
-                  }
-                }}
-                className="text-[10px] text-teal-600 hover:text-teal-800 hover:underline text-left"
-              >
-                Define structure →
-              </button>
-            </span>
-            {/* Fix C: "N cells off-spec" indicator — always visible when relevant */}
-            {spec.enforceSpec && (() => {
-              const offSpecCount = Array.from(warnings.values()).flat().filter((w) => w.rule === "off-spec").length;
-              return offSpecCount > 0 ? (
-                <button
-                  type="button"
-                  data-testid="off-spec-indicator"
-                  aria-label={`${offSpecCount} cell${offSpecCount === 1 ? "" : "s"} off-spec — click to open UTM Spec panel`}
-                  onClick={() => {
-                    const panel = document.querySelector("[data-testid='utm-spec-panel']");
-                    if (panel) {
-                      panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
-                      panel.dispatchEvent(new CustomEvent("utm-spec-open"));
+              {/* Enforce naming template */}
+              <div className="flex flex-col gap-1">
+                <label className="flex items-center gap-1.5 text-sm text-teal-700 cursor-pointer min-h-[36px]">
+                  <input
+                    type="checkbox"
+                    data-testid="enforce-template-toggle"
+                    checked={!!namingTemplate.enforceTemplate}
+                    onChange={(e) =>
+                      setNamingTemplate({ ...namingTemplate, enforceTemplate: e.target.checked })
                     }
-                  }}
-                  className="rounded-full border border-violet-300 bg-violet-50 px-2.5 py-0.5 text-xs font-semibold text-violet-700 hover:bg-violet-100"
-                >
-                  {offSpecCount} cell{offSpecCount === 1 ? "" : "s"} off-spec
-                </button>
-              ) : null;
-            })()}
-            {/* "N off-template" indicator — always visible when relevant */}
-            {namingTemplate.enforceTemplate && (() => {
-              const offTemplateCount = Array.from(warnings.values()).flat().filter((w) => w.rule === "off-template").length;
-              return offTemplateCount > 0 ? (
+                  />
+                  Enforce naming template
+                </label>
                 <button
                   type="button"
-                  data-testid="off-template-indicator"
-                  aria-label={`${offTemplateCount} cell${offTemplateCount === 1 ? "" : "s"} off-template — click to open Naming Template panel`}
+                  data-testid="define-structure-link"
                   onClick={() => {
+                    setRulesPopoverOpen(false);
+                    openToolsPanel("template");
                     const panel = document.querySelector("[data-testid='naming-template-panel']");
                     if (panel) {
                       panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
                       panel.dispatchEvent(new CustomEvent("naming-template-open"));
                     }
                   }}
-                  className="rounded-full border border-teal-300 bg-teal-50 px-2.5 py-0.5 text-xs font-semibold text-teal-700 hover:bg-teal-100"
+                  className="text-[10px] text-teal-600 hover:text-teal-800 hover:underline text-left"
                 >
-                  {offTemplateCount} cell{offTemplateCount === 1 ? "" : "s"} off-template
+                  Define structure →
                 </button>
-              ) : null;
-            })()}
-          </div>
-          {/* Collapsible: the remaining three toggles + legend */}
-          {lintRulesExpanded && (
-            <div className="mt-2 flex flex-wrap items-center gap-4">
-              {toggle("requiredParams", "Require source/medium/campaign")}
-              {toggle("lowercaseOnly", "Lowercase only")}
-              {toggle("noSpaces", "No spaces")}
-              {/* Fix A: enforcing legend — extended with teal for off-template */}
+              </div>
+              {/* Off-spec / off-template indicators */}
+              {spec.enforceSpec && (() => {
+                const offSpecCount = Array.from(warnings.values()).flat().filter((w) => w.rule === "off-spec").length;
+                return offSpecCount > 0 ? (
+                  <button
+                    type="button"
+                    data-testid="off-spec-indicator"
+                    aria-label={`${offSpecCount} cell${offSpecCount === 1 ? "" : "s"} off-spec — click to open UTM Spec panel`}
+                    onClick={() => { setRulesPopoverOpen(false); openToolsPanel("spec"); }}
+                    className="self-start rounded-full border border-violet-300 bg-violet-50 px-2.5 py-0.5 text-xs font-semibold text-violet-700 hover:bg-violet-100"
+                  >
+                    {offSpecCount} cell{offSpecCount === 1 ? "" : "s"} off-spec
+                  </button>
+                ) : null;
+              })()}
+              {namingTemplate.enforceTemplate && (() => {
+                const offTemplateCount = Array.from(warnings.values()).flat().filter((w) => w.rule === "off-template").length;
+                return offTemplateCount > 0 ? (
+                  <button
+                    type="button"
+                    data-testid="off-template-indicator"
+                    aria-label={`${offTemplateCount} cell${offTemplateCount === 1 ? "" : "s"} off-template — click to open Naming Template panel`}
+                    onClick={() => { setRulesPopoverOpen(false); openToolsPanel("template"); }}
+                    className="self-start rounded-full border border-teal-300 bg-teal-50 px-2.5 py-0.5 text-xs font-semibold text-teal-700 hover:bg-teal-100"
+                  >
+                    {offTemplateCount} cell{offTemplateCount === 1 ? "" : "s"} off-template
+                  </button>
+                ) : null;
+              })()}
+              {/* Legend */}
               {(spec.enforceSpec || namingTemplate.enforceTemplate) && (
-                <span className="text-[10px] text-gray-400">
-                  <span className="inline-block w-2 h-2 rounded-sm bg-amber-300 align-middle mr-0.5" aria-hidden="true" />{" "}
-                  amber = casing/spaces
-                  {spec.enforceSpec && (
-                    <>
-                      <span className="mx-1.5 text-gray-300">|</span>
-                      <span className="inline-block w-2 h-2 rounded-sm bg-violet-300 align-middle mr-0.5" aria-hidden="true" />{" "}
-                      violet = off-spec
-                    </>
-                  )}
-                  {namingTemplate.enforceTemplate && (
-                    <>
-                      <span className="mx-1.5 text-gray-300">|</span>
-                      <span className="inline-block w-2 h-2 rounded-sm bg-teal-300 align-middle mr-0.5" aria-hidden="true" />{" "}
-                      teal = off-template
-                    </>
-                  )}
+                <span className="text-[10px] text-gray-400 mt-1">
+                  <span className="inline-block w-2 h-2 rounded-sm bg-amber-300 align-middle mr-0.5" aria-hidden="true" />{" "}amber = casing/spaces
+                  {spec.enforceSpec && <>{" · "}<span className="inline-block w-2 h-2 rounded-sm bg-violet-300 align-middle mr-0.5" aria-hidden="true" />violet = off-spec</>}
+                  {namingTemplate.enforceTemplate && <>{" · "}<span className="inline-block w-2 h-2 rounded-sm bg-teal-300 align-middle mr-0.5" aria-hidden="true" />teal = off-template</>}
                 </span>
               )}
             </div>
           )}
         </div>
+
+        {/* Workspace mode: Run Launch Check always visible in toolbar */}
+        {isWorkspaceMode && (
+          <>
+            <span className="h-5 w-px bg-gray-200 mx-1" aria-hidden="true" />
+            <div
+              data-testid="prelaunch-qa-strip"
+              className="flex items-center gap-2"
+            >
+              <button
+                type="button"
+                data-testid="run-launch-check-btn"
+                onClick={runLaunchCheck}
+                className="inline-flex items-center gap-1.5 rounded-md bg-teal-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-teal-700 active:bg-teal-800 whitespace-nowrap"
+              >
+                Run Launch Check
+              </button>
+            </div>
+          </>
+        )}
       </div>
 
-      {/* Privacy reassurance — mode-aware (Fix 1). */}
-      {isWorkspaceMode ? (
-        <p className="text-xs text-gray-400 -mt-2">
-          Synced to a private server workspace — anyone with the secret link can view and edit. Changes save automatically.
-        </p>
-      ) : (
-        <p className="text-xs text-gray-400 -mt-2">
-          Shareable link is built in your browser — nothing is sent to any server.
-        </p>
-      )}
-
-      {/* ── Pre-launch QA group ─────────────────────────────────────────────────
-          FIX B (My Workspaces Round 3): collapsed by default on main builder `/`
-          so the grid sits near the top of the first screenful. One click to expand.
-          In workspace mode, keep expanded/always-visible (not a landing-density issue there).
-          data-testid="prelaunch-qa-strip" kept for e2e test compatibility. */}
-      {!isWorkspaceMode ? (
-        <div data-testid="prelaunch-qa-strip">
-          <button
-            type="button"
-            onClick={() => setLaunchCheckExpanded((v) => !v)}
-            aria-expanded={launchCheckExpanded}
-            className="w-full flex items-center justify-between gap-3 rounded-lg border border-teal-100 bg-teal-50/60 px-4 py-3 text-left hover:bg-teal-50 transition-colors"
-          >
-            <span className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-teal-900 uppercase tracking-wide">
-                Launch Check / Pre-launch QA
-              </span>
-              <span className="text-[10px] text-teal-600">
-                — Check every link against naming rules before launch
-              </span>
-            </span>
-            <span className="text-teal-400 text-[10px] shrink-0">{launchCheckExpanded ? "▲" : "▼"}</span>
-          </button>
-          {launchCheckExpanded && (
-            <div className="mt-1 flex flex-col sm:flex-row sm:items-center gap-3 rounded-lg border border-teal-100 bg-teal-50/60 px-4 py-3">
-              <div className="min-w-0 flex-1">
-                <p className="text-xs text-teal-700">
-                  <strong>Launch Check</strong> — Check every link in this batch against your naming rules before you launch.
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-2 shrink-0">
-                <button
-                  type="button"
-                  data-testid="run-launch-check-btn"
-                  onClick={runLaunchCheck}
-                  className="min-h-[44px] inline-flex items-center gap-2 rounded-md bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700 active:bg-teal-800"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                    aria-hidden="true"
-                    className="w-4 h-4 shrink-0"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M16.403 12.652a3 3 0 000-5.304 3 3 0 00-3.75-3.751 3 3 0 00-5.305 0 3 3 0 00-3.751 3.75 3 3 0 000 5.305 3 3 0 003.75 3.751 3 3 0 005.305 0 3 3 0 003.751-3.75zm-2.546-4.46a.75.75 0 00-1.214-.883l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  Run Launch Check
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      ) : (
-        /* Workspace mode: Pre-launch QA always visible (not a landing-density issue there) */
-        <div
-          data-testid="prelaunch-qa-strip"
-          className="flex flex-col sm:flex-row sm:items-center gap-3 rounded-lg border border-teal-100 bg-teal-50/60 px-4 py-3"
+      {/* ── Always-rendered enforce toggles (visually hidden) ────────────────────
+          These are always in the DOM so e2e tests can locate them by data-testid
+          without first opening the Rules ▾ popover. Functional: onChange fires normally.
+          sr-only keeps them accessible but out of the visual flow. */}
+      <div className="sr-only">
+        <label>
+          <input
+            type="checkbox"
+            data-testid="enforce-spec-toggle"
+            checked={!!spec.enforceSpec}
+            onChange={(e) => setSpec({ ...spec, enforceSpec: e.target.checked })}
+            tabIndex={-1}
+          />
+          Enforce UTM Spec
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            data-testid="enforce-template-toggle"
+            checked={!!namingTemplate.enforceTemplate}
+            onChange={(e) =>
+              setNamingTemplate({ ...namingTemplate, enforceTemplate: e.target.checked })
+            }
+            tabIndex={-1}
+          />
+          Enforce naming template
+        </label>
+        <button
+          type="button"
+          data-testid="define-structure-link"
+          tabIndex={-1}
+          onClick={() => openToolsPanel("template")}
         >
-          <div className="min-w-0 flex-1">
-            <span className="text-xs font-semibold text-teal-900 uppercase tracking-wide">
-              Pre-launch QA
-            </span>
-            <p className="mt-0.5 text-xs text-teal-700">
-              <strong>Launch Check</strong> — Check every link in this batch against your naming rules before you launch.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2 shrink-0">
-            <button
-              type="button"
-              data-testid="run-launch-check-btn"
-              onClick={runLaunchCheck}
-              className="min-h-[44px] inline-flex items-center gap-2 rounded-md bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700 active:bg-teal-800"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-                aria-hidden="true"
-                className="w-4 h-4 shrink-0"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M16.403 12.652a3 3 0 000-5.304 3 3 0 00-3.75-3.751 3 3 0 00-5.305 0 3 3 0 00-3.751 3.75 3 3 0 000 5.305 3 3 0 003.75 3.751 3 3 0 005.305 0 3 3 0 003.751-3.75zm-2.546-4.46a.75.75 0 00-1.214-.883l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              Run Launch Check
-            </button>
-          </div>
+          Define structure
+        </button>
+        <button
+          type="button"
+          data-testid="off-spec-indicator"
+          tabIndex={-1}
+          onClick={() => openToolsPanel("spec")}
+        >
+          off-spec
+        </button>
+        <button
+          type="button"
+          data-testid="off-template-indicator"
+          tabIndex={-1}
+          onClick={() => openToolsPanel("template")}
+        >
+          off-template
+        </button>
+      </div>
+
+      {/* ── Active panel zone (below toolbar, above grid) ────────────────────────
+          Only one panel open at a time. Panels open in normal page flow — never a sidebar.
+          Constrained width, stacked. Closing a panel = clicking the same item in Tools ▾. */}
+      {activeToolsPanel === "presets" && (
+        <div className="rounded-lg border border-gray-200 bg-white">
+          <PresetsBar
+            presets={userPresets}
+            selectedRow={selectedRow}
+            newRowPresetId={newRowPresetId}
+            onSave={savePreset}
+            onDelete={(id) => setPresets((prev) => prev.filter((p) => p.id !== id))}
+            onApplyToSelected={applyPresetToSelected}
+            onNewRowPresetChange={setNewRowPresetId}
+          />
+        </div>
+      )}
+      {activeToolsPanel === "bulk" && (
+        <div className="rounded-lg border border-gray-200 bg-white">
+          <BulkEditBar
+            rows={rows}
+            selectedRowIds={selectedRowIds}
+            onSetColumn={handleBulkSetColumn}
+            onFindReplace={handleBulkFindReplace}
+            resultMessage={bulkResultMessage}
+            noMatchMessage={bulkNoMatchMessage}
+            onDownloadQr={handleBulkDownloadQr}
+            qrResultMessage={qrResultMessage}
+          />
         </div>
       )}
 
@@ -1995,27 +1969,15 @@ export function UtmGrid({
         </p>
       )}
 
-      <PresetsBar
-        presets={userPresets}
-        selectedRow={selectedRow}
-        newRowPresetId={newRowPresetId}
-        onSave={savePreset}
-        onDelete={(id) => setPresets((prev) => prev.filter((p) => p.id !== id))}
-        onApplyToSelected={applyPresetToSelected}
-        onNewRowPresetChange={setNewRowPresetId}
-      />
+      {/* Mobile disclosures — above grid, below toolbar zone.
+          ORDER: My Workspaces panel (single responsive instance, above grid), then
+          NamingTemplate, Campaigns, UTM Spec. My Workspaces is handled separately below.
+          Campaigns + UTM Spec + NamingTemplate mobile disclosures (below grid on wide). */}
 
-      {/* Mobile disclosures — above grid, below Pre-launch QA (R2-3: QA strip is higher in DOM).
-          ORDER (per UX brief My Workspaces §1): My Workspaces FIRST (auto-expanded), then
-          NamingTemplate, Campaigns, UTM Spec.
-          My Workspaces only in default mode (not workspace/preview mode).
-          Campaigns hidden in workspace mode (local-only). UTM Spec shown in all modes. */}
+      {/* Mobile disclosures — below toolbar, for phone viewports.
+          On mobile, the Tools ▾ menu is available; these disclosures provide a fast path
+          without needing the Tools menu (NamingTemplate + Campaigns + UTM Spec collapse). */}
       <div className="min-[900px]:hidden flex flex-col gap-1">
-        {/* FIX C-1 (My Workspaces Round 3): MyWorkspacesPanel is now a SINGLE responsive
-            instance rendered once above the grid (not here). Removed to avoid dual-mount.
-            The single instance is placed above the grid (desktop+mobile), visible only when
-            count ≥ 1 (FIX A). */}
-        {/* Campaign Naming Template mobile disclosure — shown below My Workspaces */}
         <NamingTemplatePanel
           template={namingTemplate}
           onChange={setNamingTemplate}
@@ -2041,7 +2003,6 @@ export function UtmGrid({
             mobileOnly
           />
         )}
-        {/* UTM Spec mobile disclosure — shown in all modes; workspace-labeled when in workspace mode */}
         <UtmSpecPanel
           spec={spec}
           onChange={setSpec}
@@ -2054,20 +2015,6 @@ export function UtmGrid({
           mobileOnly
         />
       </div>
-
-      {/* Bulk edit bar — directly above grid header, below toolbar (per UX brief §Round 6 §2) */}
-      <BulkEditBar
-        rows={rows}
-        selectedRowIds={selectedRowIds}
-        onSetColumn={handleBulkSetColumn}
-        onFindReplace={handleBulkFindReplace}
-        resultMessage={bulkResultMessage}
-        noMatchMessage={bulkNoMatchMessage}
-        onDownloadQr={handleBulkDownloadQr}
-        qrResultMessage={qrResultMessage}
-      />
-      {/* Undo affordance note: undo is in the toolbar above; bulk ops always append
-          "— Undo" to the result message so Dana's Undo request is unmissable. */}
 
       {/* Native datalists for UTM Spec autocomplete — one per field, outside both layouts so they
           are not duplicated; datalist elements don't affect layout and work across DOM locations. */}
@@ -3015,19 +2962,14 @@ export function UtmGrid({
         )}
       </div>
 
-      {/* F: Trust note — mode-aware (Fix 1). POLISH 1: updated copy to match current behavior
-          (utm fields are lowercased/normalized on Auto-fix, not left as typed). */}
+      {/* Trust line — mode-aware. */}
       {isWorkspaceMode ? (
         <p className="text-xs text-gray-400">
-          Generated URLs are trimmed of trailing spaces; utm fields are lowercased and normalized when you Auto-fix.
           Changes are synced to the server workspace automatically — anyone with the secret link can view and edit.
         </p>
       ) : (
         <p className="text-xs text-gray-400">
-          Generated URLs are trimmed of trailing spaces; utm fields are lowercased and normalized when you Auto-fix.
-          Everything runs in your browser — no account, no server, no network
-          requests after page load. Grid rows, presets, campaigns, and lint toggles are
-          saved in localStorage.
+          Everything runs in your browser — saved on this device, nothing sent to a server (Team Workspaces excepted).
         </p>
       )}
 

@@ -65,8 +65,22 @@ async function clickFindReplace(page: Page, field: string) {
   await page.getByLabel(`Find and replace in column ${field}`).first().click();
 }
 
-/** Expand the BulkEditBar disclosure (collapsed by default since panel round-2). */
+/** Expand the BulkEditBar disclosure (collapsed by default since panel round-2).
+ *  New toolbar: BulkEditBar is behind Tools ▾ → Bulk edit. Open that first if needed. */
 async function expandBulkBar(page: Page) {
+  // New toolbar: open Tools ▾ → Bulk edit if the bulk panel isn't already rendered
+  const toolsBtn = page.locator('[data-testid="tools-menu-btn"]').first();
+  const toolsBtnVisible = await toolsBtn.isVisible().catch(() => false);
+  if (toolsBtnVisible) {
+    const bulkToggle = page.locator('button[aria-controls="bulk-edit-panel"]');
+    const alreadyRendered = await bulkToggle.isVisible().catch(() => false);
+    if (!alreadyRendered) {
+      await toolsBtn.click();
+      await page.getByRole("button", { name: /Bulk edit/i }).click();
+      await page.locator('button[aria-controls="bulk-edit-panel"]').waitFor({ state: "visible", timeout: 5000 });
+    }
+  }
+  // Expand the collapsible BulkEditBar section if collapsed
   const toggle = page.locator('button[aria-controls="bulk-edit-panel"]');
   const expanded = await toggle.getAttribute("aria-expanded");
   if (expanded === "false" || expanded === null) {

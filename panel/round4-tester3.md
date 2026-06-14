@@ -1,71 +1,17 @@
-# Round 4 — Tester 3 (Wen, marketing data analyst)
-
-## Cold open (5s)
-Headline nails it: "Tag all your campaign links with clean, consistent UTM tags at once — so one
-stray capital letter never splits your data in Google Analytics." That is *my exact pain*, worded
-in my language. Subhead "Edit links in a grid, fix naming automatically, export clean CSV — no
-account." I knew what it was and that it was for me in under five seconds.
-
-## Clarity — Yes
-Grid with UTM_SOURCE/MEDIUM/CAMPAIGN/etc., LINT RULES toggles (Require source/medium/campaign,
-Lowercase only, No spaces) right where I'd look, presets, CSV in/out, share link. Zero confusion.
-
-## Core flow / lint — this is the reason I'd use it
-I typed deliberately dirty data. The lint caught everything, with quotable, copy-the-fix messages:
-- `⚠ Contains uppercase letters — use lowercase only ("linkedin").` + a **Fix** button.
-- `⚠ Contains spaces — use "_" or "-" instead ("Paid_Social").`
-- The killer: `⚠ Inconsistent utm_campaign across rows: "Summer Sale 2026" vs "summer_sale_2026"
-  — these will split campaign data in GA4.` THAT is the bug that wrecks my dashboards and no other
-  tool I use flags it. The generated_url is shown verbatim (LinkedIn stays LinkedIn until I hit Fix)
-  — it does NOT silently transform my data, which is exactly what I demand.
-
-## Campaigns library (the new thing) — works, and it fits my workflow
-- Save: "+ Save as campaign" -> inline "Name this campaign" + Save/Cancel. Sidebar shows
-  "Campaigns (1)", card "Q3 Launch — LinkedIn / 1 link · saved just now", Open/Duplicate/Delete.
-  Link count is correct.
-- The top chip tracks active state: "In: Q3 Launch — LinkedIn · Saved!" -> after an edit it becomes
-  "In: Q3 Launch — LinkedIn · unsaved changes". Clean dirty/clean signalling — I trust it.
-- Reload: campaign persists (localStorage). Reopen restored rows EXACTLY (LinkedIn / Paid_Social /
-  q3_launch) AND my lint toggles round-tripped exactly (I had unchecked "No spaces"; it came back
-  unchecked, Lowercase stayed checked). Lint settings travel with the campaign — important, because
-  a relaxed-rules campaign shouldn't inherit strict rules silently.
-- Unsaved-work warning: opening another campaign with a dirty grid prompts
-  `Open "Q3 Launch — LinkedIn"? Your current unsaved grid (1 link) will be replaced. This can't be
-  undone.` Dismissing it KEEPS my edits. Correct, safe behavior.
-- Delete confirms by name and actually removes the card (2 -> 1). Duplicate works.
-
-## Sanity: grid / lint / CSV / share
-- CSV export: headers `base_url,utm_source,...,generated_url`, raw cells preserved verbatim
-  ("AGAIN_DIRTY" not lowercased), generated_url included so I can audit. Import re-opens a
-  "Map CSV columns" dialog with auto-mapped headers, Append-vs-Replace ("wipe current grid"), and
-  "Either way you can Undo immediately after importing." Round-trip exact. This is best-in-class
-  CSV hygiene for a free tool.
-- Copy share link returned a real `https://...#g=...` URL to clipboard. 0 console errors anywhere.
-
-## Value — Yes
-Today I lint UTMs by eyeballing a Google Sheet + a half-broken VLOOKUP and I still miss casing
-splits until GA4 shows me two "summer_sale" rows. This catches the cross-row inconsistency
-*before* I publish, and the CSV round-trip drops straight into my Sheets/BigQuery flow. Saving a
-named campaign to reuse last week's grid in one click is a real return-visit hook for me — I run
-this weekly.
-
-## Advocacy — 9
-I'd bring this up unprompted in my marketing-ops Slack. The cross-row consistency lint plus
-strict, transparent CSV in/out is exactly the gap in my workflow. Not a 10 only because: (1)
-campaigns are localStorage-only, so they're stuck on one machine/browser — I work on two monitors
-on one box so fine for me, but I can't share a saved library with a teammate or move it to my
-laptop, and that's the one thing that would make me evangelize harder; (2) no bulk "Fix all" — I
-fix lint per cell; on a 40-row import I'd want one button to normalize everything.
-
 ```json
-{
-  "tester": "Wen",
-  "clarity": "Yes",
-  "value": "Yes",
-  "advocacy": 9,
-  "campaigns_verdict": "Save/Open/Duplicate/Delete all work; rows AND lint settings restore exactly after reload, and the unsaved-grid warning correctly protects in-progress work while preserving my edits on cancel. Named-campaign reuse genuinely fits my weekly reporting cadence and brings me back.",
-  "likes": ["Cross-row utm_campaign inconsistency lint that calls out GA4 data-splitting by name", "No silent transforms — raw cells preserved verbatim; CSV export includes generated_url for auditing", "Active-campaign chip shows clean/unsaved state and Open warns before replacing unsaved work", "Import 'Map CSV columns' dialog with Append/Replace + Undo"],
-  "complaints": ["Campaigns are localStorage-only — can't sync to another machine or share a saved library with a teammate", "No bulk 'Fix all lint' button; warnings are fixed per-cell, tedious on a large import"],
-  "regression": "none"
-}
+{"name":"Wen","clarity":"Yes","value":"Yes","advocacy":9,"priorConcernsAddressed":"all","top_issues":["Import is a two-step confirm modal ('Cancel' / 'Import 2 rows') — correct and reviewable, but it intercepts everything until dismissed, so batch-import-then-auto-fix costs one extra click; minor flow tax, not a defect","Surface is still feature-rich: even with the calmer toolbar, a brand-new user has many panels (Launch Check, Presets, Bulk Edit, Campaign Naming Template, Allowed values) to take in before touching the grid"],"loved":["Toolbar wrap is GONE — at 1440 all controls sit in one ~222–236px band: ONE blue '+ Add row' primary, Auto-fix naming kept amber emphasis (lint stays loud), Import/Paste&Audit/Export/QR/Copy-all demoted to compact neutral buttons, two share actions folded into one bordered SHARE group. Demotion buried nothing","Mobile cell editing FIXED — at 375px each row is a stacked card with full-width labeled fields (BASE URL, UTM_SOURCE*, UTM_MEDIUM*, UTM_CAMPAIGN*…); no more hunting for an unreachable cell, and Add row/Auto-fix/Import/Export all stay visible","CSV in/out still first-class & lossless — import confirm shows row count, auto-fix fires toast+Undo (Google→google, CPC→cpc, Summer Sale→summer_sale; facebook/social untouched), export keeps BOM + snake_case headers + generated_url. 0 console errors across import/autofix/export"]}
 ```
+
+Re-test of my two round-3 off-10 nits — BOTH verified live, FIXED.
+
+TOOLBAR WRAP / SPRAWL — FIXED. At 1440 the controls no longer wrap to two rows. Measured button tops: +Add row 233, Auto-fix naming 231, Import CSV 236, Paste&Audit 233, Export CSV 236, QR 222, Copy all 226 — one band. Clear hierarchy now: single blue primary, amber Auto-fix keeps lint prominent, rest compact, share folded into one SHARE box. Reads as a grid tool, not a button wall.
+
+MOBILE CELL EDITING — FIXED. At 375 the grid switches to a stacked card per row with full-width labeled inputs for every field. The "couldn't reach a cell" problem is gone; BASE URL / UTM_SOURCE / etc. are directly tappable.
+
+SENTINEL (did demoting/compacting hurt CSV/lint discoverability?) — NO. Import CSV, Export CSV and Auto-fix naming are all still obvious and one click; Import even gained a "Import 2 rows" confirm. Export still emits BOM + snake_case + generated_url and round-trips clean.
+
+CLARITY: Yes — H1 "Clean UTM links for your whole campaign — in one grid." + "Auto-fix messy casing and typos before they split your Google Analytics" answers what+who in seconds; calmer toolbar makes the grid the focal point.
+
+VALUE: Yes — beats my Sheets LOWER/SUBSTITUTE + dbt post-hoc casing catch; reversible one-click pre-launch transform with visible Undo.
+
+ADVOCACY: 9 (held). Both prior nits resolved with no regression to CSV or lint. Not a 10 only because the surface is feature-dense for a first-timer and the import-confirm modal is a (small, defensible) extra step. I'd still drop this in our analytics Slack unprompted.

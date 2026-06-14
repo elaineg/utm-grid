@@ -146,23 +146,46 @@ test("import with short headers url,source,medium,campaign pre-maps and lints", 
   ).toHaveCount(2);
 });
 
+/** Open the Presets panel from the Tools ▾ menu (new consolidated toolbar). */
+async function openPresetsPanel(page: Page) {
+  // New toolbar: "Channel Presets" is inside Tools ▾
+  const toolsBtn = page.locator('[data-testid="tools-menu-btn"]').first();
+  if (await toolsBtn.isVisible().catch(() => false)) {
+    // Check if Presets section is already open
+    const presetsSection = page.locator('section').filter({ hasText: /Presets/ }).first();
+    const alreadyOpen = await presetsSection.isVisible().catch(() => false);
+    if (!alreadyOpen) {
+      await toolsBtn.click();
+      await page.getByRole("button", { name: /Channel Presets/ }).click();
+      await page.locator('section').filter({ hasText: /Presets/ }).waitFor({ state: "visible", timeout: 5000 });
+    }
+    return;
+  }
+  // Legacy fallback: section is always in DOM, may need expanding
+  const presetsToggle = page.locator('section').filter({ hasText: /Presets/ }).locator('button[aria-expanded]').first();
+  if ((await presetsToggle.getAttribute("aria-expanded")) === "false") await presetsToggle.click();
+}
+
 test("presets persist across reload and apply to a row", async ({ page }) => {
   await page.goto("/");
   // Put the values on row 1, select it, save as preset.
   await fillRow(page, 1, { utm_source: "facebook", utm_medium: "paid_social" });
   await cell(page, "utm_source", 1).click();
-  // Expand Presets section (collapsed by default since panel round-4)
+  // Open Presets panel (new toolbar: Tools ▾ → Channel Presets)
+  await openPresetsPanel(page);
+  // Expand Presets section if collapsed
   const presetsToggle = page.locator('section').filter({ hasText: /Presets/ }).locator('button[aria-expanded]').first();
-  if ((await presetsToggle.getAttribute("aria-expanded")) === "false") await presetsToggle.click();
+  if ((await presetsToggle.getAttribute("aria-expanded").catch(() => null)) === "false") await presetsToggle.click();
   await page.getByRole("button", { name: "Save preset…" }).click();
   await page.getByPlaceholder("Paid Social").fill("Paid Social");
   await expect(page.getByLabel("Preset value for utm_source")).toHaveValue("facebook");
   await page.getByRole("button", { name: "Save preset", exact: true }).click();
 
   await page.reload();
-  // Re-expand Presets after reload (collapses on page load)
+  // Re-open Presets panel after reload
+  await openPresetsPanel(page);
   const presetsToggle2 = page.locator('section').filter({ hasText: /Presets/ }).locator('button[aria-expanded]').first();
-  if ((await presetsToggle2.getAttribute("aria-expanded")) === "false") await presetsToggle2.click();
+  if ((await presetsToggle2.getAttribute("aria-expanded").catch(() => null)) === "false") await presetsToggle2.click();
   // Preset chip survives the reload (it also appears in the "new rows" select).
   await expect(
     page.getByText("Paid Social", { exact: true }).first()

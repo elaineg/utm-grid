@@ -30,17 +30,32 @@ const cell = (page: Page, field: string, rowNum: number) =>
   page.getByLabel(`${field} row ${rowNum}`, { exact: true }).first();
 
 /**
- * Round-3 FIX B: On the main builder `/`, the Launch Check is inside a collapsed disclosure.
- * Expand it before clicking "Run Launch Check". On /w/<id> it is always visible.
+ * New toolbar: On the main builder `/`, "Run Launch Check" is inside the Tools ▾ menu.
+ * On /w/<id> it is always visible in the toolbar (prelaunch-qa-strip).
+ * This helper opens the Tools menu on the main builder before clicking the button.
  */
 async function expandLaunchCheckIfNeeded(page: Page) {
+  // Check if run-launch-check-btn is already visible (workspace mode / w/<id>)
+  const btn = page.locator('[data-testid="run-launch-check-btn"]').first();
+  const isVisible = await btn.isVisible().catch(() => false);
+  if (isVisible) return; // Already visible (workspace mode) — no menu needed
+
+  // New toolbar: open the Tools ▾ menu first (main builder `/`)
+  const toolsMenuBtn = page.locator('[data-testid="tools-menu-btn"]').first();
+  const toolsPresent = await toolsMenuBtn.isVisible().catch(() => false);
+  if (toolsPresent) {
+    await toolsMenuBtn.click();
+    await page.locator('[data-testid="run-launch-check-btn"]').first().waitFor({ state: "visible", timeout: 5000 });
+    return;
+  }
+
+  // Legacy fallback: collapsed disclosure (old prelaunch-qa-strip pattern)
   const toggle = page.locator('[data-testid="prelaunch-qa-strip"] button[aria-expanded]').first();
-  const isPresent = await toggle.isVisible().catch(() => false);
-  if (isPresent) {
+  const togglePresent = await toggle.isVisible().catch(() => false);
+  if (togglePresent) {
     const expanded = await toggle.getAttribute("aria-expanded");
     if (expanded === "false") {
       await toggle.click();
-      // Wait for the button to appear inside the expanded section
       await page.locator('[data-testid="run-launch-check-btn"]').first().waitFor({ state: "visible", timeout: 5000 });
     }
   }

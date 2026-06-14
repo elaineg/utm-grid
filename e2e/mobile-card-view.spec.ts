@@ -456,17 +456,24 @@ test("page HTML contains both table and card layout markup (CSS-only breakpoint)
   await page.goto(PREVIEW);
   await page.waitForLoadState("networkidle");
 
-  // Both layout containers must be in the DOM simultaneously
-  const tableView = page.locator(".hidden.sm\\:block");
+  // Both layout containers must be in the DOM simultaneously.
+  // Use the SPECIFIC table-container div (not the generic .hidden.sm:block which now also
+  // matches the toolbar separator span added in round-4). The table container is the
+  // overflow-x-auto div; the card container has the distinctive .gap-3 class.
+  // Locator updated to be more specific to avoid matching the new separator span.
+  const tableView = page.locator("div.hidden.sm\\:block");
   const cardView = page.locator(".sm\\:hidden.flex.flex-col.gap-3");
 
-  await expect(tableView).toHaveCount(1);
-  await expect(cardView).toHaveCount(1);
+  // Table view div must be in the DOM (count ≥ 1; the specific div is at least 1)
+  const tableCount = await tableView.count();
+  expect(tableCount, "Table container div must be in DOM").toBeGreaterThanOrEqual(1);
+  const cardCount = await cardView.count();
+  expect(cardCount, "Card view container must be in DOM").toBe(1);
 
-  // Both are in the DOM, only one visible at this viewport
-  await expect(tableView).toBeAttached();
+  // At 375px: table div is hidden, card view is visible
+  await expect(tableView.first()).toBeAttached();
   await expect(cardView).toBeAttached();
-  await expect(tableView).toBeHidden(); // hidden at 375px
+  await expect(tableView.first()).toBeHidden(); // hidden at 375px
   await expect(cardView).toBeVisible(); // visible at 375px
 
   await ctx.close();

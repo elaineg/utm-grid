@@ -1,62 +1,24 @@
-# Round 4 — Tester 4 (Tomás, Ops analyst, Edge on corporate laptop)
-
-## 5-second impression
-Headline nails the pain in my language: "Tag all your campaign links... so one stray capital
-letter never splits your data in Google Analytics." Subhead "no account" + the footnote
-"Everything runs in your browser — no account, no server, no network requests after page load"
-is exactly what gets me past my IT/data-paste wariness. I knew what it was instantly.
-
-## Core flow
-Typed a base URL + linkedin/paid social/q3 launch. Lint is genuinely good: flagged
-"Contains uppercase letters — use lowercase only ('linkedin')" and "Contains spaces — use
-'_' or '-'" with a "2 warnings · Fix" badge and a one-click Fix. Generated URL builds live in
-the cell. This is the part Excel can't do for me without a fragile formula.
-
-## NEW: Campaigns library
-- Save flow is inline (no scary modal): "+ Save as campaign" → "Name this campaign" → Save.
-- Sidebar shows "Campaigns (1)", entry "July Ops Push · 1 link · saved just now" with
-  Open / Duplicate / Delete. Header pill changes to "In: July Ops Push · Saved!".
-- RELOAD persistence: campaign and grid both survived a full reload (localStorage). 
-- Dirty tracking is excellent: edit a cell and the pill flips to "In: X · unsaved changes",
-  an amber dot appears on the card, and the button changes "Saved!" → "Save changes".
-- WARN-BEFORE-LOSING-WORK: confirmed working. Clicking Open on another campaign with unsaved
-  edits fired: 'Open "Campaign A"? Your current unsaved grid (1 link) will be replaced. This
-  can't be undone.' Dismissing it kept my edits. (My first pass thought this was missing —
-  it isn't; it triggers on a real cross-campaign Open.)
-- Duplicate and Delete work; Delete asks 'Delete campaign "X"? This can't be undone.'
-- VERDICT on fit: yes, this matches how I'd reuse monthly ops batches — last month's grid
-  in one click instead of rebuilding the sheet. The named library + link count is the right
-  mental model.
-
-## Privacy / "nothing leaves my machine" — the thing I actually care about
-I monitored network traffic after page load. EVERY request was a static asset (js/css/fonts)
-from the app's own domain plus the Vercel feedback widget — ZERO requests carried my grid
-data. Share link encodes the whole grid in the URL fragment (#g=...), client-side. The copy
-("no network requests after page load... saved in localStorage") is accurate, not marketing.
-For me that's the difference between "can't use at work" and "can use with company data."
-
-## Sanity checks
-- CSV export downloads utm-grid.csv. Lint round-trips. Share link copies a self-contained URL.
-- "Clean all" = apply lint fixes to all rows (toast "No cells needed fixing"), NOT clear grid —
-  no data loss, but the label reads like it might wipe the grid on first encounter.
-
-## What holds it back from a 9
-- Minor: "Clean all" naming is ambiguous next to "Add row" — momentarily made me think it
-  clears everything. A tooltip or "Fix all" would remove the flinch.
-- I'd want CSV import to round-trip a campaign too (didn't see a way to save an imported CSV
-  straight into the library), and a quick rename on a campaign card.
-- It's a sharp single-purpose tool; useful 2-4x/month for me, not daily — solid recommend,
-  not a "must-tell-everyone."
-
 ```json
-{
-  "tester": "Tomás",
-  "clarity": "Yes",
-  "value": "Yes",
-  "advocacy": 8,
-  "campaigns_verdict": "The named Campaigns library fits monthly ops reuse perfectly — save the whole grid+lint under a name, reopen in one click, with proper dirty-state warnings before overwriting. Persists across reload locally and provably sends nothing to a server.",
-  "likes": ["Lint catches uppercase/spaces with one-click Fix — Excel can't do this cleanly", "Verified zero data leaves the browser; share link is a client-side URL fragment", "Dirty-state UX is real: 'unsaved changes' pill, amber dot, and a confirm before Open overwrites work"],
-  "complaints": ["'Clean all' label reads like it might wipe the grid (it actually just applies lint fixes) — momentary flinch", "No obvious way to save an imported CSV directly into the Campaigns library, or to rename a saved campaign"],
-  "regression": "none"
-}
+{"name":"Tomás","clarity":"Yes","value":"Yes","advocacy":9,"priorConcernsAddressed":"some","top_issues":["Live shared workspace is STILL edit-only: 'anyone with this secret link can view and edit.' My exact off-10 — a read-only/view-only link for the live workspace before I drop company campaign data in a Teams channel — is not built. Honest copy, but the capability isn't there.","Minor: in the row, UTM_SOURCE shows truncated 'newslette:' and BASE URL 'https://Shop.AC' — cell widths clip values; I trust the GENERATED URL column but a clipped source field made me double-check"],"loved":["Consolidated SHARE box is genuinely clearer: one bordered group, 'Copy share link / Frozen snapshot — no server' stacked over 'Create shared workspace / Live, synced via secret link' — the two paths no longer read identically, each has its own subtitle. My round-2 complaint is fixed.","CSV round-trip intact and exactly my workflow: BOM present, headers correct, full generated_url column, utm fields lowercased after Auto-fix (q2_push, email, newsletter)","'Auto-fixed 3 cells — Undo' toast + frozen-link snapshot that's a client-side /#g= hash (nothing server-side) — I trust where my data goes"]}
 ```
+
+PRIOR CONCERNS — re-checked my two round-2 flags:
+1. Two share paths read similarly: FIXED. Now one "SHARE" box with both options stacked and
+   each labeled — "Copy share link / Frozen snapshot — no server" vs "Create shared workspace
+   / Live, synced via secret link." A first-timer can pick correctly without re-reading. Good.
+2. Off-10: read-only share for the LIVE workspace: NOT addressed. Creating a shared workspace
+   still says "anyone with this secret link can view and edit." Copy is honest, but for real
+   company campaign data I still want a view-only link before posting it in Teams. Same blocker.
+
+SENTINEL CHECK — consolidated share is clearer for me: yes. CSV round-trip intact: yes (BOM +
+full URL + lowercased utm fields all confirmed via Export CSV).
+
+CLARITY — Yes. 5-second read holds: paste your campaign links in a grid, it cleans UTM
+casing/typos and exports a clean CSV for your sheet. Headline + "nothing leaves your browser."
+
+VALUE — Yes. Same strong case: Excel does concatenation but not normalization or a pre-launch
+check. The CSV round-trip is precisely what I'd feed back into my reporting sheet.
+
+ADVOCACY — 9 (held). The share-clarity fix I asked for is done and the CSV I rely on is intact.
+I'd recommend it to my marketing counterparts unprompted. It becomes a 10 the day the live
+workspace gets a real read-only/view-only link — that single capability is all that's left.

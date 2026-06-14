@@ -1,13 +1,14 @@
-# Round 4 — Tester 5 (Dana, demand-gen marketer) — readability re-check (desktop)
-
-**Round-3 regression: FIXED.** The GENERATED URL column reads fully inline again — a multi-row batch shows the entire query string (`...?utm_source=linkedin&utm_medium=paid_social&utm_campaign=spring_laun`, ~100 chars), not round-3's `https://acme.com…`. The grid now sits in its own `overflow-x-auto` container (scrollW 1860 / clientW 958), so the PAGE no longer overflows, and GENERATED URL + Copy/Actions are pinned visible at scrollLeft=0. I can scan and sanity-check final URLs across rows by SIGHT before export — exactly what I lost last round. Bulk EDIT (Set column + Find & replace in column, "Apply to: all 5 rows") works for my weekly batch; per-row Copy returns the full clean URL (verified on clipboard); 0 console errors.
-**Honest nit (not a blocker):** UTM input cells are ~104px and still clip long *typed* values (`spring_launch_2026` overflows its box), so to verify a value as typed I lean on the new hover `title` tooltip (now on every input — my round-3 ask) or read the generated-URL column, which is the source of truth and fully visible. Editing the input columns means scrolling the grid left; the read/verify columns are the pinned ones.
-**Round-2 wins all hold:** "Copy share link" (frozen snapshot) vs "Create shared workspace / LIVE TEAM WORKSPACE" (live, syncs across devices) cleanly distinct; mode-aware copy intact; per-row + Copy-all-URLs deliver full correct links.
-
-**Clarity: Yes** — headline still nails my Thursday grind in one scroll.
-**Value: Yes** — kills the 15-min grind; bulk Set + readable inline URLs = my batch workflow restored.
-**Advocacy: 9.** Back to 9 — the truncation that dropped me to 8 is gone, I can verify by sight again, and I'd screenshot this for the team channel. Off 10 only because input-cell clipping means editing (not verifying) still needs a scroll/tooltip, and I haven't lived a full multi-week saved-Campaigns return loop.
-
 ```json
-{"tester":5,"name":"Dana","clarity":"Yes","value":"Yes","advocacy":9,"prior_blocker_resolved":true,"top_problems":["UTM input cells ~104px still clip long typed values (e.g. spring_launch_2026) — mitigated by hover title tooltip + fully readable generated-URL column, but editing leans on those","Editing input columns requires scrolling the grid container left; the pinned columns are GENERATED URL + Copy/Actions"],"likes":["GENERATED URL column readable inline again (full query string visible) — round-3 truncation fixed, verify-by-sight restored","Grid scrolls inside its own container; page no longer overflows; Copy/Actions + Generated URL pinned at scrollLeft=0","Bulk EDIT Set column / Find & replace across all rows works for weekly 30-50 batch; per-row Copy returns full clean URL (clipboard verified)","Round-2 wins intact: distinct frozen-share vs live-workspace buttons, mode-aware sync copy, hover tooltips on inputs"]}
+{"name":"Dana","clarity":"Yes","value":"Yes","advocacy":9,"priorConcernsAddressed":"all","top_issues":["'Copy all URLs' floats alone on the far right OUTSIDE the SHARE box while 'Copy share link' lives INSIDE it — two copy-ish actions split across the toolbar made me look twice about which copies the links vs. the link.","Banner stack is down to three collapsed rows (Launch Check, Presets, Bulk Edit) — better, but still a strip of accordion noise between the clean toolbar and the table."],"loved":["'+ Add row' is now a solid filled blue button while everything else is outlined — the one thing I'm supposed to do is unmistakable in one glance. Exactly the primary-action emphasis I wanted.","The SHARE group finally disambiguates the two share modes: 'Copy share link — Frozen snapshot, no server' vs 'Create shared workspace — Live, synced via secret link'. My round-3 muddy-distinction gripe is gone.","Grid header (BASE URL row) sits ~632px, fully above my 800px fold; hero -> toolbar -> 3 collapsed banners -> editable grid is a clean cold open."]}
 ```
+Round-3 nits, point by point:
+
+1) "Five collapsed banner rows stacking between toolbar and grid" — IMPROVED. Now three collapsed rows (Launch Check, Presets, Bulk Edit); Campaign Naming + Allowed Values dropped below the grid. Still a strip of noise but materially shorter, and the grid clears the fold.
+
+2) "Share concept unclear" — FIXED. Both share actions live in one bordered SHARE box with sublabels: "Frozen snapshot — no server" vs "Live, synced via secret link." I instantly get which is a static link and which is a live team page.
+
+Clarity: Yes. Hero + subhead nail what/who in 2s; "+ Add row" primary emphasis makes the first move obvious.
+
+Value: Yes, unchanged. Auto-fix casing + presets for my weekly channels + Export CSV / Copy all URLs still beats my HubSpot+spreadsheet grind.
+
+Advocacy: 9. Both my dings went the right way. Held off 10 only by the split copy-link actions (one in SHARE, one floating right) and the three-row accordion strip. Tighten those and it's a 10.
