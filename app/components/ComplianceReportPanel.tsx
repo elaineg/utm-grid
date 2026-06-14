@@ -168,7 +168,7 @@ export function ComplianceReportPanel({
     >
       {/* F2: Header row — title + PRIMARY action buttons + dismiss.
           Buttons at the TOP so they're visible the moment the report opens. */}
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      <div data-testid="compliance-report-header" className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             {/* Shield/checklist glyph — teal, distinct from violet AuditSummaryPanel */}

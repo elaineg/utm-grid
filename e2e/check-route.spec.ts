@@ -31,10 +31,13 @@ async function getWorkspaceData(id: string): Promise<string> {
   return ((await res.json()) as { data: string }).data;
 }
 
-/** 3-row payload: row1 clean, row2 missing utm_medium, row3 campaign "Spring Sale". */
+/** 3-row payload: row1 clean (unique campaign), row2 missing utm_medium, row3 campaign "Spring Sale".
+ *  Row 1 uses "row_one_campaign" — unique so the cross-row inconsistency lint does NOT flag it.
+ *  Rows 2+3 share "spring_sale"/"Spring Sale" conflict, flagging only those 2 rows.
+ *  Expected scorecard: 3 total / 1 passing (row 1) / 2 with issues (rows 2+3). */
 const THREE_ROW_PAYLOAD = {
   rows: [
-    { id: "chk-r1", baseUrl: "https://example.com/a", utm_source: "newsletter", utm_medium: "email", utm_campaign: "spring_sale", utm_term: "", utm_content: "" },
+    { id: "chk-r1", baseUrl: "https://example.com/a", utm_source: "newsletter", utm_medium: "email", utm_campaign: "row_one_campaign", utm_term: "", utm_content: "" },
     { id: "chk-r2", baseUrl: "https://example.com/b", utm_source: "newsletter", utm_medium: "", utm_campaign: "spring_sale", utm_term: "", utm_content: "" },
     { id: "chk-r3", baseUrl: "https://example.com/c", utm_source: "newsletter", utm_medium: "email", utm_campaign: "Spring Sale", utm_term: "", utm_content: "" },
   ],
@@ -99,10 +102,11 @@ test("CHK-2 — /w/<id>/check makes NO POST or PUT; workspace data unchanged", a
   const id = await createWorkspace(THREE_ROW_PAYLOAD);
   const before = await getWorkspaceData(id);
 
-  // Track any mutating requests AFTER the page navigates
+  // Track any mutating requests AFTER the page navigates.
+  // Filter out vercel.live (Vercel preview infra injects a POST to vercel.live/login/validate).
   const mutatingRequests: string[] = [];
   page.on("request", (req) => {
-    if (req.method() === "POST" || req.method() === "PUT") {
+    if ((req.method() === "POST" || req.method() === "PUT") && !req.url().includes("vercel.live")) {
       mutatingRequests.push(`${req.method()} ${req.url()}`);
     }
   });
@@ -113,7 +117,7 @@ test("CHK-2 — /w/<id>/check makes NO POST or PUT; workspace data unchanged", a
   // Wait an extra moment to catch any delayed mutations
   await page.waitForTimeout(1500);
 
-  // No POST or PUT should have fired at all
+  // No POST or PUT should have fired at all (excluding Vercel preview infra requests)
   expect(mutatingRequests).toEqual([]);
 
   // Server state must be byte-identical
@@ -126,8 +130,10 @@ test("CHK-2 — /w/<id>/check makes NO POST or PUT; workspace data unchanged", a
 test("CHK-3 — nonexistent workspace id shows 'Workspace not found' (no crash/blank)", async ({ page }) => {
   await page.goto("/w/nonexistent-id-that-does-not-exist-xyz/check");
 
-  // Must show a not-found message, not be blank
-  const alert = page.getByRole("alert");
+  // Must show a not-found message, not be blank.
+  // Use filter to target the real not-found element (getByRole('alert') can match 2 elements:
+  // the h1 + Next.js route announcer div — filter to the one with our text).
+  const alert = page.getByRole("alert").filter({ hasText: /Workspace not found/ });
   await expect(alert).toBeVisible({ timeout: 10_000 });
   await expect(alert).toContainText("Workspace not found");
 

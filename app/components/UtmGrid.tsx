@@ -1536,6 +1536,52 @@ export function UtmGrid({
         </p>
       )}
 
+      {/* ── Pre-launch QA group ─────────────────────────────────────────────────
+          F4: holds ONLY "Run Launch Check". "Audit URLs" lives exclusively in the
+          toolbar above as "Paste & Audit URLs" — the single audit entry point.
+          R2-3: placed in DOM BEFORE create-workspace-strip so on mobile (≤640px)
+          "Run Launch Check" appears HIGH on the page — reachable without scrolling
+          past the 209px create-workspace panel. Desktop order is also fine here
+          (Pre-launch QA naturally precedes team workspace creation). */}
+      <div
+        data-testid="prelaunch-qa-strip"
+        className="flex flex-col sm:flex-row sm:items-center gap-3 rounded-lg border border-teal-100 bg-teal-50/60 px-4 py-3"
+      >
+        <div className="min-w-0 flex-1">
+          <span className="text-xs font-semibold text-teal-900 uppercase tracking-wide">
+            Pre-launch QA
+          </span>
+          <p className="mt-0.5 text-xs text-teal-700">
+            <strong>Launch Check</strong> — Check every link in this batch against your naming rules before you launch.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2 shrink-0">
+          {/* "Run Launch Check" — the sole action in this band (F4: Audit URLs removed) */}
+          <button
+            type="button"
+            data-testid="run-launch-check-btn"
+            onClick={runLaunchCheck}
+            className="min-h-[44px] inline-flex items-center gap-2 rounded-md bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700 active:bg-teal-800"
+          >
+            {/* Shield/checklist icon — distinct from magnifying-glass (Audit URLs) */}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              aria-hidden="true"
+              className="w-4 h-4 shrink-0"
+            >
+              <path
+                fillRule="evenodd"
+                d="M16.403 12.652a3 3 0 000-5.304 3 3 0 00-3.75-3.751 3 3 0 00-5.305 0 3 3 0 00-3.751 3.75 3 3 0 000 5.305 3 3 0 003.75 3.751 3 3 0 005.305 0 3 3 0 003.751-3.75zm-2.546-4.46a.75.75 0 00-1.214-.883l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
+                clipRule="evenodd"
+              />
+            </svg>
+            Run Launch Check
+          </button>
+        </div>
+      </div>
+
       {/* "Create shared workspace" accent strip — always visible in flow above the grid.
           Shown only in default (non-workspace) mode per UX brief §1.
           Placement: its own labeled strip, NOT adjacent to "Copy share link" toolbar button,
@@ -1598,53 +1644,7 @@ export function UtmGrid({
         onNewRowPresetChange={setNewRowPresetId}
       />
 
-      {/* ── Pre-launch QA group ─────────────────────────────────────────────────
-          F4: holds ONLY "Run Launch Check". "Audit URLs" lives exclusively in the
-          toolbar above as "Paste & Audit URLs" — the single audit entry point.
-          F3: placed in DOM BEFORE the mobile disclosure panels so it appears HIGH
-          on ≤640px — reachable without scrolling past the tall panels stack.
-          Desktop (≥640px): panels are hidden (min-[900px]:hidden) so this strip
-          appears naturally in position above BulkEditBar and the grid. */}
-      <div
-        data-testid="prelaunch-qa-strip"
-        className="flex flex-col sm:flex-row sm:items-center gap-3 rounded-lg border border-teal-100 bg-teal-50/60 px-4 py-3"
-      >
-        <div className="min-w-0 flex-1">
-          <span className="text-xs font-semibold text-teal-900 uppercase tracking-wide">
-            Pre-launch QA
-          </span>
-          <p className="mt-0.5 text-xs text-teal-700">
-            <strong>Launch Check</strong> — Check every link in this batch against your naming rules before you launch.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2 shrink-0">
-          {/* "Run Launch Check" — the sole action in this band (F4: Audit URLs removed) */}
-          <button
-            type="button"
-            data-testid="run-launch-check-btn"
-            onClick={runLaunchCheck}
-            className="min-h-[44px] inline-flex items-center gap-2 rounded-md bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700 active:bg-teal-800"
-          >
-            {/* Shield/checklist icon — distinct from magnifying-glass (Audit URLs) */}
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              aria-hidden="true"
-              className="w-4 h-4 shrink-0"
-            >
-              <path
-                fillRule="evenodd"
-                d="M16.403 12.652a3 3 0 000-5.304 3 3 0 00-3.75-3.751 3 3 0 00-5.305 0 3 3 0 00-3.751 3.75 3 3 0 000 5.305 3 3 0 003.75 3.751 3 3 0 005.305 0 3 3 0 003.751-3.75zm-2.546-4.46a.75.75 0 00-1.214-.883l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
-                clipRule="evenodd"
-              />
-            </svg>
-            Run Launch Check
-          </button>
-        </div>
-      </div>
-
-      {/* Mobile disclosures — above grid, below Pre-launch QA (F3: QA strip is higher).
+      {/* Mobile disclosures — above grid, below Pre-launch QA (R2-3: QA strip is higher in DOM).
           ORDER (per brief): NamingTemplate FIRST (most setup-critical), then Campaigns, then UTM Spec.
           Campaigns hidden in workspace mode (local-only). UTM Spec shown in all modes. */}
       <div className="min-[900px]:hidden flex flex-col gap-1">
