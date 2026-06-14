@@ -1,24 +1,13 @@
-# Round 3 — Tester 8 (Rob, freelance brand/visual designer, desktop)
+{"name":"Rob","clarity":"Yes","value":"Yes","advocacy":9}
 
-Re-check of my round-2 complaint (four stacked config panels + team jargon above one empty row):
-- Layout decluttered: MOSTLY FIXED. Presets and Bulk Edit are now collapsed one-line bars; the old
-  stacked Lint Rules panel is gone (now a small NAMING RULES dropdown in the toolbar); Campaigns moved
-  to a side column. The grid is the prominent thing on load — it reads as a link tagger first now.
-- Jargon softened: NOT really. The exact phrase I quoted, "Enforce your team's UTM taxonomy," is still
-  there verbatim under NAMING RULES, and the subhead now ADDS "Share one link your teammates can reuse."
-  For a solo freelancer the "team/teammates/taxonomy" framing is as present as before, just relocated.
+PRIOR CONCERN (round 2): wide-viewport grid width — resolved last round. Re-checked this round after they narrowed the read-only Generated URL column + switched to a fixed table layout. NO REGRESSION.
 
-Re-ran my real 3-link flow: messy Facebook/Instagram /Newsletter rows, Auto-fix → green cells,
-"Auto-fixed 3 cells — Undo" toast, Copy all URLs gave clean lowercased/underscored links. Engine still
-genuinely good and still beats my Google Sheet. One nit: a trailing space became "instagram_" (trailing
-underscore) instead of being trimmed — small but it's the kind of stray char this tool is meant to kill.
+WIDE-VIEWPORT RESULT (1280/1440/1680px): zero PAGE horizontal scroll at all three widths (docWidth == winWidth every time). All columns visible in one row: Base URL(167px), utm_source/medium/campaign/term/content(125px each — comfortable, not cramped), Generated URL(250px), Actions(121px). The starved sub-pane that pinned me at 8 two rounds ago is still gone.
 
-Net: the decluttering moved the needle — the first screen no longer looks like an ops console, which was
-my main blocker. Holding back the last points: the team/teammate language still tells a solo user this
-isn't pitched at them, and for my 3-link volume it's still a modest win over the Sheet I already have.
+GENERATED URL COPYABLE IN FULL: yes. Display column truncates to "...spring?utm_s…" but the row Copy button put the FULL string on the clipboard: https://acme.com/spring?utm_source=Facebook&utm_medium=CPC&utm_campaign=Spring_Sale%202026 . Truncated display, full copy — exactly what I want.
 
-CLARITY (purpose clear in 5s): Yes — grid is prominent and hero says auto-fix casing, no login.
-VALUE (saves real time): Yes — casing auto-fix + clean batch copy beats my Sheet at 3+ links.
-ADVOCACY (0-10): 8 — declutter earned a point; held by team-pitched copy and modest gain at my volume.
-PRIOR CONCERNS ADDRESSED: Partially — panels collapsed (fixed), but the "team taxonomy" jargon remains verbatim.
-TOP FRICTION: "Enforce your team's UTM taxonomy" + "teammates" copy still pitches a solo freelancer at marketing-ops.
+FUNCTION: messy client row (Facebook/CPC/"Spring_Sale 2026") still live-flagged inline ("Contains uppercase letters — use lowercase only"). Beats hand-typing query strings.
+
+MINOR NIT (not a blocker, not new): the table wrapper carries a constant 10px inner overflow (scrollWidth 1240 vs clientWidth 1230) at every width — a hairline sliver, invisible, no functional effect. That plus the still-busy cold toolbar are what keep me off 10.
+
+REMAINING BLOCKER: none. I hold my 9.

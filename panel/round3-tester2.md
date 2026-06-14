@@ -1,10 +1,34 @@
-# Round 3 — Tester 2 (Marcus, frontend eng, Chrome+devtools, 1280px)
+{"name":"Marcus","clarity":"Yes","value":"Yes","advocacy":9}
 
-**Prior blocker (1280px grid overflow / ACTIONS+Copy clipped behind Campaigns sidebar): RESOLVED.** At 1280px with the `campaigns-sidebar` ASIDE open (x=1000, w=256), the whole grid BASE URL→ACTIONS fits to its left. Page-level overflow gone (scrollWidth 1280 = viewport 1280). Copy button now renders the full word "Copy" (was "C…"), box x=879→925, fully visible, NOT clipped; Dup/Delete reachable beside it. No off-screen ACTIONS, no in-grid horiz scroll needed to reach Copy. Screenshot confirms. Table is still ~15px wider than its own scroll-area (973 vs 958) so Dup/Delete sit at the very edge — cosmetic, not blocking.
-**Clarity: Yes.** Same strong H1 + subhead, instant.
-**Value: Yes.** Verified live: typed Base+source "Twitter "+medium → generated URL built live; Auto-fix lowercased to `utm_source=twitter`; Copy put clean `https://example.com?utm_source=twitter&utm_medium=social` on clipboard. Zero console errors all session.
-**Advocacy: 9.** The layout bug that capped me at 8 for two rounds is fixed — I'd share this in team Slack unprompted now. Held off 10 only for the still-absent edit presence/attribution in the live workspace (last-write-wins) and the hairline 15px table>scroller edge.
+# Marcus — round 3 (Chrome desktop @1280px, devtools open)
 
-```json
-{"tester":2,"name":"Marcus","clarity":"Yes","value":"Yes","advocacy":9,"prior_blocker_resolved":true,"top_problems":["table ~15px wider than its scroll-area (973 vs 958) so Dup/Delete sit at the very edge — cosmetic, Copy fully reachable","no edit presence/attribution in live workspace; last-write-wins still a leap of faith vs Google Sheets"],"likes":["1280px ACTIONS/Copy blocker fixed: full 'Copy' label, no clipping, grid fits left of Campaigns sidebar","auto-fix Twitter→twitter + live generated URL + clean clipboard copy all verified","mode-aware copy + disambiguated share buttons, zero console errors"]}
-```
+## My 2-round blocker, re-checked @1280 — RESOLVED
+The wide read-only Generated URL slab is gone. Table is now 1230px (was 1978),
+tableScrollW 1240 ≈ viewport; docW==innerW==1280: NO page scroll and effectively NO in-table
+horizontal scroll on cold load.
+
+## Six editable columns on cold load — ALL VISIBLE, no scroll
+Measured x-positions (px), every one inView:true at scrollLeft=0: Base 100–250, utm_source
+266–376, utm_medium 392–501, utm_campaign 517–626, utm_term 642–751, utm_content 767–876.
+GENERATED URL is now clamped to ~250px and ACTIONS sits at ~1134. So all six inputs are
+editable at once with the read-only column no longer hogging width. Exactly the fix I asked
+for twice.
+
+## Cramped? Mild and acceptable. A 51-char utm_campaign in a 109px box (clientW 107, scrollW
+403) shows ~15 chars at a time and scrolls within the field. That's the honest cost of fitting
+six columns at 1280 — but it's the input scrolling, not the table, and the value stays intact.
+Far better than the old "see 2 fields, scroll the whole grid."
+
+## Copy gives the FULL URL — yes
+Per-row Copy returned the complete string incl. the full 51-char campaign:
+…&utm_campaign=2026_q3_global_product_launch_announcement_wave_two (clipboard match confirmed,
+not blocked in my env). "Enforce UTM Spec" appears as "Enforce allowed values" + "Enforce
+naming template" + inline lint ("utm_source is required") — spec enforcement present & legible.
+0 console errors all session.
+
+## Score: 9. The single thing that pinned me at 7 for two rounds is genuinely fixed — the
+widest sticky element is no longer the field I don't type into. This is the version I'd drop in
+our launch Slack. Not a 10 only because the 109px input means very long values need in-field
+scroll.
+
+priorConcernsAddressed: all

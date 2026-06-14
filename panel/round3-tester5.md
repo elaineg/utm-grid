@@ -1,8 +1,15 @@
-# Round 3 — Tester 5 (Dana, demand-gen marketer) — taxonomy re-test
+{"name":"Dana","clarity":"Yes","value":"Yes","advocacy":9}
 
-Both R2 blockers FIXED. Fresh /w/ workspace in one click. Clicked "Shared UTM taxonomy ▼" ONCE → a per-field "+ add value / Add" editor appeared immediately for all six fields — no more dead panel. SOURCE COLUMNS STILL VISIBLE: taxonomy now sits BELOW the grid full-width, so my editable UTM_SOURCE/MEDIUM/CAMPAIGN cells stayed on screen (UTM_SOURCE header 5→6, grid did NOT collapse). Added "newsletter" → chip rendered. ENFORCE works: "Enforcing — toggle in Naming rules" badge lit, top "Enforce allowed values" box checked itself, grid surfaced "utm_source is required" flags — real enforcement, synced to server, 0 console errors. This is finally the trustworthy enforced shared taxonomy I'd hand my team for Thursday batches. Minor: per-field add boxes are repetitive and the "Paste a list" shortcut is easy to miss.
+I'm Dana, demand-gen marketer, 30+ links/week before Thursday, ruthless about time. Ran the sentinel on the new fixed-width build.
 
-CLARITY: Yes
-VALUE: Yes
-ADVOCACY: 9/10
-REASON: The marquee feature now fully works — define allowed values once, enforce them, columns stay visible, all synced — so I can confidently make this my team's UTM source-of-truth; a hair shy of 10 only because the per-field add-value boxes are repetitive and the paste-a-list affordance is buried.
+CRAMPED? No. Built a 3-channel messy campaign (LinkedIn/Paid_Social/"Q3 Launch", Newsletter/EMAIL, "Google Ads"/" CPC ") and hit Auto-fix. Input columns are fixed at ~109px each, plenty to read and edit — every value stays fully visible: linkedin / paid_social / q3_launch, newsletter / email, google_ads / cpc, all flagged green as auto-fixed. Base URL column is wider (~150px) and shows the whole https URL. Headers byte-identical before/after. Nothing vanished, nothing felt squeezed.
+
+NARROW GENERATED URL COLUMN — works as intended, no regression. It truncates with an ellipsis ("https://acme.com/launch?utm_so…") but the row Copy button puts the FULL untruncated URL on the clipboard: https://acme.com/launch?utm_source=linkedin&utm_medium=paid_social&utm_campaign=q3_launch — verified via clipboard read, exact and complete. The narrower read-only column de-clutters the grid so my editable cells get the room — a net positive for my flow.
+
+STYLE GUIDE — still screenshot-to-team material. /w/<id>/guide renders unchanged: "Team UTM Tagging Standard", the Newsletter-vs-newsletter splitting argument, graceful "No custom taxonomy defined yet" state, 3 plain conventions, "Open the editable workspace" CTA. Zero console errors across all tests.
+
+WHY STILL 9, NOT 10: nothing regressed from the layout change, but my prior asks remain — the guide is only reachable after creating a workspace (a solo one-off tagger never sees it), and I still can't one-click promote this grid's real values into the team allowed-list so the guide writes itself.
+
+```json
+{"tester": 5, "round": 3, "clarity": "Yes", "value": "Yes", "advocacy": 9, "topComplaints": ["style guide unreachable without first creating a workspace", "no one-click promote of grid values into team allowed-list"], "priorConcernsAddressed": "n/a"}
+```
