@@ -90,9 +90,10 @@ test("per-row QR button: spring_sale row popover shows QR + encoded URL + Downlo
     page.getByRole("button", { name: /Download QR SVG for row 1/i })
   ).toBeVisible({ timeout: 3000 });
 
-  // QR image should be visible (generated — check for img alt text, first instance)
+  // QR image should be visible (generated — check for img alt text, visible card/table instance)
+  // Use filter({ visible: true }) to target the VISIBLE instance, not the hidden layout twin.
   await expect(
-    page.getByAltText(/QR code for row 1/i).first()
+    page.getByAltText(/QR code for row 1/i).filter({ visible: true }).first()
   ).toBeVisible({ timeout: 8000 });
 });
 
@@ -113,6 +114,52 @@ test("cold open: no QR popover visible on /", async ({ page }) => {
   // No QR popover dialog on cold open
   const popovers = page.getByRole("dialog", { name: /QR code popover/i });
   await expect(popovers).toHaveCount(0);
+});
+
+// ── Fix 1 proof: per-row QR button disabled when blocking lint (utm_source missing) ──
+// This test was added to prove Fix 1 on the live preview.
+// It MUST FAIL on a build where qrEligibilityMap is stale/incorrect,
+// and MUST PASS after the direct-from-warnings eligibility fix.
+
+test("Fix1-proof: row with base URL + utm_medium + utm_campaign but NO utm_source → QR button disabled AND bulk skips it", async ({
+  page,
+}) => {
+  await page.goto("/");
+
+  // Fill row 1 with a valid base URL and some params, but leave utm_source empty.
+  // buildUtmUrl will produce a non-empty URL (has medium + campaign), so the old
+  // code thought it was eligible. The blocking "utm_source is required." lint error
+  // must disable the per-row QR button.
+  await cell(page, "Base URL", 1).fill("https://example.com/sale");
+  // Intentionally skip utm_source
+  await cell(page, "utm_medium", 1).fill("email");
+  await cell(page, "utm_campaign", 1).fill("spring_sale");
+
+  // Wait for React to settle (lint + eligibility recompute)
+  await page.waitForTimeout(300);
+
+  // Per-row QR button must be DISABLED (blocking lint: utm_source is required)
+  // Check ALL instances (table + card) — both must be disabled.
+  const allQrBtns = page.getByRole("button", { name: "QR code for row 1" });
+  const btnCount = await allQrBtns.count();
+  expect(btnCount).toBeGreaterThanOrEqual(1);
+  for (let idx = 0; idx < btnCount; idx++) {
+    await expect(allQrBtns.nth(idx)).toBeDisabled();
+  }
+
+  // Bulk download must skip this row (it has a generated URL but blocking lint).
+  // When ALL rows are skipped, no ZIP is produced — only the result message fires.
+  // Do NOT await a "download" event here (it won't fire when skippedCount === all).
+  await expandBulkBar(page);
+  await page.getByRole("button", { name: "Download QR codes as ZIP" }).click();
+
+  // Result must show "No QR codes" message (the row had a blocking lint error, was skipped).
+  const resultMsg = page.getByRole("status").filter({ hasText: /QR code/i }).first();
+  await expect(resultMsg).toBeVisible({ timeout: 10000 });
+  // Expect the "all skipped" message, NOT "N QR codes generated"
+  const text = await resultMsg.textContent();
+  expect(text).toMatch(/No QR codes/i);
+  expect(text).not.toMatch(/\d QR codes? generated/i);
 });
 
 // ── Bulk QR: result message ───────────────────────────────────────────────────
@@ -301,7 +348,7 @@ test("per-row QR and bulk Download QR codes trigger NO network requests on main 
     page.getByRole("dialog", { name: /QR code popover for row 1/i })
   ).toBeVisible({ timeout: 5000 });
   await expect(
-    page.getByAltText(/QR code for row 1/i).first()
+    page.getByAltText(/QR code for row 1/i).filter({ visible: true }).first()
   ).toBeVisible({ timeout: 8000 });
 
   // Close popover
@@ -383,8 +430,9 @@ test("returning user: QR works correctly when localStorage seeded with full grid
   await expect(popover).toContainText(expectedUrl, { timeout: 5000 });
 
   // QR image renders (confirms no blank/missing from lazy-init hydration bug)
+  // filter({ visible: true }): targets the visible layout instance, not the hidden twin.
   await expect(
-    page.getByAltText(/QR code for row 1/i).first()
+    page.getByAltText(/QR code for row 1/i).filter({ visible: true }).first()
   ).toBeVisible({ timeout: 8000 });
 
   await context.close();
@@ -513,8 +561,9 @@ test("375px mobile: QR button, popover, and bulk control reachable and hittable"
   }
 
   // Fix 2: QR image should be visible INSIDE the inline card panel (not just a toast).
+  // At 375px only card layout is visible; filter({ visible: true }) ensures we target it.
   await expect(
-    page.getByAltText(/QR code for row 1/i).first()
+    page.getByAltText(/QR code for row 1/i).filter({ visible: true }).first()
   ).toBeVisible({ timeout: 8000 });
 
   // Popover must contain the encoded URL
@@ -652,7 +701,7 @@ test("on /w/<id> page, QR generation triggers no POST/PUT to workspace API", asy
   const popover = page.getByRole("dialog", { name: /QR code popover for row 1/i });
   await expect(popover).toBeVisible({ timeout: 5000 });
   await expect(
-    page.getByAltText(/QR code for row 1/i).first()
+    page.getByAltText(/QR code for row 1/i).filter({ visible: true }).first()
   ).toBeVisible({ timeout: 8000 });
 
   // Wait beyond the debounce window to catch any autosave triggered by QR

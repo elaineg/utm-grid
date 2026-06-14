@@ -512,28 +512,6 @@ export function UtmGrid({
     [rows, settings, spec, namingTemplate]
   );
 
-  /**
-   * Per-row QR eligibility: true when a row has NO blocking lint error
-   * (rule "required" or "invalid-url"). Style/consistency warnings don't block QR.
-   * Derived from the same warnings map the grid already renders — no extra lint pass.
-   */
-  const qrEligibilityMap = useMemo<Map<string, boolean>>(() => {
-    const map = new Map<string, boolean>();
-    for (const row of rows) {
-      // A row is blocked if ANY of its cells carries a blocking lint rule.
-      let blocked = false;
-      for (const [key, cellWarnings] of warnings) {
-        if (!key.startsWith(row.id + " ")) continue;
-        if (cellWarnings.some((w) => BLOCKING_QR_LINT_RULES.has(w.rule))) {
-          blocked = true;
-          break;
-        }
-      }
-      map.set(row.id, !blocked);
-    }
-    return map;
-  }, [rows, warnings]);
-
   const selectedRow = rows.find((r) => r.id === selectedId) ?? null;
 
   const flashCopied = (key: string) => {
@@ -684,26 +662,24 @@ export function UtmGrid({
    *  READ-ONLY: never mutates rows, never fires any POST/PUT.
    *  Uses the same row-selection model as other bulk ops.
    *  Fix 1: QR eligibility = no blocking lint (required/invalid-url).
-   *  Eligibility is recomputed inline from the freshest rows/settings/spec/namingTemplate
-   *  to avoid any stale-closure issue with the captured qrEligibilityMap. */
+   *  Eligibility is derived from `warnings` (the same useMemo the grid renders),
+   *  guaranteeing button-disabled state, visible lint warning, and bulk-skip are
+   *  all derived from ONE source of truth and can never disagree. */
   const handleBulkDownloadQr = useCallback(async () => {
-    // Recompute eligibility fresh at click time — immune to any closure-staleness.
-    const freshWarnings = groupWarnings(lintRows(rows, settings, spec, namingTemplate));
-    const freshEligibilityMap = new Map<string, boolean>();
+    // Build eligibility map directly from the `warnings` useMemo — same source
+    // the per-row button uses, so button state and bulk skip are always in sync.
+    const eligibilityMap = new Map<string, boolean>();
     for (const row of rows) {
-      let blocked = false;
-      for (const [wKey, cellWarnings] of freshWarnings) {
-        if (!wKey.startsWith(row.id + " ")) continue;
-        if (cellWarnings.some((w) => BLOCKING_QR_LINT_RULES.has(w.rule))) {
-          blocked = true;
-          break;
-        }
-      }
-      freshEligibilityMap.set(row.id, !blocked);
+      const rowIsBlocked = [...UTM_FIELDS, "baseUrl" as const].some(
+        (f) => (warnings.get(warningKey(row.id, f)) ?? []).some(
+          (w) => BLOCKING_QR_LINT_RULES.has(w.rule)
+        )
+      );
+      eligibilityMap.set(row.id, !rowIsBlocked);
     }
     const { valid, skippedCount } = filterValidQrRows(
       rows,
-      freshEligibilityMap,
+      eligibilityMap,
       selectedRowIds.size > 0 ? selectedRowIds : undefined
     );
 
@@ -823,7 +799,7 @@ export function UtmGrid({
       console.error("Bulk QR download failed:", err);
       showQrResult("QR download failed — please try again.");
     }
-  }, [rows, settings, spec, namingTemplate, selectedRowIds, showQrResult]);
+  }, [rows, warnings, selectedRowIds, showQrResult]);
 
   /** Toggle a single row checkbox. */
   const toggleRowSelection = useCallback((rowId: string) => {
@@ -2073,8 +2049,18 @@ export function UtmGrid({
                 const generated = buildUtmUrl(row);
                 const isSelected = row.id === selectedId;
                 const isBulkChecked = selectedRowIds.has(row.id);
-                // Fix 1: QR eligible only when there is a generated URL AND no blocking lint
-                const isQrEligible = !!(generated) && (qrEligibilityMap.get(row.id) ?? true);
+                // Fix 1: compute QR eligibility DIRECTLY from the same warnings map the grid
+                // renders (not from qrEligibilityMap, which can be stale due to closure timing).
+                // This guarantees button-disabled state and visible lint warning are derived from
+                // one source of truth and can never disagree.
+                const rowHasBlockingLintTable = (
+                  [...UTM_FIELDS, "baseUrl" as const].some(
+                    (f) => (warnings.get(warningKey(row.id, f)) ?? []).some(
+                      (w) => BLOCKING_QR_LINT_RULES.has(w.rule)
+                    )
+                  )
+                );
+                const isQrEligible = !!(generated) && !rowHasBlockingLintTable;
                 const qrBtnTitle = !generated
                   ? "Add a valid URL to make a QR."
                   : !isQrEligible
@@ -2426,8 +2412,16 @@ export function UtmGrid({
             {rows.map((row, i) => {
               const generated = buildUtmUrl(row);
               const isBulkChecked = selectedRowIds.has(row.id);
-              // Fix 1: QR eligible only when URL is present AND no blocking lint
-              const isQrEligibleCard = !!(generated) && (qrEligibilityMap.get(row.id) ?? true);
+              // Fix 1: compute QR eligibility DIRECTLY from the same warnings map the grid
+              // renders — same fix as table view, ensures button state matches visible warning.
+              const rowHasBlockingLintCard = (
+                [...UTM_FIELDS, "baseUrl" as const].some(
+                  (f) => (warnings.get(warningKey(row.id, f)) ?? []).some(
+                    (w) => BLOCKING_QR_LINT_RULES.has(w.rule)
+                  )
+                )
+              );
+              const isQrEligibleCard = !!(generated) && !rowHasBlockingLintCard;
               const qrBtnTitleCard = !generated
                 ? "Add a valid URL to make a QR."
                 : !isQrEligibleCard
