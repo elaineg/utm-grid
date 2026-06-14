@@ -542,3 +542,44 @@ describe("workspace localStorage key: naming-template key documented (P1-naming)
     expect(utmGridKey("utm-grid:naming-template")).not.toBe("utm-grid:naming-template");
   });
 });
+
+// ── BUG-2 regression: writeValue must NOT be called with undefined spec/namingTemplate ──
+// Regression guard for /w/[id]/page.tsx:
+//   A freshly-created workspace's GET payload has no `spec` field.
+//   If writeValue(key, undefined, undefined, 0) is called, it corrupts the
+//   useLocalStorage cache so storedSpec comes back `undefined` instead of DEFAULT_SPEC,
+//   causing `spec.enforceSpec` TypeError on /w/<id>.
+//   Fix: guard writeValue calls with `if (data.spec != null)` and `if (data.namingTemplate != null)`.
+// This test verifies parseWorkspacePayload — the function that produces the data object —
+// returns a non-null spec and namingTemplate even when the stored payload lacks both fields,
+// confirming DEFAULT_SPEC and DEFAULT_NAMING_TEMPLATE are used (so no undefined is written).
+describe("BUG-2 regression: workspace payload missing spec/namingTemplate does not cause TypeError", () => {
+  it("parseWorkspacePayload fills in spec from DEFAULT_SPEC when spec field is absent in stored payload", () => {
+    // Simulate a freshly-created workspace: rows + settings only, no spec
+    const freshPayload = {
+      rows: [],
+      settings: { requiredParams: false, lowercaseOnly: false, noSpaces: false },
+    };
+    const raw = JSON.stringify(freshPayload);
+    const result = parseWorkspacePayload(raw);
+    expect(result).not.toBeNull();
+    // spec must be defined (DEFAULT_SPEC), not undefined — so accessing .enforceSpec never throws
+    expect(result!.spec).toBeDefined();
+    expect(typeof result!.spec.enforceSpec).toBe("boolean");
+    expect(result!.spec.allowedValues).toBeDefined();
+  });
+
+  it("parseWorkspacePayload fills in namingTemplate from DEFAULT_NAMING_TEMPLATE when field is absent", () => {
+    const freshPayload = {
+      rows: [],
+      settings: { requiredParams: false, lowercaseOnly: false, noSpaces: false },
+    };
+    const raw = JSON.stringify(freshPayload);
+    const result = parseWorkspacePayload(raw);
+    expect(result).not.toBeNull();
+    // namingTemplate must be defined (DEFAULT_NAMING_TEMPLATE), not undefined
+    expect(result!.namingTemplate).toBeDefined();
+    expect(typeof result!.namingTemplate!.enforceTemplate).toBe("boolean");
+    expect(Array.isArray(result!.namingTemplate!.segments)).toBe(true);
+  });
+});

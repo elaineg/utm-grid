@@ -37,6 +37,31 @@ import { writeClipboard } from "../../lib/share";
 type Listener = () => void;
 const listeners = new Set<Listener>();
 
+// Stable server snapshot: a module-level frozen empty array so the server and
+// first client render always return the SAME reference (no new [] each call).
+const EMPTY_ENTRIES: MyWorkspaceEntry[] = [] as MyWorkspaceEntry[];
+Object.freeze(EMPTY_ENTRIES);
+
+// Cached-snapshot for the client getSnapshot: useSyncExternalStore uses reference
+// equality to decide whether to re-render. If getSnapshot returns a NEW array on
+// every call (even when localStorage hasn't changed), React sees a "changed" value
+// on every render → infinite loop → React error #185.
+// Fix: cache the last raw string and only re-parse when it changes.
+let _lastRaw: string | null = undefined as unknown as string | null;
+let _lastParsed: MyWorkspaceEntry[] = EMPTY_ENTRIES;
+
+function getClientSnapshot(): MyWorkspaceEntry[] {
+  try {
+    const raw = window.localStorage.getItem(MY_WORKSPACES_KEY);
+    if (raw === _lastRaw) return _lastParsed;
+    _lastRaw = raw;
+    _lastParsed = deserializeMyWorkspaces(raw);
+    return _lastParsed;
+  } catch {
+    return EMPTY_ENTRIES;
+  }
+}
+
 function subscribeMyWorkspaces(listener: Listener): () => void {
   listeners.add(listener);
   const onStorage = (e: StorageEvent) => {
@@ -96,15 +121,8 @@ export function MyWorkspacesPanel({ desktopOnly, mobileOnly }: Props) {
   // Client snapshot: read from localStorage on first render.
   const entries = useSyncExternalStore(
     subscribeMyWorkspaces,
-    () => {
-      try {
-        const raw = window.localStorage.getItem(MY_WORKSPACES_KEY);
-        return deserializeMyWorkspaces(raw);
-      } catch {
-        return [] as MyWorkspaceEntry[];
-      }
-    },
-    () => [] as MyWorkspaceEntry[]
+    getClientSnapshot,
+    () => EMPTY_ENTRIES
   );
 
   // ── Relative-time tick (every 10s) ──────────────────────────────────────────

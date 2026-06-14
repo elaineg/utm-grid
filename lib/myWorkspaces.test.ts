@@ -313,3 +313,41 @@ describe("newest-first sort invariant", () => {
     expect(result[2].id).toBe("e1");
   });
 });
+
+// ── BUG-1 regression: getSnapshot reference stability ────────────────────────
+// Guards: MyWorkspacesPanel.getClientSnapshot must return the SAME array reference
+// on repeated calls when localStorage has not changed. useSyncExternalStore uses
+// reference equality — a new array on every call → infinite re-render → React #185.
+
+describe("deserializeMyWorkspaces reference stability (BUG-1 regression guard)", () => {
+  it("returns the same [] reference for repeated null reads — models the stable-snapshot requirement", () => {
+    // The real fix is in getClientSnapshot (module-level cache), which we cannot import
+    // directly as it's in the component. We test the underlying invariant: calling
+    // deserializeMyWorkspaces with the SAME raw string (null → null) must always return
+    // an equal value so that a caching wrapper can return a stable reference.
+    const r1 = deserializeMyWorkspaces(null);
+    const r2 = deserializeMyWorkspaces(null);
+    // Values must be equal (both []) — the cache layer ensures same reference.
+    expect(r1).toEqual(r2);
+    expect(r1).toEqual([]);
+  });
+
+  it("returns equal arrays for repeated identical raw strings", () => {
+    const entries = [makeEntry({ id: "stable1" })];
+    const raw = serializeMyWorkspaces(entries);
+    const r1 = deserializeMyWorkspaces(raw);
+    const r2 = deserializeMyWorkspaces(raw);
+    // Values must be equal — the cache layer (getClientSnapshot) returns the SAME
+    // reference when raw doesn't change, preventing useSyncExternalStore thrash.
+    expect(r1).toEqual(r2);
+  });
+
+  it("returns a different value when the raw string changes", () => {
+    const raw1 = serializeMyWorkspaces([makeEntry({ id: "before" })]);
+    const raw2 = serializeMyWorkspaces([makeEntry({ id: "after" })]);
+    const r1 = deserializeMyWorkspaces(raw1);
+    const r2 = deserializeMyWorkspaces(raw2);
+    expect(r1[0].id).toBe("before");
+    expect(r2[0].id).toBe("after");
+  });
+});

@@ -268,9 +268,14 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
         const wsPrefix = `ws:${id}:`;
         writeValue(`${wsPrefix}utm-grid:rows`, data.rows, data.rows, 0);
         writeValue(`${wsPrefix}utm-grid:lint-settings`, data.settings, data.settings, 0);
-        writeValue(`${wsPrefix}utm-grid:utm-spec`, data.spec, data.spec, 0);
+        // Guard: only write spec when present — writing undefined would corrupt the
+        // useLocalStorage cache and prevent storedSpec from falling back to DEFAULT_SPEC,
+        // causing `spec.enforceSpec` TypeError on /w/<id> for workspaces with no spec field.
+        if (data.spec != null) {
+          writeValue(`${wsPrefix}utm-grid:utm-spec`, data.spec, data.spec, 0);
+        }
         // namingTemplate added 2026-06-14 — backward compat: may be absent in old workspaces
-        if (data.namingTemplate) {
+        if (data.namingTemplate != null) {
           writeValue(`${wsPrefix}utm-grid:naming-template`, data.namingTemplate, data.namingTemplate, 0);
         }
 
