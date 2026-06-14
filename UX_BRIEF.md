@@ -723,3 +723,85 @@ Cold visitor: same hero (headline, subhead, pre-filled example row + Copy). Shar
 **even one with a saved localStorage grid** — now sees the "Loaded shared grid (N links)" banner with
 the "enforces a UTM spec — N rules" clause and one-tap "Fix all naming" on first paint, not the
 generic homepage.
+
+## Team Workspace delta (server-persisted, secret-link) — added 2026-06-13
+
+ONE new capability: promote the current grid+spec to a server-saved **Team Workspace** at a secret
+`/w/<id>` link where the team edits a shared source-of-truth and edits autosave. This is the feature
+that closes the long-standing 9-ceiling complaint ("no real cross-device sync" — Wen, Dana, Elena).
+Additive only — do NOT touch the headline, subhead, lint toggles, grid layout, Presets, Campaigns/
+UTM-Spec panels, Bulk edit, the one-shot "Copy share link", or the mobile card view. Each item below
+designs around this app's OWN repeated panel failures.
+
+**1. Same-verb collision — the two share actions must never read as duplicates (this app's lowest
+score before).** The existing one-shot button stays exactly as shipped: **"Copy share link"**, with
+its quiet sub-line **"Built in your browser — nothing leaves it. A frozen snapshot of this grid."**
+The NEW action is a SEPARATE button, different verb, different placement:
+- **Verb:** **"Create shared workspace"** (verb = *create*, not *copy*; object = *workspace*, not
+  *link*) — never "share", "copy", or "link" in its label.
+- **Placement:** NOT adjacent to "Copy share link" in the toolbar (adjacency is what read as a
+  duplicate before). Put it as a distinct, accented **"Create shared workspace"** button one logical
+  group apart — its own slim labeled strip directly **below the top toolbar / above the grid** (in
+  flow), styled as the accent/primary share action so it out-ranks the secondary snapshot button.
+- **One-line disambiguator under it (verbatim):** **"A live workspace your team edits together —
+  changes save to a private link and sync across devices. (Different from "Copy share link", which
+  sends a frozen snapshot.)"** This single line names the difference in plain words a hurried tester
+  reads in one pass: live + synced + cross-device vs frozen snapshot.
+
+**2. Discoverable on first scan, value legible in ~5 seconds (added features ship buried here twice).**
+The "Create shared workspace" strip is **always visible in flow above the grid** (not inside a
+collapsed disclosure, not in the sidebar) so it is on the first scan of the dense page. Its strip
+carries a 4–5 word value tag to its left — **"Live team workspace"** — so even before reading the
+sub-line a scanner sees this is a *live* shared thing, distinct from the snapshot link. On mobile it
+joins the top action bar as a full-label accent button **"Create shared workspace"** (never an icon,
+never collapsed). It must read as the heavier, "real sync" action; "Copy share link" stays the
+lighter snapshot.
+
+**3. Create-and-copy confirmation — peripherally unmissable (copy-confirm has failed 3 ways here:
+blocked clipboard / live re-render / perceptually invisible).** On click, "Create shared workspace"
+POSTs, then navigates to `/w/<id>` AND copies the link. The confirmation must survive the navigation
+and re-render: on the `/w/<id>` page that loads, the **"Copy workspace link"** button mounts already
+in its **green filled "Workspace link copied!"** state for ~2s (ref-stable timer, `aria-live="polite"`),
+then reverts to idle "Copy workspace link". Use the execCommand/textarea clipboard fallback so the
+green state fires even when `navigator.clipboard` rejects. Same green-fill-in-place pattern (NOT a
+corner toast that scrolls off) on every later click of **"Copy workspace link"**: button text swaps
+to **"Workspace link copied!"**, fills solid green with a check, holds ~1.8s. This reuses the proven
+copy-confirmation-survives-tick-rerender pattern already shipped for "Copy share link".
+
+**4. "Team Workspace — synced" banner placement — NEVER an overlay at 375px (mobile occlusion bit
+this app twice).** The banner sits in **normal document flow, directly above the grid/card list,
+pushing content down** — it is NOT `position: fixed`/`sticky` and never overlays a grid cell,
+checkbox, row control, or the "Fix to <value>" chip at any width. Full-width, cool-neutral tinted
+strip. Left: the label **"Team Workspace — synced"** + the live sync-status text (item 5). Right: the
+**"Copy workspace link"** button. At 375px it stacks (label+status on the first line, full-width
+"Copy workspace link" button beneath) so nothing is clipped and the first grid card sits fully below
+it, untouched and tappable. Verify at 375px with elementFromPoint that no banner pixel covers a
+checkbox, per-row control, or Fix chip.
+
+**5. Sync-status pattern — make "saved on the server" believable without realtime (the whole value
+prop: a team source-of-truth they trust).** Inside the banner, a single status line to the right of
+"Team Workspace — synced" reads one of three states, each with a distinct dot + word so a hurried
+human believes their edits persisted:
+- **Idle / settled:** green dot + **"All changes saved"** + relative time **"· saved just now / 12s
+  ago / 3m ago"** (relative time ticks up so the user sees it's a real persisted timestamp, not a
+  fake static label).
+- **In-flight (during the debounced ~800ms PUT):** amber dot + **"Saving…"** — shown the moment a
+  cell changes, so an edit always produces an immediate "I saw that" signal.
+- **Failed (PUT rejects / offline):** red dot + **"Couldn't save — retrying"** with an inline
+  **"Retry now"** action; the status must say what to do next, never just "error". On recovery it
+  returns to green "All changes saved". `aria-live="polite"` so the state change is announced.
+This Saving… → All changes saved (· saved Ns ago) cycle on every edit is what makes the workspace
+feel trustworthy without presence/cursors/realtime: the user edits, sees "Saving…", then sees the
+timestamp advance, and believes the team's source-of-truth is real.
+
+**6. "Workspace not found" state (bad id).** A bad `/w/<id>` renders a calm full-page state in normal
+flow: heading **"Workspace not found"**, sub-line **"This workspace link is invalid or was never
+created."**, and a primary button **"Go to the UTM grid builder →"** linking to `/`. Never a crash,
+blank page, or raw error. The visitor's local default grid is untouched.
+
+### 5-second check (Team Workspace — added 2026-06-13)
+On the main builder, a cold visitor still sees the unchanged hero; the **"Create shared workspace"**
+strip ("Live team workspace — a live workspace your team edits together…") is visible above the grid,
+clearly distinct from the lighter "Copy share link". On a `/w/<id>` page the first read is the in-flow
+**"Team Workspace — synced"** banner with the live **"All changes saved · saved just now"** status and
+a **"Copy workspace link"** button — the grid/cards sit fully below it, none occluded at 375px.

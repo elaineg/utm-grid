@@ -1,0 +1,51 @@
+/**
+ * Lazily-instantiated libsql/Turso client.
+ *
+ * - Does NOT connect at import/module-evaluation time — safe for next build
+ *   even without env vars present.
+ * - On first use, runs CREATE TABLE IF NOT EXISTS to ensure the schema exists.
+ * - Runtime: nodejs (libsql is NOT edge-compatible).
+ *
+ * Env vars required at deploy time:
+ *   TURSO_DATABASE_URL  — e.g. libsql://<db>.turso.io
+ *   TURSO_AUTH_TOKEN    — Turso auth token
+ */
+
+import { createClient, type Client } from "@libsql/client";
+
+let _client: Client | null = null;
+let _initialized = false;
+
+function getClient(): Client {
+  if (!_client) {
+    const url = process.env.TURSO_DATABASE_URL;
+    const authToken = process.env.TURSO_AUTH_TOKEN;
+    if (!url) {
+      throw new Error(
+        "TURSO_DATABASE_URL is not set. The deployer must provision this env var."
+      );
+    }
+    _client = createClient({ url, authToken });
+  }
+  return _client;
+}
+
+/**
+ * Returns a ready-to-use libsql client, creating the workspaces table if it
+ * doesn't exist yet. Idempotent — safe to call on every request.
+ */
+export async function getDb(): Promise<Client> {
+  const client = getClient();
+  if (!_initialized) {
+    await client.execute(`
+      CREATE TABLE IF NOT EXISTS workspaces (
+        id TEXT PRIMARY KEY,
+        data TEXT NOT NULL,
+        created_at INTEGER,
+        updated_at INTEGER
+      )
+    `);
+    _initialized = true;
+  }
+  return client;
+}

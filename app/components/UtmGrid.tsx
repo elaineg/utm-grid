@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   autoMapHeaders,
   csvToRows,
@@ -37,6 +38,7 @@ import {
   findCampaign,
   type Campaign,
 } from "../../lib/campaigns";
+import type { WorkspacePayload } from "../../lib/workspace";
 
 type EditableField = "baseUrl" | UtmField;
 const COLUMNS: EditableField[] = ["baseUrl", ...UTM_FIELDS];
@@ -56,8 +58,38 @@ interface Toast {
   undoLabel?: string;
 }
 
-export function UtmGrid() {
-  const [storedRows, setStoredRows] = useLocalStorage<UtmRow[]>("utm-grid:rows", INITIAL_ROWS, {
+export interface UtmGridProps {
+  /**
+   * Optional prefix for all localStorage keys.
+   * Default "" preserves the existing keys byte-for-byte (no regression).
+   * Workspace mode passes e.g. "ws:<id>:" so workspace state is isolated.
+   */
+  storageKeyPrefix?: string;
+  /**
+   * When set, UtmGrid calls this callback (debounced in the page) whenever
+   * rows/settings/spec change. Used by the workspace page for autosave.
+   */
+  onStateChange?: (payload: WorkspacePayload) => void;
+  /**
+   * Seed data from server on mount. When provided, UtmGrid uses this data
+   * as the initial value (server wins over any stale prefixed localStorage).
+   * The workspace page writes this into prefixed localStorage before mounting
+   * so useLocalStorage picks it up on first snapshot.
+   */
+  initialWorkspace?: WorkspacePayload;
+}
+
+export function UtmGrid({
+  storageKeyPrefix = "",
+  onStateChange,
+  initialWorkspace: _initialWorkspace,
+}: UtmGridProps = {}) {
+  const router = useRouter();
+
+  // Key helper — prepend the prefix to isolate workspace keys from default keys.
+  const key = (k: string) => `${storageKeyPrefix}${k}`;
+
+  const [storedRows, setStoredRows] = useLocalStorage<UtmRow[]>(key("utm-grid:rows"), INITIAL_ROWS, {
     debounceMs: 400,
   });
   const storedRowsNormalized =
@@ -176,26 +208,32 @@ export function UtmGrid() {
   }, [setStoredRows, showToast]);
 
   const [storedSettings, setStoredSettings] = useLocalStorage<LintSettings>(
-    "utm-grid:lint-settings",
+    key("utm-grid:lint-settings"),
     DEFAULT_LINT_SETTINGS
   );
 
   // ── UTM Spec state ─────────────────────────────────────────────────────────
   const [storedSpec, setStoredSpec] = useLocalStorage<UtmSpec>(
-    "utm-grid:utm-spec",
+    key("utm-grid:utm-spec"),
     DEFAULT_SPEC
   );
 
-  const [userPresets, setPresets] = useLocalStorage<Preset[]>("utm-grid:presets", []);
+  // Campaigns + presets stay LOCAL-only. In workspace mode, skip them (not part of workspace payload).
+  // storageKeyPrefix === "" means default mode; non-empty means workspace mode.
+  const isWorkspaceMode = storageKeyPrefix !== "";
+
+  const [userPresets, setPresets] = useLocalStorage<Preset[]>(key("utm-grid:presets"), []);
   const [newRowPresetId, setNewRowPresetId] = useLocalStorage<string | null>(
-    "utm-grid:new-row-preset",
+    key("utm-grid:new-row-preset"),
     null
   );
 
   // ── Campaigns library state ────────────────────────────────────────────────
   // Stored as JSON string in localStorage (reuses the same store pattern).
+  // In workspace mode we still call useLocalStorage (hooks can't be conditional)
+  // but we don't render or surface the campaigns UI.
   const [rawCampaigns, setRawCampaigns] = useLocalStorage<string>(
-    "utm-grid:campaigns",
+    key("utm-grid:campaigns"),
     "[]"
   );
   // Parse the JSON on each render — cheap enough (typically <20 items).
@@ -214,7 +252,7 @@ export function UtmGrid() {
 
   // Fix E: persist openCampaignId across reload — rehydrate AFTER mount (client-only).
   const [storedOpenId, setStoredOpenId] = useLocalStorage<string | null>(
-    "utm-grid:open-campaign-id",
+    key("utm-grid:open-campaign-id"),
     null
   );
   // One-time rehydration on mount (client-only, SSR-safe).
@@ -246,13 +284,13 @@ export function UtmGrid() {
       }
     }
 
-    const rawId = window.localStorage.getItem("utm-grid:open-campaign-id");
+    const rawId = window.localStorage.getItem(key("utm-grid:open-campaign-id"));
     if (!rawId) return;
     const parsedId = robustParse<string>(rawId);
     if (!parsedId || typeof parsedId !== "string") return;
 
     // Validate against existing saved campaigns (read directly too, for the same reason).
-    const rawCampaignsStored = window.localStorage.getItem("utm-grid:campaigns");
+    const rawCampaignsStored = window.localStorage.getItem(key("utm-grid:campaigns"));
     let existingIds: Set<string> = new Set();
     if (rawCampaignsStored) {
       const parsedCampaigns = robustParse<unknown>(rawCampaignsStored);
@@ -264,7 +302,7 @@ export function UtmGrid() {
       setOpenCampaignId(parsedId);
     } else {
       // Campaign was deleted — clear the stale persisted id.
-      window.localStorage.removeItem("utm-grid:open-campaign-id");
+      window.localStorage.removeItem(key("utm-grid:open-campaign-id"));
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -837,6 +875,60 @@ export function UtmGrid() {
     showToast("Loaded example spec — tap Fix on the off-spec cell to see the taxonomy magic");
   }, [rows, setSpec, setRows, showToast]);
 
+  // ── onStateChange callback — fires when rows/settings/spec change in workspace mode ──
+  // We watch rows/settings/spec via a non-mount effect. The callback is stabilized via ref
+  // to avoid re-attaching the effect on every render.
+  const onStateChangeRef = useRef(onStateChange);
+  onStateChangeRef.current = onStateChange;
+
+  // Skip the first fire on mount (initialWorkspace already seeded by the page).
+  const didMountOnStateChange = useRef(false);
+
+  useEffect(() => {
+    if (!onStateChangeRef.current) return;
+    if (!didMountOnStateChange.current) {
+      didMountOnStateChange.current = true;
+      return;
+    }
+    onStateChangeRef.current({ rows, settings, spec });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rows, settings, spec]);
+
+  // ── "Create shared workspace" state ──────────────────────────────────────
+  const [creatingWorkspace, setCreatingWorkspace] = useState(false);
+  const [createWorkspaceError, setCreateWorkspaceError] = useState<string | null>(null);
+
+  const createSharedWorkspace = useCallback(async () => {
+    if (creatingWorkspace) return;
+    setCreatingWorkspace(true);
+    setCreateWorkspaceError(null);
+    try {
+      const payload: WorkspacePayload = { rows, settings, spec };
+      const res = await fetch("/api/workspace", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        setCreateWorkspaceError("Couldn't create workspace — try again.");
+        setCreatingWorkspace(false);
+        return;
+      }
+      const { id } = (await res.json()) as { id: string };
+      // Signal the /w/[id] page to show green "Workspace link copied!" on mount
+      try {
+        sessionStorage.setItem(`ws-copy-on-load:${id}`, "1");
+      } catch {
+        // sessionStorage unavailable — clipboard will still work
+      }
+      // Navigate to /w/<id>
+      router.push(`/w/${id}`);
+    } catch {
+      setCreateWorkspaceError("Couldn't create workspace — check your connection.");
+      setCreatingWorkspace(false);
+    }
+  }, [creatingWorkspace, rows, settings, spec, router]);
+
   // ── Toolbar pill ──────────────────────────────────────────────────────────
   const openCampaignRecord = openCampaignId
     ? findCampaign(campaigns, openCampaignId)
@@ -857,12 +949,12 @@ export function UtmGrid() {
   // P1: collapsible panel state — collapsed by default on cold open
   const [lintRulesExpanded, setLintRulesExpanded] = useState(false);
 
-  const toggle = (key: keyof LintSettings, label: string) => (
+  const toggle = (settingKey: keyof LintSettings, label: string) => (
     <label className="flex items-center gap-1.5 text-sm text-gray-700">
       <input
         type="checkbox"
-        checked={settings[key]}
-        onChange={(e) => setSettings((s) => ({ ...s, [key]: e.target.checked }))}
+        checked={settings[settingKey]}
+        onChange={(e) => setSettings((s) => ({ ...s, [settingKey]: e.target.checked }))}
       />
       {label}
     </label>
@@ -1150,6 +1242,48 @@ export function UtmGrid() {
         Shareable link is built in your browser — nothing is sent to any server.
       </p>
 
+      {/* "Create shared workspace" accent strip — always visible in flow above the grid.
+          Shown only in default (non-workspace) mode per UX brief §1.
+          Placement: its own labeled strip, NOT adjacent to "Copy share link" toolbar button,
+          so the two share rungs never read as duplicate controls.
+          Mobile: stacks as full-label accent button. */}
+      {!isWorkspaceMode && (
+        <div
+          data-testid="create-workspace-strip"
+          className="flex flex-col sm:flex-row sm:items-center gap-3 rounded-lg border border-blue-100 bg-blue-50/60 px-4 py-3"
+        >
+          <div className="min-w-0 flex-1">
+            <span className="text-xs font-semibold text-blue-900 uppercase tracking-wide">
+              Live team workspace
+            </span>
+            <p className="mt-0.5 text-xs text-blue-700">
+              A live workspace your team edits together — changes save to a private link and sync across devices.{" "}
+              <span className="text-gray-400">(Different from &ldquo;Copy share link&rdquo;, which sends a frozen snapshot.)</span>
+            </p>
+          </div>
+          <div className="flex flex-col items-start sm:items-end gap-1 shrink-0">
+            <button
+              type="button"
+              data-testid="create-shared-workspace-btn"
+              onClick={() => void createSharedWorkspace()}
+              disabled={creatingWorkspace || gridIsEmpty}
+              aria-label="Create shared workspace"
+              className="rounded-md bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 min-h-[44px]"
+            >
+              {creatingWorkspace ? "Creating…" : "Create shared workspace"}
+            </button>
+            {createWorkspaceError && (
+              <span role="alert" className="text-xs text-red-600">
+                {createWorkspaceError}
+              </span>
+            )}
+            {gridIsEmpty && (
+              <span className="text-xs text-gray-400">Add at least one row to create a workspace.</span>
+            )}
+          </div>
+        </div>
+      )}
+
       {importError && (
         <p role="alert" className="text-sm font-medium text-red-600">
           ⚠ {importError}
@@ -1166,31 +1300,34 @@ export function UtmGrid() {
         onNewRowPresetChange={setNewRowPresetId}
       />
 
-      {/* Mobile campaigns + UTM Spec disclosures — above grid, below toolbar */}
-      <div className="min-[900px]:hidden flex flex-col gap-1">
-        <CampaignsSidebar
-          campaigns={campaigns}
-          openCampaignId={openCampaignId}
-          isDirty={isDirty}
-          onSave={handleCampaignSaved}
-          onOpen={openCampaign}
-          onChange={handleCampaignsChanged}
-          rows={rows}
-          settings={settings}
-          spec={spec}
-          savedFlash={savedFlash}
-          mobileOnly
-        />
-        {/* UTM Spec mobile disclosure — collapsed by default */}
-        <UtmSpecPanel
-          spec={spec}
-          onChange={setSpec}
-          onLoadSample={handleLoadSample}
-          onShareSpec={() => void copyShareLink()}
-          specLinkCopied={shareLinkCopied}
-          mobileOnly
-        />
-      </div>
+      {/* Mobile campaigns + UTM Spec disclosures — above grid, below toolbar.
+          Hidden in workspace mode (campaigns are local-only, not part of workspace payload). */}
+      {!isWorkspaceMode && (
+        <div className="min-[900px]:hidden flex flex-col gap-1">
+          <CampaignsSidebar
+            campaigns={campaigns}
+            openCampaignId={openCampaignId}
+            isDirty={isDirty}
+            onSave={handleCampaignSaved}
+            onOpen={openCampaign}
+            onChange={handleCampaignsChanged}
+            rows={rows}
+            settings={settings}
+            spec={spec}
+            savedFlash={savedFlash}
+            mobileOnly
+          />
+          {/* UTM Spec mobile disclosure — collapsed by default */}
+          <UtmSpecPanel
+            spec={spec}
+            onChange={setSpec}
+            onLoadSample={handleLoadSample}
+            onShareSpec={() => void copyShareLink()}
+            specLinkCopied={shareLinkCopied}
+            mobileOnly
+          />
+        </div>
+      )}
 
       {/* Bulk edit bar — directly above grid header, below toolbar (per UX brief §Round 6 §2) */}
       <BulkEditBar
@@ -1703,31 +1840,34 @@ export function UtmGrid() {
 
         </div>
 
-        {/* Desktop campaigns + UTM Spec sidebar — hidden on mobile */}
-        <div className="hidden min-[900px]:flex flex-col w-64 shrink-0 gap-0">
-          <CampaignsSidebar
-            campaigns={campaigns}
-            openCampaignId={openCampaignId}
-            isDirty={isDirty}
-            onSave={handleCampaignSaved}
-            onOpen={openCampaign}
-            onChange={handleCampaignsChanged}
-            rows={rows}
-            settings={settings}
-            spec={spec}
-            savedFlash={savedFlash}
-            desktopOnly
-          />
-          {/* UTM Spec panel — disclosure, collapsed by default, under Campaigns */}
-          <UtmSpecPanel
-            spec={spec}
-            onChange={setSpec}
-            onLoadSample={handleLoadSample}
-            onShareSpec={() => void copyShareLink()}
-            specLinkCopied={shareLinkCopied}
-            desktopOnly
-          />
-        </div>
+        {/* Desktop campaigns + UTM Spec sidebar — hidden on mobile.
+            Campaigns hidden in workspace mode (local-only). UTM Spec still shown. */}
+        {!isWorkspaceMode && (
+          <div className="hidden min-[900px]:flex flex-col w-64 shrink-0 gap-0">
+            <CampaignsSidebar
+              campaigns={campaigns}
+              openCampaignId={openCampaignId}
+              isDirty={isDirty}
+              onSave={handleCampaignSaved}
+              onOpen={openCampaign}
+              onChange={handleCampaignsChanged}
+              rows={rows}
+              settings={settings}
+              spec={spec}
+              savedFlash={savedFlash}
+              desktopOnly
+            />
+            {/* UTM Spec panel — disclosure, collapsed by default, under Campaigns */}
+            <UtmSpecPanel
+              spec={spec}
+              onChange={setSpec}
+              onLoadSample={handleLoadSample}
+              onShareSpec={() => void copyShareLink()}
+              specLinkCopied={shareLinkCopied}
+              desktopOnly
+            />
+          </div>
+        )}
       </div>
 
       {/* F: Trust note */}
