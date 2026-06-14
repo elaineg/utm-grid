@@ -1,21 +1,20 @@
-# Round (delta re-test) — Tester 3 (Wen, marketing data analyst)
+# Re-test — Tester 3 (Wen, marketing data analyst)
 
 ## Prior concerns re-checked
-- **#1 "Allowed-values Spec is buried, empty, device-local"** — PARTIALLY addressed. Card is still collapsed by default and still says "Saved on this device." Worse for the new feature: the Spec does NOT sync into the Team Workspace (verified — rows persist server-side, but the taxonomy rules stay localStorage). So the workspace can't yet be a true team source-of-truth for *naming rules*, only for *rows*.
-- **#2 "localStorage-only, no team sync I can trust"** — ADDRESSED for the grid. New Team Workspace gives real server sync (see below).
+- **#1 "Helper copy contradicts sync (no server / localStorage)"** — FIXED. Copy is now context-aware: cold builder still says "nothing leaves your browser / saved in localStorage" (accurate there); inside /w/ it reads "Synced to a private server workspace... Changes are synced to the server workspace automatically." No contradiction.
+- **#2 "Allowed-values taxonomy doesn't sync to the team"** — PARTIALLY. The card now lives IN the workspace as "Shared UTM taxonomy — Synced to this workspace, enforced on every cell," with per-field Add + "Paste a list — define once, reuse every week, share it to your team." Great intent — BUT it does NOT actually persist (bug below).
 
-## Clarity — Yes
-"Clean UTM links… Auto-fix messy casing and typos before they split your Google Analytics" named my exact pain in 5s. Grid, Import/Export CSV, and the LIVE TEAM WORKSPACE callout all above the fold.
+## New blocking bug — taxonomy values don't survive sync (repro)
+Create workspace → expand Shared UTM taxonomy → under UTM_SOURCE type "newsletter" + Enter (chip "newsletter ×" appears). Then reload the SAME creator tab: chip is gone. A clean-browser teammate on the /w/ link: chip absent. Grid rows DO sync (verified: rows a/b/c appear for teammate), so it's specifically the taxonomy that isn't written server-side — directly contradicting "Synced to this workspace, enforced on every cell." For my job this is the whole point: a team can't enforce one naming standard if the list evaporates.
 
-## Value — Yes
-GA4 campaign-split from dirty UTMs is my weekly chore. Lint caught uppercase, spaces, AND cross-row inconsistency ("NewsLetter vs newsletter — these will split campaign data in GA4") with one-click Fix + suggested value. Auto-fix lowercased everything cleanly. Export CSV is lossless: proper header, all 6 utm cols + generated_url, no smart-quote mangling, round-trips into Sheets/BigQuery. Replaces my hand-rolled tagging sheet.
+## What's genuinely excellent
+Cold lint named my exact GA4 pain: "Inconsistent utm_source across rows: 'Google' vs 'google' — these will split campaign data in GA4." Auto-fix normalized casing/spaces with an UNDO toast; footer says source cells left as typed, only trailing spaces trimmed — answers my distrust of invisible transforms. CSV export lossless, standard headers, round-trips. History (autosave snapshots, Preview read-only, "Restore brings a version back without losing the current one" — verified non-destructive) + "Editing as: Wen" flowing into the banner AND per-entry attribution ("by Wen" vs "by Anonymous") make the shared grid auditable and trustworthy.
 
-## Workspace (new) — trust verified
-Discoverable (own panel, "Different from Copy share link" stated). I opened the /w/ link in a CLEAN browser with no localStorage as a "teammate": it loaded my exact rows from the server, I edited a cell, reloaded, the edit survived, and the creator then saw the teammate's edit — real bidirectional server sync, not fake. "Team Workspace — synced · saved just now" (green dot) earns trust.
-
-## Advocacy — 8
-I'd post this in our analytics Slack unprompted as "the UTM linter that finally catches casing splits." Blocking a 9: (1) the toolbar helper still reads "no server, no network requests after page load… saved in localStorage," which flatly contradicts the workspace's cross-device sync — alarming mixed message about where my data lives. (2) The Spec/allowed-values does NOT travel with the workspace, so the team isn't linted against one shared taxonomy — the exact thing I'd standardize on.
+CLARITY: Yes
+VALUE: Yes
+ADVOCACY: 7/10
+REASON: The grid, lint, lossless CSV, and attributed non-destructive History are exactly the trustworthy source-of-truth I want and I'd happily share it — but the headline team feature, the Shared UTM taxonomy, doesn't actually persist (gone on the creator's own reload, never reaches a teammate) while claiming "enforced on every cell," which is precisely the data-integrity promise I'd be recommending it for; fix that and it's a 9.
 
 ```json
-{"tester":3,"name":"Wen","clarity":"Yes","value":"Yes","advocacy":8,"top_problems":["Helper copy still says 'no server / saved in localStorage' which contradicts the workspace's verified cross-device server sync — confusing about where data lives","Allowed-values UTM Spec stays device-local and does NOT sync into the Team Workspace, so the team can't share one enforced taxonomy — undercuts the source-of-truth pitch"],"likes":["Cross-row inconsistency lint citing GA4 campaign-split, one-click Fix + suggested value","Lossless round-trippable CSV export","Team Workspace genuinely persists server-side and syncs bidirectionally — verified from a fresh teammate browser"]}
+{"tester":3,"round":1,"clarity":"Yes","value":"Yes","advocacy":7,"topComplaints":["Shared UTM taxonomy values do NOT persist server-side: 'newsletter' chip added under UTM_SOURCE in a workspace disappears on the creator's own reload and never reaches a teammate, despite the panel claiming 'Synced to this workspace, enforced on every cell' (grid rows DO sync, so it's taxonomy-specific)","Taxonomy/allowed-values card is still collapsed by default and easy to miss"],"priorConcernsAddressed":"some"}
 ```

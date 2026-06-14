@@ -1,27 +1,25 @@
-# Elena — re-test (EM, 8 reports, 30s budget; checked laptop + phone @375px)
+# Round 1 — Tester 9 (Elena, Engineering manager)
 
-PRIOR holdout (recipient/standardize gap → real shared team source-of-truth): ADDRESSED.
-Built 2 rows, hit "Create shared workspace" → got a real server `/w/<id>` link with a
-"Team Workspace — synced · All changes saved" banner. HARD test: a fresh browser (no
-localStorage) loaded my rows from the server; teammate A edited a cell to "webinar" and a
-SEPARATE fresh teammate B opened the same link and saw "webinar." Cross-device, cross-person
-live edit genuinely persists. This is the thing I held out for — it's here and it works.
+Skimmed it between meetings. The hero line "Clean UTM links for your whole campaign — in
+one grid" + "no login, nothing leaves your browser" told me what it is in ~5s. Hit "Create
+shared workspace" (had to add a row first — fine), got a /w/ link instantly, no setup. The
+synced banner, "Editing as:" (set mine to Elena in one click), and a "History (2)" button
+appeared. History panel is exactly what a holdout like me needed: every save kept, each
+entry stamped "by Elena"/"by Anonymous", Preview shows the old value with a "read-only /
+Back to current" banner, and Restore says "brings a version back without losing the current
+one" — and it behaves: restoring re-fetched the old value, and editing while in Preview did
+NOT persist to the server (verified by fresh reload — still newsletter_v2). That non-
+destructive guarantee + attribution is what flips this from "shared doc someone will silently
+break" to a source-of-truth I'd let a report standardize on.
 
-CLARITY — Yes. Headline "Clean UTM links for your whole campaign — in one grid" landed in
-<5s. The blue LIVE TEAM WORKSPACE box pre-answers my question: "Different from 'Copy share
-link', which sends a frozen snapshot." Distinct, discoverable on mobile too, setup-free.
+One real nit: in Preview the cells still accept typing visually (no DOM disable) even though
+the change is correctly discarded — looks editable, isn't. Cosmetic, not a data risk, but it
+made me double-check before trusting it. No console errors throughout.
 
-VALUE — Yes. A report asked if we should standardize on it. Today they hand-edit UTMs in a
-Google Sheet and ship dirty casing that splits GA4. Now I can give 8 people one live link,
-zero onboarding, with auto-fix lint enforcing hygiene. That's a real every-campaign use.
-
-ADVOCACY — 8. I'd bring it to the report unprompted. Not 9 because of one trust wrinkle: the
-workspace page STILL shows the footer "no server, no network requests after page load… runs
-in your browser" — flatly false on a synced /w/ page, and that contradiction makes me second-
-guess whether edits really persist (they do; the copy lies). Plus last-write-wins with no
-presence indicator makes me mildly nervous about two reports silently clobbering each other.
-Fix the contradictory copy and add a "who's editing" hint and I'm at 9.
-
-```json
-{"tester":9,"round":3,"clarity":"Yes","value":"Yes","advocacy":8,"topComplaints":["Workspace /w/ page still shows 'no server / nothing leaves your browser' footer — contradicts the live sync and dents trust that edits actually persist for the team","Last-write-wins with no presence/lock indicator risks two reports silently clobbering each other mid-edit"],"priorConcernsAddressed":"all"}
-```
+CLARITY: Yes
+VALUE: Yes
+ADVOCACY: 8/10
+REASON: History + per-person attribution + verified non-destructive Restore finally make a
+shared UTM grid trustworthy as team source-of-truth with zero setup; held back from 9 only
+because Preview cells look editable (should be visibly locked) and "Anyone with the link can
+edit" still makes me want a viewer/lock option before I'd push it org-wide.

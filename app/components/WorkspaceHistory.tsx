@@ -73,6 +73,8 @@ export function WorkspaceHistory({
   const nameInputRef = useRef<HTMLInputElement>(null);
 
   // Mount: read editor name from localStorage DIRECTLY (not via closured state).
+  // P0-2: if no name stored, auto-open the input and auto-focus it as a gentle nudge.
+  // Non-blocking: visitor can ignore it and edit cells immediately.
   useEffect(() => {
     try {
       const stored = window.localStorage.getItem(EDITOR_KEY);
@@ -81,6 +83,13 @@ export function WorkspaceHistory({
       if (name) {
         setEditorName(name);
         onEditorChange(name);
+        // Name already set — no nudge needed.
+      } else {
+        // P0-2: no name on this device → pre-open the field as a gentle nudge.
+        // Auto-focus in a short timeout so the grid renders first (non-blocking).
+        setNameInput("");
+        setIsEditingName(true);
+        setTimeout(() => nameInputRef.current?.focus(), 150);
       }
     } catch {
       // localStorage unavailable
@@ -205,21 +214,30 @@ export function WorkspaceHistory({
         {/* "Editing as" control */}
         <span className="flex items-center gap-1 text-xs text-blue-700">
           {isEditingName ? (
-            <input
-              ref={nameInputRef}
-              type="text"
-              value={nameInput}
-              maxLength={80}
-              placeholder="Your name"
-              aria-label="Your display name for this workspace"
-              className="rounded border border-blue-300 bg-white px-2 py-1 text-xs text-blue-900 min-w-0 w-32 min-h-[44px] focus:outline-none focus:ring-2 focus:ring-blue-400"
-              onChange={(e) => setNameInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") commitName(nameInput);
-                if (e.key === "Escape") setIsEditingName(false);
-              }}
-              onBlur={() => commitName(nameInput)}
-            />
+            <div className="flex flex-col gap-0.5">
+              <input
+                ref={nameInputRef}
+                type="text"
+                value={nameInput}
+                maxLength={80}
+                placeholder="Your name"
+                aria-label="Your display name for this workspace"
+                data-testid="editor-name-input"
+                className="rounded border border-blue-300 bg-white px-2 py-1 text-xs text-blue-900 min-w-0 w-40 min-h-[44px] focus:outline-none focus:ring-2 focus:ring-blue-400"
+                onChange={(e) => setNameInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") commitName(nameInput);
+                  if (e.key === "Escape") setIsEditingName(false);
+                }}
+                onBlur={() => commitName(nameInput)}
+              />
+              {/* P0-2: hint shown when the field auto-opens on a no-name visit */}
+              {!editorName && (
+                <span className="text-[10px] text-blue-600 leading-tight max-w-[200px]">
+                  Add your name so teammates see who changed what — optional, saved on this device.
+                </span>
+              )}
+            </div>
           ) : (
             <button
               type="button"
@@ -263,7 +281,7 @@ export function WorkspaceHistory({
           <span className="text-sm font-medium text-amber-800">
             Previewing version from{" "}
             {versionTime(previewVersion.created_at)}{" "}
-            ({byLabel(previewVersion.editor)}) — read-only
+            ({byLabel(previewVersion.editor)}) — read-only. Cells are locked.
           </span>
           <div className="flex gap-2 flex-wrap">
             <button

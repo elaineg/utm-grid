@@ -981,3 +981,107 @@ A stranger landing on `/w/<id>` still instantly sees "a shared, synced UTM grid"
 directly below, none occluded. History is a quiet collapsed **"History"** button in the banner and
 **"Editing as: Anonymous"** is a small one-tap label — both secondary, discoverable, never competing
 with the primary build-links task and never reading as a login. The main builder `/` is untouched.
+
+## Workspace History & Attribution — Round 2 fixes (panel R1: 1/10 at the 9-bar) — added 2026-06-13
+
+Clarity 10/10 Yes, Value 10/10 Yes — comprehension and value are solved. Nine testers sit at 7–8,
+each one fix away from 9. These are surfacing/affordance/trust fixes, NOT a redesign. Do NOT regress:
+5-second `/w/<id>` clarity, mobile 375px reachability with NO occlusion of cells/checkboxes/row
+controls, copy/confirmation durability across re-render, anonymous-first (no account/login), and zero
+change to the cold-open builder `/`. Ranked by testers unblocked.
+
+**P0-1 — Preview cells must READ as locked at a glance (G1, ~4 testers; converts Marcus's only
+blocker).** Today Preview blocks edits via `pointer-events`/`opacity` only, so cells still LOOK
+typeable and a teammate will "click, type, see nothing, think it's broken." Make the read-only state
+unmistakable at the DOM and visual layer, in addition to the existing amber ribbon:
+- Every grid `<input>` (and any contenteditable cell) in Preview mode gets the real `disabled`
+  attribute (or `readOnly` + `aria-disabled="true"`) — not just a pointer-events wrapper. A real
+  disabled input can't be focused or typed into, so the "type, see nothing" failure can't happen.
+- Visual treatment that reads as locked WITHOUT a click: cells get a clearly **greyed/muted fill**
+  (e.g. `bg-slate-50`/`bg-gray-100`), **muted text**, **no focus ring**, a **`cursor: not-allowed`**
+  on hover, and a small **lock glyph** in the cell-block (desktop: a lock icon at the row/grid edge;
+  mobile cards: a lock icon by the card header). The whole grid area carries a subtle locked overlay
+  tint so the "this is frozen" read is immediate.
+- The amber ribbon stays and is reinforced (verbatim): **"Previewing version from 3h ago (by Alex) —
+  read-only. Cells are locked."** with **"Restore this version"** + **"Back to current"**. "Back to
+  current" re-enables the inputs (drops `disabled`, restores normal styling) and returns to the
+  editable synced grid. Lint stays visible (read-only) in preview, as before.
+- Mobile (375px): the disabled/greyed/lock treatment applies identically to the stacked card inputs;
+  the ribbon renders full-width in flow above the cards, occluding nothing.
+
+**P0-2 — Gentle name nudge so history isn't all "by Anonymous" (G2, 3–4 testers; never blocks).**
+When a visitor lands on `/w/<id>` with NO name set in localStorage, surface and pre-focus the
+"Editing as" field BEFORE/AT their first edit, calm and non-blocking — anonymous-first stays, editing
+is never gated:
+- On a no-name load, the banner's "Editing as" affordance renders **already in its open inline-input
+  state** (not the collapsed "Editing as: Anonymous" label), **auto-focused**, placeholder **"Your
+  name"**, with a one-line hint directly beneath it (verbatim): **"Add your name so teammates see who
+  changed what — optional, saved on this device."** It is a quiet inline field on the banner, NEVER a
+  modal, NEVER an overlay, and it does NOT steal the grid or block typing into cells.
+- Non-blocking guarantee: the visitor can ignore it entirely and edit any cell immediately; clicking a
+  grid cell simply moves focus there. If they edit a cell while still unnamed, attribution falls back
+  to "Anonymous" exactly as today — no interruption, no confirm, no wall.
+- Once a name is entered (Enter/blur commits), it persists in localStorage and the affordance reverts
+  to the compact **"Editing as: Alex"** label with its pencil edit; the nudge never fires again on
+  this device. The committed name rides into the next autosave PUT.
+- Mobile (375px): the open inline input is ≥44px, auto-focused, with the hint wrapping full-width
+  beneath it in the stacked banner — it pushes the cards down in flow, occludes nothing, and the
+  cards stay immediately tappable.
+
+**P0-3 — Shared UTM taxonomy must visibly belong to (and persist in) the synced workspace (G3,
+blocking bug; builder fixes persistence, you own the UI truth).** On `/w/<id>` the "Shared UTM
+taxonomy" panel's allowed-value chips are part of the synced workspace and the UI must make
+"Synced to this workspace — enforced on every cell" actually trustworthy:
+- **Saved-state affordance on every chip change.** When a chip is added/removed, the panel shows the
+  SAME sync-status pattern as the grid banner: a small inline status by the panel header reading
+  **"Saving…"** (amber dot) the moment a chip changes, flipping to **"Synced · saved just now"**
+  (green dot, relative time ticks) once the workspace PUT settles, and **"Couldn't save — Retry now"**
+  (red) on failure. This is the affordance that makes "synced to this workspace" believable — the user
+  adds a chip, sees Saving… → Synced, and trusts it reached teammates and survives reload.
+- **Not buried.** In workspace mode the "Shared UTM taxonomy" panel is **expanded by default whenever
+  it has ≥1 allowed value** (collapsed only when empty), so a visitor immediately sees the governed
+  taxonomy is live — it does not sit hidden in a collapsed sidebar disclosure when it's actually
+  enforcing values. Header sub-line stays **"Synced to this workspace — your team's shared allowed
+  values, enforced on every cell."**
+- Newly added chips flash green (existing cue) and, on reload, render from the synced workspace record
+  (builder's persistence fix) — the UI must reflect that they survived, never showing an empty panel
+  after a chip was added.
+
+**P1-1 — Synced grid must visibly show editable source columns, not read copy-only (G4, 2 testers).**
+Two testers saw the `/w/` grid collapse to GENERATED URL + ACTIONS, so utm_source/medium/campaign read
+as off-screen/hidden and the workspace looked copy-only. Make it obvious on the first screenful that
+this is an EDITABLE shared grid:
+- **Desktop (≥640px):** the first screenful must show the editable source columns (Base URL,
+  utm_source, utm_medium, utm_campaign at minimum) WITHOUT requiring horizontal scroll to discover
+  them — the sticky Generated URL + Actions columns must not visually dominate or push the source
+  columns off-screen-left. Reduce/cap the sticky-column footprint so the leftmost editable columns are
+  the first thing read after the banner; the source-cell inputs render with their normal editable
+  styling (clear input affordance, not greyed) so "you can type here" is unmistakable. If horizontal
+  scroll exists for later columns, ensure the source columns are the on-screen default, not the
+  scrolled-away ones.
+- **Mobile (≤640px):** the card view already stacks every source field label-over-input as a full-width
+  editable input — confirm the FIRST card's source fields are visible without horizontal scroll and
+  read as editable (not greyed/locked), so the synced workspace reads as editable on a phone too.
+- Net: a visitor's first read of `/w/<id>` is "a shared grid I can edit," with the source columns
+  present and clearly typeable — never "a read-only link."
+
+**P1-2 — Optional workspace name/label (G5, 1 tester, cheap).** Add a small **optional** "Workspace
+name" field so a team running multiple client/campaign grids can tell them apart:
+- It lives in the synced banner, on the first line left of the sync-status (or just under the
+  "Team Workspace — synced" label). Default empty shows a quiet ghost affordance **"Name this
+  workspace"** (pencil); clicking turns it into an inline text input (placeholder **"e.g. Q3 Paid
+  Campaigns"**, ≥44px on mobile), Enter/blur commits, Esc cancels. NEVER required, never blocks.
+- Once set, the name shows IN the banner label as **"Team Workspace: Q3 Paid Campaigns — synced"** and
+  rides into the autosave PUT so it persists with the workspace and reaches teammates on the link. It
+  also makes a good `<title>` so multiple workspace tabs are tellable apart.
+- Mobile (375px): the field/label is part of the stacked banner, full-width, ≥44px, occluding no card.
+
+### 5-second check (`/w/<id>` Round 2 — unchanged first read)
+A stranger still instantly reads "a shared, synced UTM grid I can edit": the in-flow synced banner
+(now carrying the optional **"Team Workspace: <name> — synced"** label when set, plus the gentle
+auto-focused name nudge on a no-name first visit), the **editable source columns visible on the first
+screenful** (clearly typeable, not greyed), and the grid/cards directly below — none occluded at
+375px. In Preview, every cell READS as locked at a glance (greyed, disabled, lock glyph) under the
+amber "read-only — cells are locked" ribbon. The "Shared UTM taxonomy" panel shows a live
+"Synced · saved just now" state so the team's allowed values are trustworthy. The cold-open builder
+`/` is untouched.

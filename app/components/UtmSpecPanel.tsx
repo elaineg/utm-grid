@@ -19,6 +19,15 @@ interface UtmSpecPanelProps {
   desktopOnly?: boolean;
   /** In workspace mode: show workspace-sync subtext and open by default when spec has values. */
   workspaceMode?: boolean;
+  /**
+   * P0-3: Sync status for workspace mode — shown inline in the panel header.
+   * "saving" → amber "Saving…"
+   * "saved" → green "Synced · saved just now" (or relative time via savedAt)
+   * "error" → red "Couldn't save"
+   */
+  syncStatus?: "saving" | "saved" | "error" | null;
+  /** Timestamp of last successful save (for "saved just now" relative time). */
+  syncSavedAt?: number | null;
 }
 
 const FIELD_LABELS: Record<UtmField, string> = {
@@ -34,6 +43,15 @@ function specHasValues(spec: UtmSpec): boolean {
   return UTM_FIELDS.some((f) => spec.allowedValues[f].length > 0);
 }
 
+/** Relative time for spec sync affordance. */
+function specRelativeTime(ts: number): string {
+  const s = Math.floor((Date.now() - ts) / 1000);
+  if (s < 5) return "just now";
+  if (s < 60) return `${s}s ago`;
+  const m = Math.floor(s / 60);
+  return m < 60 ? `${m}m ago` : "a while ago";
+}
+
 export function UtmSpecPanel({
   spec,
   onChange,
@@ -43,10 +61,24 @@ export function UtmSpecPanel({
   mobileOnly,
   desktopOnly,
   workspaceMode,
+  syncStatus,
+  syncSavedAt,
 }: UtmSpecPanelProps) {
   // Fix C: open by default when spec has any allowed values; collapsed when empty so cold open stays clean.
   // In workspace mode, always open when values exist (the spec is team-shared, users should see it).
+  // SSR-safe: lazy initializer only runs once on client mount (this is a "use client" component).
   const [expanded, setExpanded] = useState(() => specHasValues(spec));
+
+  // P0-3: also expand when workspace mode and spec gains values after mount (e.g. on reload with chips).
+  // useEffect is safe here (client only) — spec prop updates when the loaded workspace has allowed values.
+  // React no-ops setExpanded(true) when already true, so no infinite loop.
+  useEffect(() => {
+    if (workspaceMode && specHasValues(spec)) {
+      setExpanded(true);
+    }
+    // Only auto-expand; never auto-collapse (user may have manually collapsed).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workspaceMode, spec]);
   // Per-field pending add-value input state
   const [addInputs, setAddInputs] = useState<Record<UtmField, string>>({
     utm_source: "",
@@ -310,6 +342,40 @@ export function UtmSpecPanel({
     </div>
   );
 
+  /** P0-3: inline sync status for workspace mode. */
+  const syncStatusNode =
+    workspaceMode && syncStatus ? (
+      <span
+        role="status"
+        aria-live="polite"
+        className={`inline-flex items-center gap-1 text-[10px] leading-none ${
+          syncStatus === "saving"
+            ? "text-amber-600"
+            : syncStatus === "saved"
+            ? "text-green-600"
+            : "text-red-600"
+        }`}
+      >
+        <span
+          className={`inline-block h-1.5 w-1.5 rounded-full ${
+            syncStatus === "saving"
+              ? "bg-amber-400 animate-pulse"
+              : syncStatus === "saved"
+              ? "bg-green-500"
+              : "bg-red-500"
+          }`}
+          aria-hidden="true"
+        />
+        {syncStatus === "saving"
+          ? "Saving…"
+          : syncStatus === "saved" && syncSavedAt
+          ? `Synced · saved ${specRelativeTime(syncSavedAt)}`
+          : syncStatus === "saved"
+          ? "Synced"
+          : "Couldn't save"}
+      </span>
+    ) : null;
+
   if (desktopOnly) {
     const headerLabel = workspaceMode
       ? "Shared UTM taxonomy"
@@ -324,16 +390,19 @@ export function UtmSpecPanel({
         aria-label="UTM Spec panel"
         data-testid="utm-spec-panel"
       >
-        <button
-          type="button"
-          onClick={() => setExpanded((v) => !v)}
-          className="flex w-full items-center justify-between text-sm font-semibold text-gray-800 mb-1"
-          aria-expanded={expanded}
-          data-testid="utm-spec-toggle"
-        >
-          <span>{headerLabel}</span>
-          <span className="text-gray-400 text-xs">{expanded ? "▲" : "▼"}</span>
-        </button>
+        <div className="flex items-center justify-between mb-1">
+          <button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            className="flex items-center gap-1.5 text-sm font-semibold text-gray-800"
+            aria-expanded={expanded}
+            data-testid="utm-spec-toggle"
+          >
+            <span>{headerLabel}</span>
+            <span className="text-gray-400 text-xs">{expanded ? "▲" : "▼"}</span>
+          </button>
+          {syncStatusNode}
+        </div>
         {!expanded && (
           <p className="text-[11px] text-gray-400 leading-relaxed">
             {subText}
@@ -353,7 +422,7 @@ export function UtmSpecPanel({
 
   if (mobileOnly) {
     const mobileSubText = workspaceMode
-      ? "Synced to this workspace — your team's shared allowed values, enforced on every cell."
+      ? "Synced to this workspace — your team’s shared allowed values, enforced on every cell."
       : "Your team’s allowed values — enforced on every cell. Saved on this device.";
     const mobileHeaderHint = workspaceMode
       ? "— synced to this workspace"
@@ -367,11 +436,14 @@ export function UtmSpecPanel({
           aria-expanded={expanded}
           data-testid="utm-spec-mobile-toggle"
         >
-          <span>
-            {workspaceMode ? "Shared UTM taxonomy" : "Allowed values"}{" "}
-            <span className="font-normal text-gray-400 text-xs">{mobileHeaderHint}</span>
+          <span className="flex items-center gap-2 flex-wrap">
+            <span>
+              {workspaceMode ? "Shared UTM taxonomy" : "Allowed values"}{" "}
+              <span className="font-normal text-gray-400 text-xs">{mobileHeaderHint}</span>
+            </span>
+            {syncStatusNode}
           </span>
-          <span className="text-gray-400">{expanded ? "▲" : "▼"}</span>
+          <span className="text-gray-400 shrink-0">{expanded ? "▲" : "▼"}</span>
         </button>
         {expanded && (
           <div

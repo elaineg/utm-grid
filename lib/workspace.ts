@@ -11,6 +11,8 @@ export interface WorkspacePayload {
   rows: UtmRow[];
   settings: LintSettings;
   spec: UtmSpec;
+  /** Optional user-visible name for the workspace (e.g. "Q3 Paid Campaigns"). */
+  name?: string;
 }
 
 // ── ID generation ─────────────────────────────────────────────────────────────
@@ -93,6 +95,11 @@ export function isWorkspacePayload(v: unknown): v is WorkspacePayload {
     return false;
   }
 
+  // name: optional string field for workspace display name
+  if (obj.name !== undefined && typeof obj.name !== "string") {
+    return false;
+  }
+
   return true;
 }
 
@@ -110,6 +117,8 @@ export function parseWorkspacePayload(raw: string): WorkspacePayload | null {
       settings: parsed.settings,
       // Normalize spec through deserializeSpec for backward compat
       spec: deserializeSpec(parsed.spec as unknown),
+      // Preserve optional workspace name (trim to 120 chars max)
+      name: typeof parsed.name === "string" ? parsed.name.trim().slice(0, 120) || undefined : undefined,
     };
   } catch {
     return null;

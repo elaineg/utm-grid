@@ -1,25 +1,33 @@
-# Round 1 (re-test) — Tester 1 (Priya, senior backend SWE, keyboard-first, skeptical)
+# Round 1 — Tester 1 (Marcus, frontend eng, 2yr, Chrome+devtools)
 
-## Prior concerns re-checked
-- "Too much chrome above the single row" — PARTLY worse: a new blue LIVE TEAM WORKSPACE panel now sits above the grid too. Presets/Bulk Edit/Campaigns still there. For a one-link job it's busier, not leaner.
-- "Auto-fix is manual, not on-by-default" — NOT addressed; still a button. (Did its job well: Twitter→twitter, "Social "→trimmed social, lint flagged "Inconsistent utm_medium".)
-- "Keyboard-first paste-a-URL-it-parses" — NOT addressed.
+## What I did
+Landed cold for a product-launch tagging job. Built 3 rows (email/Twitter/blog -> acme.com/launch),
+hit **Auto-fix naming** (correctly lowercased `Email`->`email`), confirmed generated URLs are clean.
+Clicked **Create shared workspace** -> got a `/w/<id>` link, link auto-copied, grid synced ("All changes
+saved"). Set **Editing as: Marcus**, edited a campaign value (spring->summer-launch), waited for autosave.
+Opened **History**: two snapshots, correctly attributed "by Marcus [current]" + "by Anonymous", banner
+flipped to "last edited by Marcus". Hit **Preview** on the old version -> clear yellow
+"Previewing version from 57s ago (by Anonymous) - read-only" banner with Restore / Back-to-current, grid
+showed the old values. Reloaded fresh: current state persisted correctly (Marcus's summer-launch), history
+intact at 2 with attribution. Zero console/page errors across the whole flow.
 
-## Clarity — Yes
-H1 "Clean UTM links for your whole campaign — in one grid" + "no login, nothing leaves your browser" lands the job in <5s. To a friend: "a client-side grid that builds/lints UTM links and now also gives a live shared link your team co-edits."
+## Friction / nits (I notice this stuff)
+- Minor: in Preview mode the cells say "read-only" but the inputs aren't DOM-disabled (still editable at
+  the field level). Banner + "Back to current" make intent obvious, so it's polish, not a bug.
+- Restore copy is reassuring ("Restoring brings a version back without losing the current one") - good.
+- No janky CSS; the synced banner, history list, and grid all line up cleanly.
 
-## Value — Yes
-I hand-edit query strings or copy a teammate's sheet. Building 2 rows + Auto-fix beat fiddling with params and caught casing/trailing-space/inconsistency bugs my sheet never would. Usable for a launch post.
+## Verdict
+This nails the trust property a team UTM grid needs: every edit is snapshotted, attributed to a name,
+and previewable + restorable non-destructively. Clarity is immediate; the History feature explains itself.
 
-## New feature (Team Workspace) — trust verified
-Discoverable (distinct blue panel). Value lands instantly: "Different from Copy share link, which sends a frozen snapshot." Trust held under MY scrutiny: a clean browser context (real teammate, no localStorage) opened /w/<id> and saw my rows; network tab showed real GET + PUT /api/workspace/<id> autosave; a teammate edit persisted to a THIRD fresh device after reload. "Team Workspace — synced · All changes saved" is honest. Share link (/#g=…) made ZERO network calls = genuinely frozen/local. NOT duplicates.
-
-## What blocks a higher score
-The body copy "no server, no network requests after page load" stays on screen INSIDE a synced workspace that demonstrably PUTs to /api — self-contradictory for anyone who checks the network tab, and it nicks the very privacy claim that won me. Plus the unaddressed prior friction (manual auto-fix, no paste-parse, growing chrome).
-
-## Advocacy — 8
-I'd send this to a teammate over a spreadsheet for a launch. Not 9: the contradictory no-server copy is a credibility ding for engineers, none of my prior friction was fixed, and UTMs are too infrequent in my own work to evangelize unprompted.
+CLARITY: Yes
+VALUE: Yes
+ADVOCACY: 9/10
+REASON: Beats hand-fiddling query params, the auto-fix catches the casing typos that silently split my
+GA reports, and the attributed version-history makes a shared grid feel safe as a team source-of-truth -
+I'd drop this in our team Slack. Not a 10 only because Preview cells aren't truly locked.
 
 ```json
-{"tester":1,"name":"Priya","clarity":"Yes","value":"Yes","advocacy":8,"top_problems":["'no server / no network requests' copy persists inside a synced workspace that provably PUTs to /api — self-contradiction caught in the network tab","prior friction unfixed: auto-fix still manual not lint-on-type, no paste-a-URL-it-parses, chrome growing not shrinking"],"likes":["Team Workspace truly server-persists: verified cross-device sync from a clean browser via real GET/PUT /api","workspace vs frozen /#g share link are clearly distinct, not duplicates, and copy explains it","Auto-fix + lint caught casing/trailing-space/inconsistency faster than hand-editing"]}
+{"tester": 1, "round": 1, "clarity": "Yes", "value": "Yes", "advocacy": 9, "topComplaints": ["Preview mode labeled read-only but input cells remain editable at DOM level (polish gap)"], "priorConcernsAddressed": "n/a"}
 ```

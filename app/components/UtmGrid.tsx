@@ -77,12 +77,31 @@ export interface UtmGridProps {
    * so useLocalStorage picks it up on first snapshot.
    */
   initialWorkspace?: WorkspacePayload;
+  /**
+   * P0-1: When true, the grid is in Preview read-only mode.
+   * All cell inputs are disabled/readOnly with locked visual treatment.
+   * Zero PUT/autosave fires while previewing (handled by the parent).
+   */
+  isPreview?: boolean;
+  /**
+   * P0-3: Sync status for the UTM Spec panel in workspace mode.
+   * "saving" → amber "Saving…" in panel header.
+   * "saved" → green "Synced · saved just now" (or relative time).
+   * "error" → red "Couldn't save".
+   * undefined → no status rendered (default / non-workspace mode).
+   */
+  specSyncStatus?: "saving" | "saved" | "error" | null;
+  /** Timestamp of last successful spec sync (for relative time display). */
+  specSavedAt?: number | null;
 }
 
 export function UtmGrid({
   storageKeyPrefix = "",
   onStateChange,
   initialWorkspace: _initialWorkspace,
+  isPreview = false,
+  specSyncStatus,
+  specSavedAt,
 }: UtmGridProps = {}) {
   const router = useRouter();
 
@@ -1322,6 +1341,8 @@ export function UtmGrid({
           onShareSpec={isWorkspaceMode ? undefined : () => void copyShareLink()}
           specLinkCopied={isWorkspaceMode ? undefined : shareLinkCopied}
           workspaceMode={isWorkspaceMode}
+          syncStatus={isWorkspaceMode ? specSyncStatus : undefined}
+          syncSavedAt={isWorkspaceMode ? specSavedAt : undefined}
           mobileOnly
         />
       </div>
@@ -1371,7 +1392,8 @@ export function UtmGrid({
               while the middle UTM columns scroll under them. The Actions column is
               116px wide; sticky offset for Generated URL matches that exactly. */}
           <div className="hidden sm:block overflow-x-auto rounded-lg border border-gray-200 bg-white">
-          <table className="border-collapse text-sm" style={{ minWidth: "1100px" }}>
+          {/* Table min-width: 1050px in workspace mode (Generated URL is 200px), 1100px default (250px). */}
+          <table className="border-collapse text-sm" style={{ minWidth: isWorkspaceMode ? "1050px" : "1100px" }}>
             <thead>
               <tr className="border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase">
                 {/* Bulk-selection checkbox header
@@ -1403,10 +1425,11 @@ export function UtmGrid({
                   </th>
                 ))}
                 {/* Generated URL: sticky, pinned 116px from right (= Actions width).
-                    Wide enough (250px) so Dana can read a typical final URL inline.
+                    200px in workspace mode (no Campaigns sidebar = more visible space for source
+                    columns left of sticky), 250px in default mode.
                     Solid bg (bg-gray-50) so scrolling middle columns slide under cleanly.
                     z-30 so header cells float above body sticky cells (z-20) + scrolling cells (z-[11]). */}
-                <th className="sticky right-[116px] z-30 bg-gray-50 px-2 py-2.5 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] whitespace-nowrap" style={{ minWidth: "250px", width: "250px" }}>
+                <th className="sticky right-[116px] z-30 bg-gray-50 px-2 py-2.5 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] whitespace-nowrap" style={{ minWidth: isWorkspaceMode ? "200px" : "250px", width: isWorkspaceMode ? "200px" : "250px" }}>
                   Generated URL
                 </th>
                 {/* Actions: sticky right-0, 116px wide. z-30 same as Generated URL header. */}
@@ -1500,24 +1523,29 @@ export function UtmGrid({
                               title attr shows full value on hover — cheap scan aid for Dana. */}
                           <input
                             value={row[field]}
-                            onChange={(e) => updateCell(row.id, field, e.target.value)}
-                            onFocus={() => setSelectedId(row.id)}
+                            onChange={(e) => !isPreview && updateCell(row.id, field, e.target.value)}
+                            onFocus={() => !isPreview && setSelectedId(row.id)}
                             aria-label={`${FIELD_LABELS[field]} row ${i + 1}`}
                             aria-invalid={!!cellWarnings && !isPresetFreshRequired}
+                            aria-disabled={isPreview || undefined}
                             placeholder={isPresetFreshRequired ? "Add a campaign name" : field === "baseUrl" ? "https://…" : ""}
                             title={row[field] || undefined}
                             spellCheck={false}
-                            list={datalistId}
-                            className={`w-full rounded-md border pl-2 pr-7 py-1.5 font-mono text-xs focus:outline-none transition-colors duration-300 ${
-                              isFlashing
-                                ? "border-green-400 bg-green-50"
+                            list={!isPreview ? datalistId : undefined}
+                            readOnly={isPreview}
+                            disabled={isPreview}
+                            className={`w-full rounded-md border pl-2 pr-7 py-1.5 font-mono text-xs transition-colors duration-300 ${
+                              isPreview
+                                ? "border-gray-200 bg-slate-100 text-gray-400 cursor-not-allowed focus:outline-none"
+                                : isFlashing
+                                ? "border-green-400 bg-green-50 focus:outline-none"
                                 : cellWarnings && hasOffSpec
-                                ? "border-violet-400 bg-violet-50 focus:border-violet-500"
+                                ? "border-violet-400 bg-violet-50 focus:outline-none focus:border-violet-500"
                                 : cellWarnings
-                                ? "border-amber-400 bg-amber-50 focus:border-amber-500"
+                                ? "border-amber-400 bg-amber-50 focus:outline-none focus:border-amber-500"
                                 : isPresetFreshRequired
-                                ? "border-gray-300 bg-gray-50 focus:border-blue-500"
-                                : "border-gray-200 bg-white focus:border-blue-500"
+                                ? "border-gray-300 bg-gray-50 focus:outline-none focus:border-blue-500"
+                                : "border-gray-200 bg-white focus:outline-none focus:border-blue-500"
                             }`}
                           />
                           {/* Fix B: inline "Fix to <value>" chip — auto-revealed, ≥44px tap target,
@@ -1571,11 +1599,12 @@ export function UtmGrid({
                         </td>
                       );
                     })}
-                    {/* Sticky Generated URL — 250px wide so Dana can read a typical URL inline.
+                    {/* Sticky Generated URL — narrower in workspace mode (200px) to keep source columns
+                        visible on first screenful; 250px in default mode for Dana's inline scan.
                         right-[116px] pins it 116px from the container's right edge (= Actions width).
                         bg-white (solid opaque) so scrolling middle columns slide cleanly under.
                         z-20 so it floats above scrolling cells (z-[11]) but below the checkbox col (z-20 same level). */}
-                    <td className="sticky right-[116px] z-20 px-2 py-2 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] overflow-hidden bg-white" style={{ minWidth: "250px", width: "250px" }}>
+                    <td className="sticky right-[116px] z-20 px-2 py-2 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] overflow-hidden bg-white" style={{ minWidth: isWorkspaceMode ? "200px" : "250px", width: isWorkspaceMode ? "200px" : "250px" }}>
                       <output
                         aria-label={`Generated URL row ${i + 1}`}
                         title={generated}
@@ -1661,48 +1690,57 @@ export function UtmGrid({
                 <div
                   key={row.id}
                   className={`rounded-lg border p-4 flex flex-col gap-3 ${
-                    isBulkChecked
+                    isPreview
+                      ? "border-slate-200 bg-slate-50"
+                      : isBulkChecked
                       ? "border-blue-300 bg-blue-50/40"
                       : "border-gray-200 bg-white"
                   }`}
                 >
-                  {/* Card top bar: checkbox + row number + Duplicate / Delete */}
+                  {/* Card top bar: checkbox + row number + Duplicate / Delete (or lock icon in preview) */}
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
-                      <label className="inline-flex min-h-[44px] min-w-[44px] items-center gap-1.5 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={isBulkChecked}
-                          onChange={() => toggleRowSelection(row.id)}
-                          aria-label={`Select row ${i + 1} for bulk edit`}
-                          className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-400 cursor-pointer"
-                        />
-                        <span className="text-xs font-medium text-gray-500" aria-hidden="true">Select</span>
-                      </label>
+                      {!isPreview && (
+                        <label className="inline-flex min-h-[44px] min-w-[44px] items-center gap-1.5 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={isBulkChecked}
+                            onChange={() => toggleRowSelection(row.id)}
+                            aria-label={`Select row ${i + 1} for bulk edit`}
+                            className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-400 cursor-pointer"
+                          />
+                          <span className="text-xs font-medium text-gray-500" aria-hidden="true">Select</span>
+                        </label>
+                      )}
                       <span className="text-xs font-medium text-gray-400">#{i + 1}</span>
+                      {isPreview && (
+                        <span aria-hidden="true" className="text-sm text-gray-400" title="Read-only preview">🔒</span>
+                      )}
                     </div>
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => duplicateRow(row.id)}
-                        aria-label={`Duplicate row ${i + 1}`}
-                        title="Duplicate row"
-                        className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md border border-gray-200 text-sm text-gray-600 hover:bg-gray-100"
-                      >
-                        ⧉
-                        <span className="sr-only">{" "}Duplicate row</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => deleteRow(row.id)}
-                        aria-label={`Delete row ${i + 1}`}
-                        title="Delete row"
-                        className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md border border-gray-200 text-sm text-red-600 hover:bg-red-50"
-                      >
-                        🗑
-                        <span className="sr-only">{" "}Delete row</span>
-                      </button>
-                    </div>
+                    {!isPreview && (
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => duplicateRow(row.id)}
+                          aria-label={`Duplicate row ${i + 1}`}
+                          title="Duplicate row"
+                          className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md border border-gray-200 text-sm text-gray-600 hover:bg-gray-100"
+                        >
+                          ⧉
+                          <span className="sr-only">{" "}Duplicate row</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => deleteRow(row.id)}
+                          aria-label={`Delete row ${i + 1}`}
+                          title="Delete row"
+                          className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md border border-gray-200 text-sm text-red-600 hover:bg-red-50"
+                        >
+                          🗑
+                          <span className="sr-only">{" "}Delete row</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   {/* Stacked fields: label above each full-width input */}
@@ -1751,23 +1789,28 @@ export function UtmGrid({
                         <input
                           id={`card-${row.id}-${field}`}
                           value={row[field]}
-                          onChange={(e) => updateCell(row.id, field, e.target.value)}
-                          onFocus={() => setSelectedId(row.id)}
+                          onChange={(e) => !isPreview && updateCell(row.id, field, e.target.value)}
+                          onFocus={() => !isPreview && setSelectedId(row.id)}
                           aria-label={`${FIELD_LABELS[field]} row ${i + 1}`}
                           aria-invalid={!!cellWarnings && !isPresetFreshRequired}
+                          aria-disabled={isPreview || undefined}
                           placeholder={isPresetFreshRequired ? "Add a campaign name" : field === "baseUrl" ? "https://…" : ""}
                           spellCheck={false}
-                          list={datalistId}
-                          className={`w-full rounded-md border px-3 py-3 font-mono text-sm focus:outline-none transition-colors duration-300 min-h-[44px] ${
-                            isFlashing
-                              ? "border-green-400 bg-green-50"
+                          list={!isPreview ? datalistId : undefined}
+                          readOnly={isPreview}
+                          disabled={isPreview}
+                          className={`w-full rounded-md border px-3 py-3 font-mono text-sm transition-colors duration-300 min-h-[44px] ${
+                            isPreview
+                              ? "border-gray-200 bg-slate-100 text-gray-400 cursor-not-allowed focus:outline-none"
+                              : isFlashing
+                              ? "border-green-400 bg-green-50 focus:outline-none"
                               : cellWarnings && hasOffSpec
-                              ? "border-violet-400 bg-violet-50 focus:border-violet-500"
+                              ? "border-violet-400 bg-violet-50 focus:outline-none focus:border-violet-500"
                               : cellWarnings
-                              ? "border-amber-400 bg-amber-50 focus:border-amber-500"
+                              ? "border-amber-400 bg-amber-50 focus:outline-none focus:border-amber-500"
                               : isPresetFreshRequired
-                              ? "border-gray-300 bg-gray-50 focus:border-blue-500"
-                              : "border-gray-200 bg-white focus:border-blue-500"
+                              ? "border-gray-300 bg-gray-50 focus:outline-none focus:border-blue-500"
+                              : "border-gray-200 bg-white focus:outline-none focus:border-blue-500"
                           }`}
                         />
                         {/* Inline "Fix to <value>" chip — in normal flow, never overlay */}
@@ -1889,6 +1932,8 @@ export function UtmGrid({
             onShareSpec={isWorkspaceMode ? undefined : () => void copyShareLink()}
             specLinkCopied={isWorkspaceMode ? undefined : shareLinkCopied}
             workspaceMode={isWorkspaceMode}
+            syncStatus={isWorkspaceMode ? specSyncStatus : undefined}
+            syncSavedAt={isWorkspaceMode ? specSavedAt : undefined}
             desktopOnly
           />
         </div>

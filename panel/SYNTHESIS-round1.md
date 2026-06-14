@@ -1,125 +1,97 @@
-# UTM Grid — Panel Round 1 Synthesis (Team Workspace server-sync build)
+# UTM-Grid — Panel Round 1 Synthesis (History / Restore / Editing-as build)
 
-Feature under test: the new server-synced **Team Workspace** (`/w/<id>`), exercised cold-open
-over HTTP/browser by 10 personas. Each tester hard-verified sync from a fresh no-localStorage
-browser.
+Feature under test: server-synced Team Workspace `/w/<id>` with autosave History, read-only
+Preview, non-destructive Restore, and per-author "Editing as" attribution. Exercised cold-open
+over browser by 10 tester files.
 
-## 1. Score table
+## 1. Score table (persona ACTUALLY embodied per file)
 
-| # | Name | Role | Clarity | Value | Advocacy | Passes bar? |
-|---|------|------|---------|-------|----------|-------------|
-| 1 | Priya | Senior backend SWE | Yes | Yes | 8 | No |
-| 2 | Marcus | Frontend engineer | Yes | Yes | 8 | No |
-| 3 | Wen | Marketing data analyst | Yes | Yes | 8 | No |
-| 4 | Tomás | Ops analyst (Excel) | Yes | Yes | 8 | No |
-| 5 | Dana | Demand-gen marketer | Yes | Yes | 8 | No |
-| 6 | Jules | Content/community marketer | Yes | Yes | 8 | No |
-| 7 | Aisha | Product designer | Yes | Yes | 6 | No |
-| 8 | Rob | Freelance brand designer | Yes | Yes | 8 | No |
-| 9 | Elena | Engineering manager | Yes | Yes | 8 | No |
-| 10 | Sam | Product manager | Yes | Yes | 8 | No |
+| Tester | Persona embodied | Clarity | Value | Advocacy | One-line reason |
+|--------|------------------|---------|-------|----------|-----------------|
+| 1 | Marcus (frontend eng) | Yes | Yes | 9/10 | "…not a 10 only because Preview cells aren't truly locked." |
+| 2 | Wen (mktg data analyst) | Yes | Yes | 8/10 | "…not a 9 only because lint isn't enforced at CSV-import time yet." |
+| 3 | Wen (mktg data analyst) — **DUP** | Yes | Yes | 7/10 | "…the Shared UTM taxonomy doesn't actually persist… fix that and it's a 9." |
+| 4 | Tomás (ops analyst) | Yes | Yes | 8/10 | "…held back from 9 by 'read-only' preview not visibly disabling cells and Anonymous-by-default attribution." |
+| 5 | Jules (content/community mktr) | Yes | Yes | 8/10 | "…held back from 9 because the workspace grid hides the editable source columns, so it reads as copy-only." |
+| 6 | Aisha (product designer) | Yes | Yes | 8/10 | "…held back from 9 by a busy stacked header and lint text wrapping awkwardly in narrow columns." |
+| 7 | Rob (freelance designer) | Yes | Yes | 8/10 | "…not a 9 only because per-session 'Editing as' attribution doesn't persist across people." |
+| 8 | Rob (freelance designer) — **DUP** | Yes | Yes | 8/10 | "…held off 9 only because workspaces still can't be named/labeled." |
+| 9 | Elena (engineering manager) | Yes | Yes | 8/10 | "…held back from 9 only because Preview cells look editable (should be visibly locked) and want a viewer/lock option." |
+| 10 | Sam (product manager) | Yes | Yes | 8/10 | "Held off 9 only because attribution defaults to 'Anonymous' and is self-declared." |
 
-Passes bar = advocacy≥9 ∧ clarity=Yes ∧ value=Yes.
+Clarity = Yes (10/10). Value = Yes (10/10).
+
+Roster coverage: **Wen** embodied twice (T2, T3) and **Rob** embodied twice (T7, T8) → roster
+personas that should have filled two slots are MISSING (no distinct coverage). See §4.
 
 ## 2. Exit condition
 
-Bar: ≥9 of 10 testers at advocacy≥9 with clarity=Yes ∧ value=Yes.
-**Fully-passing testers: 0 of 10.** Clarity=Yes and value=Yes on all 10; advocacy is 8 for
-nine testers and 6 for Aisha. One dominant blocker is shared by all 10 — fixing it should
-lift 9–10 testers to ≥9 and clear the exit condition in round 2.
+Bar: **9 of 10 testers at advocacy ≥9 with Clarity=Yes AND Value=Yes.**
+- Testers at advocacy ≥9: **1 of 10** (only Marcus / T1 = 9).
+- Nine testers sit at 7–8, each one fix away from 9.
+- **Round 1 does NOT pass.**
 
-## 3. Complaints behind advocacy<9, grouped by cause (most-recurring first)
+## 3. Complaints behind advocacy <9, grouped by cause (most-recurring first)
 
-### G1 — Client-side privacy copy contradicts the synced `/w/` workspace — 10 of 10 (DOMINANT)
-Testers 1,2,3,4,5,6,7,8,9,10. Inside a server-synced `/w/<id>` workspace the page STILL
-shows "no server / no network requests after page load / nothing is sent to any server /
-saved in localStorage." Every tester verified real server sync, then caught this as a flat
-contradiction; engineers Priya & Marcus confirmed the PUT in the network tab, and designer
-Aisha called it "literally false" — the SOLE reason her advocacy is 6. Trust-breaking for a
-tool whose pitch is data hygiene.
-**Fix:** make copy MODE-AWARE — on `/w/` pages say "synced to a private server workspace";
-keep the client-side "nothing leaves your browser" claim ONLY on the local/snapshot main page
-where it's true. This single fix clears the bar.
+### G1 — Preview cells not visibly locked (read-only is pointer-blocking only; no DOM `disabled`/`readOnly`) — RECURS, 4 testers
+Marcus (T1), Wen (T2), Tomás (T4), Elena (T9). Edits are correctly discarded so data is safe,
+but cells still look editable and "made me double-check before trusting it" (Elena). This is
+Marcus's SOLE blocker to 9 and a partial cap on three others. **Real.**
 
-### G2 — Workspace-link permission ambiguity — 4 of 10
-Testers 10 (Sam), 8 (Rob), 5 (Dana), 4 (Tomás); Elena (9) implicit. No note that "anyone
-with this secret link can edit"; unclear if the secret link is the only access control.
-**Fix:** add a one-line permission note by the workspace link: "Anyone with this secret link
-can view & edit."
+### G2 — Anonymous-default / per-browser attribution not durable — RECURS, 3–4 testers
+Tomás (T4), Rob (T7), Sam (T10); Elena (T9) secondary. "Editing as" is per-browser localStorage,
+resets to Anonymous each session; same person shows as two authors across devices; "audit trail
+is softer than the History UI implies." **Real.**
 
-### G3 — Two share buttons read as duplicates in-workspace — 1 strong + 2 echo
-Tester 5 (Dana): "Copy share link" + "Copy workspace link" both on screen, snapshot-vs-live
-distinction buried in a grey parenthetical she'd skim past. Priya/Marcus (1,2) confirmed
-they're NOT actually duplicates but the distinction is too quiet.
-**Fix:** visually separate the two actions and lift the live-vs-snapshot label out of the grey
-parenthetical near the workspace link.
+### G3 — Shared UTM taxonomy not persisted server-side in workspace — 1 tester, BLOCKING BUG
+Wen (T3, the duplicate slot). A taxonomy chip added under UTM_SOURCE in a `/w/` workspace
+vanishes on the creator's OWN reload and never reaches a teammate, while the UI claims "Synced
+to this workspace, enforced on every cell." Grid rows DO sync, so it's taxonomy-specific. This
+is the round's lowest score (7) and a hard data-integrity bug — fix regardless of single mention.
 
-### G4 — No copy-confirmation on "Copy share link" / "Copy all URLs" — 1 (recurring lesson)
-Tester 6 (Jules): clipboard genuinely receives the link but the label never flips to "Copied!"
-and no toast fires; row-level "Copy URL" DOES confirm, so the inconsistency is glaring on the
-two buttons used to spread the tool. Matches the standing copy-confirmation friction lesson.
-**Fix:** flip both buttons to a peripherally-unmissable confirmed state ("Copied!" + toast).
+### G4 — Synced grid hides editable source columns — RECURS, 2 testers
+Jules (T5): synced workspace collapses to GENERATED URL + ACTIONS; base/source/medium/campaign
+are off-screen-left, so a "link can edit" workspace reads copy-only. Rob (T8, related): "grid is
+wide; a non-technical client could miss right-edge columns." **Real.**
 
-### G5 — Desktop grid cramping at 1280px — 2 of 10
-Testers 2 (Marcus), 7 (Aisha). GENERATED URL column clipped / overlaps the campaign cell;
-ACTIONS column squeezed off-edge.
-**Fix:** fix the 1280px layout so GENERATED URL and ACTIONS don't collide/clip.
+### G5 — Workspace can't be named/labeled — 1 tester (unaddressed prior concern)
+Rob (T8). No name field on `/w/`; can't tell two client grids apart across tabs.
 
-### G6 — UTM Spec doesn't sync into the workspace — 1 of 10
-Tester 3 (Wen). Rows persist server-side but the allowed-values taxonomy stays localStorage,
-so the team can't lint against one shared spec — undercuts the source-of-truth pitch.
-**Fix:** verify/include the Spec in the workspace payload, autosave Spec edits on `/w/`, and
-surface that the taxonomy is shared.
+### G6 — CSV import doesn't enforce/auto-clean casing (lint only fires on manual Auto-fix) — 1 tester
+Wen (T2). Wants lint at ingest, not a button he might forget.
 
-### G7 — Duplicate "Enforce allowed values" control — 1 of 10
-Tester 7 (Aisha). Checkbox + redundant underlined link reads as a UI leftover.
-**Fix:** remove the redundant link; keep one control.
+### G7 — Craft / single-mention nits (do NOT block)
+- Aisha (T6): stacked banners (synced + version card + preview) make header busy; lint text wraps
+  mid-phrase in narrow columns; no avatar/color on attribution.
+- Tomás (T4): History shows timestamp, not WHAT changed ("2 cells").
+- Rob (T7): Auto-fix marginal for single-link tagging vs hand-typing.
+- Elena (T9): wants a viewer/lock (read-only-share) option before pushing org-wide.
 
-### Single-mention items (do NOT block round 2)
-- Edit presence/attribution; last-write-wins clobber risk — Marcus(2), Elena(9).
-- No persistent inline field to re-grab the `/w/` link after the toast fades — Tomás(4).
-- Workspaces have no name to tell multiple client grids apart — Rob(8).
-- No native X/Twitter or Mastodon presets — Jules(6).
-- Prior friction unfixed: auto-fix still manual (not lint-on-type), no paste-a-URL-parse,
-  growing chrome — Priya(1) only.
+## 4. Process note — persona-index off-by-one
 
-## 4. What's working (Team Workspace wins)
+Round-1 assignment used "index N"; some testers read it 0-based and embodied the roster NAME
+handed to them rather than their file slot. Result: **duplicate personas** — two files embody
+**Wen** (T2, T3) and two embody **Rob** (T7, T8) — and the roster personas those slots should
+have covered are **missing**. This biases the panel: the duplicated Wen drove the only sub-8
+score (the taxonomy bug), and Rob's two slots both surface naming/attribution complaints,
+double-weighting them. **Round 2 must assign personas explicitly BY NAME so all 10 distinct
+roster personas are covered exactly once.**
 
-- **All 10 testers independently HARD-verified real server sync** — opened the `/w/<id>` link
-  in a fresh no-localStorage browser as a teammate, edited a cell, and confirmed it persisted
-  cross-device/cross-person (Wen & Elena verified bidirectional sync to a third fresh session).
-  No account. Repeatedly called "not localStorage theater."
-- **Live vs frozen-snapshot distinction lands** — the "Different from 'Copy share link',
-  which sends a frozen snapshot" callout pre-empts confusion for 9/10; Priya & Marcus confirmed
-  the `/#g=` share makes ZERO network calls (genuinely frozen).
-- **Trust signal works** — "Team Workspace — synced · All changes saved · saved just now" +
-  green dot was cited by nearly every tester as the reassurance that saves persisted.
-- **Prior holdouts converted:** Elena (EM, held out specifically for a real shared team
-  source-of-truth) and Sam (PM, held out on the share-recipient/coordination gap) BOTH
-  confirmed the feature now meets their need — Elena: "this is the thing I held out for; it's
-  here and it works"; Sam: "the workspace is exactly my coordination job."
-- Core grid still strong: cross-row casing/inconsistency lint citing GA4 campaign-split +
-  one-click Auto-fix with green diff and Undo, lossless CSV round-trip — the recurring weekly
-  win for marketers/analysts.
+## 5. Round-2 fix list (prioritized by testers unblocked)
 
-## 5. Round-2 fix list (prioritized, deduplicated)
-
-1. **[CRITICAL — mode-aware privacy copy on `/w/`]** Stop showing "no server / no network /
-   nothing leaves your browser / localStorage" on synced workspace pages; show "synced to a
-   private server workspace." Keep the client-side claim only on the local/snapshot main page.
-   → Moves to ≥9: ALL 10 (1–10). Aisha 6→8+, the other nine 8→9. **This single fix clears the
-   exit condition.**
-2. **[Permission note on workspace link]** "Anyone with this secret link can view & edit."
-   → Reinforces ≥9 for Sam(10), Rob(8), Dana(5), Tomás(4), Elena(9).
-3. **[Copy-confirmation]** Flip "Copy share link" + "Copy all URLs" to "Copied!" + toast.
-   → Jules(6).
-4. **[Disambiguate the two share buttons]** Separate them; lift the live-vs-snapshot label out
-   of the grey parenthetical inside a workspace. → Dana(5); helps Priya(1), Marcus(2).
-5. **[1280px grid layout]** Fix GENERATED URL / ACTIONS collision & clipping.
-   → Marcus(2), Aisha(7).
-6. **[Spec syncs into workspace]** Put the allowed-values Spec in the workspace payload,
-   autosave on `/w/`, surface that it's shared. → Wen(3).
-7. **[Remove duplicate "Enforce allowed values" link]** → Aisha(7).
-
-Deferred (not blocking round 2): edit presence/attribution, re-grab-link field, workspace
-naming, X/Mastodon presets, lint-on-type / paste-a-URL-parse.
+- **P0 — Visibly lock Preview cells** (DOM `disabled`/`readOnly` + greyed styling). G1: Marcus
+  (→9, his only blocker), plus Wen/Tomás/Elena. **Up to 4 testers; highest leverage, and the
+  single fix that converts the round's only 9-advocate's reason away.**
+- **P0 — Persist "Editing as" durably** (stable per-workspace identity carried across sessions &
+  devices; stop defaulting to Anonymous). G2: Tomás, Rob, Sam, Elena. **3–4 testers.**
+- **P0 — Persist Shared UTM taxonomy server-side** (write chips to the `/w/` record so they
+  survive reload and reach teammates; honor "enforced on every cell"). G3 hard bug; Wen(T3)→9.
+- **P1 — Surface editable source columns in synced grid** (don't collapse to URL+ACTIONS; show
+  base/source/medium/campaign without horizontal scroll). G4: Jules, Rob. **2 testers.**
+- **P1 — Name/label a workspace** (name field on `/w/`). G5: Rob. 1 tester, cheap, unaddressed
+  prior concern.
+- **P2 — Enforce lint/casing on CSV import.** G6: Wen. 1 tester.
+- **P2 — Craft polish:** de-stack header banners, fix lint text-wrap in narrow columns, show
+  "what changed" in History, add author color/avatar, offer a viewer/read-only share. G7 nits.
+- **Process P0 — Re-assign round-2 personas BY NAME** (all 10 distinct), eliminating the Wen×2 /
+  Rob×2 duplicates and the missing-roster gaps.

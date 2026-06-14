@@ -13,11 +13,18 @@
  *   useLocalStorage reads the server data on first snapshot.
  * - Workspace mode does NOT touch the default (utm-grid:*) localStorage keys.
  *
- * History & Attribution (Rung 2):
+ * History & Attribution (Round 2):
  * - "Editing as: [name]" control in the banner (localStorage per-device)
  * - History panel (below banner, above grid)
- * - Preview mode (read-only grid view)
+ * - Preview mode (read-only grid view via isPreview prop — cells disabled)
  * - Non-destructive restore (PUT the chosen version's data back as current)
+ *
+ * Panel Round 2 fixes:
+ * - P0-1: Preview cells visibly locked (isPreview prop on UtmGrid)
+ * - P0-2: Name nudge (auto-open "Editing as" when no name on load)
+ * - P0-3: Taxonomy sync affordance (specSyncStatus prop)
+ * - P1-1: Editable source columns visible (no overlay, disabled only when preview)
+ * - P1-2: Optional workspace name field in banner, persisted in payload
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -57,12 +64,59 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [, setTick] = useState(0);
   const tickRef = useRef(0);
+  // Save-bump tick for History panel (incremented after each successful autosave)
+  const [historyTick, setHistoryTick] = useState(0);
 
   // Editor name (managed by WorkspaceHistory component, hoisted here for autosave)
   const editorNameRef = useRef<string>("");
   const handleEditorChange = useCallback((name: string) => {
     editorNameRef.current = name;
   }, []);
+
+  // P1-2: Optional workspace name — persisted in the server payload.
+  const [workspaceName, setWorkspaceName] = useState<string>("");
+  const [isEditingWorkspaceName, setIsEditingWorkspaceName] = useState(false);
+  const [workspaceNameInput, setWorkspaceNameInput] = useState("");
+  const workspaceNameInputRef = useRef<HTMLInputElement>(null);
+  const workspaceNameRef = useRef<string>("");
+
+  // Ref to doSave so commitWorkspaceName can call it without a dependency ordering issue
+  // (doSave is defined after commitWorkspaceName in the component body).
+  const doSaveRef = useRef<((toSave: WorkspacePayload, editorLabel: string | null) => Promise<boolean>) | null>(null);
+  // Debounced autosave timer and payload ref — declared here so commitWorkspaceName can reference them.
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const latestPayloadRef = useRef<WorkspacePayload | null>(null);
+
+  const commitWorkspaceName = useCallback((raw: string) => {
+    const trimmed = raw.trim().slice(0, 120);
+    setWorkspaceName(trimmed);
+    workspaceNameRef.current = trimmed;
+    setIsEditingWorkspaceName(false);
+    // Trigger an immediate save so the name reaches the server quickly.
+    // Use doSaveRef to avoid dependency ordering issues.
+    const currentPayload = latestPayloadRef.current;
+    if (currentPayload && isHydratedRef.current && doSaveRef.current) {
+      setSyncStatus("saving");
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+      saveTimer.current = null;
+      void doSaveRef.current(currentPayload, editorNameRef.current || null).then((ok) => {
+        if (ok) {
+          setSyncStatus("saved");
+          setSavedAt(Date.now());
+          setHistoryTick((t) => t + 1);
+        } else {
+          setSyncStatus("error");
+        }
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const startEditWorkspaceName = useCallback(() => {
+    setWorkspaceNameInput(workspaceName);
+    setIsEditingWorkspaceName(true);
+    setTimeout(() => workspaceNameInputRef.current?.focus(), 0);
+  }, [workspaceName]);
 
   // Tick every 10s to update relative time display
   useEffect(() => {
@@ -80,10 +134,6 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
   // Mount the workspace link copied state on entry (if we just navigated from "Create shared workspace")
   // Check sessionStorage for a pending copy-on-load signal
   const didMountCopyCheck = useRef(false);
-
-  // Debounced autosave
-  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const latestPayloadRef = useRef<WorkspacePayload | null>(null);
 
   // P0-2: gate autosave — do NOT fire until server payload is fully hydrated into the grid.
   // Set to true AFTER writeValue seeds the prefixed localStorage keys and UtmGrid has mounted.
@@ -105,9 +155,6 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
   // Restore confirmation display — ref-stable, survives re-render
   const [restoreLabel, setRestoreLabel] = useState<string | null>(null);
   const restoreTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Save-bump tick for History panel (incremented after each successful autosave)
-  const [historyTick, setHistoryTick] = useState(0);
 
   // Fetch workspace on mount (after id is resolved)
   useEffect(() => {
@@ -149,6 +196,11 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
         writeValue(`${wsPrefix}utm-grid:rows`, data.rows, data.rows, 0);
         writeValue(`${wsPrefix}utm-grid:lint-settings`, data.settings, data.settings, 0);
         writeValue(`${wsPrefix}utm-grid:utm-spec`, data.spec, data.spec, 0);
+
+        // P1-2: restore workspace name from payload
+        const loadedName = data.name ?? "";
+        setWorkspaceName(loadedName);
+        workspaceNameRef.current = loadedName;
 
         // Mark hydrated BEFORE setStatus so the autosave guard is active when UtmGrid mounts.
         isHydratedRef.current = true;
@@ -196,11 +248,16 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
 
   // Perform the actual PUT save to server.
   // Called by both autosave debounce and immediate restore-save.
+  // P1-2: merges workspaceName into the payload so the name persists server-side.
   const doSave = useCallback(
     async (toSave: WorkspacePayload, editorLabel: string | null): Promise<boolean> => {
       if (!id) return false;
       try {
-        const payloadRaw = JSON.stringify(toSave);
+        // Merge the current workspace name into the payload (name lives on page, not in UtmGrid)
+        const payloadWithName: WorkspacePayload = workspaceNameRef.current
+          ? { ...toSave, name: workspaceNameRef.current }
+          : toSave;
+        const payloadRaw = JSON.stringify(payloadWithName);
         const body = JSON.stringify({ payload: payloadRaw, editor: editorLabel });
         const res = await fetch(`/api/workspace/${id}`, {
           method: "PUT",
@@ -214,6 +271,9 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
     },
     [id]
   );
+
+  // Keep doSaveRef in sync with the latest doSave (for commitWorkspaceName).
+  doSaveRef.current = doSave;
 
   // Autosave: debounced PUT to server.
   // P0-2 guard: only fires after server payload has been fully seeded into UtmGrid.
@@ -466,6 +526,11 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
   // Found state — render the workspace
   const storageKeyPrefix = `ws:${id}:`;
 
+  // P1-2: banner title reflects workspace name when set
+  const bannerTitle = workspaceName
+    ? `Team Workspace: ${workspaceName} — synced`
+    : "Team Workspace — synced";
+
   return (
     <main className="mx-auto w-full max-w-7xl flex-1 p-6">
       {/* Team Workspace banner — in normal document flow, NEVER fixed/sticky.
@@ -478,12 +543,43 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
         data-testid="workspace-banner"
         className="mb-4 flex flex-col gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 w-full"
       >
-        {/* Top row: title + copy button */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        {/* Top row: title + name field + copy button */}
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
           <div className="flex flex-col gap-1 min-w-0">
-            <span className="text-sm font-semibold text-blue-900">
-              Team Workspace — synced
-            </span>
+            {/* P1-2: Workspace name inline editor */}
+            {isEditingWorkspaceName ? (
+              <div className="flex flex-col gap-0.5">
+                <input
+                  ref={workspaceNameInputRef}
+                  type="text"
+                  value={workspaceNameInput}
+                  maxLength={120}
+                  placeholder="e.g. Q3 Paid Campaigns"
+                  aria-label="Workspace name"
+                  data-testid="workspace-name-input"
+                  className="rounded border border-blue-300 bg-white px-2 py-1 text-sm font-semibold text-blue-900 min-h-[44px] w-full sm:w-72 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  onChange={(e) => setWorkspaceNameInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") commitWorkspaceName(workspaceNameInput);
+                    if (e.key === "Escape") setIsEditingWorkspaceName(false);
+                  }}
+                  onBlur={() => commitWorkspaceName(workspaceNameInput)}
+                />
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={startEditWorkspaceName}
+                aria-label={workspaceName ? `Workspace name: ${workspaceName}. Click to edit.` : "Name this workspace. Click to add a name."}
+                data-testid="workspace-name-btn"
+                className="inline-flex items-center gap-1.5 text-sm font-semibold text-blue-900 hover:text-blue-700 text-left group"
+              >
+                <span>{bannerTitle}</span>
+                <span className="text-blue-400 text-xs opacity-60 group-hover:opacity-100" aria-hidden="true" title="Edit workspace name">
+                  {workspaceName ? "✏️" : "＋"}
+                </span>
+              </button>
+            )}
             {renderSyncStatus()}
           </div>
           <div className="flex flex-col items-start sm:items-end gap-1 shrink-0">
@@ -533,31 +629,17 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
         )}
       </div>
 
-      {/* The UtmGrid editor, seeded from server payload, in workspace mode.
-          Mounted ONLY after the server payload is ready (status === "found")
-          so useLocalStorage reads the server-written values on first snapshot.
-          storageKeyPrefix isolates workspace state from the user's default grid.
-          In preview mode: UtmGrid is remounted with the preview payload and
-          wrapped in a pointer-events-none overlay to prevent edits. */}
+      {/* P0-1: Preview mode — UtmGrid with isPreview=true renders all inputs as
+          disabled/readOnly with greyed/locked visual treatment. No pointer-events
+          overlay needed: disabled inputs can't be focused or typed into.
+          Zero PUT fires while previewing (handleStateChange not passed in preview mode). */}
       {isPreviewing && previewPayload ? (
-        <div
-          aria-label="Read-only preview of a past version"
-          className="relative"
-        >
-          {/* Invisible overlay to block all pointer interactions */}
-          <div
-            aria-hidden="true"
-            className="absolute inset-0 z-50 cursor-not-allowed"
-            style={{ pointerEvents: "all" }}
-          />
-          <div className="opacity-80 select-none">
-            <UtmGrid
-              key={`preview-${previewVersion?.id ?? "p"}`}
-              storageKeyPrefix={`preview:${id}:`}
-              initialWorkspace={previewPayload}
-            />
-          </div>
-        </div>
+        <UtmGrid
+          key={`preview-${previewVersion?.id ?? "p"}`}
+          storageKeyPrefix={`preview:${id}:`}
+          initialWorkspace={previewPayload}
+          isPreview={true}
+        />
       ) : (
         payload && (
           <UtmGrid
@@ -565,6 +647,8 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
             storageKeyPrefix={storageKeyPrefix}
             initialWorkspace={payload}
             onStateChange={handleStateChange}
+            specSyncStatus={syncStatus === "idle" ? null : syncStatus}
+            specSavedAt={savedAt}
           />
         )
       )}

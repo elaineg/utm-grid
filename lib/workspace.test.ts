@@ -281,3 +281,142 @@ describe("parseWorkspacePayload", () => {
     expect(MAX_PAYLOAD_BYTES).toBeLessThanOrEqual(10_000_000);
   });
 });
+
+// ── P0-3: UTM Spec included in workspace payload round-trip ─────────────────────
+// Regression: add allowed values to spec, serialize, PUT to server, GET back,
+// re-parse → allowed values must survive the full round-trip.
+
+describe("UTM Spec survives workspace payload round-trip (P0-3)", () => {
+  const PAYLOAD_WITH_SPEC: WorkspacePayload = {
+    rows: [
+      {
+        id: "row-1",
+        baseUrl: "https://example.com",
+        utm_source: "newsletter",
+        utm_medium: "email",
+        utm_campaign: "q3",
+        utm_term: "",
+        utm_content: "",
+      },
+    ],
+    settings: { requiredParams: true, lowercaseOnly: true, noSpaces: true },
+    spec: {
+      allowedValues: {
+        utm_source: ["newsletter", "facebook", "google"],
+        utm_medium: ["email", "paid_social", "cpc"],
+        utm_campaign: [],
+        utm_term: [],
+        utm_content: [],
+      },
+      enforceSpec: true,
+    },
+  };
+
+  it("spec with allowed values serializes into the payload string", () => {
+    const raw = JSON.stringify(PAYLOAD_WITH_SPEC);
+    expect(raw).toContain("newsletter");
+    expect(raw).toContain("paid_social");
+    expect(raw).toContain("enforceSpec");
+  });
+
+  it("spec with allowed values round-trips through parseWorkspacePayload", () => {
+    const raw = JSON.stringify(PAYLOAD_WITH_SPEC);
+    const result = parseWorkspacePayload(raw);
+    expect(result).not.toBeNull();
+    expect(result!.spec.enforceSpec).toBe(true);
+    expect(result!.spec.allowedValues.utm_source).toEqual(["newsletter", "facebook", "google"]);
+    expect(result!.spec.allowedValues.utm_medium).toEqual(["email", "paid_social", "cpc"]);
+    expect(result!.spec.allowedValues.utm_campaign).toEqual([]);
+  });
+
+  it("spec round-trips through the full client → server → client wire format", () => {
+    // Simulate: client calls JSON.stringify(payload) as PUT body payload string.
+    const putPayloadStr = JSON.stringify(PAYLOAD_WITH_SPEC);
+    // Server wraps it: { payload: putPayloadStr } → stores putPayloadStr in DB.
+    // GET returns { data: putPayloadStr }.
+    // Client: JSON.parse(body.data) → WorkspacePayload.
+    const recovered = JSON.parse(putPayloadStr) as WorkspacePayload;
+    expect(recovered.spec.allowedValues.utm_source).toEqual(["newsletter", "facebook", "google"]);
+    expect(recovered.spec.enforceSpec).toBe(true);
+    // Then re-parse via parseWorkspacePayload (as page.tsx does after GET):
+    const reparsed = parseWorkspacePayload(putPayloadStr);
+    expect(reparsed).not.toBeNull();
+    expect(reparsed!.spec.allowedValues.utm_source).toEqual(["newsletter", "facebook", "google"]);
+    expect(reparsed!.spec.enforceSpec).toBe(true);
+  });
+
+  it("spec added AFTER initial load still serializes into the next PUT payload", () => {
+    // Simulate: user opens workspace (empty spec), adds chips, spec changes.
+    // The updated spec must be included when onStateChange fires the autosave.
+    const emptySpecPayload: WorkspacePayload = {
+      ...PAYLOAD_WITH_SPEC,
+      spec: { allowedValues: { utm_source: [], utm_medium: [], utm_campaign: [], utm_term: [], utm_content: [] }, enforceSpec: false },
+    };
+    // User adds "twitter" to utm_source:
+    const updatedSpec = {
+      ...emptySpecPayload.spec,
+      allowedValues: { ...emptySpecPayload.spec.allowedValues, utm_source: ["twitter"] },
+    };
+    const payloadAfterChipAdd: WorkspacePayload = { ...emptySpecPayload, spec: updatedSpec };
+    // This is what onStateChange({rows, settings, spec}) sends to handleStateChange:
+    const putRaw = JSON.stringify(payloadAfterChipAdd);
+    expect(putRaw).toContain('"twitter"');
+    // Server stores putRaw; next GET returns it; parseWorkspacePayload recovers it:
+    const recovered = parseWorkspacePayload(putRaw);
+    expect(recovered).not.toBeNull();
+    expect(recovered!.spec.allowedValues.utm_source).toEqual(["twitter"]);
+  });
+});
+
+// ── P1-2: Workspace name round-trips in payload ────────────────────────────────
+
+describe("Workspace name survives payload round-trip (P1-2)", () => {
+  const NAMED_PAYLOAD: WorkspacePayload = {
+    rows: [],
+    settings: { requiredParams: false, lowercaseOnly: false, noSpaces: false },
+    spec: { allowedValues: { utm_source: [], utm_medium: [], utm_campaign: [], utm_term: [], utm_content: [] }, enforceSpec: false },
+    name: "Q3 Paid Campaigns",
+  };
+
+  it("name field is included in the serialized payload", () => {
+    const raw = JSON.stringify(NAMED_PAYLOAD);
+    expect(raw).toContain('"name"');
+    expect(raw).toContain("Q3 Paid Campaigns");
+  });
+
+  it("name round-trips through parseWorkspacePayload", () => {
+    const raw = JSON.stringify(NAMED_PAYLOAD);
+    const result = parseWorkspacePayload(raw);
+    expect(result).not.toBeNull();
+    expect(result!.name).toBe("Q3 Paid Campaigns");
+  });
+
+  it("payload without name field parses correctly (backward compat)", () => {
+    const withoutName = { ...NAMED_PAYLOAD };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    delete (withoutName as any).name;
+    const raw = JSON.stringify(withoutName);
+    const result = parseWorkspacePayload(raw);
+    expect(result).not.toBeNull();
+    expect(result!.name).toBeUndefined();
+  });
+
+  it("name is trimmed and capped at 120 chars", () => {
+    const longName = "A".repeat(200);
+    const payload: WorkspacePayload = { ...NAMED_PAYLOAD, name: longName };
+    const raw = JSON.stringify(payload);
+    const result = parseWorkspacePayload(raw);
+    expect(result).not.toBeNull();
+    // parseWorkspacePayload trims and caps to 120 chars
+    expect(result!.name!.length).toBeLessThanOrEqual(120);
+  });
+
+  it("empty-string name is treated as undefined (no name set)", () => {
+    const payload: WorkspacePayload = { ...NAMED_PAYLOAD, name: "   " };
+    const raw = JSON.stringify(payload);
+    const result = parseWorkspacePayload(raw);
+    expect(result).not.toBeNull();
+    // "   ".trim() === "" → undefined
+    expect(result!.name).toBeUndefined();
+  });
+});
