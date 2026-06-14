@@ -47,9 +47,9 @@ test("hero headline is the new benefit-first copy", async ({ page }) => {
   const h1 = page.locator("h1").first();
   await expect(h1).toBeVisible();
   const text = await h1.textContent();
-  // New headline: "Clean UTM links for your whole campaign — in one grid."
+  // R2-C: New headline: "Clean campaign links in a grid"
   // Must contain the core benefit phrase — no jargon (taxonomy/lint)
-  expect(text?.toLowerCase()).toMatch(/clean utm links|whole campaign|one grid/);
+  expect(text?.toLowerCase()).toMatch(/clean.*link|campaign.*link|link.*grid|links.*grid/);
   // Must NOT use jargon words
   expect(text?.toLowerCase()).not.toMatch(/taxonomy|lint/);
 });

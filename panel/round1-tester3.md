@@ -1,11 +1,33 @@
 ```json
-{"name":"Wen","clarity":"Yes","value":"Yes","advocacy":8,"top_issues":["'Auto-fix naming' lowercased utm_medium (CPC->cpc) and utm_campaign (Summer Sale->summer_sale) but left utm_source 'Google' capitalized — the exact cross-field casing inconsistency that splits my GA4 campaigns survived the marquee one-click fix","My Workspaces lists entries by raw ID ('Workspace gGDwcfNTIB') with no rename/label — useless for telling 'Q3 Paid Social' from 'Summer Sale' when I juggle many campaigns","No delimiter/encoding control or explicit import round-trip guarantee shown — as a data-hygiene skeptic I want to KNOW my exported headers re-import 1:1"],"loved":["Per-field inline lint with the exact reason ('Contains uppercase letters — use lowercase only (\"cpc\")') + missing-required + bad-URL, each with a one-click Fix link","CSV export ships a UTF-8 BOM, clean snake_case headers incl. generated_url, opens in BigQuery/Sheets with no invisible transform","Create shared workspace returned a real /w/<id> link instantly; My Workspaces remembered it on return with working Open / Copy link / Remove and an honest 'this device only, sign-in coming' note + clear empty state"]}
+{"name":"Wen","clarity":"Yes","value":"Yes","advocacy":9,"top_fix":"On a cross-row inconsistency warning, give a one-click 'standardize this column to <chosen value>' — Auto-fix only lowercases, it can't reconcile a real value mismatch (fb vs facebook) for me"}
 ```
 
-I'm Wen — I own GA4 campaign reporting and I distrust any tool that touches my data silently. Cold open: the H1 "Clean UTM links for your whole campaign — in one grid" plus "Auto-fix messy casing and typos before they split your Google Analytics" told me exactly what this is and who it's for in about five seconds; "nothing leaves your browser" earned trust immediately. Clarity: Yes.
+# Wen — Marketing data analyst — Round 1 (grid-first redesign)
 
-Value: Yes. Today I lint UTM casing with a tangle of Sheets LOWER/SUBSTITUTE formulas and a dbt staging model, and I still find "Google" vs "google" in GA4 after the fact. Here the inline lint flagged uppercase, a missing required utm_campaign, and a bad base URL — each with a Fix link. The BOM'd snake_case CSV (verified: `base_url,utm_source,...,generated_url`) means I can pipe straight to BigQuery without a re-encode dance. That beats my current workflow.
+## Prior-version note
+Old version opened with a tall jargon hero + ~6 stacked feature banners that buried the grid. This redesign is grid-first: the editable grid sits above the fold, hero is one sharp line, clutter gone. Real improvement — I land in the tool, not a pitch.
 
-Workspace flow: discoverable and it works. "Create shared workspace" gave me /w/h2Hyrt4kOcNM6zucf11mtwAA, the link landed in my clipboard, and back home "My Workspaces (1)" showed it with Open/Copy-link/Remove all functional (Copy link returned the /w/ URL — clipboard read worked in my env). The "frozen snapshot vs live workspace" distinction is spelled out, which I appreciate.
+## 1. CLARITY — Yes
+Got it in ~5s. The H1 "Tag every campaign link with clean, consistent UTM tags in one grid — so a stray capital letter never splits your data in Google Analytics" is my exact recurring pain. Subline "Edit links in a grid, auto-fix naming, export clean CSV — no login, nothing leaves your browser" seals it. Friend pitch: "A grid to build/clean UTM links that lints the casing/spacing inconsistencies that split GA4 campaigns, with faithful CSV in/out." Visible headers (UTM_SOURCE*, UTM_MEDIUM*…) confirmed instantly. Nothing confused me.
 
-What holds it at 8, not 9: the "Auto-fix naming" button — the headline promise — lowercased medium and campaign but left utm_source "Google" capitalized. That single inconsistency is the exact thing I came to kill. And My Workspaces names entries by raw ID; I manage a dozen campaigns and "Workspace gGDwcfNTIB" tells me nothing — give me a rename. Fix the source casing and add workspace labels and this is a 9 I'd drop in our analytics Slack unprompted.
+## 2. VALUE — Yes
+Today I catch this AFTER the damage: a LOWER()/CASE audit in BigQuery or a Sheets pivot that surfaces "Google" vs "google" as two campaigns once Looker is already wrong. This catches it BEFORE links ship. Killer feature is the CROSS-ROW lint, not just per-cell casing:
+  "⚠ Inconsistent utm_source across rows: 'Google' vs 'google' — these will split campaign data in GA4."
+That's the precise failure mode that wrecks my dashboards, and no link builder I've used flags it.
+
+Data-hygiene trust checks — all passed:
+- Import opens a column-MAPPING modal ("4 data rows", pre-mapped, Append vs Replace, Undo available). Explicit, not magic.
+- CSV round-trip is faithful: imported Google/google, exported the identical values — no silent transform. I control when fixes apply.
+- Export carries a UTF-8 BOM (Sheets/Excel-safe) + appends generated_url. Correct CSV hygiene.
+- Rules ▾ toggles (Lowercase only, No spaces, Enforce UTM Spec / naming template) + per-field Allowed Values = a real, visible lint config.
+This replaces my after-the-fact SQL audit with a before-the-fact gate. I'd use it.
+
+## 3. ADVOCACY — 9
+I'd raise this unprompted in our marketing-analytics Slack. The consolidated Tools ▾ / Rules ▾ toolbar did NOT slow me down — scans faster than the old banner wall; I found CSV Import/Export, Launch Check, UTM Spec, and the lint rules without hunting. 0 console errors across import/export/auto-fix.
+
+Holding it back from 10 (top_fix): Auto-fix lowercases, which collapses "Google"/"google" only because lowercasing happens to merge them. For a true value mismatch ("fb" vs "facebook", "Summer_Sale" vs "summer-sale") I still hand-pick the canon. Put a one-click "standardize this column to <chosen value>" right on the inconsistency warning and this becomes the tool I open every launch. Allowed Values partly covers the prevention side, but reconciling existing dirty rows to a canon should be one click from the warning.
+
+priorConcernsAddressed: some — prior round's "Auto-fix leaves cross-FIELD casing" concern is mitigated by the new cross-row inconsistency lint that explicitly flags it; the deeper "reconcile a real value mismatch in one click" gap remains (now my top_fix). Workspace raw-ID labeling appears addressed elsewhere (rename/friendly names per recent build), not re-tested here. CSV round-trip skepticism resolved: verified faithful import→export.
+```json
+{"tester": 3, "round": 1, "clarity": "Yes", "value": "Yes", "advocacy": 9, "topComplaints": ["Auto-fix can't reconcile a genuine value mismatch (fb vs facebook) — only lowercases; cross-row warning needs a one-click 'standardize column to <value>'", "Standardization to a canonical value still requires manual per-cell work for non-casing splits"], "priorConcernsAddressed": "some"}
+```

@@ -883,8 +883,8 @@ test("Auto-fix naming normalizes flagged cells, does not clear grid, shows toast
   await cell(page, "utm_medium", 1).fill("paid_social");
   await cell(page, "utm_campaign", 1).fill("spring");
 
-  // The Auto-fix naming button must be present (not "Clean all")
-  const autoFixBtn = page.getByRole("button", { name: "Auto-fix naming" });
+  // The Auto-fix button must be present (previously "Auto-fix naming", now "Auto-fix")
+  const autoFixBtn = page.locator('[data-testid="auto-fix-naming-btn"]');
   await expect(autoFixBtn).toBeVisible();
 
   // Click it

@@ -1,13 +1,40 @@
 ```json
-{"name":"Jules","clarity":"Yes","value":"Yes","advocacy":8,"top_issues":["Only 4 presets (Email, Paid Social–LinkedIn, Google/CPC, Organic Social) — no X/Twitter or Mastodon, my two most-posted platforms, so I still hand-type those","Saved workspace shows the raw ID 'Workspace xGqAdErm' — meaningless once I have several; can't name/rename it","Two near-identical share paths up top ('Copy share link' = snapshot vs 'Create shared workspace' = live) take a careful read to tell apart","My Workspaces Open/Copy/Remove buttons are 36px tall — tappable but a hair under a comfy thumb target"],"loved":["No login for a real job — instantly bookmark-worthy for me","Per-platform presets fill source+medium in one click; LinkedIn gave utm_source=linkedin&utm_medium=paid_social cleanly","My Workspaces panel remembers what I open with working Copy link + green 'Copied!' and NO horizontal scroll at 375px","'catch typos before they split your analytics' / Auto-fix naming speaks straight to my GA pain"]}
+{"tester": 6, "round": 1, "clarity": "Yes", "value": "Yes", "advocacy": 9, "topComplaints": ["Headline leads with 'Google Analytics' framing — reads like an analyst tool, not the multi-platform link tool I actually need", "The killer feature (X/Twitter/LinkedIn/Mastodon preset chips) is hidden behind Tools ▾ → Channel Presets; not visible on cold landing"], "priorConcernsAddressed": "some"}
 ```
 
-# Round 1 — Tester 6 (Jules, content & community marketer, tested mostly at 375px mobile)
+# Jules — Content & community marketer (grid-first redesign)
 
-**Clarity — Yes.** Cold open nailed it: "Clean UTM links for your whole campaign — in one grid… no login, nothing leaves your browser." I knew what it was and that it was for me in under 10 seconds. The grid + "Presets — fill source/medium in one click" sealed it. Only fog: the two share options at the top — "Copy share link (snapshot, in the link)" vs "Create shared workspace (live, synced for the team)." I got it from the fine print, but a first-timer will fumble which to use.
+## Re-checking my prior gripes
+- **"Only 4 presets — no X/Twitter or Mastodon" (my #1 last round):** FIXED. The preset bar
+  now has Email, Paid Social – LinkedIn, Google/CPC, Organic Social, **X / Twitter**,
+  **Mastodon** + "Save preset…". My two most-posted platforms are there. Applied X/Twitter
+  → utm_source=twitter, utm_medium=social, clean generated URL. This is the big one for me.
+- **Jargon hero / stacked feature banners burying the grid:** FIXED. Cold open is one-line
+  headline + one-line subhead, then toolbar + the actual grid above the fold. Old banner
+  wall gone; Naming/Campaigns/Allowed-values are quiet cards below the grid. Grid is the hero.
+- **Two near-identical share paths confusing:** PARTLY. "Copy share link" worked cleanly
+  (copied a real `/#g=...` URL, "✓ Copied!"; correctly said "Nothing to share yet" on an
+  empty grid). Still also "Create workspace" up top — I can tell them apart now but it's a
+  beat of thought.
 
-**Value — Yes.** Today I hand-type UTMs or keep a messy Notion table, and the values drift (linkedin vs Linkedin, paid_social vs paidsocial), which splits my GA reports. Bulk grid + presets + auto-fix is a genuine save over that. Caveat that costs it the 9: presets cover LinkedIn/Google/Email/Organic but NOT X/Twitter or Mastodon — exactly where I post most — so I still type those by hand.
+## 1. CLARITY — Yes
+I'd tell a friend: "No-login grid where you type links and it spits out clean UTM URLs,
+fills source/medium per platform in one click, exports CSV." Helped: "Edit links in a grid…
+no login, nothing leaves your browser" + the UTM_SOURCE/MEDIUM/CAMPAIGN columns with
+required asterisks. Cost me ~2s: the headline's "so a stray capital letter never splits your
+data in Google Analytics" — analyst framing, almost read as "this is a GA tool, not for me."
 
-**Workspace-sharing flow (mobile 375px).** Filled a row, applied the LinkedIn preset, tapped "Create shared workspace" — got a /w/ link in one go; page reads "Team Workspace — synced · saved just now" with Share, a name field, and History. Back home, My Workspaces remembered it: a clean card "Workspace xGqAdErm · Visited · just now" with Open / Copy link / Remove all on one row — no occlusion, no horizontal scroll (docW=vw=375), and Copy link genuinely put the /w/ URL on my clipboard with a green "Copied!" confirm. Good mobile craft. Nits: the label is the raw ID (a list of these would be unusable — let me name them), and the action buttons are 36px tall.
+## 2. VALUE — Yes, bookmarking it
+Today I hand-build UTMs in a Notion snippet and paste into Buffer/X/LinkedIn/Mastodon one at
+a time, fat-fingering casing. This hits my exact stack: one-click platform presets, Auto-fix
+casing (my #1 mistake), "New rows use [no preset ▾]" default, "Save preset…" for my own.
+Zero login confirmed for the whole job. Saves me real fiddling every day.
 
-**Advocacy — 8.** I'd bring this up unprompted in my marketing Discord. Held back from 9 only by the two things that'd make it stick for someone living in this daily: X/Mastodon presets, and nameable saved workspaces. No console/page errors anywhere I clicked.
+## 3. ADVOCACY — 9/10
+I'd bring this up unprompted in a marketing Discord. Mobile (375px) is genuinely usable:
+presets wrap to chips, grid becomes labeled stacked cards, Tools→Channel Presets reachable.
+Held back from 10 by two things: (a) the GA-centric headline undersells the multi-platform
+preset hook that's actually my reason to use it — lead with "tag links for every channel,"
+bury "Google Analytics"; (b) the platform preset chips (X/Twitter, LinkedIn, Mastodon) —
+my "this is for me" signal — are a menu-dig behind Tools ▾. Surface them on first paint and
+this is a 10 and a daily bookmark.

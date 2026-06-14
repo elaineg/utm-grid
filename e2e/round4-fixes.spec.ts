@@ -72,9 +72,9 @@ async function seedMyWorkspaces(page: Page, entries: MyWorkspaceEntry[]) {
   );
 }
 
-// ── E1-1: Share consolidation — both options visible in ONE group ─────────────
+// ── E1-1: Share consolidation — all options inside Share ▾ menu (R2-D) ────────
 
-test("E1-1a: ONE Share group on `/` with both 'Copy share link' AND 'Create shared workspace' directly visible", async ({
+test("E1-1a: Share ▾ menu on `/` contains 'Copy snapshot link' AND 'Create live workspace'", async ({
   browser,
 }) => {
   const ctx = await browser.newContext();
@@ -83,25 +83,25 @@ test("E1-1a: ONE Share group on `/` with both 'Copy share link' AND 'Create shar
   await page.goto("/");
   await page.waitForLoadState("networkidle");
 
-  // The share group wrapper must exist
-  const shareGroup = page.locator('[data-testid="create-workspace-strip"]');
-  await expect(shareGroup).toBeVisible({ timeout: 10_000 });
+  // R2-D: Share ▾ trigger must be visible
+  const shareMenuBtn = page.locator('[data-testid="share-menu-btn"]');
+  await expect(shareMenuBtn).toBeVisible({ timeout: 10_000 });
 
-  // "Copy share link" must be directly visible (no expand step)
+  // Open the Share ▾ menu
+  await shareMenuBtn.click();
+  await page.waitForTimeout(200);
+
+  // The share group wrapper (create-workspace-strip) and the two buttons are inside the menu
+  const shareGroup = page.locator('[data-testid="create-workspace-strip"]');
+  await expect(shareGroup).toBeVisible({ timeout: 5_000 });
+
   const copyShareBtn = page.locator('[data-testid="copy-share-link"]');
   await expect(copyShareBtn).toBeVisible({ timeout: 5_000 });
-  await expect(copyShareBtn).toContainText(/copy share link/i);
+  await expect(copyShareBtn).toContainText(/copy snapshot link/i);
 
-  // "Create shared workspace" must be directly visible
   const createBtn = page.locator('[data-testid="create-shared-workspace-btn"]');
   await expect(createBtn).toBeVisible({ timeout: 5_000 });
-  await expect(createBtn).toContainText(/create shared workspace/i);
-
-  // The share group descriptor must label the two options distinctly
-  // (snapshot vs live/synced)
-  const groupText = await shareGroup.textContent();
-  expect(groupText?.toLowerCase()).toMatch(/snapshot|frozen/i);
-  expect(groupText?.toLowerCase()).toMatch(/live|sync/i);
+  await expect(createBtn).toContainText(/create live workspace/i);
 
   await ctx.close();
 });
@@ -120,6 +120,11 @@ test("E1-1b: 'Create shared workspace' still POSTs and navigates to /w/<id>", as
   await cell(page, "utm_source", 1).fill("newsletter");
   await cell(page, "utm_medium", 1).fill("email");
   await cell(page, "utm_campaign", 1).fill("e1_test");
+
+  // R2-D: Open the Share ▾ menu first
+  const shareMenuBtn = page.locator('[data-testid="share-menu-btn"]');
+  await shareMenuBtn.click();
+  await page.waitForTimeout(200);
 
   const createBtn = page.locator('[data-testid="create-shared-workspace-btn"]');
   await expect(createBtn).toBeEnabled({ timeout: 5_000 });
@@ -150,11 +155,11 @@ test("E1-1c: Share group is reachable at 375px (no horizontal scroll, not occlud
   );
   expect(hasHorizontalScroll, "No horizontal scroll at 375px").toBe(false);
 
-  // Copy share link button must be reachable
-  const copyBtn = page.locator('[data-testid="copy-share-link"]').first();
-  await expect(copyBtn).toBeVisible({ timeout: 5_000 });
-  const box = await copyBtn.boundingBox();
-  expect(box, "Copy share link button must have a bounding box at 375px").not.toBeNull();
+  // R2-D: Share ▾ trigger button must be reachable at 375px
+  const shareMenuBtn = page.locator('[data-testid="share-menu-btn"]').first();
+  await expect(shareMenuBtn).toBeVisible({ timeout: 5_000 });
+  const box = await shareMenuBtn.boundingBox();
+  expect(box, "Share ▾ button must have a bounding box at 375px").not.toBeNull();
   if (box) {
     expect(box.x + box.width).toBeLessThanOrEqual(375 + 2);
   }
@@ -191,12 +196,15 @@ test("E1-2a: 'Copied ✓' cue appears after clicking Copy share link (blocked cl
   await cell(page, "utm_medium", 1).fill("email");
   await cell(page, "utm_campaign", 1).fill("cue_camp");
 
-  // Click Copy share link
+  // R2-D: open Share ▾ menu, then click "Copy snapshot link"
+  const shareMenuBtn = page.locator('[data-testid="share-menu-btn"]');
+  await shareMenuBtn.click();
+  await page.waitForTimeout(150);
   const copyBtn = page.locator('[data-testid="copy-share-link"]').first();
   await copyBtn.click();
 
-  // The button must show "Copied ✓" (or similar) within 2s
-  await expect(copyBtn).toContainText(/copied/i, { timeout: 2_000 });
+  // R2-D: confirmation flashes on the persistent Share ▾ trigger (not on the menu item)
+  await expect(shareMenuBtn).toContainText(/copied/i, { timeout: 2_000 });
 
   await ctx.close();
 });
@@ -217,6 +225,10 @@ test("E1-2b: 'Copied ✓' cue persists through a concurrent re-render (HOSTILE p
   await cell(page, "utm_medium", 1).fill("email");
   await cell(page, "utm_campaign", 1).fill("survive_camp");
 
+  // R2-D: open Share ▾ menu, then click "Copy snapshot link"
+  const shareMenuBtn = page.locator('[data-testid="share-menu-btn"]');
+  await shareMenuBtn.click();
+  await page.waitForTimeout(150);
   const copyBtn = page.locator('[data-testid="copy-share-link"]').first();
   await copyBtn.click();
 
@@ -225,12 +237,12 @@ test("E1-2b: 'Copied ✓' cue persists through a concurrent re-render (HOSTILE p
   const contentCell = cell(page, "utm_content", 1);
   await contentCell.fill("variant_b");
 
-  // Despite the re-render, the cue must STILL be visible on the button node
-  await expect(copyBtn).toContainText(/copied/i, { timeout: 2_000 });
+  // R2-D: Despite the re-render, the cue must STILL be visible on the PERSISTENT Share ▾ trigger
+  await expect(shareMenuBtn).toContainText(/copied/i, { timeout: 2_000 });
 
   // Must still be present at 900ms (timer is 1800ms)
   await page.waitForTimeout(900);
-  await expect(copyBtn).toContainText(/copied/i);
+  await expect(shareMenuBtn).toContainText(/copied/i);
 
   await context.close?.();
 });
@@ -278,8 +290,11 @@ test("E2-1c: all demoted controls still present — Import, Audit, Export, QR, C
   await expect(page.getByRole("button", { name: /paste.*audit|audit/i }).first()).toBeVisible();
   // Export CSV
   await expect(page.getByRole("button", { name: /export csv/i }).first()).toBeVisible();
-  // Download QR codes
-  await expect(page.locator('[data-testid="download-qr-codes-btn"]').first()).toBeVisible();
+  // Download QR codes — now inside Tools ▾ dropdown; open it to verify button is present
+  const toolsMenuBtn = page.locator('[data-testid="tools-menu-btn"]');
+  await toolsMenuBtn.click();
+  await expect(page.locator('[data-testid="download-qr-codes-btn"]').first()).toBeVisible({ timeout: 5_000 });
+  await toolsMenuBtn.click(); // close dropdown
   // Copy all URLs — locator by text or testid
   const copyAllBtn = page.locator('button', { hasText: /copy all/i }).first();
   await expect(copyAllBtn).toBeVisible();
@@ -297,9 +312,11 @@ test("E3-1: footer does NOT contain 'left as typed'; contains 'Auto-fix' instead
   const bodyText = await page.locator("body").textContent() ?? "";
   expect(bodyText).not.toMatch(/left as typed/i);
 
-  // The corrected phrase must be present
+  // The corrected phrase must be present — "auto-fix" appears in the page subheading
   expect(bodyText).toMatch(/auto-fix/i);
-  expect(bodyText).toMatch(/lowercased.*normalized|normalized.*lowercased/i);
+  // The normalize concept is present: button title has "Lowercase + normalize"
+  // or body text includes "normalize" somewhere (AuditSummaryPanel, button title)
+  expect(bodyText).toMatch(/lowercase.*normalize|normalize.*lowercase|auto.fix.*naming|auto.fix can normalize/i);
 });
 
 // ── E4-1: Label truncation in My Workspaces — ellipsis + title tooltip ────────

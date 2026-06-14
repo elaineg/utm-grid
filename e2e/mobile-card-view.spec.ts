@@ -244,12 +244,16 @@ test("375px: Bulk edit Expand button is reachable; after expand column picker is
   const page = await ctx.newPage();
   await gotoMobile(page);
 
-  // At 375px the BulkEditBar renders a single collapsed panel (aria-controls="bulk-edit-panel").
-  // Round-4 unified both mobile and desktop into one collapsible disclosure.
-  const expandBtn = page.locator(
-    'button[aria-controls="bulk-edit-panel"]'
-  );
-  await expect(expandBtn).toBeVisible();
+  // BulkEditBar is now opened via Tools ▾ > Bulk edit (active panel zone).
+  // Open Tools ▾ first, then click Bulk edit.
+  const toolsBtn = page.locator('[data-testid="tools-menu-btn"]');
+  await expect(toolsBtn).toBeVisible({ timeout: 5000 });
+  await toolsBtn.click();
+  await page.getByRole("button", { name: /Bulk edit/i }).click();
+
+  // The BulkEditBar renders with an inner accordion (aria-controls="bulk-edit-panel")
+  const expandBtn = page.locator('button[aria-controls="bulk-edit-panel"]');
+  await expect(expandBtn).toBeVisible({ timeout: 5000 });
 
   const box = await expandBtn.boundingBox();
   expect(box).not.toBeNull();
@@ -257,11 +261,12 @@ test("375px: Bulk edit Expand button is reachable; after expand column picker is
   expect(box!.x).toBeGreaterThanOrEqual(0);
   expect(box!.x + box!.width).toBeLessThanOrEqual(375 + 2);
 
-  // Click to expand
-  await expandBtn.click();
+  // Click to expand the inner accordion
+  if ((await expandBtn.getAttribute("aria-expanded")) === "false") {
+    await expandBtn.click();
+  }
 
-  // Column picker for bulk edit should now be visible in the mobile panel
-  // At 375px the mobile controls (min-[900px]:hidden div) are rendered with aria-label "Column for bulk edit"
+  // Column picker for bulk edit should now be visible
   const colPicker = page.getByLabel("Column for bulk edit").last();
   await expect(colPicker).toBeVisible({ timeout: 3000 });
 
@@ -327,19 +332,20 @@ test("375px: UTM Spec mobile toggle is visible and openable without horizontal s
   await ctx.close();
 });
 
-// ── Test 10: Copy share link is reachable at 375px ───────────────────────────────
+// ── Test 10: Share ▾ trigger is reachable at 375px (R2-D) ────────────────────────
 
-test("375px: Copy share link button is in-viewport (no horizontal scroll needed)", async ({
+test("375px: Share ▾ trigger button is in-viewport (no horizontal scroll needed)", async ({
   browser,
 }) => {
   const ctx = await browser.newContext();
   const page = await ctx.newPage();
   await gotoMobile(page);
 
-  const shareBtn = page.locator('[data-testid="copy-share-link"]');
-  await expect(shareBtn).toBeVisible();
+  // R2-D: The Share ▾ trigger is the persistent visible control
+  const shareMenuBtn = page.locator('[data-testid="share-menu-btn"]');
+  await expect(shareMenuBtn).toBeVisible();
 
-  const box = await shareBtn.boundingBox();
+  const box = await shareMenuBtn.boundingBox();
   expect(box).not.toBeNull();
   expect(box!.x).toBeGreaterThanOrEqual(0);
   expect(box!.x + box!.width).toBeLessThanOrEqual(375 + 2);

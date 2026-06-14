@@ -1,13 +1,40 @@
+{"name":"Rob","clarity":"Yes","value":"Yes","advocacy":8,"top_fix":"Lead the subhead with the time-saved / Excel-clean-CSV payoff, not 'no login' — designers care that the export drops straight into a client spreadsheet"}
+
+# Rob — freelance brand/visual designer, desktop, medium tech
+
+## Prior concern check (grid-first redesign re-test)
+Last round this opened with a tall jargon hero and ~6 stacked feature banners that buried the
+grid; I bounced. THIS version: FIXED. The grid is the first interactive thing on screen — an
+empty row ready to type into, with Add row / Auto-fix / Export CSV right above it. The banner
+wall is gone; naming-template / campaigns / allowed-values are now compact cards BELOW the grid
+where they belong. Exactly the fix I wanted.
+
+## 1. CLARITY — Yes
+Got it inside 30s. Headline: "Tag every campaign link with clean, consistent UTM tags in one
+grid — so a stray capital letter never splits your data in Google Analytics." That IS my pain —
+typing utm_source=Facebook one day, facebook the next, then two rows in the client's report.
+Subhead "Edit links in a grid, auto-fix naming, export clean CSV" sealed who/what. Nothing
+confused me.
+
+## 2. VALUE — Yes
+Today I type query strings by hand or copy an old link and swap words — and I always told
+myself "I could do this by hand in 4 minutes." Reality: by hand I fat-finger casing and skip
+the underscore convention. I tagged two Acme client links, typed sloppy on purpose
+("Newsletter","Email","Spring Sale 2026"), hit Auto-fix — it instantly rewrote them to
+newsletter / email / spring_sale_2026, highlighted the 3 changed cells green, and gave an Undo
+toast. Generated URL built live. Export CSV downloaded utm-grid.csv with the full generated_url
+column AND a BOM, so it opens clean in Excel. For a batch this beats hand-typing: it kills the
+casing-split I can't catch by eye and hands me a sheet I forward to the client. Zero console
+errors, no login.
+
+## 3. ADVOCACY — 8/10 (was 7)
+Up a point: the grid-first landing means a freelancer friend now lands and immediately starts
+using it instead of bouncing off a banner wall — that's the difference between me sending the
+link and not. Not a 9 because (a) my own usage is occasional, not weekly, so I won't raise it
+unprompted often, and (b) the landing still sells "no login, nothing leaves your browser"
+harder than the thing I actually care about — the auto-fix saving me from a casing-split report
+and the CSV dropping clean into a client sheet. Lead with THAT payoff and it's a 9.
+
 ```json
-{"name":"Rob","clarity":"Yes","value":"Yes","advocacy":7,"top_issues":["My Workspaces lists entries as random IDs ('Workspace HbqwUjvW', 'Workspace bH-hmPOt') — as a freelancer with multiple clients I can't tell Acme from Zenith at a glance","No usable rename: the only naming affordance is a faint '+' next to the workspace title that doesn't read as 'rename' and produced no name field for me","Search box in My Workspaces matches only the random name, so typing my real client name ('acme','zenith') filters every result OUT — it hides exactly what I'm looking for"],"loved":["Auto-fix naming: Facebook→facebook, CPC→cpc, 'Spring Sale 2026'→spring_sale_2026 in one click","Inline 'Inconsistent utm_campaign across rows' warning catches the exact GA-splitting mistake I make by hand","Single clean identity field now ('Add your name so teammates see who changed what') — my old dual-identity complaint is fixed"],"priorConcernsAddressed":"some"}
+{"tester": 8, "round": 1, "clarity": "Yes", "value": "Yes", "advocacy": 8, "topComplaints": ["Subhead leads with 'no login' instead of the time-saved / Excel-clean-CSV payoff that designers actually care about", "My own usage is occasional (occasional link-tagger), so recurrence/habit is weak for me personally"], "priorConcernsAddressed": "all"}
 ```
-
-I'm Rob, freelance brand designer; I tag client links a few times a month and benchmark everything against "I could hand-type this in 4 minutes."
-
-**Prior concerns re-checked:** (1) Dual-identity confusion ('Editing as' vs separate 'Reviewing as: Anonymous') — FIXED. There's now one identity field, "Add your name so teammates see who changed what"; the "by Anonymous" / "Reviewing as" wording is gone. (2) Review dialog below the fold — I didn't re-exercise the review approval flow this round, so not re-verified. Net: some.
-
-**Clarity — Yes.** Headline "Clean UTM links for your whole campaign — in one grid" + "Auto-fix messy casing and typos before they split your Google Analytics" landed in under 10 seconds. I'd tell a friend: "a spreadsheet for building tracking links that auto-fixes your sloppy capitalization."
-
-**Value — Yes.** Auto-fix earns it. Hand-typing, I end up with Facebook in one link and facebook in another and GA splits them; this normalized casing across rows in one click and flagged inconsistent campaign names inline. Real save over my manual habit even at low volume. CSV export and per-row Copy are clean.
-
-**Advocacy — 7 (a real 7, not polite).** The builder is genuinely good and I'd use it. What blocks a 9 is the exact thing I was asked to judge: multi-client workspace memory. I made two client workspaces (Acme, Zenith); My Workspaces remembered both but labeled them "Workspace HbqwUjvW" and "Workspace bH-hmPOt." I can't find a client by name, and the search box only matches those gibberish IDs — searching "acme" or "zenith" returns nothing, actively hiding what I want. I found no working rename (the lone "+" by the title gave me no name field). So vs. a Chrome bookmarks "Clients" folder where I write "Acme Spring Sale" myself, this is WORSE for findability. Open / Copy link / Remove all work mechanically; clipboard copy verified. Let me name a workspace and have search match the name + base URL, and this jumps to 9.

@@ -1,24 +1,29 @@
 ```json
-{"name":"Tomás","clarity":"Yes","value":"Yes","advocacy":8,"top_issues":["Two overlapping privacy stories ('nothing leaves your browser' vs workspace 'stored on the server') sit close together — took me a careful read to trust which mode I'm in","'My Workspaces' shows a cryptic auto-name (Workspace 2_deQGNL) — I can't tell my Q2 ops workspace from a test one; let me rename it","Secret-link-as-access-control means anyone with the URL can edit; for company campaign data I'd want at least a read-only option"],"loved":["CSV round-trip is clean: BOM so Excel opens it right, full base URL preserved, casing/spaces auto-fixed — exactly what my sheet needs","Auto-fix naming turned 'Newsletter/Email/Q2 Ops Push' into newsletter/email/q2_ops_push instantly","'no login, nothing leaves your browser' headline answered my IT/privacy worry in 5 seconds","My Workspaces panel: Open/Copy link/Remove all work, and 'saved on THIS device only — not synced' is honest framing"]}
+{"name":"Tomás","clarity":"Yes","value":"Yes","advocacy":8,"top_fix":"Offer an optional 'clean as I import' (apply Auto-fix during ingest) so I don't click Fix on every flagged cell across a 30-row sheet — with a clear promise Auto-fix only normalizes values, never drops/merges rows"}
 ```
 
-I build tagged links in Excel and IT blocks installs, so a no-login browser tool that
-round-trips CSV is exactly my lane. Within 30s I could tell a coworker: "paste your campaign
-links in a grid, it cleans the UTM casing/typos, exports a clean CSV you drop back into your
-sheet." The headline + "nothing leaves your browser" killed my main worry instantly.
+# Tomás — Ops analyst, Excel power user, Edge on locked-down Windows laptop (grid-first redesign)
 
-VALUE — Yes. The CSV export is clean and Excel-safe (BOM, full URL kept, source/medium
-lowercased, spaces->underscore). My sheet does the concatenation today but NOT the
-typo/casing normalization or a pre-launch check — that's the real time save. Auto-fix and
-the inline "Not a valid http(s) URL" warning caught exactly the kind of mistake that splits
-my Tableau/GA reporting.
+## Re-check of the redesign promise
+The old version opened with a tall jargon hero + stacked feature banners that buried the grid. This version: the **editable grid is the hero, above the fold**, with one ready row. The feature panels (Naming Template / Campaigns / Allowed values) are now demoted below it. Much better — I land on a tool, not a pitch.
 
-WORKSPACE FLOW — works end to end. "Create shared workspace" gave a /w/<id> secret link;
-home shows "My Workspaces (1)"; Open, Copy link (clipboard had the exact secret URL), and
-Remove all function. The "saved on THIS device only — not synced, keep the link" framing is
-clear and trustworthy.
+## 1. CLARITY — Yes
+Got it in under 30s. Subhead "Edit links in a grid, auto-fix naming, export clean CSV — **no login, nothing leaves your browser**" answered *what is this* and *is my data safe* in one line. Toolbar reads like a tool: Add row / Auto-fix / Import CSV / Export CSV / Audit URLs. Import CSV and Export CSV are right there in the toolbar — not hidden. I'd tell a coworker: "a spreadsheet that builds and cleans UTM links and exports a clean CSV, all in-browser — IT can't object, nothing installs, nothing uploads." Only nit: the H1 is long/jargon-y, but it didn't slow me.
 
-HOLDS BACK 9/10: (1) the local-vs-server privacy framing is honest but crowded — I want one
-unmistakable line on the workspace screen. (2) Auto-named workspaces are unrecognizable; I'd
-want to label "Q2 Ops Push". (3) For company data, "anyone with the link can edit" makes me
-hesitate to share the secret link in Teams — a read-only mode would seal it.
+## 2. VALUE — Yes
+Today I hand-build links with CONCATENATE in Excel and eyeball encoding — and get burned by spaces, `&`, and `Email` vs `email` splitting GA/Tableau. I round-tripped a deliberately messy CSV (mixed case, spaces, `&`, an embedded-comma field, an empty field, an existing `?ref=x`):
+- **Zero mangling.** Every field exact. `"discount, big"` re-quoted correctly; empty utm_term stayed empty.
+- **Respected my existing query param:** `?ref=x` → `?ref=x&utm_source=...`, not clobbered. Excel gets this wrong.
+- **Correct encoding** (`%20`, `%26`, `%2C`) in the generated URL.
+- **UTF-8 BOM on export** — opens clean in Excel, no garbled chars. As an Excel guy that earns trust.
+- **Import is safe:** "Map CSV columns" dialog auto-mapped my headers, said "3 data rows", offered Append vs Replace in plain English, promised "you can Undo immediately"; post-import toast had a working Undo.
+- **Privacy verified myself:** watched the network during import — ZERO POST/PUT/PATCH. "Nothing leaves your browser" is real, not marketing. That's the deciding factor for company link data.
+Beats my Excel formula and saves real time every campaign week.
+
+## 3. ADVOCACY — 8/10
+I'd raise this unprompted with ops/marketing peers as "the browser UTM tool that won't mangle your CSV and doesn't phone home." What blocks 9–10: after import it flags every off-spec cell (uppercase, spaces) with an individual "Fix" link — fine for 3 rows, painful for 30. Let me opt into auto-fix during import, with an explicit guarantee it only normalizes and never drops rows. Do that and it's a 9.
+
+Notes: no JS console/page errors; copy/clipboard not exercised this round.
+```json
+{"tester": 4, "round": 1, "clarity": "Yes", "value": "Yes", "advocacy": 8, "topComplaints": ["No 'clean as I import' option — must click Fix per flagged cell, doesn't scale to a 30-row sheet", "H1 is long and GA-jargony for a first read"], "priorConcernsAddressed": "n/a"}
+```

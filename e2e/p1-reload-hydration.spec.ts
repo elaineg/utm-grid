@@ -19,8 +19,18 @@ import { expect, test, type Page } from "@playwright/test";
 const cell = (page: Page, field: string, rowNum: number) =>
   page.getByLabel(`${field} row ${rowNum}`, { exact: true }).first();
 
+// Read-only locator for enforce-template state (sr-only element is always in DOM; use for isChecked only)
 const enforceTemplateToggle = (page: Page) =>
-  page.locator('[data-testid="enforce-template-toggle"]');
+  page.locator('[data-testid="enforce-template-toggle"]').first();
+
+/** Enable enforce-template toggle using DOM .click() via evaluate (sr-only element). */
+async function checkEnforceTemplate(page: Page) {
+  const toggle = page.locator('[data-testid="enforce-template-toggle"]').first();
+  if (!(await toggle.isChecked())) {
+    await toggle.evaluate((el) => (el as HTMLElement).click());
+    await page.waitForTimeout(300);
+  }
+}
 
 const namingTemplateToggle = (page: Page) =>
   page.locator('[data-testid="naming-template-toggle"]');
@@ -146,7 +156,7 @@ test("P1-RELOAD-HYDRATION: UI-define-then-reload: template+segments survive relo
     }
   }
 
-  await enforceTemplateToggle(page1).check();
+  await checkEnforceTemplate(page1);
   // Wait for localStorage to flush.
   await page1.waitForTimeout(600);
   await page1.close();

@@ -475,17 +475,18 @@ test("R2-7: presets panel shows X/Twitter and Mastodon alongside Email, LinkedIn
   await page.goto("/");
   await page.waitForLoadState("networkidle");
 
-  // The presets panel is collapsed by default — find and expand it
-  const presetsToggle = page.getByText(/Presets.*fill source\/medium/i).first();
-  if (!(await presetsToggle.isVisible().catch(() => false))) {
-    // Try by button aria-expanded=false
-    const presetsBtn = page.locator('button[aria-expanded="false"]').filter({
-      hasText: /Presets/i,
-    }).first();
-    await expect(presetsBtn).toBeVisible({ timeout: 5_000 });
-    await presetsBtn.click();
-  } else {
-    await presetsToggle.click();
+  // The presets panel is now opened via Tools ▾ > Channel Presets
+  const toolsMenuBtn = page.locator('[data-testid="tools-menu-btn"]');
+  await expect(toolsMenuBtn).toBeVisible({ timeout: 5_000 });
+  await toolsMenuBtn.click();
+  await page.getByRole("button", { name: /Channel Presets/i }).click();
+
+  // PresetsBar has an inner collapsible header — expand it if collapsed
+  const presetsInnerBtn = page.locator('button[aria-expanded]').filter({ hasText: /Presets/ }).first();
+  if (await presetsInnerBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+    if ((await presetsInnerBtn.getAttribute("aria-expanded")) === "false") {
+      await presetsInnerBtn.click();
+    }
   }
 
   // Wait for the presets to appear

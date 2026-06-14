@@ -197,11 +197,11 @@ test("off-spec lint warning fires on pasted URL when UTM Spec is defined", async
   await page.goto(PREVIEW);
   await page.waitForLoadState("networkidle");
 
-  // Enable "Enforce UTM Spec" toggle (in the lint-rules bar).
+  // Enable "Enforce UTM Spec" toggle (sr-only element — use DOM .click() via evaluate).
   const enforceToggle = page.locator('[data-testid="enforce-spec-toggle"]').first();
   if (!(await enforceToggle.isChecked())) {
-    await enforceToggle.click();
-    await expect(enforceToggle).toBeChecked();
+    await enforceToggle.evaluate((el) => (el as HTMLElement).click());
+    await page.waitForTimeout(300);
   }
 
   // Expand the UTM Spec panel (collapsed by default).

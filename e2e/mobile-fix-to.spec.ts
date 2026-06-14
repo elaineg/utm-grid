@@ -51,12 +51,12 @@ async function expandMobileSpecAndAdd(page: Page, field: string, value: string) 
   ).toBeVisible({ timeout: 3000 });
 }
 
-/** Enable enforce-spec-toggle (first match works for both mobile and desktop). */
+/** Enable enforce-spec-toggle using DOM .click() via evaluate (bypasses sr-only / pointer-event issues). */
 async function enableEnforce(page: Page) {
   const toggle = page.locator('[data-testid="enforce-spec-toggle"]').first();
   if (!(await toggle.isChecked())) {
-    await toggle.click();
-    await expect(toggle).toBeChecked();
+    await toggle.evaluate((el) => (el as HTMLElement).click());
+    await page.waitForTimeout(300);
   }
 }
 

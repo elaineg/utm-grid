@@ -18,7 +18,20 @@ import { expect, test, type Page } from "@playwright/test";
 const cell = (page: Page, field: string, rowNum: number) =>
   page.getByLabel(`${field} row ${rowNum}`, { exact: true }).first();
 
+/** R2-D: "Copy snapshot link" is now inside the Share ▾ dropdown menu.
+ *  Helper: opens the Share menu (if not already open), returns the button locator.
+ *  The data-testid="copy-share-link" is on the menu item inside the dropdown. */
 const shareBtn = (page: Page) => page.locator('[data-testid="copy-share-link"]');
+/** Open the Share ▾ menu and return the share-link button (for click tests). */
+async function openShareMenu(page: Page): Promise<void> {
+  const menuBtn = page.locator('[data-testid="share-menu-btn"]');
+  // Only open if not already open
+  const isOpen = await menuBtn.getAttribute("aria-expanded");
+  if (isOpen !== "true") {
+    await menuBtn.click();
+    await page.waitForTimeout(150);
+  }
+}
 const sharedBanner = (page: Page) => page.locator('[data-testid="shared-grid-banner"]');
 
 // ── Helper: build a 3-row grid and return the share URL ──────────────────────
@@ -51,9 +64,11 @@ async function buildThreeRowGrid(page: Page): Promise<void> {
 
 test("share button is present and locatable by data-testid", async ({ page }) => {
   await page.goto("/");
+  // R2-D: "Copy snapshot link" is inside the Share ▾ menu — open it first
+  await openShareMenu(page);
   const btn = shareBtn(page);
   await expect(btn).toBeVisible();
-  await expect(btn).toHaveText("Copy share link");
+  await expect(btn).toContainText("Copy snapshot link");
 });
 
 // ── Test 2: share URL opens fresh grid with correct rows ─────────────────────
@@ -67,7 +82,8 @@ test("share flow: 3-row grid reproduces identically in fresh context", async ({
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await buildThreeRowGrid(page);
 
-  // Wait for the grid to settle, then click Copy share link
+  // Wait for the grid to settle, then open Share menu and click Copy snapshot link
+  await openShareMenu(page);
   await shareBtn(page).click();
 
   // Read the URL from the clipboard
@@ -121,16 +137,17 @@ test("Link copied! cue shows on button after click (transient but visible)", asy
   await cell(page, "utm_medium", 1).fill("email");
   await cell(page, "utm_campaign", 1).fill("spring_sale");
 
-  // Click using the stable testid
+  // R2-D: open Share ▾ menu, then click "Copy snapshot link" by testid
+  await openShareMenu(page);
   await shareBtn(page).click();
 
-  // The button itself changes to green "Copied ✓" cue (round-2: was "Link copied!")
-  await expect(shareBtn(page)).toContainText("Copied", { timeout: 2000 });
+  // R2-D: confirmation flashes on the PERSISTENT "Share ▾" trigger button (not on the menu item)
+  const shareTrigger = page.locator('[data-testid="share-menu-btn"]');
+  await expect(shareTrigger).toContainText("Link copied!", { timeout: 2000 });
 
   // Cue remains visible for ~1800ms per spec; after 2s it should be gone
   await page.waitForTimeout(2100);
-  await expect(shareBtn(page)).not.toContainText("Copied ✓");
-  await expect(shareBtn(page)).toHaveText("Copy share link");
+  await expect(shareTrigger).not.toContainText("copied");
 });
 
 // ── Test 4: share link click triggers no network request ─────────────────────
@@ -153,6 +170,8 @@ test("clicking Copy share link triggers no network request", async ({
   await cell(page, "utm_medium", 1).fill("email");
   await cell(page, "utm_campaign", 1).fill("spring_sale");
 
+  // R2-D: open Share ▾ menu first, then click "Copy snapshot link"
+  await openShareMenu(page);
   await shareBtn(page).click();
   // Allow a tick for any async network activity to fire
   await page.waitForTimeout(300);

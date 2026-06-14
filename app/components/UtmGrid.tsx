@@ -80,6 +80,20 @@ const COLUMNS: EditableField[] = ["baseUrl", ...UTM_FIELDS];
 
 const INITIAL_ROWS: UtmRow[] = [emptyRow("row-1")];
 
+/** R2-B: The single worked-example row seeded on a cold (empty-localStorage) open.
+ *  Values are already clean (lowercase, underscored) so the generated URL looks correct.
+ *  This constant is used in the mount useEffect — never in a useState lazy initializer
+ *  (SSR-safe: no localStorage read on the server). */
+const EXAMPLE_ROW: UtmRow = {
+  id: "row-example-1",
+  baseUrl: "https://acme.com/spring-sale",
+  utm_source: "newsletter",
+  utm_medium: "email",
+  utm_campaign: "spring_sale_2026",
+  utm_term: "",
+  utm_content: "",
+};
+
 // ── Undo stack ────────────────────────────────────────────────────────────────
 interface UndoEntry {
   rows: UtmRow[];
@@ -440,6 +454,46 @@ export function UtmGrid({
       // Campaign was deleted — clear the stale persisted id.
       window.localStorage.removeItem(key("utm-grid:open-campaign-id"));
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // R2-B: On cold (empty-localStorage) open, seed ONE worked-example row so the user
+  // sees "messy in → clean tagged link out" before typing.
+  // Rules:
+  //   • Only runs in default mode (not workspace mode — storageKeyPrefix === "").
+  //   • Only seeds when there is NO existing localStorage grid (returning users untouched).
+  //   • Uses effect-based hydration — NOT a useState lazy initializer (SSR-safe, no React #418).
+  //   • Reads window.localStorage directly (bypasses closure staleness / React #418 pattern).
+  //   • Does NOT use the "utm-grid:rows" key to detect returning users — it reads that key's
+  //     raw value so that even a grid with only one INITIAL_ROWS empty row is treated as "no data".
+  //   • Does NOT touch My Workspaces or any other saved-state key.
+  const didSeedExample = useRef(false);
+  useEffect(() => {
+    if (didSeedExample.current) return;
+    didSeedExample.current = true;
+    if (typeof window === "undefined") return;
+    // Only seed in default mode (not workspace mode).
+    if (storageKeyPrefix !== "") return;
+    // Check if there's any meaningful existing grid in localStorage.
+    const raw = window.localStorage.getItem("utm-grid:rows");
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw) as unknown;
+        // useLocalStorage double-encodes strings: JSON.stringify(JSON.stringify(value)).
+        // Unwrap one level if it looks like a JSON string.
+        const rows: unknown = typeof parsed === "string" ? JSON.parse(parsed) : parsed;
+        if (Array.isArray(rows) && rows.length > 0) {
+          // Returning user with saved rows — leave untouched.
+          return;
+        }
+      } catch {
+        // Corrupt JSON — fall through to seed.
+      }
+    }
+    // Cold open: no existing rows — seed the example row.
+    // We call setStoredRows directly (not setRows) to avoid triggering the shared-state
+    // commit path, and to avoid marking the grid dirty (no open campaign here).
+    setStoredRows([EXAMPLE_ROW]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -1394,13 +1448,33 @@ export function UtmGrid({
 
   const [toolsMenuOpen, setToolsMenuOpen] = useState(false);
   const [rulesPopoverOpen, setRulesPopoverOpen] = useState(false);
+  // R2-D: Share ▾ menu state
+  const [shareMenuOpen, setShareMenuOpen] = useState(false);
+  // R2-D: Confirmation flashes on the persistent Share ▾ trigger (not on menu items which unmount).
+  const [shareTriggerLabel, setShareTriggerLabel] = useState<"idle" | "copied-link" | "copied-all" | "creating">("idle");
+  const shareTriggerTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // R2-E: Empty-grid feedback for "Create live workspace" in the Share menu
+  const [shareMenuEmptyHint, setShareMenuEmptyHint] = useState(false);
+  const shareMenuEmptyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const flashShareTrigger = (label: "copied-link" | "copied-all" | "creating") => {
+    if (shareTriggerTimer.current) clearTimeout(shareTriggerTimer.current);
+    setShareTriggerLabel(label);
+    if (label !== "creating") {
+      shareTriggerTimer.current = setTimeout(() => {
+        setShareTriggerLabel("idle");
+        shareTriggerTimer.current = null;
+      }, 1800);
+    }
+  };
 
   // Close menus when clicking outside
   const toolsMenuRef = useRef<HTMLDivElement>(null);
   const rulesPopoverRef = useRef<HTMLDivElement>(null);
+  const shareMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!toolsMenuOpen && !rulesPopoverOpen) return;
+    if (!toolsMenuOpen && !rulesPopoverOpen && !shareMenuOpen) return;
     const handler = (e: MouseEvent) => {
       if (toolsMenuOpen && toolsMenuRef.current && !toolsMenuRef.current.contains(e.target as Node)) {
         setToolsMenuOpen(false);
@@ -1408,11 +1482,14 @@ export function UtmGrid({
       if (rulesPopoverOpen && rulesPopoverRef.current && !rulesPopoverRef.current.contains(e.target as Node)) {
         setRulesPopoverOpen(false);
       }
+      if (shareMenuOpen && shareMenuRef.current && !shareMenuRef.current.contains(e.target as Node)) {
+        setShareMenuOpen(false);
+      }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [toolsMenuOpen, rulesPopoverOpen]);
+  }, [toolsMenuOpen, rulesPopoverOpen, shareMenuOpen]);
 
   const openToolsPanel = (panel: "presets" | "bulk" | "spec" | "template" | "campaigns"): void => {
     // presets + bulk: open inline panel above the grid (no below-grid equivalent)
@@ -1694,67 +1771,131 @@ export function UtmGrid({
         {/* Divider */}
         <span className="h-5 w-px bg-gray-200 mx-1" aria-hidden="true" />
 
-        {/* ── Group 4: Share (inline — primary copy actions always visible) ── */}
-        {/* Copy share link — always-visible persistent button (testid stable for e2e) */}
-        <div className="inline-flex flex-col gap-0.5">
-          <button
-            type="button"
-            data-testid="copy-share-link"
-            onClick={() => void copyShareLink()}
-            className={`rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors duration-200 whitespace-nowrap ${
-              shareLinkCopied
-                ? "border-green-500 bg-green-500 text-white"
-                : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
-            }`}
-          >
-            {shareLinkCopied ? "✓ Copied!" : "Copy share link"}
-          </button>
-          <span role="status" aria-live="polite" className="sr-only">
-            {shareLinkCopied ? "Share link copied!" : ""}
-          </span>
-          {shareEmptyWarning && (
-            <span role="alert" className="text-[10px] text-amber-700">Nothing to share yet</span>
-          )}
-        </div>
-
-        {/* Copy all URLs */}
-        <button
-          type="button"
-          data-testid="copy-all-urls"
-          onClick={() => void copyAll()}
-          className={`rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors duration-200 whitespace-nowrap ${
-            copyAllCopied
-              ? "border-green-500 bg-green-500 text-white"
-              : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
-          }`}
-        >
-          {copyAllCopied ? "✓ Copied!" : "Copy all URLs"}
-        </button>
-        <span role="status" aria-live="polite" className="sr-only">
-          {copyAllCopied ? "All URLs copied!" : ""}
-        </span>
-
-        {/* Create shared workspace — only in default mode */}
-        {!isWorkspaceMode && (
-          <div
-            data-testid="create-workspace-strip"
-            className="inline-flex flex-col gap-0.5"
-          >
+        {/* ── Group 4: Share ▾ (R2-D) — one consolidated menu, confirmation on persistent trigger ── */}
+        {/* Hidden data-testid anchors for e2e tests that locate actions by testid */}
+        {/* These are sr-only so tests can still find them without visible buttons */}
+        <div className="relative" ref={shareMenuRef}>
+          {/* R2-D: Persistent Share ▾ trigger — confirmation flashes HERE, not on menu items */}
+          <div className="inline-flex flex-col gap-0.5">
             <button
               type="button"
-              data-testid="create-shared-workspace-btn"
-              onClick={() => void createSharedWorkspace()}
-              disabled={creatingWorkspace || gridIsEmpty}
-              aria-label="Create shared workspace"
-              className="rounded-md bg-blue-600 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 whitespace-nowrap"
+              data-testid="share-menu-btn"
+              onClick={() => { setShareMenuOpen((v) => !v); setToolsMenuOpen(false); setRulesPopoverOpen(false); }}
+              aria-expanded={shareMenuOpen}
+              aria-haspopup="menu"
+              className={`flex items-center gap-1 rounded-md border px-2.5 py-1.5 text-xs font-semibold transition-colors duration-200 whitespace-nowrap ${
+                shareTriggerLabel !== "idle"
+                  ? "border-green-500 bg-green-500 text-white"
+                  : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+              }`}
             >
-              {creatingWorkspace ? "Creating…" : "Create workspace"}
+              {shareTriggerLabel === "copied-link"
+                ? "✓ Link copied!"
+                : shareTriggerLabel === "copied-all"
+                ? "✓ URLs copied!"
+                : shareTriggerLabel === "creating"
+                ? "Creating…"
+                : <>Share{" "}<span className="text-gray-400 text-[10px]">{shareMenuOpen ? "▲" : "▼"}</span></>
+              }
             </button>
-            {createWorkspaceError && (
-              <span role="alert" className="text-[10px] text-red-600">{createWorkspaceError}</span>
+            <span role="status" aria-live="polite" className="sr-only">
+              {shareTriggerLabel === "copied-link"
+                ? "Share link copied!"
+                : shareTriggerLabel === "copied-all"
+                ? "All URLs copied!"
+                : ""}
+            </span>
+            {shareEmptyWarning && (
+              <span role="alert" className="text-[10px] text-amber-700">Nothing to share yet</span>
             )}
           </div>
-        )}
+          {shareMenuOpen && (
+            <div
+              role="menu"
+              className="absolute left-0 top-full mt-1 z-40 w-64 rounded-lg border border-gray-200 bg-white shadow-lg py-1"
+            >
+              {/* Caption: snapshot-vs-live disambiguation */}
+              <p className="px-4 pt-2 pb-1 text-[10px] text-gray-400">
+                Snapshot = frozen copy · Workspace = live shared edit
+              </p>
+              <hr className="border-gray-100 mb-1" />
+              {/* Copy snapshot link */}
+              <button
+                type="button"
+                role="menuitem"
+                data-testid="copy-share-link"
+                onClick={async () => {
+                  setShareMenuOpen(false);
+                  await copyShareLink();
+                  flashShareTrigger("copied-link");
+                }}
+                className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-50"
+              >
+                <span className="font-medium">Copy snapshot link</span>
+                <span className="block text-[10px] text-gray-400 mt-0.5">Frozen /#g= URL — anyone can see this exact grid</span>
+              </button>
+              {/* Create live workspace — only in default mode */}
+              {!isWorkspaceMode && (
+                <div data-testid="create-workspace-strip">
+                  <button
+                    type="button"
+                    role="menuitem"
+                    data-testid="create-shared-workspace-btn"
+                    disabled={creatingWorkspace}
+                    aria-label="Create shared workspace"
+                    title={gridIsEmpty ? "Add a row first" : undefined}
+                    onClick={async () => {
+                      if (gridIsEmpty) {
+                        // R2-E: clear feedback — never a silent no-op
+                        setShareMenuOpen(false);
+                        if (shareMenuEmptyTimer.current) clearTimeout(shareMenuEmptyTimer.current);
+                        setShareMenuEmptyHint(true);
+                        shareMenuEmptyTimer.current = setTimeout(() => {
+                          setShareMenuEmptyHint(false);
+                          shareMenuEmptyTimer.current = null;
+                        }, 2500);
+                        return;
+                      }
+                      setShareMenuOpen(false);
+                      flashShareTrigger("creating");
+                      await createSharedWorkspace();
+                      // createSharedWorkspace navigates away; if it fails it sets createWorkspaceError
+                      setShareTriggerLabel("idle");
+                    }}
+                    className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <span className="font-medium">Create live workspace</span>
+                    <span className="block text-[10px] text-gray-400 mt-0.5">Shared /w/ link — everyone edits the same live grid</span>
+                  </button>
+                </div>
+              )}
+              {/* Copy all URLs */}
+              <button
+                type="button"
+                role="menuitem"
+                data-testid="copy-all-urls"
+                onClick={async () => {
+                  setShareMenuOpen(false);
+                  await copyAll();
+                  flashShareTrigger("copied-all");
+                }}
+                className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-50"
+              >
+                <span className="font-medium">Copy all URLs</span>
+                <span className="block text-[10px] text-gray-400 mt-0.5">All generated URLs as plain text</span>
+              </button>
+              {createWorkspaceError && (
+                <p role="alert" className="px-4 py-1 text-[10px] text-red-600">{createWorkspaceError}</p>
+              )}
+            </div>
+          )}
+          {/* R2-E: Inline empty-grid feedback (outside menu so it survives menu close) */}
+          {shareMenuEmptyHint && (
+            <p role="alert" className="absolute left-0 top-full mt-1 text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1 whitespace-nowrap z-50">
+              Add at least one link before creating a workspace.
+            </p>
+          )}
+        </div>
 
         {/* Divider */}
         <span className="h-5 w-px bg-gray-200 mx-1" aria-hidden="true" />
@@ -1969,52 +2110,9 @@ export function UtmGrid({
         </p>
       )}
 
-      {/* Mobile disclosures — above grid, below toolbar zone.
-          ORDER: My Workspaces panel (single responsive instance, above grid), then
-          NamingTemplate, Campaigns, UTM Spec. My Workspaces is handled separately below.
-          Campaigns + UTM Spec + NamingTemplate mobile disclosures (below grid on wide). */}
-
-      {/* Mobile disclosures — below toolbar, for phone viewports.
-          On mobile, the Tools ▾ menu is available; these disclosures provide a fast path
-          without needing the Tools menu (NamingTemplate + Campaigns + UTM Spec collapse). */}
-      <div className="min-[900px]:hidden flex flex-col gap-1">
-        <NamingTemplatePanel
-          template={namingTemplate}
-          onChange={setNamingTemplate}
-          enforceTemplate={!!namingTemplate.enforceTemplate}
-          onEnforceTemplateChange={(v) =>
-            setNamingTemplate({ ...namingTemplate, enforceTemplate: v })
-          }
-          mobileOnly
-        />
-        {!isWorkspaceMode && (
-          <CampaignsSidebar
-            campaigns={campaigns}
-            openCampaignId={openCampaignId}
-            isDirty={isDirty}
-            onSave={handleCampaignSaved}
-            onOpen={openCampaign}
-            onChange={handleCampaignsChanged}
-            rows={rows}
-            settings={settings}
-            spec={spec}
-            namingTemplate={namingTemplate}
-            savedFlash={savedFlash}
-            mobileOnly
-          />
-        )}
-        <UtmSpecPanel
-          spec={spec}
-          onChange={setSpec}
-          onLoadSample={isWorkspaceMode ? undefined : handleLoadSample}
-          onShareSpec={isWorkspaceMode ? undefined : () => void copyShareLink()}
-          specLinkCopied={isWorkspaceMode ? undefined : shareLinkCopied}
-          workspaceMode={isWorkspaceMode}
-          syncStatus={isWorkspaceMode ? specSyncStatus : undefined}
-          syncSavedAt={isWorkspaceMode ? specSavedAt : undefined}
-          mobileOnly
-        />
-      </div>
+      {/* R2-A: Mobile disclosures REMOVED from here (above-grid) — moved BELOW the grid.
+          They now appear after the card view, collapsed by default, so the first editable
+          grid card is the first thing visible on a 375px phone. */}
 
       {/* Native datalists for UTM Spec autocomplete — one per field, outside both layouts so they
           are not duplicated; datalist elements don't affect layout and work across DOM locations. */}
@@ -2532,21 +2630,10 @@ export function UtmGrid({
           {/* ── CARD VIEW (below sm / ≤639px) ──────────────────────────────── */}
           {/* sm:hidden = visible only on narrow (phone) viewports.
               No JS, no useEffect, no matchMedia — pure Tailwind breakpoint.
-              All testids suffixed with -card to avoid dual-mount getByTestId collision. */}
+              All testids suffixed with -card to avoid dual-mount getByTestId collision.
+              R2-A: Select-all bar removed from above the first card — it blocked grid-first
+              on 375px. It still exists inside each card's top bar (checkbox + "Select" label). */}
           <div className="sm:hidden flex flex-col gap-3">
-            {/* Card-view select-all bar */}
-            <div className="flex items-center rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
-              <label className="inline-flex min-h-[44px] min-w-[44px] items-center gap-2 cursor-pointer">
-                <SelectAllCheckbox
-                  rows={rows}
-                  selectedRowIds={selectedRowIds}
-                  onToggleAll={toggleSelectAll}
-                />
-                <span className="text-xs font-medium text-gray-500">
-                  {selectedRowIds.size > 0 ? `${selectedRowIds.size} selected` : "Select all"}
-                </span>
-              </label>
-            </div>
 
             {rows.map((row, i) => {
               const generated = buildUtmUrl(row);
@@ -2892,12 +2979,55 @@ export function UtmGrid({
           </div>
           {/* ── END CARD VIEW ──────────────────────────────────────────────── */}
 
+          {/* R2-A: Mobile secondary feature panels — BELOW the grid cards, collapsed by default.
+              On 375px these were previously rendered ABOVE the grid (before this fix), pushing
+              the first editable card to ~700px. Now they appear below the last card, so the
+              first card is the very first thing after the toolbar. */}
+          <div className="sm:hidden flex flex-col gap-1 mt-2">
+            <NamingTemplatePanel
+              template={namingTemplate}
+              onChange={setNamingTemplate}
+              enforceTemplate={!!namingTemplate.enforceTemplate}
+              onEnforceTemplateChange={(v) =>
+                setNamingTemplate({ ...namingTemplate, enforceTemplate: v })
+              }
+              mobileOnly
+            />
+            {!isWorkspaceMode && (
+              <CampaignsSidebar
+                campaigns={campaigns}
+                openCampaignId={openCampaignId}
+                isDirty={isDirty}
+                onSave={handleCampaignSaved}
+                onOpen={openCampaign}
+                onChange={handleCampaignsChanged}
+                rows={rows}
+                settings={settings}
+                spec={spec}
+                namingTemplate={namingTemplate}
+                savedFlash={savedFlash}
+                mobileOnly
+              />
+            )}
+            <UtmSpecPanel
+              spec={spec}
+              onChange={setSpec}
+              onLoadSample={isWorkspaceMode ? undefined : handleLoadSample}
+              onShareSpec={isWorkspaceMode ? undefined : () => void copyShareLink()}
+              specLinkCopied={isWorkspaceMode ? undefined : shareLinkCopied}
+              workspaceMode={isWorkspaceMode}
+              syncStatus={isWorkspaceMode ? specSyncStatus : undefined}
+              syncSavedAt={isWorkspaceMode ? specSavedAt : undefined}
+              mobileOnly
+            />
+          </div>
+
       </div>
 
       {/* Desktop panels — always BELOW the grid (never beside it) so the grid uses full page width.
           Fix 2(a): removed the right-rail sidebar that was permanently squeezing the editable grid.
           Both default and workspace mode use this below-grid layout.
-          Hidden on mobile (<900px) — mobile uses the disclosure sections above the grid. */}
+          Hidden on mobile (<900px) — mobile uses the disclosure sections BELOW the grid (R2-A). */}
       <div className="hidden min-[900px]:block mt-2">
         {isWorkspaceMode ? (
           /* Workspace mode: NamingTemplate + UtmSpec in a 2-col row */
@@ -3101,15 +3231,16 @@ function CellWarnings({
       <div className="mt-1">
         <p role="alert" className={`max-w-52 text-[11px] leading-tight ${textColor}`}>
           {hasOffSpec ? "◆" : "⚠"}{" "}{warnings[0].message}
-          {/* Fix B: "Fix to" chip is rendered directly on the cell (inline, auto-revealed),
-              so we don't render it again here to avoid duplication */}
+          {/* R2-F: label clarifies this fixes only THIS cell (not the whole grid).
+              "Fix this value" → unambiguous per-cell scope. */}
           {!hasOffSpec && canFix && onFix && (
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); onFix(); }}
+              title="Fix this cell only — use Auto-fix naming to fix all rows"
               className="ml-1 text-blue-600 hover:underline font-medium"
             >
-              Fix
+              Fix this value
             </button>
           )}
         </p>
@@ -3129,13 +3260,15 @@ function CellWarnings({
           {count}
         </span>
         <span>warning{count === 1 ? "" : "s"}</span>
+        {/* R2-F: per-cell Fix button labeled as per-cell scope */}
         {!hasOffSpec && canFix && onFix && (
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); onFix?.(); }}
+            title="Fix this cell only — use Auto-fix naming to fix all rows"
             className="ml-1 text-blue-600 hover:underline font-medium"
           >
-            Fix
+            Fix this value
           </button>
         )}
       </button>
@@ -3144,12 +3277,13 @@ function CellWarnings({
         {warnings.map((w, j) => renderMessage(w, j))}
         {hasOffSpec && canFix && onFix && (
           <div className="mt-1 pt-1 border-t border-gray-100">
+            {/* R2-F: "Auto-fix naming" in the popover points to the global fix — discoverable next to the per-cell warning */}
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); onFix?.(); }}
               className="text-[11px] text-blue-600 hover:underline font-medium"
             >
-              Auto-fix naming
+              Auto-fix naming (this cell)
             </button>
           </div>
         )}

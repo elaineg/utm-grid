@@ -176,7 +176,7 @@ test("R3-2a: `/` Launch Check disclosure is collapsed-by-default (aria-expanded=
   await ctx.close();
 });
 
-test("R3-2b: `/` Share group contains both share options (always visible — E1 consolidation)", async ({
+test("R3-2b: `/` Share ▾ menu contains both share options (R2-D consolidation)", async ({
   browser,
 }) => {
   const ctx = await browser.newContext();
@@ -185,18 +185,25 @@ test("R3-2b: `/` Share group contains both share options (always visible — E1 
   await page.goto("/");
   await page.waitForLoadState("networkidle");
 
-  // E1: Share group is always-visible with data-testid="create-workspace-strip"
-  const shareGroup = page.locator('[data-testid="create-workspace-strip"]').first();
-  await expect(shareGroup).toBeVisible({ timeout: 10_000 });
+  // R2-D: Share ▾ trigger must be visible
+  const shareMenuBtn = page.locator('[data-testid="share-menu-btn"]').first();
+  await expect(shareMenuBtn).toBeVisible({ timeout: 10_000 });
 
-  // Both share actions are directly visible (no expand needed)
+  // Open the Share ▾ menu
+  await shareMenuBtn.click();
+  await page.waitForTimeout(200);
+
+  // Both share actions are inside the menu
+  const shareGroup = page.locator('[data-testid="create-workspace-strip"]').first();
+  await expect(shareGroup).toBeVisible({ timeout: 5_000 });
+
   const copyShareBtn = page.locator('[data-testid="copy-share-link"]').first();
   await expect(copyShareBtn).toBeVisible({ timeout: 5_000 });
-  await expect(copyShareBtn).toContainText(/copy share link/i);
+  await expect(copyShareBtn).toContainText(/copy snapshot link/i);
 
   const createBtn = page.locator('[data-testid="create-shared-workspace-btn"]').first();
   await expect(createBtn).toBeVisible({ timeout: 5_000 });
-  await expect(createBtn).toContainText(/create shared workspace/i);
+  await expect(createBtn).toContainText(/create live workspace/i);
 
   await ctx.close();
 });
@@ -302,8 +309,8 @@ test('R3-4a: Auto-fix naming: "Launch Day!" → "launch_day" (strips trailing pu
   await page.reload();
   await page.waitForLoadState("networkidle");
 
-  // Find and click the Auto-fix naming button
-  const autoFixBtn = page.locator("button", { hasText: /auto.?fix naming/i }).first();
+  // Find and click the Auto-fix button (previously "Auto-fix naming", now "Auto-fix")
+  const autoFixBtn = page.locator('[data-testid="auto-fix-naming-btn"]').first();
   await expect(autoFixBtn).toBeVisible({ timeout: 10_000 });
   await autoFixBtn.click();
   await page.waitForTimeout(500);
@@ -360,7 +367,7 @@ test("R3-4b: Auto-fix does NOT mangle already-valid lowercase values", async ({
   await page.reload();
   await page.waitForLoadState("networkidle");
 
-  const autoFixBtn = page.locator("button", { hasText: /auto.?fix naming/i }).first();
+  const autoFixBtn = page.locator('[data-testid="auto-fix-naming-btn"]').first();
   await expect(autoFixBtn).toBeVisible({ timeout: 10_000 });
   await autoFixBtn.click();
   await page.waitForTimeout(500);
@@ -431,7 +438,7 @@ test("R3-5: two same-day workspaces with different campaigns get different defau
 
 // ── Check R3-6: SHARE DISAMBIGUATION — distinct labels for snapshot vs synced ─
 
-test("R3-6: 'Copy share link' and 'Create shared workspace' have distinct descriptor labels", async ({
+test("R3-6: 'Copy snapshot link' and 'Create live workspace' have distinct descriptor labels (R2-D)", async ({
   browser,
 }) => {
   const ctx = await browser.newContext();
@@ -440,23 +447,23 @@ test("R3-6: 'Copy share link' and 'Create shared workspace' have distinct descri
   await page.goto("/");
   await page.waitForLoadState("networkidle");
 
-  // "Copy share link" — snapshot descriptor must mention "snapshot" or "frozen"
-  // or explicitly say it sends no data to server. Look in the page text.
-  // The share link button is in the toolbar
-  const shareBtn = page.getByRole("button", { name: /copy share link/i }).first();
-  await expect(shareBtn).toBeVisible({ timeout: 10_000 });
+  // R2-D: Open Share ▾ menu first
+  const shareMenuBtn = page.locator('[data-testid="share-menu-btn"]').first();
+  await expect(shareMenuBtn).toBeVisible({ timeout: 10_000 });
+  await shareMenuBtn.click();
+  await page.waitForTimeout(200);
 
-  // "Create shared workspace" strip must have its descriptor "live, synced"
-  // (this is the FIX E change — the collapsed strip heading has this descriptor)
+  // "Copy snapshot link" must be in the menu
+  const shareBtn = page.locator('[data-testid="copy-share-link"]').first();
+  await expect(shareBtn).toBeVisible({ timeout: 5_000 });
+  await expect(shareBtn).toContainText(/copy snapshot link/i);
+
+  // "Create live workspace" button must be visible inside the menu
   const wsStripText = page.locator('[data-testid="create-workspace-strip"]');
-  await expect(wsStripText).toBeVisible({ timeout: 10_000 });
-  // Must contain "live" and "synced" in the disclosure header
-  await expect(wsStripText).toContainText(/live/i);
-  await expect(wsStripText).toContainText(/sync/i);
-
-  // The two controls must be separately labeled and distinguishable
-  const shareText = await shareBtn.textContent();
-  expect(shareText?.toLowerCase()).toMatch(/share link/);
+  await expect(wsStripText).toBeVisible({ timeout: 5_000 });
+  const createWsBtn = wsStripText.locator('[data-testid="create-shared-workspace-btn"]');
+  await expect(createWsBtn).toBeVisible({ timeout: 5_000 });
+  await expect(createWsBtn).toContainText(/create live workspace/i);
 
   await ctx.close();
 });

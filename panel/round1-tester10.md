@@ -1,14 +1,18 @@
-```json
-{"name":"Sam","clarity":"Yes","value":"Yes","advocacy":9,"top_issues":["Auto-named 'Workspace 35YOkiga' with no rename — with two launches open I can't tell which is which in My Workspaces","My Workspaces row buttons (Open/Copy link/Remove) are ~36px tall and tightly packed at 375px — under the 44px tap zone, Remove sits right next to Open","Two share concepts ('Copy share link' frozen snapshot vs 'Create shared workspace' live link) — clear once read, but a beat of which-do-I-want"],"loved":["My prior bug is FIXED: name now persists as 'Editing as: Sam PM', approval shows green 'Approved' + 'last edited by Sam PM', no more 'Anonymous'","Review Status sign-off ('1 approved · 0 need changes · All approved — ready to launch') is exactly my launch-coordination job","Mobile grid is clean stacked cards, zero horizontal scroll; Launch Check report ('1 link · 1 with issues') reads great at 375px with no text collision","My Workspaces remembered my secret /w link (Owner badge, 'saved now') with working Open/Copy link/Remove; Remove confirm says 'only removes from this list'"]}
-```
+{"name":"Sam","clarity":"Yes","value":"Yes","advocacy":8,"top_fix":"On mobile the grid is buried below a tall hero + 3 accordions + a Select-all bar — the first input sits ~700px down, so on a phone the cold-open shows no grid at all. Make the grid the hero on mobile too."}
 
-## Re-checking my prior complaints (round 1, old build)
-- "Your name never sticks / approvals say 'by Anonymous'" — FIXED. Typed "Sam PM", hit Enter, reloaded: it held as "Editing as: Sam PM", and approving a row showed a green "Approved" badge with "last edited by Sam PM". That was the whole point and it now works.
-- "Mobile /review note collides with URL/medium, URL truncates to 'h.'" — FIXED. The validation note ("Contains spaces — use '_' or '-'") sits on its own line in the row card; Launch Check report is clean at 375px, no overlap, no horizontal scroll anywhere I went.
+# Sam — PM, mobile-heavy between meetings (grid-first landing redesign)
 
-## Fresh take (Sam, PM, on my phone)
-CLARITY Yes — H1 "Clean UTM links for your whole campaign — in one grid" + "no login, nothing leaves your browser" told me the job in seconds. I'd tell a teammate: "bulk UTM builder where the team edits one shared link and signs off before launch."
+## Prior gripe re-check (last time: tall jargon hero + ~6 stacked banners buried the grid)
+- **Desktop: fixed.** Toolbar + the real grid (BASE URL / UTM_SOURCE / UTM_MEDIUM headers) sit right at the top — grid IS the hero. The old 6 banners collapsed into 3 tidy accordion cards below the grid. Big improvement.
+- **Mobile: only half-fixed.** Still a 4-line hero paragraph, then the toolbar, then 3 accordion cards (Campaign Naming Template / Campaigns / Allowed values), then a "Select all" bar — and only THEN row #1. On my 667px-tall phone the first BASE URL field is ~700px down. Cold open on mobile I scroll past everything before I see a single field. The grid is NOT the hero on mobile.
 
-VALUE Yes — today this is a Google Sheet with a formula column plus Slack threads chasing "is the casing consistent / did you approve it?" Here I built a batch, auto-fixed "Newsletter/Email" to lowercase in one tap, made a live /w link the team edits, and got an approve/needs-changes sign-off with my name on it. That replaces the Sheet AND the approval thread. Copy link put the real /w URL on my clipboard (verified).
+## 1. CLARITY — Yes
+Within 30s I get it: a grid for tagging campaign links with consistent UTMs, export a clean CSV, share a link, no login. Subhead "Edit links in a grid, auto-fix naming, export clean CSV — no login, nothing leaves your browser" nails it. The H1 about "a stray capital letter never splits your data in Google Analytics" is my exact pain. Column headers + toolbar buttons (Export CSV, Copy share link, Create workspace) are all legible. This is for me.
 
-ADVOCACY 9 — the feature that was broken for me is fixed and the sign-off loop is genuinely my workflow, so I'd drop this in the launch channel unprompted. Held back from 10 only by the cryptic auto-name with no rename — the thing that makes me "look organized" is naming, and "Workspace 35YOkiga" doesn't. Let me name it on create (or default to the utm_campaign) and bump the My Workspaces tap targets, and it's a 10.
+## 2. VALUE — Yes
+Today: a shared Google Sheet with a CONCAT formula nobody maintains, where someone types "Email" vs "email" and splits the data in GA/Amplitude. This app's **Auto-fix actually fixed it** in one tap: `Email`→`email`, `Spring Launch`→`spring_launch`. Export gave `utm-grid.csv` with a real header row, Excel-safe BOM, and a fully-built `generated_url` per row — drop-in for the team. Copy share link produced a self-contained `/#g=...` URL that **restored the whole batch in a fresh browser** (verified). That's "build a batch → export → share → look organized" with zero debugging. Beats my spreadsheet.
+
+## 3. ADVOCACY — 8
+I'd recommend it to my growth/marketing channel unprompted — recurring, annoying coordination pain, and it makes me look organized. Not a 9 because **I live on my phone between meetings and the mobile cold-open hides the grid** behind hero + 3 accordions + Select-all bar. A teammate I send the link to on mobile might bounce thinking it's a marketing page, not a tool. Get one editable row above the fold on mobile (push the 3 accordion cards below the grid by default) and this is a 9.
+
+Verified clean on a 375px viewport: 0 console/page errors; Auto-fix, Export CSV, Copy share link, and share-link restore all worked.

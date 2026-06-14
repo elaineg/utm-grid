@@ -25,9 +25,38 @@ const cell = (page: Page, field: string, rowNum: number) =>
 const namingTemplateToggle = (page: Page) =>
   page.locator('[data-testid="naming-template-toggle"]');
 
-// The canonical enforce-template checkbox (in the main toolbar)
+// Read-only locator for enforce-template state (sr-only element is always in DOM;
+// only use for isChecked() assertions, NOT for .check()/.uncheck()/.click() — those are
+// intercepted on sr-only elements. Use checkEnforceTemplate/uncheckEnforceTemplate instead.
 const enforceTemplateToggle = (page: Page) =>
-  page.locator('[data-testid="enforce-template-toggle"]');
+  page.locator('[data-testid="enforce-template-toggle"]').first();
+
+/** Check (enable) enforce-template toggle using DOM .click() via evaluate (sr-only element). */
+async function checkEnforceTemplate(page: Page) {
+  const toggle = page.locator('[data-testid="enforce-template-toggle"]').first();
+  if (!(await toggle.isChecked())) {
+    await toggle.evaluate((el) => (el as HTMLElement).click());
+    await page.waitForTimeout(300);
+  }
+}
+
+/** Uncheck (disable) enforce-template toggle using DOM .click() via evaluate (sr-only element). */
+async function uncheckEnforceTemplate(page: Page) {
+  const toggle = page.locator('[data-testid="enforce-template-toggle"]').first();
+  if (await toggle.isChecked()) {
+    await toggle.evaluate((el) => (el as HTMLElement).click());
+    await page.waitForTimeout(300);
+  }
+}
+
+/** Check (enable) enforce-spec toggle using DOM .click() via evaluate (sr-only element). */
+async function checkEnforceSpec(page: Page) {
+  const toggle = page.locator('[data-testid="enforce-spec-toggle"]').first();
+  if (!(await toggle.isChecked())) {
+    await toggle.evaluate((el) => (el as HTMLElement).click());
+    await page.waitForTimeout(300);
+  }
+}
 
 // Locator for the VISIBLE add-segment button (there are 2 copies: mobile + desktop).
 // After React re-renders (e.g. after filling a segment name input), the DOM order
@@ -183,7 +212,7 @@ test("Enforce on: wrong segment count shows 'expected 3 segments, found 2' warni
   ]);
 
   // Turn on enforce template
-  await enforceTemplateToggle(page).check();
+  await checkEnforceTemplate(page);
 
   // Type a 2-segment value in utm_campaign
   await cell(page, "utm_campaign", 1).fill("2026q3_paidsocial");
@@ -213,7 +242,7 @@ test("Enforce on: bad token names segment 'channel' and its allowed tokens", asy
     { name: "audience" },
   ]);
 
-  await enforceTemplateToggle(page).check();
+  await checkEnforceTemplate(page);
 
   // Type a value where channel segment = "organic" (not in allowed list)
   await cell(page, "utm_campaign", 1).fill("2026q3_organic_retargeting");
@@ -246,7 +275,7 @@ test("Enforce-off clears off-template warnings; independent of Enforce UTM Spec"
     { name: "audience" },
   ]);
 
-  await enforceTemplateToggle(page).check();
+  await checkEnforceTemplate(page);
   await cell(page, "utm_campaign", 1).fill("2026q3_paidsocial");
 
   // Warning must be visible with enforce on
@@ -255,22 +284,21 @@ test("Enforce-off clears off-template warnings; independent of Enforce UTM Spec"
   ).toBeVisible({ timeout: 5000 });
 
   // Now ALSO turn on UTM Spec enforce so both are active at once
-  const enforceSpecToggle = page.locator('[data-testid="enforce-spec-toggle"]');
-  await enforceSpecToggle.check();
+  await checkEnforceSpec(page);
 
   // Turn off template enforcement
-  await enforceTemplateToggle(page).uncheck();
+  await uncheckEnforceTemplate(page);
 
   // Off-template warning must disappear
   await expect(
     page.getByRole("alert").filter({ hasText: "expected 3 segments, found 2" })
   ).toHaveCount(0, { timeout: 3000 });
 
-  // Enforce UTM Spec is still on (independent toggle — its state is unchanged)
-  await expect(enforceSpecToggle).toBeChecked();
+  // Enforce UTM Spec is still on (independent toggle — its state is unchanged; check via sr-only)
+  await expect(page.locator('[data-testid="enforce-spec-toggle"]').first()).toBeChecked();
 
   // Toggling back on restores the off-template warning
-  await enforceTemplateToggle(page).check();
+  await checkEnforceTemplate(page);
   await expect(
     page.getByRole("alert").filter({ hasText: "expected 3 segments, found 2" })
   ).toBeVisible({ timeout: 5000 });
@@ -296,13 +324,13 @@ test("Naming template persists across page reload", async ({ page }) => {
   await dashBtn.click();
 
   // Enable enforce
-  await enforceTemplateToggle(page).check();
+  await checkEnforceTemplate(page);
 
   // Reload and verify persistence
   await page.reload();
   await page.waitForLoadState("networkidle");
 
-  // Enforce toggle must still be checked
+  // Enforce toggle must still be checked (sr-only element is always in DOM, readable)
   await expect(enforceTemplateToggle(page)).toBeChecked({ timeout: 5000 });
 
   // Panel must show the segments (open it first)
@@ -344,7 +372,7 @@ test("Saving campaign preserves naming template; Open restores it", async ({
     { name: "channel", tokens: ["paidsocial", "email"] },
     { name: "audience" },
   ]);
-  await enforceTemplateToggle(page).check();
+  await checkEnforceTemplate(page);
 
   // Save as campaign — the sidebar is always visible at desktop widths (no toggle needed).
   // Use the stable data-testid for the save button.
@@ -378,9 +406,9 @@ test("Saving campaign preserves naming template; Open restores it", async ({
     }
   }
 
-  // Ensure enforce is off now
+  // Ensure enforce is off now (use uncheckEnforceTemplate if currently checked)
   if (await enforceTemplateToggle(page).isChecked()) {
-    await enforceTemplateToggle(page).uncheck();
+    await uncheckEnforceTemplate(page);
   }
 
   // Open the saved campaign — campaigns sidebar is visible at desktop (no toggle click needed).
@@ -484,7 +512,7 @@ test("Naming template: no network requests for template/composer/lint operations
   ]);
 
   // Enable enforce
-  await enforceTemplateToggle(page).check();
+  await checkEnforceTemplate(page);
 
   // Type values to trigger off-template lint
   await cell(page, "Base URL", 1).fill("https://example.com/sale");
@@ -532,7 +560,7 @@ test("Returning user: pre-existing naming template in localStorage is active on 
     { name: "channel", tokens: ["paidsocial", "email"] },
     { name: "audience" },
   ]);
-  await enforceTemplateToggle(page1).check();
+  await checkEnforceTemplate(page1);
 
   // Wait for localStorage to flush (debounce)
   await page1.waitForTimeout(600);
@@ -578,9 +606,8 @@ test("Regression: UTM Spec off-spec lint still works when naming template is act
   await sourceAllowedInput.fill("facebook");
   await sourceAllowedInput.press("Enter");
 
-  // Enable Enforce UTM Spec via the toolbar toggle (canonical location)
-  const enforceSpecToggle = page.locator('[data-testid="enforce-spec-toggle"]');
-  await enforceSpecToggle.check();
+  // Enable Enforce UTM Spec via the Rules ▾ popover
+  await checkEnforceSpec(page);
 
   // Also add a naming template and turn on enforce
   await addSegments(page, [
@@ -588,7 +615,7 @@ test("Regression: UTM Spec off-spec lint still works when naming template is act
     { name: "channel" },
     { name: "audience" },
   ]);
-  await enforceTemplateToggle(page).check();
+  await checkEnforceTemplate(page);
 
   // Type a utm_source value not in the allowed list
   await cell(page, "utm_source", 1).fill("twiter");

@@ -1,12 +1,41 @@
+{"name":"Dana","clarity":"Yes","value":"Yes","advocacy":9,"top_fix":"On mobile (375px) the hero + 3 info cards push the editable grid below the fold — at phone width it's no longer grid-first; collapse the headline and float the grid up"}
+
+# Dana — Demand-gen marketer (grid-first redesign re-test)
+
+## Prior concern (mine, last round): grid buried ~668px behind feature banners, value not in one scroll
+ADDRESSED on desktop. On my 1280px cafe MacBook the editable grid now sits directly under a
+SINGLE one-line headline + one line of subtext and one clean toolbar row. No more stack of
+Pre-launch QA / Live Workspace / Presets banners shoving the table down. I clicked row 1 and
+started typing a real link in under 10 seconds. The old 6 banners are collapsed into 3 quiet
+cards BELOW the grid (Campaign Naming Template / Campaigns / Allowed values) — out of my way,
+not gone. This is the exact fix I asked for. priorConcernsAddressed: all (on desktop).
+
+## 1. CLARITY — Yes
+Headline "Tag every campaign link with clean, consistent UTM tags in one grid — so a stray
+capital letter never splits your data in Google Analytics" + subtext "Edit links in a grid,
+auto-fix naming, export clean CSV — no login, nothing leaves your browser" nailed it in one
+read. The GA4-capital-letter line is the hook — that's the exact pain that splits my reports.
+
+## 2. VALUE — Yes
+Today: a Google Sheet with a CONCATENATE formula I copy each week, then eyeball 30 links for
+typos — ~15 min and I still ship the odd "Paid Social" with a space. Here I typed a messy row
+(LinkedIn / Paid Social / Spring Sale 2026); inline warnings flagged the caps + spaces with
+the suggested fix, and one click on global **Auto-fix** cleaned the WHOLE row at once →
+utm_medium=paid_social, utm_campaign=spring_sale_2026. "Copy all URLs" put the clean link
+straight on my clipboard (verified). Import/Export CSV + "Save as campaign" for next week =
+beats my sheet, mainly because of the auto-fix safety net CONCATENATE can't do.
+
+## 3. ADVOCACY — 9
+The grind-killer works and my one prior blocker (grid buried) is fixed on desktop, so I'd
+screenshot the "Auto-fix cleaned the whole grid in one click" moment for the team channel.
+The one thing keeping it off a 10:
+- **Mobile is NOT grid-first.** At 375px the headline + the 3 info cards fill the entire
+  first screen; the grid renders as stacked cards with the first editable URL input far below
+  the fold. On my phone between meetings I'd scroll, not type — the "value in one scroll"
+  promise that now holds on desktop breaks on the device I grab in a hallway.
+- Minor: per-row "Fix" link only fixed one field (source), left medium/campaign dirty; I had
+  to hunt for global Auto-fix. Make row-Fix fix all warnings in the row, or relabel it.
+
 ```json
-{"name":"Dana","clarity":"Yes","value":"Yes","advocacy":9,"top_issues":["Grid sits ~668px down behind a stack of feature banners (Pre-launch QA, Live Team Workspace, Presets, Bulk Edit) — the table I came for is below the fold on my MacBook","My Workspaces panel renders BELOW the grid, so on a fresh load my saved /w/ secret links are out of sight until I scroll to the very bottom","Above-the-fold has three overlapping share concepts (Copy share link snapshot vs Create shared workspace live vs Download QR) — took a second read to tell them apart"],"loved":["Auto-fix naming normalized 'Paid Social'->paid_social and 'Q3 Launch'->q3_launch across the whole batch in one click, highlighted the 5 changed cells, gave an Undo toast — that is my Thursday grind eliminated","My Workspaces remembers my secret workspace links with Open/Copy link/Remove all working (Copy link put the real /w/ URL on my clipboard); I won't lose links between weekly campaigns","PRIOR BUG FIXED: identity is now a single 'Editing as: Dana Reyes' — the old 'by Anonymous' / dual 'Reviewing as' confusion is gone, so a sign-off actually shows who signed"]}
+{"tester":5,"round":1,"clarity":"Yes","value":"Yes","advocacy":9,"topComplaints":["Mobile (375px): hero + 3 info cards push the editable grid below the fold, so it's not grid-first on phone","Per-row 'Fix' link fixes only one field, not all warnings in the row — confusing vs global Auto-fix"],"priorConcernsAddressed":"all"}
 ```
-Re-test note — prior concern (round-1 'by Anonymous' attribution + dual 'Editing as'/'Reviewing as' labels): ADDRESSED. After typing my name in a synced workspace it shows a single "Editing as: Dana Reyes", and "Anonymous" appears nowhere. Sign-off accountability is restored. priorConcernsAddressed: all.
-
-Fresh take as Dana (tag 30+ links weekly, bounce if value isn't obvious in one scroll):
-
-Clarity: Yes. "Clean UTM links for your whole campaign — in one grid" plus the auto-fix subhead told me instantly what it is and that it's for marketers like me.
-
-Value: Yes, real not marginal. Today this is a HubSpot + spreadsheet copy-paste slog with casing drift that splits my GA4 reports. Auto-fix naming + Export CSV + Copy all URLs collapse that 15-minute grind into a couple clicks, and the live Team Workspace with review sign-off is something I'd actually run before launch.
-
-Advocacy 9, not 10. The grind-killer works and my prior blocker is fixed, so I'd post this in my team channel. The one thing holding the last point: the actual grid is buried ~668px down behind feature banners and My Workspaces sits at the very bottom — for a value-in-one-scroll user, surface the grid higher and pull My Workspaces up, and it's a 10.

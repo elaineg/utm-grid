@@ -49,20 +49,26 @@ test("lint-rule toggles persist in localStorage across reload", async ({
   page,
 }) => {
   await page.goto("/");
-  // Expand Naming rules disclosure (collapsed by default since panel round-4)
-  const namingRulesBtn = page.locator('button[aria-expanded]').filter({ hasText: /Naming rules/ });
-  if ((await namingRulesBtn.getAttribute("aria-expanded")) === "false") await namingRulesBtn.click();
+  // Open the Rules ▾ popover (lint-rules now live inside Rules ▾ dropdown)
+  const rulesBtn = page.locator('[data-testid="rules-menu-btn"]');
+  await expect(rulesBtn).toBeVisible({ timeout: 5000 });
+  await rulesBtn.click();
   const lowercase = page.getByRole("checkbox", { name: "Lowercase only" });
   await expect(lowercase).toBeVisible({ timeout: 3000 });
   await expect(lowercase).toBeChecked();
   await lowercase.uncheck();
+  // Close the popover before reload
+  await page.keyboard.press("Escape");
   await page.reload();
-  // Re-expand Naming rules after reload to check persisted toggle state
-  const namingRulesBtn2 = page.locator('button[aria-expanded]').filter({ hasText: /Naming rules/ });
-  if ((await namingRulesBtn2.getAttribute("aria-expanded")) === "false") await namingRulesBtn2.click();
+  // Re-open Rules ▾ after reload to check persisted toggle state
+  const rulesBtn2 = page.locator('[data-testid="rules-menu-btn"]');
+  await expect(rulesBtn2).toBeVisible({ timeout: 5000 });
+  await rulesBtn2.click();
   await expect(
     page.getByRole("checkbox", { name: "Lowercase only" })
   ).not.toBeChecked();
+  // Close the popover before typing in the grid
+  await page.keyboard.press("Escape");
   // With the rule off, uppercase no longer warns (still flags the space).
   await cell(page, "utm_campaign", 1).fill("Spring Sale");
   await expect(
@@ -190,7 +196,7 @@ test("AUTOFIX spot-check: Facebook -> Auto-fix naming -> utm_source=facebook in 
   await cell(page, "utm_medium", 1).fill("paid_social");
   await cell(page, "utm_campaign", 1).fill("spring");
 
-  await page.getByRole("button", { name: "Auto-fix naming" }).click();
+  await page.locator('[data-testid="auto-fix-naming-btn"]').click();
 
   // utm_source should be lowercased to "facebook"
   await expect(cell(page, "utm_source", 1)).toHaveValue("facebook");

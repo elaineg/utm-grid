@@ -37,12 +37,29 @@ async function fillSpringSaleRow(page: Page) {
   await cell(page, "utm_campaign", 1).fill("spring_sale");
 }
 
-/** Expand the Bulk edit bar if it is collapsed. */
+/** Open Tools ▾ dropdown (if not already open). Returns the tools button locator. */
+async function openToolsMenu(page: Page) {
+  const toolsBtn = page.locator('[data-testid="tools-menu-btn"]');
+  const isOpen = await toolsBtn.getAttribute("aria-expanded");
+  if (isOpen !== "true") await toolsBtn.click();
+  return toolsBtn;
+}
+
+/** Open Tools ▾ menu then click Bulk edit to expand the BulkEditBar panel. */
 async function expandBulkBar(page: Page) {
-  const toggle = page.getByRole("button", { name: /Bulk edit/i }).first();
-  const expanded = await toggle.getAttribute("aria-expanded");
-  if (expanded === "false") await toggle.click();
-  // Wait for content to be visible
+  // Open Tools ▾ if not already open
+  const toolsBtn = page.locator('[data-testid="tools-menu-btn"]');
+  const toolsOpen = await toolsBtn.getAttribute("aria-expanded");
+  if (toolsOpen !== "true") await toolsBtn.click();
+  // Click "Bulk edit" in the dropdown
+  await page.getByRole("button", { name: /Bulk edit/i }).click();
+  // BulkEditBar panel renders — expand its inner accordion if collapsed
+  const innerToggle = page.locator('button[aria-controls="bulk-edit-panel"]');
+  if (await innerToggle.isVisible({ timeout: 2000 }).catch(() => false)) {
+    const expanded = await innerToggle.getAttribute("aria-expanded");
+    if (expanded === "false") await innerToggle.click();
+  }
+  // Wait for the "Download QR codes as ZIP" button to be visible
   await expect(page.getByRole("button", { name: "Download QR codes as ZIP" })).toBeVisible({ timeout: 5000 });
 }
 
@@ -771,7 +788,7 @@ test("first-click sentinel: QR button fires on FIRST click, no focus-steal", asy
   await expect(popover).toBeVisible({ timeout: 5000 });
 });
 
-// ── Top-level toolbar "Download QR codes" button — always-visible, no accordion ──
+// ── Tools ▾ "Download QR codes" button — reachable via Tools menu, no accordion ──
 
 test("top-level 'Download QR codes' button is present and operable WITHOUT expanding any accordion", async ({
   page,
@@ -780,23 +797,23 @@ test("top-level 'Download QR codes' button is present and operable WITHOUT expan
   await fillSpringSaleRow(page);
   await page.waitForLoadState("networkidle");
 
-  // The top-level button must exist and be visible WITHOUT any expandBulkBar() call
+  // Open Tools ▾ to reveal the download button (it lives there, not in the BulkEditBar accordion)
+  await openToolsMenu(page);
   const topBtn = page.getByTestId("download-qr-codes-btn");
   await expect(topBtn).toBeVisible({ timeout: 5000 });
   await expect(topBtn).toBeEnabled();
 
-  // It must not be inside an accordion (the Bulk edit accordion must NOT be expanded)
-  // Verify: the Bulk edit toggle is NOT expanded (the button inside the accordion is absent/hidden)
+  // The BulkEditBar accordion must NOT be expanded (button is in Tools ▾, not accordion)
   const bulkBarBtn = page.getByRole("button", { name: "Download QR codes as ZIP" });
-  // This button is only visible when the bulk edit accordion is expanded
+  // This button is only visible when the bulk edit panel is open
   await expect(bulkBarBtn).not.toBeVisible();
 
-  // Clicking the top-level button triggers a download (QR generation is client-side)
+  // Clicking the Tools ▾ button triggers a download (QR generation is client-side)
   const dlPromise = page.waitForEvent("download", { timeout: 20000 });
   await topBtn.click();
   await dlPromise;
 
-  // Result message must appear adjacent to the top-level button (in the toolbar)
+  // Result message must appear in the toolbar
   const resultMsg = page.getByRole("status").filter({ hasText: /QR code/i }).first();
   await expect(resultMsg).toBeVisible({ timeout: 10000 });
 });
@@ -813,7 +830,8 @@ test("dual-render: top-level toolbar message and BulkEditBar message show IDENTI
   // Row 2: empty/invalid (leave empty) — so result is "1 QR code generated, 1 skipped — incomplete or invalid URL"
   await addRow(page);
 
-  // Trigger from the TOP-LEVEL button (no accordion needed)
+  // Trigger from the Tools ▾ download button (no accordion needed)
+  await openToolsMenu(page);
   const topBtn = page.getByTestId("download-qr-codes-btn");
   await expect(topBtn).toBeVisible({ timeout: 5000 });
 
@@ -821,7 +839,7 @@ test("dual-render: top-level toolbar message and BulkEditBar message show IDENTI
   await topBtn.click();
   await dlPromise;
 
-  // Get the top-level result message
+  // Get the result message
   const allStatusMsgs = page.getByRole("status").filter({ hasText: /QR code/i });
   await expect(allStatusMsgs.first()).toBeVisible({ timeout: 10000 });
 
@@ -860,7 +878,8 @@ test("375px: top-level 'Download QR codes' button is reachable and hittable with
   const windowWidth = await page.evaluate(() => window.innerWidth);
   expect(bodyScrollWidth).toBeLessThanOrEqual(windowWidth + 2);
 
-  // The top-level button must be visible and within the viewport width
+  // Open Tools ▾ to access the download button
+  await openToolsMenu(page);
   const topBtn = page.getByTestId("download-qr-codes-btn");
   await topBtn.scrollIntoViewIfNeeded();
   await expect(topBtn).toBeVisible({ timeout: 5000 });
