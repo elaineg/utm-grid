@@ -2201,3 +2201,104 @@ before launch."** No new page, no new surface — copy only.
 - A review action now logs the user's real name everywhere — the popover shows **"Reviewing as:
   <name>"** with an inline name field, the name persists across reload, and `/w/<id>/review` reads
   **"approved by <name>"**, never "by Anonymous".
+
+## My Workspaces (2026-06-14) — device-local index of every workspace you've touched
+
+ONE new capability on the MAIN BUILDER `/`: a localStorage-backed list of every Team Workspace this
+device has CREATED or OPENED, so a marketer/agency can come back to their workspaces. Today the secret
+`/w/<id>` link is the ONLY handle — lose it, lose the workspace. Auto-records on workspace create and
+on opening any `/w/<id>` that resolves. 100% client-side, this device only, no accounts this run. Do
+NOT add a page, do NOT touch the headline, subhead, grid, lint toggles, or any other panel.
+
+**5-second framing.** A returning user lands on `/` and immediately sees **"My Workspaces"** at the
+top of the side area with their real, named workspaces listed — so "where did my team's workspace go?"
+is answered before they scroll. A first-time/cold visitor sees the same panel with a one-line empty
+state that explains it ("Workspaces you create or open show up here on this device"), never a blank
+box — the panel teaches the return-loop before the user has one.
+
+**1. Placement + landing hierarchy (heed added-feature-buried-panel-surfaces-not-function, 4x).**
+The landing hierarchy on `/`, top to bottom, is: (1) compact hero (headline + subhead, unchanged);
+(2) the toolbar; (3) the editable example grid — **the grid stays the hero and MUST remain above the
+fold** (do not let this panel push it down). "My Workspaces" lives in the **right-hand sidebar** (the
+same rail that holds Campaigns / UTM Spec / Naming Template / Presets) as the **FIRST, TOP-MOST
+section of that rail, ABOVE Campaigns** — and it is **AUTO-EXPANDED by default** (the only side
+section that is; the others stay collapsed-but-labeled on cold open). It is visually distinct from the
+collapsed config disclosures below it: a solid section card with a clear **"My Workspaces"** header,
+not a one-line disclosure bar — so it reads as a first-class home, not another buried toggle. Because
+it sits in the side rail (not above the grid), it does NOT push the grid below the fold at 1280px;
+verify no horizontal page overflow at 1280px with this section open.
+On mobile/narrow (<900px) it is the **FIRST disclosure directly under the toolbar, above Campaigns**,
+and (unlike the other mobile disclosures) it is **expanded by default** with a count in its header
+(**"My Workspaces (3)"**) so a phone user sees their list without hunting — but it stays in flow and
+above the grid's first card only as a short list; the example card must still be reachable on first
+paint (cap visible rows ~3 with a "Show all (N)" expander so a long list never buries the grid).
+
+**2. Panel layout (always renders — heed optional-ui-gated-on-data-presence-vanishes-for-empty-case).**
+The panel ALWAYS renders, empty or not — never hidden when the list is empty. Top to bottom:
+- **Header:** **"My Workspaces"** + a muted count (**"My Workspaces (3)"**).
+- **Helper line (mode-aware, honest — heed constraint 4):** **"Workspaces you create or open are
+  saved on THIS device only — not synced. Keep the workspace link to access it elsewhere."** Do NOT
+  say "synced", "account", or "cloud". One quiet trailing clause frames the future on-ramp without any
+  sign-in UI: **"Sign-in to sync across devices is coming."** (copy only — design NO sign-in control).
+- **Search:** a single full-width input, placeholder **"Search workspaces"**, filters the list by
+  label as you type (live, no submit). Hidden only when the list is empty (the empty state replaces
+  it); shown whenever ≥1 entry exists.
+- **List:** the entries (most-recently-touched first).
+- **Empty state (zero entries):** one quiet line in the list area, no nag box: **"No workspaces yet —
+  create one or open a `/w/…` link and it'll show up here on this device."** The panel header + helper
+  line still render above it. (No search input in the empty case.)
+
+**3. Each entry's anatomy (one compact card per workspace).**
+- **Label** (bold, left, truncates with ellipsis): the workspace's display name if it has one, else a
+  readable fallback (e.g. **"Workspace 8b23…"** using a short id slice). Clicking the label = Open.
+- **Role badge:** **"Owner"** (this device created it) or **"Visited"** (this device only opened it) —
+  a small muted pill, Owner accent-tinted, Visited neutral. (Self-asserted/device-local, not
+  authenticated — same prop as the rest of the app.)
+- **Relative time** (muted, right of or under the label): last opened — "just now", "3h ago", "2d
+  ago", then a date — same relative-time style as the Campaigns rows.
+- **Three actions, always visible (never hover-gated — that's the buried-affordance trap):**
+  **Open** · **Copy link** · **Remove**. On desktop a compact persistent action cluster on the card;
+  on mobile a persistent icon+label row under the meta line. Verbs are exactly **Open / Copy link /
+  Remove** — distinct from the Campaigns card verbs (Open / Duplicate campaign / Delete campaign) and
+  the grid row verbs, so no cross-panel verb collision.
+  - **Open** navigates to `/w/<id>` (loads that workspace; standard nav, no confirm needed).
+  - **Copy link** copies the full `https://…/w/<id>` URL to the clipboard.
+  - **Remove** deletes the entry from THIS list only (local) — it does NOT delete the workspace on the
+    server. Make that explicit (see §4 confirm).
+
+**4. Interaction + confirmation states.**
+- **Copy link confirmation (heed copy-confirmation-survives-tick-rerender, 6x).** On click the
+  entry's **"Copy link"** trigger itself swaps to **"Copied!"**, fills solid green in place with a
+  check, backed by `aria-live="polite"`, and reverts after ~1.8s. The confirm is on the PERSISTENT
+  per-entry button (never a corner toast that scrolls off), and the revert timer MUST be ref-stable so
+  it survives the panel's re-renders (the list re-renders on every tick/relative-time update — the
+  green state must not be wiped mid-confirm). Use the proven `execCommand`/textarea fallback when
+  `navigator.clipboard` rejects so the green "Copied!" still fires in blocked-clipboard contexts. The
+  same green cue must fire identically at 375px.
+- **Remove confirmation (must name that it's local-only).** Remove asks an inline confirm (or native
+  `confirm()`) with copy that prevents the "did I just delete my team's workspace?" panic:
+  **"Remove \"Black Friday\" from this list? This only removes it from THIS device — the workspace
+  and its link still work."** OK removes the entry (list re-renders, count decrements); Cancel leaves
+  it. No green flash needed (the row disappearing IS the confirmation).
+- **Auto-record (no UI, but the felt behavior):** creating a workspace adds an **Owner** entry; opening
+  a resolving `/w/<id>` adds/updates a **Visited** entry (Owner is never downgraded to Visited);
+  opening bumps the entry to the top with a fresh relative time. A `/w/<bad-id>` that 404s records
+  NOTHING (only resolving workspaces enter the list).
+
+**5. Mobile (375px) layout (heed constraint 5 — stack, tappable, no occlusion).** The whole panel,
+the search input, and all three per-entry actions stack vertically and stay reachable: each entry is a
+full-width card — label + role badge on the first line (badge wraps under if tight), relative time on
+the next, then a row of three **≥44px** tap-targets **Open / Copy link / Remove** (icon+label),
+nothing sticky, nothing overlaying them, no horizontal scroll. The search input is full-width ≥44px.
+The panel is the first expanded disclosure under the toolbar; a long list caps to ~3 visible with
+"Show all (N)" so it never buries the example card. At 1280px: no horizontal page overflow with the
+panel open.
+
+### 5-second check (My Workspaces — unchanged above the fold)
+- **Cold visitor (`/`):** unchanged hero (headline + subhead + the pre-filled example grid row with a
+  live Generated URL + Copy). The right-rail's top section **"My Workspaces"** is auto-expanded and
+  shows the honest empty state ("No workspaces yet — create one or open a `/w/…` link…") — present and
+  legible, never hidden, never pushing the grid below the fold.
+- **Returning visitor (`/`):** same hero; **"My Workspaces (N)"** at the top of the rail lists their
+  real workspaces (label, Owner/Visited badge, relative time) with **Open / Copy link / Remove** on
+  each and a search box — the workspace they "lost the link to" is right there, this device only.

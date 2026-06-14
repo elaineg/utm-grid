@@ -36,6 +36,7 @@ import { writeValue } from "../../../lib/useLocalStorage";
 import type { WorkspacePayload } from "../../../lib/workspace";
 import { computeReviewRollup, type ReviewMap } from "../../../lib/review";
 import { writeClipboard } from "../../../lib/share";
+import { upsertMyWorkspaceInStorage, deriveWorkspaceLabel } from "../../../lib/myWorkspaces";
 
 type SyncStatus = "idle" | "saving" | "saved" | "error";
 
@@ -328,6 +329,47 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
       // sessionStorage unavailable — ignore
     }
   }, [id]);
+
+  // ── My Workspaces recording ───────────────────────────────────────────────
+  // Fires AFTER the workspace resolves (status === "found") — SSR/hydration-safe.
+  // Reads window.localStorage DIRECTLY inside the effect (not via closure state).
+  // Reads window.location.origin inside the effect (never in render).
+  // Does NOT add any extra network call.
+  const didRecordMyWorkspace = useRef(false);
+  useEffect(() => {
+    if (status !== "found") return;
+    if (!id) return;
+    if (didRecordMyWorkspace.current) return;
+    didRecordMyWorkspace.current = true;
+
+    // Determine label from the loaded payload's name field.
+    // We read workspaceNameRef directly (it's a ref, not closured state) to avoid
+    // the effect-closure staleness bug described in the SSR rules.
+    const label = deriveWorkspaceLabel(workspaceNameRef.current || undefined, id);
+
+    // Determine role: "owner" if this browser created the workspace (sessionStorage signal).
+    let role: "owner" | "visited" = "visited";
+    try {
+      const ownerKey = `ws-record-owner:${id}`;
+      if (sessionStorage.getItem(ownerKey) === "1") {
+        sessionStorage.removeItem(ownerKey);
+        role = "owner";
+      }
+    } catch {
+      // sessionStorage unavailable — default to "visited"
+    }
+
+    // Build the link from window.location (never in render)
+    const link = `${window.location.origin}/w/${id}`;
+
+    upsertMyWorkspaceInStorage({
+      id,
+      label,
+      role,
+      lastOpened: Date.now(),
+      link,
+    });
+  }, [status, id]); // intentionally exclude workspaceNameRef (ref, not state)
 
   // Perform the actual PUT save to server.
   // Called by both autosave debounce and immediate restore-save.

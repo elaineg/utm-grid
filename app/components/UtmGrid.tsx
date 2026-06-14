@@ -73,6 +73,7 @@ import {
   contactSheetLabel,
   BLOCKING_QR_LINT_RULES,
 } from "../../lib/qr";
+import { MyWorkspacesPanel } from "./MyWorkspacesPanel";
 
 type EditableField = "baseUrl" | UtmField;
 const COLUMNS: EditableField[] = ["baseUrl", ...UTM_FIELDS];
@@ -1353,6 +1354,13 @@ export function UtmGrid({
       } catch {
         // sessionStorage unavailable — clipboard will still work
       }
+      // Signal /w/<id> page to record this workspace with role "owner" in My Workspaces.
+      // The actual upsert happens in a useEffect on the workspace page (SSR-safe, hydration-safe).
+      try {
+        sessionStorage.setItem(`ws-record-owner:${id}`, "1");
+      } catch {
+        // sessionStorage unavailable — My Workspaces record will be written as "visited" instead
+      }
       // Navigate to /w/<id>
       router.push(`/w/${id}`);
     } catch {
@@ -1928,10 +1936,16 @@ export function UtmGrid({
       />
 
       {/* Mobile disclosures — above grid, below Pre-launch QA (R2-3: QA strip is higher in DOM).
-          ORDER (per brief): NamingTemplate FIRST (most setup-critical), then Campaigns, then UTM Spec.
+          ORDER (per UX brief My Workspaces §1): My Workspaces FIRST (auto-expanded), then
+          NamingTemplate, Campaigns, UTM Spec.
+          My Workspaces only in default mode (not workspace/preview mode).
           Campaigns hidden in workspace mode (local-only). UTM Spec shown in all modes. */}
       <div className="min-[900px]:hidden flex flex-col gap-1">
-        {/* Campaign Naming Template mobile disclosure — FIRST, always shown (promote to top per Fix 1) */}
+        {/* My Workspaces mobile disclosure — FIRST, auto-expanded, default mode only */}
+        {!isWorkspaceMode && (
+          <MyWorkspacesPanel mobileOnly />
+        )}
+        {/* Campaign Naming Template mobile disclosure — shown below My Workspaces */}
         <NamingTemplatePanel
           template={namingTemplate}
           onChange={setNamingTemplate}
@@ -2882,7 +2896,11 @@ export function UtmGrid({
             />
           </div>
         ) : (
-          /* Default mode: NamingTemplate + Campaigns + UtmSpec in a 3-col row */
+          /* Default mode: My Workspaces (full-width, first) + 3-col row below */
+          <div className="flex flex-col gap-4">
+            {/* My Workspaces — FIRST, top-most, auto-expanded (UX brief My Workspaces §1) */}
+            <MyWorkspacesPanel desktopOnly />
+            {/* NamingTemplate + Campaigns + UtmSpec in a 3-col row */}
           <div className="grid grid-cols-3 gap-4">
             <NamingTemplatePanel
               template={namingTemplate}
@@ -2916,6 +2934,7 @@ export function UtmGrid({
               workspaceMode={false}
               desktopOnly
             />
+          </div>
           </div>
         )}
       </div>
