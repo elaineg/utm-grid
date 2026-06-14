@@ -28,16 +28,21 @@ export function NamingTemplatePanel({
   enforceTemplate,
   onEnforceTemplateChange,
 }: NamingTemplatePanelProps) {
-  // Collapsed by default on cold open (no segments); expanded once ≥1 segment exists.
+  // SSR-safe: start collapsed (template.segments is SSR default = []).
+  // Auto-expand once segments hydrate from localStorage or are added.
   const hasSegments = template.segments.length > 0;
-  const [expanded, setExpanded] = useState(() => hasSegments);
+  // P1 fix: start expanded on cold open if segments exist on FIRST render
+  // (handles both the SSR→client hydration case and the normal already-expanded case).
+  const [expanded, setExpanded] = useState(false);
 
-  // Auto-expand when first segment is added (or on load with segments).
+  // Auto-expand when segments hydrate (false→true on first client render with stored data)
+  // or when the first segment is added by the user.
+  // Also auto-expand on cold open if enforceTemplate is on — signals setup intent.
   useEffect(() => {
-    if (hasSegments) setExpanded(true);
+    if (hasSegments || enforceTemplate) setExpanded(true);
     // Never auto-collapse — respect user's manual collapse.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasSegments]);
+  }, [hasSegments, enforceTemplate]);
 
   // Custom event: open via lint-bar "N off-template" indicator
   const panelRef = useRef<HTMLElement | null>(null);
@@ -193,7 +198,9 @@ export function NamingTemplatePanel({
           {enforceTemplate
             ? "On — utm_campaign values that don't match this structure will be flagged."
             : isEmpty
-            ? "Not enforcing — add segments first."
+            ? (
+              <>Not enforcing — <button type="button" onClick={() => setExpanded(true)} className="underline font-medium">define structure below ↓</button> first.</>
+            )
             : "Off — no off-template warnings."}
         </p>
       </div>
@@ -368,42 +375,70 @@ export function NamingTemplatePanel({
     </div>
   );
 
+  // ── Structure-blocks icon (⊞) ─────────────────────────────────────────────
+  const StructureIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" className="w-3.5 h-3.5 shrink-0">
+      <rect x="1" y="1" width="6" height="6" rx="1.2" />
+      <rect x="9" y="1" width="6" height="6" rx="1.2" />
+      <rect x="1" y="9" width="6" height="6" rx="1.2" />
+      <rect x="9" y="9" width="6" height="6" rx="1.2" />
+    </svg>
+  );
+
+  // ── Shared panel header ───────────────────────────────────────────────────
+  const panelHeader = (testId: string) => (
+    <button
+      type="button"
+      onClick={() => setExpanded((v) => !v)}
+      className="flex w-full items-start gap-2 text-left"
+      aria-expanded={expanded}
+      data-testid={testId}
+    >
+      <span className="mt-0.5 text-teal-600"><StructureIcon /></span>
+      <span className="flex-1 min-w-0">
+        <span className="block text-sm font-semibold text-teal-900 leading-tight">
+          Campaign Naming Template
+        </span>
+        <span className="block text-[10px] text-teal-600 leading-snug mt-0.5">
+          Define your campaign-name structure — its parts and their order
+        </span>
+      </span>
+      <span className="text-gray-400 text-xs shrink-0 mt-0.5">{expanded ? "▲" : "▼"}</span>
+    </button>
+  );
+
+  // ── Panel description ─────────────────────────────────────────────────────
+  const panelDescription = (
+    <p className="text-[11px] text-gray-500 mb-2 leading-relaxed">
+      Defines the STRUCTURE of utm_campaign — its parts and their order (e.g.{" "}
+      <span className="font-mono text-teal-700">quarter_channel_audience</span>).{" "}
+      <span className="font-medium text-teal-700">Different from Allowed Values, which sets allowed field values.</span>{" "}
+      Saved on this device.
+    </p>
+  );
+
   // ── Desktop variant ────────────────────────────────────────────────────────
 
   if (desktopOnly) {
     return (
       <aside
         ref={panelRef}
-        className="w-full rounded-lg border border-teal-100 bg-white p-3 mt-3"
+        className="w-full rounded-lg border-2 border-teal-200 bg-teal-50/40 p-3"
         aria-label="Campaign Naming Template panel"
         data-testid="naming-template-panel"
       >
-        <div className="flex items-center justify-between mb-1">
-          <button
-            type="button"
-            onClick={() => setExpanded((v) => !v)}
-            className="flex items-center gap-1.5 text-sm font-semibold text-gray-800"
-            aria-expanded={expanded}
-            data-testid="naming-template-toggle"
-          >
-            <span>Campaign Naming Template</span>
-            <span className="text-gray-400 text-xs">{expanded ? "▲" : "▼"}</span>
-          </button>
-        </div>
+        {panelHeader("naming-template-toggle")}
         {!expanded && (
-          <p className="text-[11px] text-gray-400 leading-relaxed">
-            The STRUCTURE of utm_campaign — its parts and their order. Different from Allowed Values, which sets allowed field values. Saved on this device.
+          <p className="text-[11px] text-teal-700 mt-1.5 leading-relaxed">
+            Define parts like quarter, channel, audience — then enforce them on every row.
+            <span className="ml-1 font-medium text-teal-600">Different from Allowed Values.</span>
           </p>
         )}
         {expanded && (
-          <>
-            <p className="text-[11px] text-gray-400 mb-2 leading-relaxed">
-              The STRUCTURE of utm_campaign — its parts and their order (e.g. quarter_channel_audience).{" "}
-              <span className="font-medium text-teal-700">Different from Allowed Values, which sets allowed values.</span>{" "}
-              Saved on this device.
-            </p>
+          <div className="mt-2">
+            {panelDescription}
             {innerContent}
-          </>
+          </div>
         )}
       </aside>
     );
@@ -414,28 +449,29 @@ export function NamingTemplatePanel({
   if (mobileOnly) {
     return (
       <>
-        <button
-          type="button"
+        <div
+          className="flex w-full items-start justify-between gap-2 rounded-lg border-2 border-teal-200 bg-teal-50/40 px-4 py-3 cursor-pointer"
           onClick={() => setExpanded((v) => !v)}
-          className="flex w-full items-center justify-between rounded-lg border border-teal-100 bg-white px-4 py-2.5 text-sm font-medium text-gray-700"
+          role="button"
           aria-expanded={expanded}
           data-testid="naming-template-mobile-toggle"
+          tabIndex={0}
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setExpanded((v) => !v); } }}
         >
-          <span>
-            Campaign Naming Template{" "}
-            <span className="font-normal text-gray-400 text-xs">— structure of utm_campaign</span>
+          <span className="mt-0.5 text-teal-600 shrink-0"><StructureIcon /></span>
+          <span className="flex-1 min-w-0">
+            <span className="block text-sm font-semibold text-teal-900">Campaign Naming Template</span>
+            <span className="block text-[10px] text-teal-600 mt-0.5">Define your campaign-name structure — its parts and their order</span>
           </span>
-          <span className="text-gray-400 shrink-0">{expanded ? "▲" : "▼"}</span>
-        </button>
+          <span className="text-gray-400 shrink-0 mt-0.5">{expanded ? "▲" : "▼"}</span>
+        </div>
         {expanded && (
           <div
             ref={panelRef as React.RefObject<HTMLDivElement>}
-            className="rounded-b-lg border border-t-0 border-teal-100 bg-white p-4"
+            className="rounded-b-lg border-2 border-t-0 border-teal-200 bg-teal-50/20 p-4"
             data-testid="naming-template-panel"
           >
-            <p className="text-[11px] text-gray-400 mb-3 leading-relaxed">
-              The STRUCTURE of utm_campaign — its parts and their order (e.g. quarter_channel_audience). Different from Allowed Values, which sets allowed values. Saved on this device.
-            </p>
+            {panelDescription}
             {innerContent}
           </div>
         )}

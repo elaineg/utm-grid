@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   composeCampaignName,
   type NamingTemplate,
@@ -16,12 +17,20 @@ interface BuildNameComposerProps {
   onClose: () => void;
   /** data-testid suffix (e.g. rowId) for stable test handles. */
   testIdSuffix: string;
+  /**
+   * Optional anchor rect — used for fixed positioning so the popover
+   * is never clipped by overflow:hidden row boundaries or sticky columns.
+   * When omitted falls back to absolute-below-anchor (legacy).
+   */
+  anchorRect?: DOMRect | null;
 }
 
 /**
- * BuildNameComposer — compact popover anchored to the utm_campaign cell.
- * One control per segment (dropdown if the segment has allowed tokens, text input otherwise).
- * Live joined preview. Apply writes the value and closes.
+ * BuildNameComposer — popover for building a campaign name from segments.
+ * Fix 5 (P2): renders via React portal into document.body so it escapes
+ * row overflow:hidden / sticky column clipping on laptops and 375px cards.
+ * Position is anchored below the trigger button via fixed viewport coords.
+ * All controls ≥44px. Works on mobile card view.
  */
 export function BuildNameComposer({
   template,
@@ -29,6 +38,7 @@ export function BuildNameComposer({
   onApply,
   onClose,
   testIdSuffix,
+  anchorRect,
 }: BuildNameComposerProps) {
   const { segments, separator } = template;
 
@@ -81,14 +91,49 @@ export function BuildNameComposer({
     onClose();
   };
 
-  return (
+  // Compute fixed position from anchor rect for viewport-aware placement.
+  // Prefers below the trigger; if not enough room, opens above.
+  const [fixedStyle, setFixedStyle] = useState<React.CSSProperties>({});
+  useEffect(() => {
+    if (!anchorRect) return;
+    const popoverH = 400; // estimated max height
+    const popoverW = 288; // w-72
+    const vpH = window.innerHeight;
+    const vpW = window.innerWidth;
+
+    let top = anchorRect.bottom + 4;
+    let left = anchorRect.left;
+
+    // If opens below would clip, open above
+    if (top + popoverH > vpH - 8) {
+      top = Math.max(8, anchorRect.top - popoverH - 4);
+    }
+    // Clamp horizontally so popover doesn't overflow viewport
+    if (left + popoverW > vpW - 8) {
+      left = Math.max(8, vpW - popoverW - 8);
+    }
+
+    setFixedStyle({
+      position: "fixed",
+      top,
+      left,
+      width: Math.min(popoverW, vpW - 16),
+      zIndex: 9999,
+    });
+  }, [anchorRect]);
+
+  const popoverContent = (
     <div
       ref={popoverRef}
       role="dialog"
       aria-label="Build campaign name"
       data-testid={`build-name-composer-${testIdSuffix}`}
-      // z-40 so it floats above sticky columns (z-20/z-30) and row controls
-      className="absolute left-0 top-full z-40 mt-1 w-72 max-w-[calc(100vw-16px)] rounded-lg border border-teal-200 bg-white p-3 shadow-xl"
+      style={anchorRect ? fixedStyle : undefined}
+      className={
+        anchorRect
+          ? "rounded-lg border border-teal-200 bg-white p-3 shadow-xl"
+          : "absolute left-0 top-full z-40 mt-1 w-72 max-w-[calc(100vw-16px)] rounded-lg border border-teal-200 bg-white p-3 shadow-xl"
+      }
     >
       <div className="mb-2 flex items-center justify-between">
         <span className="text-xs font-semibold text-gray-700">Build campaign name</span>
@@ -186,4 +231,12 @@ export function BuildNameComposer({
       )}
     </div>
   );
+
+  // Fix 5: Portal to body for viewport-aware, never-clipped positioning.
+  // Falls back to inline absolute when document.body not available (SSR).
+  if (anchorRect && typeof document !== "undefined") {
+    return createPortal(popoverContent, document.body);
+  }
+
+  return popoverContent;
 }

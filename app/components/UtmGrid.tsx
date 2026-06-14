@@ -149,6 +149,8 @@ export function UtmGrid({
 
   // Build-name composer: rowId of the open popover (null = closed).
   const [composerOpenRowId, setComposerOpenRowId] = useState<string | null>(null);
+  // Fix 5: anchor rect for portal-based popover positioning (never clipped by overflow).
+  const [composerAnchorRect, setComposerAnchorRect] = useState<DOMRect | null>(null);
 
   // ── Share link state ───────────────────────────────────────────────────────
   const [shareLinkCopied, setShareLinkCopied] = useState(false);
@@ -272,6 +274,36 @@ export function UtmGrid({
   );
   // Shared-state overlay for namingTemplate (analogous to sharedSpec).
   const [sharedNamingTemplate, setSharedNamingTemplate] = useState<NamingTemplate | null>(null);
+
+  // P1 hydration-guard: on mount, read naming template directly from localStorage to ensure
+  // segments + enforceTemplate hydrate correctly on a cold page load with existing stored data.
+  // This mirrors the exact pattern used for openCampaignId (didRehydrateOpenId).
+  // Root cause: useSyncExternalStore returns DEFAULT_NAMING_TEMPLATE on the server snapshot;
+  // if the first client render doesn't trigger a synchronous state update (e.g. due to
+  // effect scheduling), the NamingTemplatePanel may miss the stored segments.
+  // Reading directly from window.localStorage inside useEffect bypasses the closure staleness.
+  const didRehydrateNamingTemplate = useRef(false);
+  useEffect(() => {
+    if (didRehydrateNamingTemplate.current) return;
+    didRehydrateNamingTemplate.current = true;
+    if (typeof window === "undefined") return;
+
+    const raw = window.localStorage.getItem(key("utm-grid:naming-template"));
+    if (!raw) return;
+    try {
+      // useLocalStorage stores JSON.stringify(value) → parse once to get the object.
+      const parsed = JSON.parse(raw) as unknown;
+      const recovered = deserializeNamingTemplate(parsed);
+      // Only update if the recovered template has segments or enforceTemplate is on —
+      // i.e., it differs meaningfully from the SSR default (empty, enforce off).
+      if (recovered.segments.length > 0 || recovered.enforceTemplate) {
+        setStoredNamingTemplate(recovered);
+      }
+    } catch {
+      // Corrupt JSON — keep current value.
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Campaigns + presets stay LOCAL-only. In workspace mode, skip them (not part of workspace payload).
   // storageKeyPrefix === "" means default mode; non-empty means workspace mode.
@@ -1369,17 +1401,34 @@ export function UtmGrid({
               Enforce allowed values
             </label>
             {/* Canonical "Enforce naming template" toggle — independent of Enforce UTM Spec */}
-            <label className="flex items-center gap-1.5 text-sm text-teal-700">
-              <input
-                type="checkbox"
-                data-testid="enforce-template-toggle"
-                checked={!!namingTemplate.enforceTemplate}
-                onChange={(e) =>
-                  setNamingTemplate({ ...namingTemplate, enforceTemplate: e.target.checked })
-                }
-              />
-              Enforce naming template
-            </label>
+            <span className="flex flex-col gap-0.5">
+              <label className="flex items-center gap-1.5 text-sm text-teal-700 cursor-pointer">
+                <input
+                  type="checkbox"
+                  data-testid="enforce-template-toggle"
+                  checked={!!namingTemplate.enforceTemplate}
+                  onChange={(e) =>
+                    setNamingTemplate({ ...namingTemplate, enforceTemplate: e.target.checked })
+                  }
+                />
+                Enforce naming template
+              </label>
+              {/* Fix 1: "Define structure →" pointer from enforce toggle into the panel */}
+              <button
+                type="button"
+                data-testid="define-structure-link"
+                onClick={() => {
+                  const panel = document.querySelector("[data-testid='naming-template-panel']");
+                  if (panel) {
+                    panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                    panel.dispatchEvent(new CustomEvent("naming-template-open"));
+                  }
+                }}
+                className="text-[10px] text-teal-600 hover:text-teal-800 hover:underline text-left"
+              >
+                Define structure →
+              </button>
+            </span>
             {/* Fix C: "N cells off-spec" indicator — always visible when relevant */}
             {spec.enforceSpec && (() => {
               const offSpecCount = Array.from(warnings.values()).flat().filter((w) => w.rule === "off-spec").length;
@@ -1524,9 +1573,20 @@ export function UtmGrid({
         onNewRowPresetChange={setNewRowPresetId}
       />
 
-      {/* Mobile campaigns + UTM Spec disclosures — above grid, below toolbar.
+      {/* Mobile disclosures — above grid, below toolbar.
+          ORDER (per brief): NamingTemplate FIRST (most setup-critical), then Campaigns, then UTM Spec.
           Campaigns hidden in workspace mode (local-only). UTM Spec shown in all modes. */}
       <div className="min-[900px]:hidden flex flex-col gap-1">
+        {/* Campaign Naming Template mobile disclosure — FIRST, always shown (promote to top per Fix 1) */}
+        <NamingTemplatePanel
+          template={namingTemplate}
+          onChange={setNamingTemplate}
+          enforceTemplate={!!namingTemplate.enforceTemplate}
+          onEnforceTemplateChange={(v) =>
+            setNamingTemplate({ ...namingTemplate, enforceTemplate: v })
+          }
+          mobileOnly
+        />
         {!isWorkspaceMode && (
           <CampaignsSidebar
             campaigns={campaigns}
@@ -1553,16 +1613,6 @@ export function UtmGrid({
           workspaceMode={isWorkspaceMode}
           syncStatus={isWorkspaceMode ? specSyncStatus : undefined}
           syncSavedAt={isWorkspaceMode ? specSavedAt : undefined}
-          mobileOnly
-        />
-        {/* Campaign Naming Template mobile disclosure — always shown, all modes */}
-        <NamingTemplatePanel
-          template={namingTemplate}
-          onChange={setNamingTemplate}
-          enforceTemplate={!!namingTemplate.enforceTemplate}
-          onEnforceTemplateChange={(v) =>
-            setNamingTemplate({ ...namingTemplate, enforceTemplate: v })
-          }
           mobileOnly
         />
       </div>
@@ -1627,11 +1677,13 @@ export function UtmGrid({
               while the middle UTM columns scroll under them. The Actions column is
               116px wide; sticky offset for Generated URL matches that exactly. */}
           <div ref={tableContainerRef} className="hidden sm:block overflow-x-auto rounded-lg border border-gray-200 bg-white">
-          {/* Table min-width: 1050px. Generated URL is 200px in both modes.
-              At 1280px, sidebar=192px (w-48), gap=16px, page-padding=48px → grid≈976px.
-              Sticky cols: 200px+116px=316px. Visible scroll area≈660px.
-              UTM cols start at 224px and span 120px×3=360px → utm_campaign ends at 584px < 660px: all visible. */}
-          <table className="border-collapse text-sm" style={{ minWidth: "1050px" }}>
+          {/* Table min-width: 1140px (sum of all fixed col widths).
+              Fix 6: explicit min-width ensures UTM cols never collapse even when enforce warnings
+              and "Build name" buttons add height. The overflow-x-auto container handles scroll.
+              At 1280px, sidebar=192px, gap=16px, page-padding=48px → grid≈1024px available;
+              1140px table scrolls internally, UTM source/medium/campaign always visible
+              (224–584px from left; sticky Generated+Actions pinned at right edge). */}
+          <table className="border-collapse text-sm" style={{ minWidth: "1140px" }}>
             <thead>
               <tr className="border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase">
                 {/* Bulk-selection checkbox header
@@ -1757,8 +1809,10 @@ export function UtmGrid({
                       return (
                         /* relative z-[11]: creates stacking context above sticky right
                            columns (z-10) so warning popovers and "Fix to" chips are
-                           tappable on mobile at every horizontal scroll position. */
-                        <td key={field} className="relative z-[11] px-2 py-2 overflow-hidden" style={{ minWidth: field === "baseUrl" ? "160px" : "120px" }}>
+                           tappable on mobile at every horizontal scroll position.
+                           Fix 6: overflow-visible (not overflow-hidden) so warning badges
+                           and "Build name" buttons aren't clipped when enforce is on. */
+                        <td key={field} className="relative z-[11] px-2 py-2" style={{ minWidth: field === "baseUrl" ? "160px" : "120px" }}>
                           {/* Column width is set by the th minWidth above.
                               Inputs use w-full to fill the cell for readable display.
                               title attr shows full value on hover — cheap scan aid for Dana. */}
@@ -1793,7 +1847,8 @@ export function UtmGrid({
                           />
                           {/* "Build name" composer button — on utm_campaign cell when template has segments.
                               NOT adjacent to Dup/Delete row controls (those are in the Actions column).
-                              Teal segment-blocks icon, clearly naming its scope. */}
+                              Fix 2: ≥44px touch target, solid teal fill, clearly labeled, distinct from Dup/Del.
+                              Fix 5: passes anchorRect so the portal-rendered popover is never clipped. */}
                           {showComposer && (
                             <div className="relative">
                               <button
@@ -1802,13 +1857,15 @@ export function UtmGrid({
                                 aria-label={`Build campaign name for row ${i + 1}`}
                                 onClick={(e) => {
                                   e.stopPropagation();
+                                  const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
+                                  setComposerAnchorRect(composerOpenRowId === row.id ? null : rect);
                                   setComposerOpenRowId((prev) =>
                                     prev === row.id ? null : row.id
                                   );
                                 }}
-                                className="mt-0.5 inline-flex items-center gap-1 rounded border border-teal-200 bg-teal-50 px-2 py-0.5 text-[10px] font-medium text-teal-700 hover:bg-teal-100"
+                                className="mt-1 inline-flex min-h-[44px] items-center gap-1.5 rounded-md border border-teal-400 bg-teal-600 px-3 py-2 text-xs font-semibold text-white hover:bg-teal-700 active:bg-teal-800 shadow-sm"
                               >
-                                <span>⊞</span>
+                                <span aria-hidden="true">⊞</span>
                                 <span>Build name</span>
                               </button>
                               {composerOpenRowId === row.id && (
@@ -1824,18 +1881,21 @@ export function UtmGrid({
                                     );
                                     flashCellKeys([`${row.id}:utm_campaign`]);
                                   }}
-                                  onClose={() => setComposerOpenRowId(null)}
+                                  onClose={() => { setComposerOpenRowId(null); setComposerAnchorRect(null); }}
                                   testIdSuffix={`${row.id}-table`}
+                                  anchorRect={composerAnchorRect}
                                 />
                               )}
                             </div>
                           )}
-                          {/* Off-template "Build name…" link — opens composer */}
+                          {/* Off-template "Build name…" link — opens composer (Fix 5: pass anchorRect) */}
                           {hasOffTemplate && field === "utm_campaign" && !isPreview && (
                             <button
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
+                                const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
+                                setComposerAnchorRect(rect);
                                 setComposerOpenRowId(row.id);
                               }}
                               className="mt-0.5 inline-flex min-h-[44px] items-center rounded-full border border-teal-300 bg-teal-100 px-2.5 py-1 text-[11px] font-medium text-teal-800 hover:bg-teal-200"
@@ -2113,7 +2173,8 @@ export function UtmGrid({
                               : "border-gray-200 bg-white focus:outline-none focus:border-blue-500"
                           }`}
                         />
-                        {/* Build name composer button for utm_campaign in card view */}
+                        {/* Build name composer button for utm_campaign in card view — Fix 2: ≥44px, solid fill.
+                            Fix 5: passes anchorRect for portal-based positioning at 375px. */}
                         {showComposerCard && (
                           <div className="relative">
                             <button
@@ -2122,13 +2183,15 @@ export function UtmGrid({
                               aria-label={`Build campaign name for row ${i + 1}`}
                               onClick={(e) => {
                                 e.stopPropagation();
+                                const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
+                                setComposerAnchorRect(composerOpenRowId === `${row.id}-card` ? null : rect);
                                 setComposerOpenRowId((prev) =>
                                   prev === `${row.id}-card` ? null : `${row.id}-card`
                                 );
                               }}
-                              className="inline-flex min-h-[44px] items-center gap-1.5 rounded-md border border-teal-200 bg-teal-50 px-3 py-2 text-xs font-medium text-teal-700 hover:bg-teal-100"
+                              className="inline-flex min-h-[44px] items-center gap-1.5 rounded-md border border-teal-400 bg-teal-600 px-3 py-2 text-xs font-semibold text-white hover:bg-teal-700 active:bg-teal-800 shadow-sm"
                             >
-                              <span>⊞</span>
+                              <span aria-hidden="true">⊞</span>
                               <span>Build name</span>
                             </button>
                             {composerOpenRowId === `${row.id}-card` && (
@@ -2144,18 +2207,21 @@ export function UtmGrid({
                                   );
                                   flashCellKeys([`${row.id}:utm_campaign`]);
                                 }}
-                                onClose={() => setComposerOpenRowId(null)}
+                                onClose={() => { setComposerOpenRowId(null); setComposerAnchorRect(null); }}
                                 testIdSuffix={`${row.id}-card`}
+                                anchorRect={composerAnchorRect}
                               />
                             )}
                           </div>
                         )}
-                        {/* Off-template "Build name…" link in card view */}
+                        {/* Off-template "Build name…" link in card view (Fix 5: pass anchorRect) */}
                         {hasOffTemplateCard && field === "utm_campaign" && !isPreview && (
                           <button
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
+                              const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
+                              setComposerAnchorRect(rect);
                               setComposerOpenRowId(`${row.id}-card`);
                             }}
                             className="inline-flex min-h-[44px] items-center self-start rounded-full border border-teal-300 bg-teal-100 px-3 py-2 text-[12px] font-medium text-teal-800 hover:bg-teal-200"
@@ -2262,7 +2328,18 @@ export function UtmGrid({
             primary UTM columns (224–584px) stay visible without horizontal scrolling.
             Campaigns hidden in workspace mode (local-only). */}
         {!isWorkspaceMode && (
-          <div className="hidden min-[900px]:flex flex-col w-48 min-[1536px]:w-64 shrink-0 gap-0">
+          <div className="hidden min-[900px]:flex flex-col w-48 min-[1536px]:w-64 shrink-0 gap-2">
+            {/* Campaign Naming Template panel — FIRST in sidebar (Fix 1: promote to top)
+                Visually separated from Allowed values & Campaigns by its teal border treatment */}
+            <NamingTemplatePanel
+              template={namingTemplate}
+              onChange={setNamingTemplate}
+              enforceTemplate={!!namingTemplate.enforceTemplate}
+              onEnforceTemplateChange={(v) =>
+                setNamingTemplate({ ...namingTemplate, enforceTemplate: v })
+              }
+              desktopOnly
+            />
             <CampaignsSidebar
               campaigns={campaigns}
               openCampaignId={openCampaignId}
@@ -2287,16 +2364,6 @@ export function UtmGrid({
               workspaceMode={false}
               desktopOnly
             />
-            {/* Campaign Naming Template panel — sibling to UTM Spec, directly below */}
-            <NamingTemplatePanel
-              template={namingTemplate}
-              onChange={setNamingTemplate}
-              enforceTemplate={!!namingTemplate.enforceTemplate}
-              onEnforceTemplateChange={(v) =>
-                setNamingTemplate({ ...namingTemplate, enforceTemplate: v })
-              }
-              desktopOnly
-            />
           </div>
         )}
       </div>
@@ -2306,16 +2373,7 @@ export function UtmGrid({
           Round 3 P0-2 fix: opening the panel never squeezes utm_source/medium/campaign off-screen. */}
       {isWorkspaceMode && (
         <div className="hidden min-[900px]:block mt-2">
-          <UtmSpecPanel
-            spec={spec}
-            onChange={setSpec}
-            workspaceMode={true}
-            syncStatus={specSyncStatus}
-            syncSavedAt={specSavedAt}
-            desktopOnly
-          />
-          {/* Campaign Naming Template panel — stacked below UTM Spec in workspace mode
-              (never a width-stealing sidebar when grid has constrained width) */}
+          {/* Campaign Naming Template — FIRST in workspace mode too (Fix 1) */}
           <NamingTemplatePanel
             template={namingTemplate}
             onChange={setNamingTemplate}
@@ -2323,6 +2381,14 @@ export function UtmGrid({
             onEnforceTemplateChange={(v) =>
               setNamingTemplate({ ...namingTemplate, enforceTemplate: v })
             }
+            desktopOnly
+          />
+          <UtmSpecPanel
+            spec={spec}
+            onChange={setSpec}
+            workspaceMode={true}
+            syncStatus={specSyncStatus}
+            syncSavedAt={specSavedAt}
             desktopOnly
           />
         </div>

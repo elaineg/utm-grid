@@ -14,6 +14,7 @@ import {
   serializeNamingTemplate,
   validateCampaignName,
   type NamingTemplate,
+  type OffTemplateWarning,
 } from "./namingTemplate";
 
 // ── Fixtures ─────────────────────────────────────────────────────────────────
@@ -60,9 +61,11 @@ describe("composeCampaignName", () => {
     expect(composeCampaignName(["spring_sale"], "_")).toBe("spring_sale");
   });
 
-  it("preserves empty segment strings (partial fill)", () => {
+  it("excludes empty segment tokens (Fix D/P2 — no silent empty-segment values)", () => {
+    // Old behavior produced "2026q3__retargeting" — that's off-template.
+    // New behavior: empty tokens are excluded from the joined result.
     expect(composeCampaignName(["2026q3", "", "retargeting"], "_")).toBe(
-      "2026q3__retargeting"
+      "2026q3_retargeting"
     );
   });
 });
@@ -174,6 +177,83 @@ describe("validateCampaignName — separator change", () => {
     // Underscore separator with dash template → wrong count (not split correctly)
     const result = validateCampaignName("2026q3_paidsocial_retargeting", dashTemplate);
     expect(result?.kind).toBe("wrong-count");
+  });
+});
+
+// ── validateCampaignName — empty segments (Fix D / P2) ───────────────────────
+
+describe("validateCampaignName — empty segment tokens", () => {
+  it("flags '_email_' (empty leading segment) as off-template", () => {
+    // _email_ splits to ["", "email", ""] with _ separator — 3 parts but first/last empty
+    const result = validateCampaignName("_email_", THREE_SEG_TEMPLATE);
+    expect(result).not.toBeNull();
+    expect(result?.kind).toBe("bad-token");
+    if (result?.kind === "bad-token") {
+      expect(result.emptySegment).toBe(true);
+    }
+  });
+
+  it("flags 'q3__retargeting' (blank middle segment) as off-template", () => {
+    const result = validateCampaignName("q3__retargeting", THREE_SEG_TEMPLATE);
+    expect(result).not.toBeNull();
+    expect(result?.kind).toBe("bad-token");
+    if (result?.kind === "bad-token") {
+      expect(result.emptySegment).toBe(true);
+    }
+  });
+
+  it("empty-segment message says 'is empty'", () => {
+    const result = validateCampaignName("_email_", THREE_SEG_TEMPLATE);
+    expect(result).not.toBeNull();
+    const msg = formatOffTemplateMessage(result!);
+    expect(msg).toMatch(/is empty/);
+  });
+
+  it("composeCampaignName never produces empty-segment values", () => {
+    // Empty tokens are excluded, so partial fills don't produce "__" patterns.
+    expect(composeCampaignName(["q3", "", "retargeting"], "_")).toBe("q3_retargeting");
+    expect(composeCampaignName(["", "email", ""], "_")).toBe("email");
+    expect(composeCampaignName(["q3", "email", ""], "_")).toBe("q3_email");
+  });
+});
+
+// ── formatOffTemplateMessage — positional label fallback (Fix F / P3) ─────────
+
+describe("formatOffTemplateMessage — positional label when segment has no name", () => {
+  it("uses positional label when validateCampaignName produces 'segment N' for unnamed segment", () => {
+    // Unnamed segment (name="") gets positional label "segment N" from validateCampaignName.
+    const unnamedTemplate: NamingTemplate = {
+      segments: [
+        { name: "quarter", allowedTokens: [] },
+        { name: "", allowedTokens: ["paidsocial", "email"] }, // unnamed segment
+      ],
+      separator: "_",
+      enforceTemplate: true,
+    };
+    const result = validateCampaignName("2026q3_organic", unnamedTemplate);
+    expect(result).not.toBeNull();
+    expect(result?.kind).toBe("bad-token");
+    if (result?.kind === "bad-token") {
+      // validateCampaignName fills in "segment 2" for the unnamed segment at index 1
+      expect(result.segmentName).toBe("segment 2");
+    }
+    const msg = formatOffTemplateMessage(result!);
+    // Should name the segment positionally, never produce 'segment "" must be one of:'
+    expect(msg).toContain("segment 2");
+    expect(msg).not.toContain('segment ""');
+  });
+
+  it("uses 'segment' as fallback label when segmentName is empty string", () => {
+    const warning: OffTemplateWarning = {
+      kind: "bad-token",
+      segmentName: "",
+      allowedTokens: ["paidsocial"],
+      value: "organic",
+    };
+    const msg = formatOffTemplateMessage(warning);
+    // Should not produce 'segment "" must be one of:' — that was the old bug
+    expect(msg).not.toContain('""');
+    expect(msg).toMatch(/segment/);
   });
 });
 

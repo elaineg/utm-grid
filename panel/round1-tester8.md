@@ -1,54 +1,47 @@
-# Round (new feature: Paste & Audit URLs) — Tester 8 (Rob, freelance brand/visual designer, desktop)
+# Rob — Round 1 (Tester 8) — Campaign Naming Template
 
-I tag client campaign links a few times a month; otherwise I hand-type query strings or QA links
-someone else dropped into a sheet. "Paste links I already have, tell me what's wrong" is exactly
-the chore I'd hand off, so I went straight at the new feature.
+**Who I am:** Freelance brand/visual designer. Live in Figma/Photoshop. Occasionally tag
+client campaign links and otherwise type query strings by hand. Medium tech, desktop.
 
-PRIOR-FEATURE NOTE: still no way to NAME a workspace (my standing complaint) — unchanged. Not the
-focus this round.
+**Clarity (Yes):** Headline "Clean UTM links for your whole campaign — in one grid" +
+subhead about auto-fixing casing/typos told me in ~10s what this is: a spreadsheet that
+builds clean tracking links. I'd tell a friend "it's a grid that stops you typoing your
+?utm_source=... links and exports them." The new "Campaign Naming Template" panel is clearly
+labeled and explicitly says "The STRUCTURE of utm_campaign... Different from Allowed Values,
+which sets allowed values" — that disambiguation answered my exact question. Distinct from
+UTM Spec/Allowed values: yes.
 
-## 1. Discoverability — Yes
-Spotted it cold in ~5s: violet "Paste & Audit URLs" chip next to Import CSV, subline "Already have
-tagged links? Paste them to find every inconsistency at once." That line cleanly separates it from
-the build-new flow. No hunting.
+**Value (Yes — but qualified):** Today I type the string by hand or copy last campaign's
+link and swap words; that's where I fumble casing ("Instagram" vs "instagram") and spaces.
+This caught all of it instantly: uppercase + spaces flagged, suggested "spring_sale_2026",
+and the template enforce flagged my one-segment value as "Off-template — expected 3, found 1".
+For a client who hands me a naming convention (quarter_channel_audience), that guardrail is
+genuinely better than my eyeball-it method. CSV export + reusable template = saves me the
+repetitive grunt-prep I do weekly. It clears my "I could do this by hand in 4 min" bar
+because the value is consistency across 10 links, not one.
 
-## 2. Used it
-Pasted 5 lines: two URLs identical except casing (Newsletter/Email/Spring_Sale vs all-lowercase),
-one half-tagged (no campaign), one garbage "this is not a url at all", one twitter row.
-- Button live-counted "Audit 5 URLs" as I typed. Dialog explains parse + flag plainly. Append/Replace
-  toggle with "you can Undo immediately after auditing." Reassuring.
-- Result: "Audited 4 URLs — 12 cells flagged · 1 line skipped. Undo." Garbage line correctly SKIPPED;
-  4 real ones parsed into rows with base URL split out from utm_* params. Casing dupes both preserved
-  as separate correct values (NOT silently merged). Flagged cells get an amber highlight + triangle.
-- Best bit: hovered a flag, got one-click "Lowercase + normalize all flagged cells." Clicked it — all
-  4 Newsletter/newsletter cells went lowercase, 0 uppercase remained. That's the exact QA fix I want,
-  and Undo sits right there. This beats me eyeballing a column of links in a Sheet. Saves real time.
+**Prior concern (column crowding) — IMPROVED:** Measured at 1440px with sidebar open:
+utm_campaign/term/content render at right=701/821/941, inside the ~1022px visible area — no
+longer pushed off-screen. The wide Generated-URL column now wraps rather than shoving the
+input columns away. All 8 columns present + editable after filling (confirmed in DOM, not a
+collapse). Counts as addressed.
 
-## Friction / bugs
-- LAYOUT: after auditing, the editable UTM_SOURCE/MEDIUM/CAMPAIGN cells get shoved into a horizontally
-  -scrollable strip and collapse to a sliver labeled "U" between BASE URL and the wide GENERATED URL
-  column — the Campaigns sidebar eats the width even at 1500–1800px. The inputs aren't deleted (DOM
-  shows full 104px cells, they scroll into view), but on first glance it reads like my parsed values
-  vanished. Repro: paste 2 URLs → Audit → look at grid at ≤1500px; UTM columns are off-screen-right
-  behind the generated URL. For someone who pasted links specifically to SEE/FIX per-param values,
-  that's a rough first impression. Fix: auto-scroll/reveal those columns post-audit, or shrink the
-  generated-URL column.
-- The amber flag says WHAT (cell is off) but never plainly says WHY ("these rows differ only by
-  casing"). I had to infer it. A plain-language note would land better with non-technical designers.
+**Advocacy: 8** — I'd bring this up to designer friends who tag client links. Not a 9 because
+the Naming Template lives at the BOTTOM of the right sidebar (below Campaigns + Allowed
+values), so I only found it by scrolling — a first-timer setting up a client convention won't
+discover it cold. The composer worked (Build name popover w/ live Preview + Apply), but it's
+buried. Tighten discoverability of the template panel and this is a 9.
 
-## 3. Regression check — none
-Built a fresh row from scratch: generated URL correct
-(`...?utm_source=google&utm_medium=cpc&utm_campaign=summer`), zero console errors anywhere across
-all tests. Row "Copy" copies share-link state not the single URL — existing behavior, not new
-breakage, but it briefly tripped me. (Clipboard read worked in my env.)
-
-CLARITY: Yes
-VALUE: Yes
-ADVOCACY: 7/10
-REASON: The audit job genuinely works and the one-click normalize is the thing I'd reach for every
-few weeks. Held below an 8 because the grid layout swallows the parsed UTM columns right when I most
-need to read/fix them, and the flags explain what's wrong but not why.
+## Frictions
+- P2: Campaign Naming Template panel is at the very bottom of the sidebar; low
+  discoverability for a feature meant to be set up first.
+- P3: The teal "Enforce naming template" toggle in the panel stays disabled with "add
+  segments first" — fine, but no inline "+ Add segment" hint right at the toggle; you must
+  scroll past JOIN PARTS WITH to find it.
+- P3: Filling a messy value doesn't auto-fix; you must click "Fix" or "Auto-fix naming".
+  Reasonable (footer says "source cells left as typed") but a first-timer may expect
+  auto-correction.
 
 ```json
-{"tester":8,"round":1,"clarity":"Yes","value":"Yes","advocacy":7,"topComplaints":["Post-audit, the editable UTM_SOURCE/MEDIUM/CAMPAIGN columns collapse off-screen-right behind the wide GENERATED URL column (Campaigns sidebar eats width even at 1800px) — looks like parsed values vanished","Flag highlights show WHAT is off but never plainly state WHY (e.g. 'these rows differ only by casing')"],"priorConcernsAddressed":"n/a"}
+{ "name": "Rob", "clarity": "Yes", "value": "Yes", "advocacy": 8, "likes": ["Naming-template panel clearly disambiguated from Allowed Values","Off-template warning (expected 3 segments, found 1) is exactly the client-convention guardrail I need","Instant casing/space lint with suggested fix","Build name composer w/ live Preview + Apply","Prior off-screen column crowding now resolved at 1440px"], "frictions": [{"severity":"P2","issue":"Naming Template panel sits at the bottom of the sidebar — low discoverability for a setup-first feature"},{"severity":"P3","issue":"+ Add segment is below JOIN PARTS WITH; the disabled enforce toggle's 'add segments first' hint isn't right next to the add control"},{"severity":"P3","issue":"Messy values are not auto-fixed without clicking Fix/Auto-fix naming; first-timers may expect autocorrect"}], "verdict_sentence": "The new Campaign Naming Template nails the client-convention guardrail I actually need and is clearly distinct from Allowed Values, and my old column-crowding gripe is fixed — but it's buried at the bottom of the sidebar, which is the only thing keeping it off a 9." }
 ```

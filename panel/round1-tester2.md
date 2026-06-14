@@ -1,49 +1,33 @@
-# Round 1 — Marcus (frontend eng, 2yr, Chrome+devtools open)
+# Round 1 — Tester 2 (Marcus, frontend engineer)
 
-Came back to utm-grid mid product-launch. I tag announcement links across email, Twitter, and the
-blog, and I already advocate this over hand-editing query params. New "Paste & Audit URLs" feature
-this round — honest read.
+Cold-opened on desktop Chrome. Built a real template (quarter_channel_audience, separator `_`,
+token `email` on channel), used the per-row "Build name" composer, toggled Enforce, saw the
+off-template warning, shared the link, and round-tripped it.
 
-## 1. Discoverability (cold open)
-Noticed it without hunting. Violet chip with a magnifier icon sits right next to "Import CSV", and
-the subtext spells out the job: "Already have tagged links? Paste them to find every inconsistency
-at once." Clearly distinct from the build-new grid — one builds fresh links, this ingests links I
-already have. Zero confusion.
+**Clarity** — Yes. H1 "Clean UTM links for your whole campaign — in one grid" + subhead nailed it
+in 5 seconds. The Naming Template was discoverable but it lives at the BOTTOM of the right
+sidebar under "Allowed values" — I only found it fast because I clicked the teal "Enforce naming
+template" toggle up top and it scrolled my eye there. Its helper "The STRUCTURE of utm_campaign…
+Different from Allowed Values, which sets allowed values" is exactly the right disambiguation.
 
-## 2. The audit flow — the good part
-Pasted 5 lines: two acme.com/launch URLs differing ONLY by casing (Twitter/twitter, social/Social,
-spring_launch/Spring_Launch), a clean blog URL, a promo URL missing utm_medium, and a garbage non-URL.
+**Value** — Yes. Today I hand-type query params or paste into Notes; our team has zero naming
+consistency. Defining segments + a Build-name composer that flags "⚠ Off-template — expected 3
+segments, found 1" is genuinely better than a wiki convention nobody follows. The teal warning +
+"1 cell off-template" pill is clear, and it cleared instantly when I fixed the value.
 
-Result header: "Audited 4 URLs · 12 cells flagged · 1 line skipped · Undo". Spot on:
-- Garbage line skipped cleanly, no crash, 0 console errors (devtools open the whole time).
-- Base URLs split correctly (/launch, /blog, /promo); source/medium/campaign parsed into cells.
-- ALL THREE cross-row casing inconsistencies caught — utm_source "Twitter" vs "twitter", utm_medium
-  "social" vs "Social", utm_campaign "spring_launch" vs "Spring_Launch" — each with
-  "these will split campaign data in GA4." That's the exact sentence I'd put in Slack.
-- Missing field flagged: "utm_medium is required."
-- One-click "Lowercase + normalize all flagged cells" — it FIXES, doesn't just nag. Plus Undo and an
-  Append/Replace toggle so I won't wipe my current grid by accident.
-
-Use it more than once in my real job? Yes, unprompted. QA-ing an inherited campaign sheet — pasting
-30 links and instantly seeing which fragment GA4 — is a recurring chore I do today by eyeballing a
-spreadsheet. This is faster and catches what I'd miss.
-
-## 3. Regression check
-Build-new flow intact. Typed messy "Twitter/Social/Spring Launch", hit Auto-fix naming, got clean
-`utm_source=twitter&utm_medium=social&utm_campaign=spring_launch`. Copy fires, no page errors. The
-thing that made me advocate before still works.
-
-## Friction / nits (minor, none blocking)
-- Cosmetic: parsed base-URL cell truncates to "https://acme.cc…"; full value only via tooltip. A
-  wider column would read cleaner.
-- "1 line skipped" doesn't tell me WHICH line — if it was a typo'd URL I'd want to see/fix it rather
-  than guess. Small.
-- No CSS jank; dialog + spacing are clean. I notice that stuff and it passes.
-
-Verdict: the kind of thing I'd drop in team Slack with "this catches GA4 casing splits for you." It
-meaningfully extends an already-good tool. A 9, not 10, only for the skipped-line opacity and the
-truncated base-URL cell.
+**Advocacy** — 8. Polished, zero console errors, share link encodes the whole template in the URL
+hash and round-trips perfectly — I'd drop this in our launch Slack. Not a 9 because the template
+panel's placement (bottom of sidebar) hurts cold discoverability, and with Enforce on + a long
+generated URL the desktop grid collapsed the SOURCE/MEDIUM/CAMPAIGN columns so I couldn't see the
+flagged cell inline — the warning was in the DOM but not visible at the cell.
 
 ```json
-{"name":"Marcus","clarity":"Yes","value":"Yes","advocacy":9}
+{ "name": "Marcus", "clarity": "Yes", "value": "Yes", "advocacy": 8,
+  "likes": ["Build-name composer popover with live PREVIEW + token dropdown", "Clear 'Different from Allowed Values' helper distinguishes the two panels", "Off-template warning is specific ('expected 3 segments, found 1') and teal pill summarizes count", "Share link round-trips the template via URL hash; no login; zero console errors", "Auto-fix naming + existing flows unregressed"],
+  "frictions": [
+    {"severity":"P2","issue":"Naming Template panel sits at the very bottom of the right sidebar under Allowed values — low cold discoverability; I found it via the top Enforce toggle, not by scanning"},
+    {"severity":"P2","issue":"With Enforce on and a long generated URL, the desktop grid collapsed SOURCE/MEDIUM/CAMPAIGN columns, so the per-row off-template warning was in the DOM but not visible at the flagged cell"},
+    {"severity":"P3","issue":"Separator only offers _ or - presets; a custom separator (e.g. |) would be nice but not blocking"}
+  ],
+  "verdict_sentence": "A genuinely useful, well-built naming-convention enforcer that clearly distinguishes structure from allowed values and round-trips via share link — I'd recommend it, held back only by the template panel being buried at the bottom of the sidebar and a column-collapse that hides the flagged cell." }
 ```

@@ -1427,3 +1427,94 @@ optional token chips), the "Enforce naming template" toggle, and the empty-state
 exists. On a row, a **"Build name"** composer opens a compact popover with one control per segment, a
 live joined preview, and Apply; off-template values flag in the distinct teal lint color naming the
 exact mismatch ("expected 3 segments, found 2"). All reachable, ≥44px, non-occluded at 375px.
+
+### Campaign Naming Template — Round 1 panel fixes (panel R1: 9/10 at advocacy 8, Wen 6; clarity & value 10/10)
+
+Comprehension and value are SOLVED — every tester read the panel as distinct from Allowed
+Values and wanted the feature. The 9-bar miss is one near-universal cause: the panel (and its
+per-row composer) is BELOW THE FOLD and found only by hunting (9/10 testers). Plus a P1
+returning-user bug (Wen → 6) and four P2/P3 defects. UX owns surfacing + the popover clip below;
+the BUILDER owns the functional bugs (hydration, loose-enforce, column-visibility, label
+fallback — those are NOT in this brief). Additive / surfacing / CSS / copy only — do NOT touch
+the headline, subhead, lint toggles, grid layout, the existing four warning colors, or any
+other panel's order. Each item maps to a synthesis cause.
+
+**Fix 1 — Make the Naming Template entry point FIRST-CLASS, not a bottom-of-rail afterthought
+(P0; Cause A, 9/10 testers — the dominant blocker).** The "Different from Allowed Values" copy
+is praised but only disambiguates ONCE FOUND; it does not get the panel found. Do all of:
+- **Promote it ABOVE Allowed Values / Campaigns in the right rail.** The Campaign Naming Template
+  disclosure moves to the TOP of the sidebar config stack (above UTM Spec / Allowed values and
+  above Campaigns), so a cold skimmer's eye lands on it first, not after scrolling past two other
+  panels. It is the marquee new feature — it leads the rail.
+- **Auto-expand on cold open the first time** (or until the user has interacted with it once,
+  tracked in localStorage), instead of collapsed-by-default. A first-time visitor sees the
+  separator picker + the empty-state "add segments…" line without any hunt. After first
+  interaction it follows the standard rule (expanded when ≥1 segment, collapsed when empty).
+- **A visible pointer from the top toggle.** The "Enforce naming template" lint-rule toggle (in
+  the lint-rule group up top) carries a small inline **"Define structure →"** link that scrolls
+  to / expands the panel — so a tester who finds the toggle first (Marcus, Sam) is taken straight
+  to where segments are defined, never left guessing. Mirror the "N cells off-spec" indicator
+  pattern already shipped for UTM Spec.
+- **Visually SEPARATE the three "naming" surfaces** so they don't blur (Jules: NAMING RULES
+  toggles / Allowed values / Campaign Naming Template all read alike). Give the Campaign Naming
+  Template disclosure its own **distinct structure/blocks icon** (`[ ]_[ ]_[ ]`, segment chips)
+  and a one-line sub-label directly under the header verbatim: **"Define your campaign-name
+  structure — its parts and their order."** This sub-label, paired with the existing "Different
+  from UTM Spec…" line, names the JOB (not just the difference) so a hurried marketer reads it in
+  one pass. Keep its teal accent tied to the off-template warning color so panel and lint read as
+  one feature, distinct from the amber lint group and violet UTM Spec.
+- **Distinct from the two near-identical "Enforce" toggles** (Priya): the Naming Template's
+  Enforce toggle carries its structure-blocks icon + the label **"Enforce naming template"** with
+  a one-line caption **"flags utm_campaign values that don't match your structure"**, so it never
+  reads as a clone of "Enforce allowed values" sitting beside it.
+
+**Fix 2 — Make the per-row "Build name" composer affordance obviously discoverable (P1; Cause A2,
+Dana + Aisha).** The current subtle teal pill under the utm_campaign cell is missed cold (and
+only appears after a template exists). Strengthen it WITHOUT letting it read as a row/bulk verb:
+- Render it as a clearly-labeled chip-button **"Build name"** with the structure-blocks icon and a
+  visible (not hover-gated) teal outline, sitting ON / directly under the utm_campaign cell —
+  large enough to read as an action, ≥44px on mobile. It must stay **distinct from the row
+  Duplicate/Delete icons and the Bulk Set/Find-&-replace verbs** (the recurring same-verb-adjacency
+  failure): keep it on its own cell, teal, named "Build name", never in the row-actions column.
+- When Enforce is on and a cell is off-template, the off-template warning's **"Build name…"** link
+  (already specified) is the second discovery path — but the cell-level "Build name" chip must be
+  findable even on an on-template / blank cell once segments exist, so the composer isn't gated
+  behind first producing an error. (Keep the "appears once segments exist" rule — that's correct;
+  the fix is making it un-subtle, not making it always-on with no template.)
+
+**Fix 3 — Composer popover must NOT be clipped (P1; Cause C, Sam — laptop + 375px).** The
+"Build campaign name" popover currently clips at the row boundary so the segment pickers are cut
+off until scrolled. Render it so it OVERFLOWS the row/grid correctly:
+- Portal the popover to the document body (or render it outside any `overflow:hidden`/`auto`
+  ancestor) and POSITION it relative to the trigger cell, so the full body (all segment controls +
+  live preview + Apply/Cancel) is visible regardless of the row's height or the table's internal
+  scroll clipping. It opens toward the cell's free side and **reflows to stay within the viewport**
+  (flips up/left if there's no room below/right) — never cut off by the row, the sticky columns,
+  or the grid container.
+- **At 375px in the mobile CARD view:** the composer renders in CARD FLOW (in-document, pushing
+  content down — never a sticky/fixed overlay over a card, checkbox, or row control), full-width,
+  every control ≥44px, the live preview and Apply/Cancel all visible without horizontal scroll.
+  Verify with elementFromPoint that no popover pixel is occluded by, and the popover occludes no,
+  card field / checkbox / row control / Fix chip.
+
+**Fix 4 — Keep all controls reachable and hittable at 375px (P1; spans the above).** Across the
+promoted panel, the per-row "Build name" chip, the composer popover, the "Enforce naming
+template" toggle and its "Define structure →" pointer: every interactive element is ≥44px,
+fully on-screen with no horizontal scroll, and nothing is occluded by the sticky URL/Actions
+column or any banner. Verify at 375px with elementFromPoint that each tap lands on its own
+control — this is the recurring mobile-occlusion bug class this app has hit repeatedly.
+
+**Builder-owned (NOT this brief, named for routing):** Cause B P1 reload-hydration (segments
+must rehydrate from localStorage into the panel on mount, not just the enforce toggle); Cause D
+loose enforcement (empty/blank segments like `_email_` must flag off-template); Cause E column
+visibility (re-budget the bounded-internal-scroll so a flagged cell stays visible with Enforce on
++ a long URL); Cause F label fallback (`segment ""` → "segment N").
+
+### 5-second check (Campaign Naming Template Round 1 — unchanged above the fold)
+Cold visitor still sees the unchanged hero. The **Campaign Naming Template** panel now leads the
+sidebar config stack (above UTM Spec / Campaigns), auto-expanded on first cold open, with its
+distinct structure-blocks icon and the sub-label **"Define your campaign-name structure — its
+parts and their order"** — impossible to scroll past. The "Enforce naming template" lint toggle
+carries a **"Define structure →"** pointer to it. On a row, an un-subtle teal **"Build name"**
+chip opens a composer popover that is never clipped (portaled, viewport-aware) and renders in
+card flow at 375px; every control is ≥44px and non-occluded.

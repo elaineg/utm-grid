@@ -1,43 +1,51 @@
 # utm-grid — Round 1, Tester 7 (Aisha, Product Designer)
 
-I gave this a 10 last round. Came back to judge the new "Paste & Audit URLs" feature on craft,
-not just utility. It holds.
+A teammate shared this again. This round I judged the new **Campaign Naming Template** on
+craft — empty states, copy tone, lint affordances — and naturally touched the rest so a
+regression would show.
 
-## 1. Discoverability — Yes
-Noticed it in the first 5 seconds: violet chip with a search glyph, parked right after "Import CSV"
-where my eye already was. The one-line subhead under it — "Already have tagged links? Paste them to
-find every inconsistency at once" — instantly told me this is the *opposite* of build-new (audit
-existing vs. create). Purpose vs. build-new is unambiguous. No hunting.
+## Clarity — Yes
+H1 ("Clean UTM links for your whole campaign — in one grid") + the casing/typos subline land
+in seconds. The Naming Template panel is the standout craft moment: it pre-empts the obvious
+"how is this different from Allowed values?" question with explicit copy — "The STRUCTURE of
+utm_campaign — its parts and their order... Different from Allowed Values, which sets allowed
+values." A considered author anticipated my exact confusion. The empty state gives a real
+example (quarter / channel / audience), not a hollow "nothing here yet."
 
-## 2. Using it — Yes
-Pasted 5 lines: 3 clean URLs, two of which differed ONLY by casing (newsletter/Newsletter,
-email/Email), plus a facebook URL missing utm_medium, plus one garbage line.
-- Parse: correct. Base URL split out (https://acme.com), utm_* mapped into the right columns,
-  casing preserved verbatim (lowercase row vs Title-Case row).
-- Inconsistencies surfaced — the part I love: row 1 reads "Inconsistent utm_source across rows:
-  'newsletter' vs 'Newsletter' — these will split campaign data in GA4." It names the *consequence*,
-  not a generic "warning." Same for medium. Row 2 collapses to a tidy "2 warnings · Fix" pill with
-  an actionable Fix link.
-- Missing param: facebook row flags "utm_medium is required" with an amber cell.
-- Malformed line: skipped. Status reads "Audited 4 URLs — 12 cells flagged · 1 line skipped. Undo."
-  Clear accounting + an Undo right there.
-This is genuinely faster than what I do today (eyeballing a campaign sheet or pasting links into a
-GA debugger one at a time). I'd reach for it whenever a teammate hands me inherited links to QA.
+## Value — Yes
+Today I'd hand-type campaign names or paste a convention from a Notion doc and hope the team
+follows it. The Build-name composer (per-row popover: a tokened segment like QUARTER becomes
+a constrained dropdown of my values, CHANNEL/AUDIENCE free text, live `PREVIEW:
+q2_email_newusers`, Apply writes the cell) plus the enforce lint (`⚠ Off-template — segment
+"quarter" must be one of: q2`) is the guardrail a doc can't enforce. Verified end-to-end:
+defined a 3-segment template, added q2/q3 tokens, built `q2_email_newusers`, toggled enforce,
+typed an off-template value and got a precise teal warning + "1 cell off-template" badge.
+State persisted across reload.
 
-## 3. Prior value / regression — none found
-Build-new flow, generated-URL cell, base-URL validation ("Not a valid http(s) URL"), presets,
-bulk edit, workspace, Allowed values — all intact. Zero console errors across every flow.
+## Regression — none found
+Hero, presets, bulk edit, Campaigns, Allowed values, Team Workspace, Auto-fix (Undo appeared),
+share all rendered; required-field (amber) vs template (teal) warnings stay visually distinct.
+Zero console/page errors across every flow.
 
-## Friction / nits (minor, none blocking)
-- Submit-count counts RAW lines, not parseable ones. Typed two pure-garbage lines and the button
-  said "Audit 2 URLs" (enabled). On submit it correctly skips them, but the pre-submit label
-  oversells. I'd label by parseable count (or "Audit up to N"). Copy nit, not a bug.
-- (Test-env note, not the app: my driver script mis-indexed a column once due to the row checkbox;
-  the app's own validation behaved correctly.)
+## Friction / nits
+- **P2 discoverability:** the Naming Template panel sits at the very bottom of the right rail,
+  below the fold and collapsed; the per-row "Build name" chip only appears AFTER a template
+  exists. A cold user may never realize the feature is there. (My Playwright click toggled it
+  shut/open before the popover rendered on a couple of attempts — it DOES open reliably via a
+  real click; just easy to miss.)
+- **P3 craft:** an enforce-flagged cell stacks teal border + teal "Build name" chip + teal
+  "N warnings · Fix" in one narrow column — legible but noisy; I'd lighten one element.
 
-The audit copy is human, explains *why* an inconsistency matters, and pairs every flag with a Fix
-or Undo. That's a considered tool. I'd bring it up unprompted to anyone QA-ing campaign links.
+Advocacy 8: craft holds (consistent teal accent, live preview pill, separator picker,
+specific lint that names the segment and its allowed values). Held back from 9 only because
+the panel and its composer are easy to miss below the fold.
 
 ```json
-{"name":"Aisha","clarity":"Yes","value":"Yes","advocacy":10}
+{ "name": "Aisha", "clarity": "Yes", "value": "Yes", "advocacy": 8,
+  "likes": ["Naming-template panel copy explicitly distinguishes itself from Allowed values — pre-empts the exact confusion", "Build-name composer: constrained dropdown for tokened segments + live PREVIEW pill, Apply writes the cell cleanly", "Lint message is specific — names the offending segment and its allowed values; teal vs amber warnings stay distinct", "Considered empty states with concrete examples; template + enforce state persist across reload; zero console errors"],
+  "frictions": [
+    {"severity":"P2","issue":"Discoverability: Naming Template panel sits below the fold at the bottom of the right rail, collapsed; the per-row 'Build name' chip only appears after a template exists, so cold users may never find the feature"},
+    {"severity":"P3","issue":"An enforce-flagged campaign cell stacks teal border + teal 'Build name' chip + teal 'N warnings · Fix' in one narrow cell — legible but visually noisy"}
+  ],
+  "verdict_sentence": "The Naming Template is genuinely considered — distinct from Allowed values, with a constrained composer and a specific lint message — and I'd recommend it, holding back from a 9 only because the panel and its per-row composer are easy to miss below the fold." }
 ```

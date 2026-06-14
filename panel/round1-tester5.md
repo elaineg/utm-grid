@@ -1,45 +1,50 @@
-# Dana — Demand-gen marketer — Round 1 (Paste & Audit URLs)
+# Dana — Demand-gen marketer — Round 1 (Campaign Naming Template)
 
-I tag 30+ links every week before Thursday. The casing-typo problem this fixes is the exact
-thing that quietly splits my GA4 reports into "LinkedIn" vs "linkedin" garbage. I came in
-skeptical but motivated.
+I tag 30+ links every week before Thursday and police a q3_paid_linkedin naming convention by
+hand. I came in to see if the new template feature kills that grind.
 
-## 1. Discoverability — did I notice it?
-Yes, instantly. The violet **"Paste & Audit URLs"** chip sits in the top toolbar next to Import
-CSV, with a magnifier icon and subtext "Already have tagged links? Paste them to find every
-inconsistency at once." In one scroll I knew it was for *auditing existing* links, not building
-new ones. No hunting — a real one-scroll win for someone who bounces fast.
+## Discoverability + clarity (Yes)
+The headline still nails it in one scroll ("Clean UTM links for your whole campaign — in one
+grid"). The **Campaign Naming Template** panel is clearly labeled in the right sidebar AND its
+inline description spells out the difference from Allowed Values: "The STRUCTURE of utm_campaign
+— its parts and their order (e.g. quarter_channel_audience). Different from Allowed Values, which
+sets allowed field values." Zero confusion between the two panels — exactly the distinction I'd
+have asked for.
 
-## 2. Using it — does it actually work?
-Pasted 5 lines: two LinkedIn URLs differing only by casing (LinkedIn/social vs linkedin/Social),
-a clean newsletter one, a google one missing utm_medium, and junk "this is not a url".
+## Using it — works
+Added 3 segments (quarter / channel / audience), set `_` separator, added q3/q4 tokens to quarter.
+- Off-template value `badname123` with Enforce on → teal "⚠ Off-template — expected 2 segments,
+  found 1" right under the cell, plus a header roll-up badge "1 cell off-template". Good value
+  `q3_paid` cleared the warning. That counter is the thing I'd screenshot for the team channel.
+- "Build name" composer opens "Build campaign name" with a QUARTER dropdown, CHANNEL field, live
+  "PREVIEW:" and Apply — the guided builder I'd actually use mid-launch.
+- Template persists across reload (verified utm-grid:naming-template in localStorage).
+- Grid columns (source/medium/campaign/term/content/generated) all stayed on-screen at 1280px —
+  no crowding from the new panel. No JS errors anywhere.
 
-It nailed everything:
-- Parsed each valid URL back into a row (base URL split from utm_* columns). Correct.
-- Toolbar summary: **"Audited 4 URLs — 7 cells flagged · 1 line skipped · Undo"**. It told me the
-  junk line was skipped instead of crashing or silently eating it. That transparency earns trust.
-- Cross-row casing flags: ⚠ "Inconsistent utm_source across rows: 'LinkedIn' vs 'linkedin' — these
-  will split campaign data in GA4." Same for social/Social. That sentence is *literally* my value
-  prop in my language. It also caught per-cell uppercase and the missing required utm_medium.
-- Undo sits right in the toolbar, and the dialog promised it up front. Safe to try on real data.
+## Regression check
+Generated URL still assembles correctly, Enforce-allowed-values toggle still there, Paste & Audit
+and Presets/Bulk-edit panels intact. Nothing broke.
 
-Beats my real workflow (eyeballing a Google Sheet column, or pasting URLs into GA4's checker one at
-a time). 30 links audited in seconds vs ~15 min of squinting. I'd use this every single week.
-
-## 3. Regression on prior value?
-None found. Typed a fresh row → generated URL assembled correctly; "Copy all URLs" copied the clean
-link to clipboard. Core build-new grid still works.
-
-## Friction / nits (minor)
-- "1 line skipped" doesn't say *which* line or *why*. For a QA tool handling 50 links I'd want to see
-  what got dropped, so I trust it didn't silently lose a real URL.
-- Append is the default and adds to the existing empty row; I had to consciously pick Replace. A
-  first-timer could end up with a stray blank row.
+## Frictions
+- The per-row "Build name" entry point is a small subtle teal pill *under* the utm_campaign cell —
+  easy to miss for the marquee feature. I only found it because I went looking.
+- After a page reload the template panel renders collapsed and looks empty until you re-expand it;
+  for a second I thought my segments were lost (they weren't — localStorage is intact).
 
 ## Verdict
-Clear, fast, speaks GA4. This is the feature that turns the app from "nice builder" into "thing I
-screenshot for the team channel." The skipped-line opacity is the one thing keeping it off a 10.
+This is the convention-policing I do manually every Thursday, now automated and clearly separated
+from Allowed Values. I'd recommend it. Two small UX nits keep it off a 9.
 
 ```json
-{"name":"Dana","clarity":"Yes","value":"Yes","advocacy":9}
+{ "name": "Dana", "clarity": "Yes", "value": "Yes", "advocacy": 8,
+  "likes": ["Headline nails value in one scroll for a marketer",
+    "Naming Template clearly distinct from Allowed Values via inline description",
+    "Off-template warning is specific ('expected 2 segments, found 1') + header 'N cells off-template' roll-up counter",
+    "Build name composer: QUARTER dropdown, live PREVIEW, Apply",
+    "Template persists in localStorage across reload; grid columns not pushed off-screen"],
+  "frictions": [
+    {"severity":"P2","issue":"Per-row 'Build name' composer entry is a subtle small teal pill under the utm_campaign cell — low discoverability for the headline feature"},
+    {"severity":"P3","issue":"After reload the Campaign Naming Template panel collapses and reads empty until re-expanded, looking like data loss though localStorage retains it"}],
+  "verdict_sentence": "The naming template + off-template flag automates the convention-policing I do by hand every Thursday and is clearly separated from Allowed Values, so I'd recommend it — docking to 8 only for the subtle Build-name entry point and the panel collapsing empty on reload." }
 ```

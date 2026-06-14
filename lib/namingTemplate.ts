@@ -47,7 +47,7 @@ export const DEFAULT_NAMING_TEMPLATE: NamingTemplate = {
 
 export type OffTemplateWarning =
   | { kind: "wrong-count"; expected: number; found: number }
-  | { kind: "bad-token"; segmentName: string; allowedTokens: string[]; value: string };
+  | { kind: "bad-token"; segmentName: string; allowedTokens: string[]; value: string; emptySegment?: boolean };
 
 /**
  * Validate a single utm_campaign value against a NamingTemplate.
@@ -84,17 +84,30 @@ export function validateCampaignName(
   }
 
   // Check each part against its segment's allowed tokens (case-insensitive).
+  // Also reject empty segment tokens (e.g. "_email_" or "q3__retargeting").
   for (let i = 0; i < segments.length; i++) {
     const seg = segments[i];
-    if (seg.allowedTokens.length === 0) continue; // "any text" — always valid
     const part = parts[i];
+
+    // Fix D (P2): empty segment token is always off-template.
+    if (part.trim() === "") {
+      return {
+        kind: "bad-token",
+        segmentName: seg.name || `segment ${i + 1}`,
+        allowedTokens: seg.allowedTokens,
+        value: part,
+        emptySegment: true,
+      };
+    }
+
+    if (seg.allowedTokens.length === 0) continue; // "any text" — always valid
     const isAllowed = seg.allowedTokens.some(
       (t) => t.toLowerCase() === part.toLowerCase()
     );
     if (!isAllowed) {
       return {
         kind: "bad-token",
-        segmentName: seg.name,
+        segmentName: seg.name || `segment ${i + 1}`,
         allowedTokens: seg.allowedTokens,
         value: part,
       };
@@ -112,7 +125,21 @@ export function formatOffTemplateMessage(warning: OffTemplateWarning): string {
   if (warning.kind === "wrong-count") {
     return `Off-template — expected ${warning.expected} segment${warning.expected === 1 ? "" : "s"}, found ${warning.found}`;
   }
-  return `Off-template — segment "${warning.segmentName}" must be one of: ${warning.allowedTokens.join(", ")}`;
+  // Fix D (P2): empty segment token message.
+  if (warning.emptySegment) {
+    // Use segment name if present (quoted), else positional label (Fix F/P3).
+    const label = warning.segmentName ? `segment "${warning.segmentName}"` : "segment";
+    return `Off-template — ${label} is empty`;
+  }
+  // Fix F (P3): fall back to positional label when segment has no name.
+  // Named segments keep existing "segment "name"" format for backward compat.
+  const label = warning.segmentName
+    ? `segment "${warning.segmentName}"`
+    : "segment";
+  if (warning.allowedTokens.length > 0) {
+    return `Off-template — ${label} must be one of: ${warning.allowedTokens.join(", ")}`;
+  }
+  return `Off-template — ${label} "${warning.value}" is not a valid value`;
 }
 
 /**
@@ -123,11 +150,21 @@ export function formatOffTemplateMessage(warning: OffTemplateWarning): string {
  *
  * Pure function — no side-effects.
  */
+/**
+ * Compose a utm_campaign value from per-segment token values.
+ * Joins non-empty tokens with the separator. Empty tokens are excluded.
+ * The composer in BuildNameComposer disables Apply when the result is empty,
+ * so a value is only written when all required tokens are filled.
+ *
+ * Pure function — no side-effects.
+ */
 export function composeCampaignName(
   tokens: string[],
   separator: "_" | "-"
 ): string {
-  return tokens.join(separator);
+  // Only include non-empty tokens so the composer never produces leading/
+  // trailing/double separators like "_email_" or "q3__retargeting".
+  return tokens.filter((t) => t.trim() !== "").join(separator);
 }
 
 // ── Serialization helpers (backward-compat, null-safe) ────────────────────────

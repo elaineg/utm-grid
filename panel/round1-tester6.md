@@ -1,55 +1,27 @@
-# utm-grid — Round 1, Tester 6 (Jules, content & community marketer)
+# Round 1 — Tester 6 (Jules, content & community marketer)
 
-I juggle links across X, LinkedIn, Mastodon and Buffer all day and I QA tagged links
-before they go out, so a "paste what I already have and tell me what's wrong" feature is
-the exact chore I dread.
+Cold-opened on desktop. Instantly clear: a no-login bulk UTM builder in a grid — exactly the
+tool I'd bookmark. H1 + "no login, nothing leaves your browser" sold me in <10s.
 
-## 1. Discoverability — Yes
-I spotted "Paste & Audit URLs" within 5 seconds: it's a violet chip sitting right next to
-Import CSV, and the grey subtext under it — "Already have tagged links? Paste them to find
-every inconsistency at once." — instantly told me this is the AUDIT path, not the build-new
-path. No hunting. The dialog header "Paste your existing tagged URLs / One full URL per
-line. We'll parse each back into the grid and flag every inconsistency." removed any doubt.
+Exercised the NEW Campaign Naming Template: opened the sidebar panel, added 3 segments
+(quarter/channel/audience), gave "channel" an allowed token (linkedin), used the per-row
+"⊞ Build name" composer (it gave me a dropdown for channel, text for the rest) and it inserted
+`q3_linkedin_devs` into utm_campaign. Toggled "Enforce naming template" and a teal
+"1 cell off-template" badge + per-cell "⚠ Off-template — expected 3 segments, found 1" fired.
+All works. No console/page errors anywhere. Share link, required-field lint, presets: no regression.
 
-## 2. Using it — Yes, this saves me real time
-Pasted 5 lines including two that differ only by casing
-(Twitter/Social/Spring_Sale vs twitter/social/spring_sale) plus a missing-campaign line and
-one garbage line.
-- Parse is correct: each URL split into BASE URL + utm_source/utm_medium/utm_campaign as
-  separate cells, original casing preserved (so it can actually catch the diff).
-- Inconsistencies surfaced loudly and in MY language: "Inconsistent utm_source across rows:
-  'Twitter' vs 'twitter' — these will split campaign data in GA4." That GA4 framing is
-  exactly why I care. Uppercase got a one-tap "Fix". Missing utm_campaign flagged on the
-  linkedin row.
-- Malformed line handled gracefully: banner said "Audited 4 URLs — 12 cells flagged · 1
-  line skipped. Undo" — it skipped the junk instead of crashing or silently eating it, and
-  TOLD me it skipped one. That honesty earns trust.
-- Undo button appears in the toolbar and fully clears the import. Append/Replace choice up
-  front. Zero console errors.
-Today I eyeball these in a spreadsheet or paste links into a generic UTM checker one at a
-time. Doing the whole batch + cross-row consistency in one paste is a clear win, and I'd hit
-this several times a week before campaign launches.
-
-## 3. Prior value / regression — none
-Cold open still has the grid, presets, auto-fix naming, Export CSV, Copy share link, shared
-workspace — all intact, no login wall. Mobile (iPhone, half my work): the chip is visible,
-the dialog and the violet "Audit N URLs" button fit cleanly, and per-row warnings stay
-readable. No regression I could find.
-
-## Friction / nits (minor)
-- Post-audit warning text is verbose on mobile — each row repeats the full "will split
-  campaign data in GA4" sentence, so a 5-URL audit is a long scroll. A collapsed
-  "12 issues — tap to expand" per row would be cleaner on a phone.
-- "1 line skipped" doesn't say WHICH line. For one junk line it's obvious; for a 40-link
-  paste I'd want to know which one got dropped.
-Neither blocks me.
-
-## Verdict
-A genuinely useful, well-judged feature that nails the exact pain (casing drift splitting
-GA data) in language a marketer thinks in, with graceful malformed handling and an undo
-safety net. I'd use this and mention it to marketing-ops friends — not quite a 9 because the
-mobile warning verbosity and the "which line skipped" gap keep it from feeling effortless.
+Friction: I had to hunt for the template — it's a collapsed card buried under Campaigns/Allowed
+values in the right rail, easy to miss. And there are now three similarly-named "naming" surfaces
+(NAMING RULES lint toggles / Allowed values / Campaign Naming Template); the inline "Different
+from Allowed Values" copy helps, but it's a lot to disambiguate at a glance.
 
 ```json
-{"name":"Jules","clarity":"Yes","value":"Yes","advocacy":8}
+{ "name": "Jules", "clarity": "Yes", "value": "Yes", "advocacy": 8,
+  "likes": ["No-login bulk grid I'd actually bookmark", "Build-name composer turns dropdowns from allowed tokens — keeps my X/LinkedIn/Mastodon names consistent", "Teal off-template warning + 'expected 3 segments, found 1' is clear and non-blocking", "Inline 'Different from Allowed Values' copy distinguishes the panels"],
+  "frictions": [
+    {"severity":"P2","issue":"Naming Template is a collapsed sidebar card under Campaigns/Allowed values — low discoverability; I almost missed it. Surface it nearer the utm_campaign column or auto-hint it."},
+    {"severity":"P3","issue":"Three similarly-named 'naming' surfaces (NAMING RULES toggles / Allowed values / Campaign Naming Template) take effort to disambiguate at first glance."},
+    {"severity":"P3","issue":"Per-platform presets I most want (X/LinkedIn/Mastodon one-click) weren't obvious from the collapsed Presets bar label."}
+  ],
+  "verdict_sentence": "A genuinely bookmark-worthy no-login UTM builder, and the naming template + composer nail consistent campaign names for someone juggling links across platforms — held back only by the template panel being tucked away and a cluster of similarly-named 'naming' controls." }
 ```

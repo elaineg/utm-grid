@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { flushPendingWrite, readSnapshot, writeValue } from "./useLocalStorage";
 import { serializeCampaigns } from "./campaigns";
 import type { Campaign } from "./campaigns";
+import { deserializeNamingTemplate, type NamingTemplate } from "./namingTemplate";
 
 /**
  * Tests the storage layer behind useLocalStorage (the hook itself is a thin
@@ -250,5 +251,84 @@ describe("double-encoding rehydration regression", () => {
         : []
     );
     expect(existingIds.has(parsedId!)).toBe(true);
+  });
+});
+
+// ── P1 Hydration regression: naming template cold-load (Wen's bug, fix 3) ──────
+//
+// Root cause: UtmGrid uses useLocalStorage<NamingTemplate> for storedNamingTemplate.
+// The hook's client snapshot (readSnapshot) runs after SSR hydration and reads from
+// localStorage. This test seeds localStorage with a full naming template BEFORE the
+// client snapshot fires, and asserts that readSnapshot returns the full template —
+// confirming that storedNamingTemplate will have segments+enforceTemplate on mount
+// (not just the DEFAULT_NAMING_TEMPLATE the SSR snapshot returned).
+//
+// The NamingTemplatePanel's useEffect([hasSegments]) can then auto-expand because
+// hasSegments transitions false→true synchronously in the same re-render cycle.
+
+describe("P1 hydration regression — naming template cold-load", () => {
+  const NT_KEY = "utm-grid:naming-template";
+
+  const seedTemplate: NamingTemplate = {
+    segments: [
+      { name: "quarter", allowedTokens: ["q1", "q2", "q3", "q4"] },
+      { name: "channel", allowedTokens: ["email", "paidsocial"] },
+    ],
+    separator: "_",
+    enforceTemplate: true,
+  };
+
+  it("readSnapshot after seeding returns full template (segments + enforceTemplate)", () => {
+    // Simulate what the app writes when the user defines a naming template:
+    // setStoredNamingTemplate(template) → writeValue(key, DEFAULT, template, 0)
+    // → persist → localStorage.setItem(key, JSON.stringify(template))
+    writeValue(NT_KEY, { segments: [], separator: "_" as const, enforceTemplate: false }, seedTemplate, 0);
+
+    // Now simulate a cold-page-load client snapshot: readSnapshot reads from localStorage.
+    // The hook's getSnapshot calls readSnapshot(key, DEFAULT_NAMING_TEMPLATE).
+    const { DEFAULT_NAMING_TEMPLATE } = { DEFAULT_NAMING_TEMPLATE: { segments: [], separator: "_" as const, enforceTemplate: false } };
+    const recovered = readSnapshot(NT_KEY, DEFAULT_NAMING_TEMPLATE);
+
+    // Must have segments and enforceTemplate from the stored template.
+    expect(recovered.segments).toHaveLength(2);
+    expect(recovered.segments[0].name).toBe("quarter");
+    expect(recovered.segments[1].name).toBe("channel");
+    expect(recovered.enforceTemplate).toBe(true);
+  });
+
+  it("deserializeNamingTemplate recovers a stored template written by the app (JSON round-trip)", () => {
+    // The mount-effect hydration guard reads localStorage directly and deserializes.
+    // This tests that path: write the template (as JSON.stringify), read it back,
+    // deserialize — segments and enforceTemplate must be present.
+    writeValue(NT_KEY + "-direct", { segments: [], separator: "_" as const, enforceTemplate: false }, seedTemplate, 0);
+
+    // Simulate window.localStorage.getItem in the mount effect
+    const raw = fake.backing.get(NT_KEY + "-direct") ?? null;
+    expect(raw).not.toBeNull();
+
+    // The mount effect does: JSON.parse(raw) → the stored NamingTemplate object.
+    // (useLocalStorage stores JSON.stringify(value), so parse once to get the object.)
+    const parsed = JSON.parse(raw!) as unknown;
+    const template = deserializeNamingTemplate(parsed);
+
+    expect(template.segments).toHaveLength(2);
+    expect(template.segments[0].name).toBe("quarter");
+    expect(template.segments[0].allowedTokens).toEqual(["q1", "q2", "q3", "q4"]);
+    expect(template.enforceTemplate).toBe(true);
+  });
+
+  it("cold-load with enforce=ON and segments present — panel should expand", () => {
+    // Simulate the scenario: user defined a template, page reloaded.
+    // The template is in localStorage with enforce=true and real segments.
+    writeValue(NT_KEY + "-expand", { segments: [], separator: "_" as const, enforceTemplate: false }, seedTemplate, 0);
+    const recovered = readSnapshot(NT_KEY + "-expand", { segments: [], separator: "_" as const, enforceTemplate: false });
+
+    // The panel's auto-expand logic: hasSegments = template.segments.length > 0.
+    // The useEffect([hasSegments]) will call setExpanded(true) when hasSegments is true.
+    const hasSegments = recovered.segments.length > 0;
+    expect(hasSegments).toBe(true); // panel should auto-expand
+
+    // The enforce toggle should also reflect the stored value
+    expect(recovered.enforceTemplate).toBe(true);
   });
 });

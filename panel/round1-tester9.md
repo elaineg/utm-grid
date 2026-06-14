@@ -1,46 +1,39 @@
-# Round 1 (re-test) — Tester 9 (Elena, Engineering manager, 30-sec budget)
+# Elena — Engineering manager (8 reports), 30-sec patience, half the day in meetings
 
-## Prior concerns (workspace/history round)
-- "Preview cells look editable but aren't" + "want a viewer/lock option before org-wide":
-  partially re-checked. The LIVE TEAM WORKSPACE panel + History still exist and work. I could
-  not fully re-exercise the Preview-cell-lock nit this round (Create-shared-workspace is
-  gated until a row has content, which is fine). Treating these as: still present, not
-  re-confirmed fixed. priorConcernsAddressed: some.
+I skimmed this because a report asked if our team should standardize on it. My bar: instantly
+obvious, zero setup, and it saves my reports time — or I don't recommend it.
 
-## New feature: Paste & Audit URLs
-My report asked if we should standardize on this; I skimmed it between meetings.
+Cold open (30s): I got it immediately. Headline "Clean UTM links for your whole campaign — in
+one grid" + "Auto-fix messy casing and typos... Share one link anyone can open and reuse — no
+login." That's the whole pitch: a spreadsheet for tracking links that catches the typos that
+split GA reports.
 
-**Discoverability — Yes.** The violet "Paste & Audit URLs" chip sits next to Import CSV with
-subtext "Already have tagged links? Paste them to find every inconsistency at once." I knew
-what it did before clicking, and that it's DIFFERENT from build-new. Dialog header is just as
-clear: "Paste your existing tagged URLs — we'll parse each back into the grid and flag every
-inconsistency." No hunting.
+New feature — Campaign Naming Template: Discoverable. Right-rail panel "Campaign Naming
+Template" with copy "The STRUCTURE of utm_campaign — its parts and their order... DIFFERENT
+from Allowed Values, which sets allowed values." That one sentence answered "how is this not
+the other panel?" before I asked. I added segments quarter/channel/audience; the per-row teal
+"Build name" pill opened a composer that live-previewed "q3_newsletter_enterprise" and Apply
+dropped it straight into the cell. Toggled "Enforce naming template" (teal, visually separate
+from the purple "Enforce allowed values") against an off-template value → teal "1 cell
+off-template" badge in the header. Worked first try, no docs, no console errors.
 
-**Using it — impressive.** Pasted 5 lines incl. Facebook/facebook + Summer_Sale/summer_sale,
-one missing utm_medium, one garbage line.
-- Submit live-labels "Audit 5 URLs". Result: "Audited 4 URLs — 12 cells flagged · 1 line
-  skipped." Garbage line correctly SKIPPED, no crash, zero console/page errors.
-- Caught exactly the right things: '⚠ Inconsistent utm_source across rows: "Facebook" vs
-  "facebook" — these will split campaign data in GA4.' Same for campaign. Also '⚠ utm_medium
-  is required.' The GA4-consequence wording is what makes it land for a manager.
-- One-click "Lowercase + normalize all flagged cells" actually cleared the inconsistencies
-  (verified warnings gone). That's the part that survives my 30-sec budget — I don't read every
-  warning, I just fix.
+Regression: Auto-fix normalized "News Letter"→news_letter, Copy share link gave a real encoded
+URL, mobile loads clean. Nothing broke.
 
-**Friction (holds back the score):**
-1. Lint warnings render UNDER each grid cell, but utm_source gets squeezed to ~40px ("Fac…")
-   because the Generated-URL column + right Campaigns panel eat the width, so the warning text
-   is CLIPPED ("⚠ Inc… will sp…") until you scroll the grid horizontally. The top summary ("6
-   cells flagged") is above the fold, but reading WHAT'S wrong requires hunting. For a skimmer,
-   borderline. Want the full warnings in a summary list at the top.
-2. After normalize cleared the warnings, the status line still read "6 cells flagged" — it's a
-   record-of-run, not a live counter. Mildly misleading.
+Value vs today: my reports hand-build UTMs in a Google Sheet with CONCATENATE and still fight
+casing drift. This replaces the formula AND enforces a shared naming convention via one link —
+the part a sheet can't do. Real time saved for my reports.
 
-**Prior value — no regression.** Build-new still works; audited rows coexist with manual rows.
+Holding back a 9: the naming-template power lives in a right-rail panel a hurried person can
+scroll past, and on my phone the grid (where Build name lives) is below a long fold — fine on
+laptop, fiddly between meetings.
 
-**Bottom line:** Genuinely useful — my reports hit this weekly QA-ing inherited links before
-launch. The GA4-consequence messaging + one-click fix sell it. The clipped warning layout is
-the one thing keeping me from recommending it unprompted; fix warning visibility and it's a 9.
-
-{"tester": 9, "round": 1, "clarity": "Yes", "value": "Yes", "advocacy": 8, "topComplaints": ["Lint warnings clipped in ~40px-wide utm_source cells; full text needs horizontal scroll — no top summary list of what's wrong", "Status line stays '6 cells flagged' after one-click normalize clears them (stale, not a live counter)"], "priorConcernsAddressed": "some"}
-{"name":"Elena","clarity":"Yes","value":"Yes","advocacy":8}
+```json
+{ "name": "Elena", "clarity": "Yes", "value": "Yes", "advocacy": 8,
+  "likes": ["Headline made the job obvious in <10s", "Naming Template panel explicitly says it's DIFFERENT from Allowed Values — killed my confusion", "Build name composer live-previews and Apply lands the value in one click", "teal off-template badge distinct from purple allowed-values warning", "no setup/login, no console errors, no regression in auto-fix or share link"],
+  "frictions": [
+    {"severity":"P2","issue":"Naming Template + Allowed Values are right-rail panels a 30-sec skimmer may scroll past; the power features aren't above the fold"},
+    {"severity":"P3","issue":"On 375px mobile the grid and the Build name pill sit below a long intro fold; usable but not thumb-friendly between meetings"}
+  ],
+  "verdict_sentence": "Instantly legible, setup-free, and the naming template enforces a team convention my reports can't get from a Google Sheet — I'd recommend it, just shy of unprompted-rave territory." }
+```

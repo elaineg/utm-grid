@@ -1,53 +1,43 @@
-# utm-grid — Round 1, Tester 1 (Priya, senior backend eng, keyboard-first, skeptical)
+# Round 1 — Tester 1 — Priya (Senior backend SWE, keyboard-first, skeptical, hates signups)
 
-## What I did
-Cold-opened the prod URL. Headline "Clean UTM links for your whole campaign — in one grid"
-+ the casing/typo subline told me what it is in ~10s. I'm not a marketer — a teammate sent
-me this instead of a spreadsheet for a side-project launch, so I'm judging: faster than
-hand-editing query strings, and does it leak my data.
+## Clarity — Yes
+Within 5s: "It's a grid for building clean UTM links for a campaign, runs entirely in your
+browser, no login." The h1 "Clean UTM links for your whole campaign — in one grid" + subhead
+"no login, nothing leaves your browser" nailed it for me — that last line is exactly what made
+me NOT bounce. I checked the network tab: zero third-party requests after load (only Vercel's
+own feedback.js), no console errors. That earns trust no spreadsheet template gives me.
+New feature: the "Campaign Naming Template" panel says "The STRUCTURE of utm_campaign... Different
+from Allowed Values, which sets allowed values." That one sentence is what told me it's NOT the
+same thing as the allowed-values linter. Good. Enforce showed a teal "1 cell off-template" badge
+and a row warning "Off-template — expected 2 segments, found 1" — instantly legible.
 
-## 1. Did I notice the audit feature?
-Yes, without hunting. "Paste & Audit URLs" is the only violet/outlined chip in the toolbar
-(magnifier icon), next to Import CSV, with the subline "Already have tagged links? Paste
-them to find every inconsistency at once." Purpose reads as distinct from the build-new
-grid. Good discoverability.
+## Value — Yes (for this one task)
+Today I'd hand-edit query strings or paste into a Notes file — error-prone, no validation. For a
+one-off launch post this is genuinely faster than hand-editing: it caught my uppercase + spaces in
+"Holiday Sale!!" AND flagged it as off-template, all live. The naming template means my teammate and
+I won't argue about whether it's `q2_social` or `Q2-Social`. I tag links rarely, so I personally
+won't open this weekly — but for the people who DO (the marketer who sent it to me), the template +
+enforce is the thing that stops the GA-splitting mess. I'd reach for this over a spreadsheet.
 
-## 2. Audit flow
-Pasted 5 lines: two differing only by casing (utm_source Newsletter vs newsletter;
-utm_medium email vs Email; utm_campaign Spring-Sale vs spring_sale vs spring-sale), one
-clean, one missing utm_medium, one garbage non-URL line. Result chip: "Audited 4 URLs —
-13 cells flagged · 1 line skipped. Undo." Exactly right:
-- Malformed line was SKIPPED, not crashed (1 skipped). No console errors.
-- Casing preserved as-typed — did NOT silently mangle my data (matters to me).
-- Lint is precise/actionable, e.g. ⚠ `Inconsistent utm_campaign across rows: "Spring-Sale"
-  vs "spring_sale" vs "spring-sale" — these will split campaign data in GA4`, with a "Fix"
-  affordance. Same for source and medium; the missing utm_medium row parsed correctly.
-- Append vs Replace toggle + "you can Undo immediately after auditing" — sane safety.
-Network check (I watched the tab): ZERO POST/PUT requests the whole session. The "nothing
-leaves your browser" claim holds — as a skeptic, this is what flipped me. This would
-genuinely save me time QA-ing inherited links vs eyeballing query strings or regexing a
-sheet column.
+## Advocacy — 8/10
+I'd send it to our growth person unprompted with "this is better than the UTM spreadsheet." It loses
+2 points, not on the feature but on polish: the Naming Template panel is buried as the 2nd collapsed
+item in a right sidebar UNDER "Allowed values" — I only found it fast because I went looking. A first-
+timer enforcing without a template defined gets a vague state. And the composer popover is fiddlier
+than typing the name myself once I know the convention.
 
-## 3. Regression on core build
-Typed base + source/medium/campaign in row 1; generated URL assembled live and correct:
-`https://mysite.io/launch?utm_source=twitter&utm_medium=social&utm_campaign=launch2026`.
-No regression.
-
-## Friction / nits
-- After auditing, the default grid shows BASE URL + GENERATED URL columns; the
-  utm_source/medium/campaign columns are collapsed off to the right, so per-cell flags
-  aren't visible above the fold without horizontal-scrolling the table. The summary chip
-  carries the signal and the warnings + Fix exist in the DOM, but I'd want flagged cells
-  visible at a glance right after an audit. Minor, not a blocker.
-- Toolbar is busy (Add row, Auto-fix, Undo, Import, Paste&Audit, Export, Copy share, Copy
-  all) — fine for a power user, slightly crowded on first glance.
-
-## Verdict
-clarity: Yes — app + audit purpose both clear inside 30s.
-value: Yes — I'd reach for the audit flow to vet inherited/QA links, more than once.
-advocacy: 8 — lint is precise, nothing touches the network, input not mangled. Held off a 9
-only by the post-audit column-visibility nit and toolbar density.
+## Biggest friction
+Discoverability: two near-identical concepts ("Allowed values" + "Naming Template") stacked in a thin
+right rail, both with "Enforce" checkboxes up top. I got it because the copy spells out the difference,
+but a rushed marketer will conflate them.
 
 ```json
-{"name":"Priya","clarity":"Yes","value":"Yes","advocacy":8}
+{ "name": "Priya", "clarity": "Yes", "value": "Yes", "advocacy": 8,
+  "likes": ["Truly no-signup, zero network calls after load — verified in net tab; huge trust win","'Different from Allowed Values' copy makes the two panels genuinely distinguishable","Off-template warning ('expected 2 segments, found 1') stacks cleanly with existing uppercase/space lint — no regression","Live preview 'quarter_cha…' + teal '1 cell off-template' header badge are instantly legible"],
+  "frictions": [
+    {"severity":"P2","issue":"Naming Template panel is the 2nd collapsed item in a narrow right sidebar, below 'Allowed values' — easy to miss; the two 'Enforce' toggles look near-identical at a glance"},
+    {"severity":"P3","issue":"Build name composer is fiddlier than just typing the campaign once you know the convention; power users will skip it"},
+    {"severity":"P3","issue":"Enforcing with no template defined gives a soft/ambiguous state rather than prompting you to define segments first"}
+  ],
+  "verdict_sentence": "As a skeptic who hates new tools, the no-server proof + a naming template that actually flags off-pattern campaigns made this beat my spreadsheet — only the buried, easy-to-conflate sidebar panel keeps it off a 9." }
 ```
