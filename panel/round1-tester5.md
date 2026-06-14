@@ -1,21 +1,40 @@
+# Round 1 — Tester 5 (Dana, demand-gen marketer)
+
+Cold open headline "Clean UTM links for your whole campaign — in one grid" + visible grid and
+"Create shared workspace" CTA = value clear in one scroll. Built links, created /w/ workspace,
+ran the review loop, opened /w/<id>/review, copied the share link, checked mobile.
+
+What worked: review badge per row opens a note popover with Approve / Needs changes; roll-up
+"N approved · N need changes · N unreviewed" updates instantly with a progress bar; the read-only
+/review page is genuinely screenshot-able (status pill, per-link list, the note, CTA) and renders
+clean at 375px. "Share review summary" copies the read-only /review URL — exactly the Slack-paste
+I'd want before a Thursday launch.
+
+The gap that bugs me: there are TWO identity labels and they don't line up. The "Your name" field
+sets "Editing as: Dana Reyes" but the approval on the summary STILL shows "by Anonymous" and the
+top label stays "Reviewing as: Anonymous" no matter what I type. For a sign-off page the whole point
+is "who approved this" — Anonymous defeats it. I'd be embarrassed to forward a sign-off that says a
+colleague approved it "by Anonymous." That's the one thing keeping me from sharing it as-is.
+
 ```json
 {
   "name": "Dana",
   "clarity": "Yes",
+  "clarity_reason": "Headline + grid + 'Create shared workspace' make the job obvious in one scroll; review roll-up label is self-explanatory.",
   "value": "Yes",
-  "advocacy": 8,
-  "qr_reaction": "QR per-row + ZIP-with-printable-contact-sheet is genuinely useful for my event/print/social collateral and it works on my phone, but the contact sheet labels every QR with just the campaign name ('summer_sale') so I can't tell the LinkedIn QR from the Google one on a printed page.",
-  "likes": [
-    "Value lands in one scroll: headline 'Clean UTM links for your whole campaign — in one grid' + 'no login, nothing leaves your browser' is exactly my Thursday pain.",
-    "Auto-fix naming fixed 'LinkedIn'->'linkedin', 'Social'->'social', 'Summer Sale'->'summer_sale' and flagged the casing inconsistencies that would split my GA4 data — that's the 15-min grind gone.",
-    "QR works and downloads cleanly: per-row PNG/SVG plus a top-level ZIP (utm-qr-codes.zip) containing a PNG per link AND a printable contact sheet. Zero console errors.",
-    "Mobile (375px) is fully usable between meetings: the grid becomes a labeled stacked card with the generated URL, and the QR popover with Download PNG/SVG opens fine."
+  "value_reason": "I tag 30+ links weekly and chase sign-off in Slack/email threads; per-link Approve + a shareable read-only /review page replaces the back-and-forth. The reviewer-name bug knocks it from a slam-dunk to a strong yes.",
+  "advocacy": 7,
+  "advocacy_reason": "Loop is real and the /review page is share-ready, but approvals showing 'by Anonymous' despite setting my name breaks the core 'who signed off' value. Fix that (attach the typed name to the review, unify 'Editing as'/'Reviewing as') and this is a 9 I'd post in my team channel unprompted.",
+  "top_issues": [
+    "Approvals show 'by Anonymous' even after typing my name — 'Your name' sets 'Editing as' but not the review attribution or 'Reviewing as' label; defeats sign-off accountability",
+    "Two separate identity labels ('Editing as' vs 'Reviewing as') is confusing — unclear which one the reviewer should set",
+    "No way to filter the grid to just 'needs changes' rows to action them fast before launch"
   ],
-  "complaints": [
-    "QR export does NOT skip invalid rows despite claiming to. Repro: add a row with empty utm_source (grid shows '⚠ utm_source is required'; generated URL = https://acme.com/launch?utm_medium=social&utm_campaign=summer_sale, no source) -> 'Download QR codes' still includes it as 04-summer-sale.png in the ZIP and contact sheet, and the per-row QR button is enabled. I'd unknowingly print a QR pointing to an untracked link.",
-    "Contact-sheet QR labels are useless for a batch: four different-channel rows all labeled '01 summer_sale', '02 summer_sale'... only the campaign name. On a printed sheet I cannot tell which QR is LinkedIn vs Google vs newsletter. Labels need source/medium too.",
-    "The per-row 'QR' control is a small gray icon-button in the actions column with no tooltip — easy to miss next to the prominent top toolbar 'Download QR codes'."
-  ],
-  "verdict_summary": "This is the first UTM tool that actually fits my weekly grind — paste a batch, auto-fix the casing landmines, export, and now grab QR codes for event/print collateral, all with no login and even from my phone. I'd screenshot it into the team channel. It's not a 9 yet because the QR export shipped a QR for an invalid (untracked) link instead of skipping it, and the contact-sheet labels don't say which channel each QR is — both things I'd hit on a real Thursday launch."
+  "liked": [
+    "Read-only /review summary is genuinely screenshot/share-ready and works at 375px mobile",
+    "'Share review summary' copies a clean read-only link — perfect for Slack",
+    "Roll-up + progress bar update instantly when a row is approved",
+    "Whole review loop with zero signup on a synced shared link"
+  ]
 }
 ```

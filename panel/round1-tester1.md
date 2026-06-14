@@ -1,43 +1,19 @@
-# Round (re-test) — Tester 1 (Priya, senior backend eng, skeptical, keyboard-first, hates signups)
-
-Context: teammate sent me this instead of a spreadsheet for a side-project launch post. New this round: QR codes.
-
-## Re-check of MY prior complaints (verified live this round)
-- "Read-only guide still exposes an editable-workspace button" → STILL NOT FIXED. The
-  /w/<id>/guide page literally renders "read-only" AND an "Open the editable workspace" link
-  (verified: 1 such link present). Any link-holder can still edit the team standard. Same
-  trust contradiction I flagged twice now.
-- "Launch Check flags typos only as inconsistent, no near-miss suggestion" → STILL NOT
-  FIXED. Entered emial/tiwtter, ran Launch Check: no "did you mean" anywhere on the page.
-
-## QR (new feature) — exercised fully
-Row QR modal opens, explicitly shows the URL it ENCODES (good — I don't trust an opaque QR),
-PNG + SVG both download (qr-row-1.png verified). Top-level "Download QR codes" ZIP is
-genuinely well-built: per-row PNGs named by campaign (01-launch-2026.png, 02-june-drop.png)
-+ a printable contact sheet, and it correctly SKIPS the empty/invalid row. Clean network
-tab throughout — only GET / loads, nothing POSTs my URLs (the privacy claim holds).
-
-```json
 {
   "name": "Priya",
   "clarity": "Yes",
+  "clarity_reason": "Headline 'Clean UTM links for your whole campaign — in one grid' plus 'no login, nothing leaves your browser' told me exactly what it is in ~5s, which is what I care about (no signup wall). The grid is self-explanatory: paste base URL, fill source/medium/campaign columns, generated URL shows live with lint warnings. The review feature was discoverable: on /w/<id> the 'REVIEW STATUS: 0 approved · 0 need changes · 2 unreviewed' roll-up sits right above the grid and each row has a 'Review' button — clicking it reveals '✓ Approve / ⚠ Needs changes' + a note field inline. /w/<id>/review is a clean read-only summary. The one thing that needed a beat: 'Copy share link' (frozen snapshot) vs 'Create shared workspace' (live synced) vs 'Share review summary' — three share-ish affordances; the inline subtext disambiguates them but it's a lot of share buttons.",
   "value": "Yes",
+  "value_reason": "Today I hand-edit query strings in neovim or maybe a one-off spreadsheet — both error-prone (a trailing space in 'Social ' silently splits GA, casing drift). This caught 'utm_campaign required' and flagged a non-http base URL live, and auto-fix naming + trimming is genuinely faster than eyeballing 10 query strings. For a launch post with a handful of UTMs it's a clear win over hand-editing, and it's keyboard-tabbable. The review/approval loop is real: instead of pasting a list in Slack asking 'these UTMs ok?', a teammate gets a link, approves/needs-changes per row with a note, server-synced, no signup. A legit handoff I'd use once or twice a month for launches — borderline recurrence for me personally, clearly recurring for a marketer.",
   "advocacy": 8,
-  "qr_reaction": "Discoverable (QR button sits right next to Copy on each row) and surprisingly well-crafted — the modal shows the exact URL it encodes, gives PNG and SVG, and the ZIP names files per-campaign + ships a contact sheet and skips invalid rows. I rarely need QR personally, but for a launch sticker/flyer it's a real win and the craft earns trust.",
-  "likes": [
-    "Network tab stays clean — only GET / , my URLs never leave the browser; provably true, the one reason a skeptic like me keeps going",
-    "Zero signup, I was typing into the grid within ~3s",
-    "Auto-fix naming does exactly what it claims (Twitter->twitter, 'Launch 2026'->launch_2026) with a non-destructive 'Auto-fixed N cells — Undo' toast",
-    "Copy puts the exact, correctly-encoded generated URL on the clipboard",
-    "Inline per-cell lint with one-click Fix beats eyeballing query strings",
-    "QR ZIP is thoughtful: per-row PNGs, sensible names, contact sheet, invalid rows skipped"
+  "advocacy_reason": "Solid 8. Fast, no-signup, keyboard-friendly, lint/auto-fix is the actual value, and the review feature works end-to-end and is server-persisted (verified: an approve from one session showed up on a fresh load; clipboard copy of the /review link verified). What holds it back from 9-10: (1) attribution gap — I typed reviewer name 'Priya' but after a normal page load it reverted to 'Anonymous' and my approval logged 'by Anonymous' with no nudge to set a name BEFORE reviewing; for an approval audit trail, anonymous approvals undercut the point. (2) Three overlapping share affordances (Copy share link / Create shared workspace / Share review summary) is cognitively noisy on first contact. (3) No identity means anyone with the secret link can approve as anyone — fine for a trusted team, but I'd want the name sticky and ideally required before a review action. Make the reviewer name sticky+required and I'm at 9.",
+  "top_issues": [
+    "Reviewer name doesn't persist across a page load and isn't required before approving — my review was attributed 'by Anonymous', which weakens the approval audit trail this feature is selling.",
+    "Three share buttons (Copy share link / Create shared workspace / Share review summary) with similar labels create momentary confusion about which produces a live vs frozen vs review-only link.",
+    "Anyone with the secret link can approve under any name (no identity); acceptable for trusted teams but means approvals aren't trustworthy as a record."
   ],
-  "complaints": [
-    "PRIOR, STILL NOT FIXED: /w/<id>/guide says 'read-only' but renders an 'Open the editable workspace' link — any link-holder can edit the team standard. Repro: add row, Create shared workspace, Share style guide, open the /guide link. I will not forward a 'view-only' standard that anyone can rewrite.",
-    "PRIOR, STILL NOT FIXED: Launch Check flags emial/tiwtter only as inconsistent, never 'did you mean email/twitter?'. The gap between nice and 'I trust this as my launch gate.'",
-    "Toolbar is overloaded for a one-link job — Paste & Audit, Launch Check, shared workspace, Naming Template, Allowed values all crowd above a single empty row; I ignored ~6 features to find the grid",
-    "Still no keyboard-first affordance I could find (no Cmd+Enter to copy / new row); Tab between cells works but it's mouse-driven for a keyboard person"
-  ],
-  "verdict_summary": "Came in ready to bail to vim; it didn't ask me to sign up, doesn't phone home (I checked), and auto-fix + lint caught the casing/space junk I'd have shipped by hand. The new QR ZIP is nicer than I expected. But I'm holding at 8, not raising, because the two things I flagged last round are STILL broken — the 'read-only' guide that anyone can edit is a trust bug I won't forward to a team, and typo near-miss suggestions still aren't there."
+  "liked": [
+    "Cold-open core flow with zero signup and 'nothing leaves your browser' — exactly what makes me not bounce.",
+    "Live lint (caught 'utm_campaign required' and non-http base URL) + auto-fix naming/trim — the real time-saver over hand-editing query strings.",
+    "Review feature is genuinely discoverable and works: roll-up above the grid, per-row Review -> Approve/Needs-changes + note, server-synced with no account, clean read-only /review page with per-link status and a working 'Share review summary' copy."
+  ]
 }
-```

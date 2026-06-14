@@ -31,7 +31,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { UtmGrid } from "../../components/UtmGrid";
 import { WorkspaceHistory, type HistoryVersion } from "../../components/WorkspaceHistory";
-import { ReviewerNameControl } from "../../components/ReviewerNameControl";
 import { ReviewRollupPanel } from "../../components/ReviewRollupPanel";
 import { writeValue } from "../../../lib/useLocalStorage";
 import type { WorkspacePayload } from "../../../lib/workspace";
@@ -84,6 +83,8 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
     if (name) {
       wasAnonymousRef.current = false;
     }
+    // FIX A: unified identity — reviewer name tracks editor name.
+    setReviewerName(name);
     // P1-1: when a name is set for the first time (was Anonymous before), back-fill the
     // most-recent history version's attribution so the creation snapshot shows the real name.
     if (wasEmpty && name && id) {
@@ -95,7 +96,8 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
     }
   }, [id]);
 
-  // P1-1: seed editorNameRef from localStorage on mount (effect, not lazy init — SSR rule).
+  // P1-1 + FIX A: seed editorNameRef and unified reviewerName from localStorage on mount.
+  // SSR rule: never read localStorage in useState initializer — effect only.
   useEffect(() => {
     try {
       const EDITOR_KEY = "utm-grid:editor-name";
@@ -105,7 +107,8 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
         const name = typeof val === "string" ? val.trim() : "";
         if (name) {
           editorNameRef.current = name;
-          // No state update needed — editorNameRef is the source for autosave attribution.
+          // FIX A: unified identity — seed reviewerName state from the same key.
+          setReviewerName(name);
         }
       }
     } catch {
@@ -182,11 +185,16 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
   // Review & Approval state
   // reviewMap is part of the workspace payload (additive field).
   // Guard #3 (SERVER AUTOSAVE FIRST-PERSIST GUARD): only allow review mutations after hydration.
-  // Guard #4 (SSR/HYDRATION): reviewer name read in useEffect, not useState lazy initializer.
+  // FIX A: reviewer name is UNIFIED with editor name — no separate identity.
+  // reviewerName state is driven by editorNameRef; we keep a React state for re-render.
   const [reviewMap, setReviewMap] = useState<ReviewMap | undefined>(undefined);
   const reviewMapRef = useRef<ReviewMap | undefined>(undefined);
+  // FIX A: unified reviewer name (same as editor name)
   const [reviewerName, setReviewerName] = useState<string>("");
-  const reviewerNameRef = useRef<string>("");
+
+  // FIX F: Share dropdown state
+  const [shareMenuOpen, setShareMenuOpen] = useState(false);
+  const shareMenuRef = useRef<HTMLDivElement>(null);
 
   // Copy review summary link state — /w/<id>/review
   const [reviewLinkCopied, setReviewLinkCopied] = useState(false);
@@ -478,9 +486,16 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
     [id, doSave]
   );
 
+  // FIX A: called when user sets name in the review popover.
+  // Persists to the SAME unified editor-name key so both edit + review attribution sync.
   const handleReviewerNameChange = useCallback((name: string) => {
-    setReviewerName(name);
-    reviewerNameRef.current = name;
+    const EDITOR_KEY = "utm-grid:editor-name";
+    const trimmed = name.trim().slice(0, 80);
+    editorNameRef.current = trimmed;
+    setReviewerName(trimmed);
+    try {
+      window.localStorage.setItem(EDITOR_KEY, JSON.stringify(trimmed));
+    } catch { /* unavailable */ }
   }, []);
 
   // Copy review summary link — /w/<id>/review (read-only summary page)
@@ -591,6 +606,18 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
     },
     [id, doSave]
   );
+
+  // FIX F: close share menu on outside click
+  useEffect(() => {
+    if (!shareMenuOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (shareMenuRef.current && !shareMenuRef.current.contains(e.target as Node)) {
+        setShareMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick, true);
+    return () => document.removeEventListener("mousedown", handleClick, true);
+  }, [shareMenuOpen]);
 
   // Sync status dot + text
   function renderSyncStatus() {
@@ -759,139 +786,127 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
             )}
             {renderSyncStatus()}
           </div>
-          {/* Fix 1 + Fix 3: two share actions, visually grouped, each with its own
-              sublabel and dedicated aria-live region so announcements never collide.
-              Buttons fill green on copy for ~1.5s (ref-stable timer). */}
+          {/* FIX F: consolidated "Share ▾" dropdown — replaces 4 individual share buttons.
+              Each action still reachable; green-fill-in-place + aria-live on each copy action.
+              Guard #7: copy-confirmation-survives-tick-rerender (ref-stable timers).
+              Guard #6: outside-click closes the menu (useEffect above). */}
           <div className="flex flex-col items-start sm:items-end gap-2 shrink-0">
-            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-              {/* Copy workspace link — live, synced for the team */}
-              <div className="flex flex-col items-start gap-0.5">
-                <button
-                  type="button"
-                  data-testid="copy-workspace-link"
-                  aria-label="Copy workspace link"
-                  onClick={() => void copyWorkspaceLink()}
-                  className={`w-full sm:w-auto rounded-md border px-4 py-2 text-sm font-medium transition-colors duration-200 min-h-[44px] ${
-                    workspaceLinkCopied
-                      ? "border-green-500 bg-green-500 text-white"
-                      : "border-blue-400 bg-white text-blue-700 hover:bg-blue-50"
-                  }`}
-                >
-                  {workspaceLinkCopied ? (
-                    <span className="inline-flex items-center gap-1.5">
-                      <span aria-hidden="true">✓</span>{" "}
-                      <span>Copied!</span>
-                    </span>
-                  ) : (
-                    "Copy workspace link"
-                  )}
-                </button>
-                <span className="text-[10px] text-blue-600 leading-tight">
-                  live, synced for the team
-                </span>
-                {/* Dedicated aria-live for workspace-link copy — never conflicts with style-guide */}
-                <span role="status" aria-live="polite" className="sr-only">
-                  {workspaceLinkCopied ? "Workspace link copied!" : ""}
-                </span>
-              </div>
+            <div ref={shareMenuRef} className="relative">
+              <button
+                type="button"
+                data-testid="share-menu-btn"
+                aria-label="Share options"
+                aria-expanded={shareMenuOpen}
+                aria-haspopup="menu"
+                onClick={() => setShareMenuOpen((prev) => !prev)}
+                className="inline-flex items-center gap-1.5 rounded-md border border-blue-400 bg-white px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-50 transition-colors min-h-[44px]"
+              >
+                <span>Share</span>
+                <span aria-hidden="true" className="text-xs">▾</span>
+              </button>
 
-              {/* Share style guide — read-only reference page */}
-              <div className="flex flex-col items-start gap-0.5">
-                <button
-                  type="button"
-                  data-testid="share-style-guide-btn"
-                  aria-label="Share style guide link"
-                  onClick={() => void copyStyleGuideLink()}
-                  className={`w-full sm:w-auto rounded-md border px-4 py-2 text-sm font-medium transition-colors duration-200 min-h-[44px] ${
-                    styleGuideCopied
-                      ? "border-green-500 bg-green-500 text-white"
-                      : "border-violet-400 bg-violet-50 text-violet-700 hover:bg-violet-100"
-                  }`}
+              {shareMenuOpen && (
+                <div
+                  role="menu"
+                  aria-label="Share options"
+                  className="absolute right-0 top-full mt-1 z-[60] w-64 rounded-lg border border-gray-200 bg-white shadow-lg p-1 flex flex-col gap-0.5"
                 >
-                  {styleGuideCopied ? (
-                    <span className="inline-flex items-center gap-1.5">
-                      <span aria-hidden="true">✓</span>{" "}
-                      <span>Copied!</span>
-                    </span>
-                  ) : (
-                    "Share style guide"
-                  )}
-                </button>
-                <span className="text-[10px] text-violet-500 leading-tight">
-                  read-only reference page
-                </span>
-                {/* Dedicated aria-live for style-guide copy */}
-                <span role="status" aria-live="polite" className="sr-only">
-                  {styleGuideCopied ? "Style guide link copied!" : ""}
-                </span>
-              </div>
+                  {/* Copy workspace link */}
+                  <button
+                    type="button"
+                    role="menuitem"
+                    data-testid="copy-workspace-link"
+                    aria-label="Copy workspace link"
+                    onClick={() => { void copyWorkspaceLink(); setShareMenuOpen(false); }}
+                    className={`w-full flex items-center gap-2 rounded-md px-3 py-2 text-sm text-left transition-colors min-h-[44px] ${
+                      workspaceLinkCopied
+                        ? "bg-green-500 text-white"
+                        : "hover:bg-blue-50 text-blue-700"
+                    }`}
+                  >
+                    {workspaceLinkCopied ? (
+                      <><span aria-hidden="true">✓</span><span>Copied!</span></>
+                    ) : (
+                      <><span aria-hidden="true">🔗</span><span>Copy workspace link</span></>
+                    )}
+                  </button>
+                  <span role="status" aria-live="polite" className="sr-only">
+                    {workspaceLinkCopied ? "Workspace link copied!" : ""}
+                  </span>
 
-              {/* F6: Share compliance report — /w/<id>/check, distinctly labeled */}
-              <div className="flex flex-col items-start gap-0.5">
-                <button
-                  type="button"
-                  data-testid="share-report-link-btn"
-                  aria-label="Copy compliance report link"
-                  onClick={() => void copyReportLink()}
-                  className={`w-full sm:w-auto rounded-md border px-4 py-2 text-sm font-medium transition-colors duration-200 min-h-[44px] ${
-                    reportLinkCopied
-                      ? "border-green-500 bg-green-500 text-white"
-                      : "border-teal-400 bg-teal-50 text-teal-700 hover:bg-teal-100"
-                  }`}
-                >
-                  {reportLinkCopied ? (
-                    <span className="inline-flex items-center gap-1.5">
-                      <span aria-hidden="true">✓</span>{" "}
-                      <span>Copied!</span>
-                    </span>
-                  ) : (
-                    "Copy report link"
-                  )}
-                </button>
-                <span className="text-[10px] text-teal-600 leading-tight">
-                  shareable compliance report
-                </span>
-                {/* Dedicated aria-live for report-link copy */}
-                <span role="status" aria-live="polite" className="sr-only">
-                  {reportLinkCopied ? "Compliance report link copied!" : ""}
-                </span>
-              </div>
+                  {/* Share style guide */}
+                  <button
+                    type="button"
+                    role="menuitem"
+                    data-testid="share-style-guide-btn"
+                    aria-label="Share style guide link"
+                    onClick={() => { void copyStyleGuideLink(); setShareMenuOpen(false); }}
+                    className={`w-full flex items-center gap-2 rounded-md px-3 py-2 text-sm text-left transition-colors min-h-[44px] ${
+                      styleGuideCopied
+                        ? "bg-green-500 text-white"
+                        : "hover:bg-violet-50 text-violet-700"
+                    }`}
+                  >
+                    {styleGuideCopied ? (
+                      <><span aria-hidden="true">✓</span><span>Copied!</span></>
+                    ) : (
+                      <><span aria-hidden="true">📋</span><span>Share style guide</span></>
+                    )}
+                  </button>
+                  <span role="status" aria-live="polite" className="sr-only">
+                    {styleGuideCopied ? "Style guide link copied!" : ""}
+                  </span>
 
-              {/* Share review summary — /w/<id>/review, indigo accent (distinct from teal/violet/blue).
-                  Guard #7: green-fill-in-place + aria-live, 2s hold.
-                  Guard #9: distinct verb "Share review summary" (not Audit/Check/Guide).
-                  Guard #8: sublabel is mode-aware (server-persisted). */}
-              <div className="flex flex-col items-start gap-0.5">
-                <button
-                  type="button"
-                  data-testid="share-review-summary-btn"
-                  aria-label="Share review summary link"
-                  onClick={() => void copyReviewLink()}
-                  className={`w-full sm:w-auto rounded-md border px-4 py-2 text-sm font-medium transition-colors duration-200 min-h-[44px] ${
-                    reviewLinkCopied
-                      ? "border-green-500 bg-green-500 text-white"
-                      : "border-indigo-400 bg-indigo-50 text-indigo-700 hover:bg-indigo-100"
-                  }`}
-                >
-                  {reviewLinkCopied ? (
-                    <span className="inline-flex items-center gap-1.5">
-                      <span aria-hidden="true">✓</span>{" "}
-                      <span>Copied!</span>
-                    </span>
-                  ) : (
-                    "Share review summary"
-                  )}
-                </button>
-                <span className="text-[10px] text-indigo-500 leading-tight">
-                  read-only approval status
-                </span>
-                {/* Dedicated aria-live for review-link copy — guard #7 */}
-                <span role="status" aria-live="polite" className="sr-only">
-                  {reviewLinkCopied ? "Review summary link copied!" : ""}
-                </span>
-              </div>
+                  {/* Copy compliance report link */}
+                  <button
+                    type="button"
+                    role="menuitem"
+                    data-testid="share-report-link-btn"
+                    aria-label="Copy compliance report link"
+                    onClick={() => { void copyReportLink(); setShareMenuOpen(false); }}
+                    className={`w-full flex items-center gap-2 rounded-md px-3 py-2 text-sm text-left transition-colors min-h-[44px] ${
+                      reportLinkCopied
+                        ? "bg-green-500 text-white"
+                        : "hover:bg-teal-50 text-teal-700"
+                    }`}
+                  >
+                    {reportLinkCopied ? (
+                      <><span aria-hidden="true">✓</span><span>Copied!</span></>
+                    ) : (
+                      <><span aria-hidden="true">📊</span><span>Copy compliance report link</span></>
+                    )}
+                  </button>
+                  <span role="status" aria-live="polite" className="sr-only">
+                    {reportLinkCopied ? "Compliance report link copied!" : ""}
+                  </span>
+
+                  {/* Share review summary */}
+                  <button
+                    type="button"
+                    role="menuitem"
+                    data-testid="share-review-summary-btn"
+                    aria-label="Share review summary link"
+                    onClick={() => { void copyReviewLink(); setShareMenuOpen(false); }}
+                    className={`w-full flex items-center gap-2 rounded-md px-3 py-2 text-sm text-left transition-colors min-h-[44px] ${
+                      reviewLinkCopied
+                        ? "bg-green-500 text-white"
+                        : "hover:bg-indigo-50 text-indigo-700"
+                    }`}
+                  >
+                    {reviewLinkCopied ? (
+                      <><span aria-hidden="true">✓</span><span>Copied!</span></>
+                    ) : (
+                      <><span aria-hidden="true">✅</span><span>Share review summary</span></>
+                    )}
+                  </button>
+                  <span role="status" aria-live="polite" className="sr-only">
+                    {reviewLinkCopied ? "Review summary link copied!" : ""}
+                  </span>
+                </div>
+              )}
             </div>
-            {/* Fix 4(c): server-data note — accurate for a server-backed surface */}
+
+            {/* Server-data note */}
             <p className="text-[10px] text-gray-500 leading-tight text-right max-w-xs">
               Workspace data is stored on the server — anyone with this secret link can view and edit.
               The secret link is the access control.
@@ -899,32 +914,24 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
           </div>
         </div>
 
-        {/* History & Editing-as row (existing) + Reviewer name control */}
+        {/* History & Editing-as row — unified identity (no separate reviewer control).
+            FIX A: "Your name" in WorkspaceHistory drives BOTH edit + review attribution. */}
         {id && (
-          <>
-            <div className="flex flex-wrap items-center gap-2 mt-1">
-              {/* Reviewer name control — mirrors "Editing as" but for the reviewer role.
-                  Guard #4: localStorage read in useEffect inside ReviewerNameControl.
-                  Guard #8: text explicitly says "optional, saved on this device".
-                  NEVER required, NEVER blocks the cold-open editable flow. */}
-              <ReviewerNameControl onNameChange={handleReviewerNameChange} />
-            </div>
-            <WorkspaceHistory
-              workspaceId={id}
-              onRestore={(p, label) => void handleRestore(p, label)}
-              onPreview={handleHistoryPreview}
-              onEditorChange={handleEditorChange}
-              tick={historyTick}
-              latestVersionId={latestVersionId}
-              isPreviewing={isPreviewing}
-              previewVersion={previewVersion}
-            />
-          </>
+          <WorkspaceHistory
+            workspaceId={id}
+            onRestore={(p, label) => void handleRestore(p, label)}
+            onPreview={handleHistoryPreview}
+            onEditorChange={handleEditorChange}
+            tick={historyTick}
+            latestVersionId={latestVersionId}
+            isPreviewing={isPreviewing}
+            previewVersion={previewVersion}
+          />
         )}
       </div>
 
       {/* Review roll-up panel — full-width, in normal flow, ABOVE the grid.
-          Only shown when payload is loaded (not in preview mode).
+          FIX G: subtitle makes sign-off purpose clear.
           Guard #2 (SINGLE SOURCE): computeReviewRollup is the one source of truth.
           Guard #8 (MODE-AWARE): panel label says "Server-synced". */}
       {!isPreviewing && payload && (
@@ -957,6 +964,7 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
             reviewMap={reviewMap}
             onReviewChange={handleReviewChange}
             reviewerName={reviewerName}
+            onReviewerNameChange={handleReviewerNameChange}
           />
         )
       )}

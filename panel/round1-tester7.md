@@ -1,24 +1,23 @@
-# utm-grid — Round 1, Tester 7 (Aisha, Product Designer) — QR feature
-A teammate shared this; I judge craft hard (empty states, copy tone, affordances) and advocate loudly only if it holds up. This round I exercised the new QR feature specifically.
-
-## Clarity — Yes
-H1 "Clean UTM links for your whole campaign — in one grid." + the casing/typos subline land in seconds. "nothing leaves your browser" is a nice trust touch.
-
-## Value — Yes
-I don't build UTMs daily, but the inline lint (uppercase warning with one-click "Fix") already beats the bare Google URL builder a teammate would otherwise use. QR-per-link + ZIP is a real reason to come back.
-
-## QR craft — mostly considered, one rough edge
-Verified:
-- Per-row QR button DISABLED on an invalid row, tooltip "Add a valid URL to make a QR." — thoughtful.
-- Popover: heading "QR Code — Row 1", an ENCODES label with the FULL encoded URL (https://acme.com/launch?utm_source=newsletter&utm_medium=email&utm_campaign=spring_sale), a 160px QR, Download PNG / Download SVG. Downloads fire with clean names qr-row-1.png / qr-row-1.svg.
-- Toolbar "Download QR codes" → utm-qr-codes.zip with slugified, numbered PNGs (01-spring-sale.png, 02-summer-promo.png) + contact-sheet.png. Result message "1 QR code generated, 1 row skipped — no valid URL" / "4 QR codes generated" — specific and warm, exactly the tone I want.
-- Contact sheet: clean QR grid, monospace labels "01 spring_sale". Printable, considered.
-
-## Friction (holds it down from 9)
-1. P1 — Per-row popover anchoring looks off. On 1280–1440px the popover's QR image lands at the page's bottom-right overlapping the "Allowed values" panel rather than floating cleanly beside the QR trigger (repro: fill a valid row, click QR, inspect — img rect ~x1127/y810, not adjacent to button). Element renders fine, but it doesn't sit where my eye expects. A clumsy popover is exactly what nags me.
-2. P3 — Contact sheet lays QRs in a single non-wrapping row — fine for 4, overflows for a 20-row batch.
-3. P3 — "⊞ QR" button reads grey/muted enough to look secondary/disabled even when active.
-
-```json
-{"tester": 7, "round": 1, "clarity": "Yes", "value": "Yes", "advocacy": 8, "topComplaints": ["Per-row QR popover anchoring is off — on 1280–1440px the QR/popover overlaps the lower 'Allowed values' panel area instead of floating cleanly beside its trigger button", "Contact sheet uses a single non-wrapping row of QRs, which will overflow for large batches", "'⊞ QR' button label is muted enough to read as disabled even when active"], "priorConcernsAddressed": "n/a"}
-```
+{
+  "name": "Aisha",
+  "clarity": "Yes",
+  "clarity_reason": "Within 30s the headline 'Clean UTM links for your whole campaign — in one grid' plus the subhead about auto-fixing casing/typos told me exactly what it is and who it's for. Copy tone is sharp and considered. On the workspace, 'REVIEW STATUS' with colored dots and the live roll-up made the new feature self-explanatory.",
+  "value": "Yes",
+  "value_reason": "I don't build UTMs often, but a teammate sharing a link for sign-off is a real recurring marketing/design-ops ritual we currently do in Slack threads or a Notion table. The shared workspace + per-link Approve/Needs-changes + read-only /review summary genuinely replaces that ad-hoc back-and-forth, and it's no-signup which kills the usual adoption friction.",
+  "advocacy": 7,
+  "advocacy_reason": "The craft is mostly there and I WANT to love it — the roll-up panel with progress bar and the 'All approved — ready to launch' pill is a delightful, considered touch, and the /review page reads as a real sign-off document with graceful empty state. But two bugs on the happy path hold me back from loud advocacy: (1) the Review popover fails to open if you first use the 'Your name' field — and the UI literally nudges you to set your name before reviewing; (2) my approval showed 'by Anonymous' on the /review page even though the header said 'Editing as: Aisha', so reviewer identity doesn't carry to the sign-off — which defeats the point of an approval record. Fix those and the top-of-page button clutter and this is a 9 I'd share unprompted.",
+  "top_issues": [
+    "BUG (happy path): Review popover does not open if you focus/fill the 'Your name' header field first; only opens on a clean click. The UI nudges you to add your name before reviewing, so most users hit this.",
+    "Attribution gap: /review summary shows 'by Anonymous' on an approval even after the workspace header shows 'Editing as: Aisha' — reviewer name doesn't reliably attach to the sign-off, undermining the approval record.",
+    "Top-of-workspace clutter: four similar blue/purple buttons (Copy workspace link / Share style guide / Copy report link / Share review summary) in one row with tiny gray sublabels — high cognitive load, distinctions blur.",
+    "Identity model is confusing: 'Reviewing as: Anonymous' vs 'Editing as: Aisha' are two separate concepts shown near each other; unclear which one stamps the approval."
+  ],
+  "liked": [
+    "Roll-up panel: colored dots + live counts + progress bar + green 'All approved — ready to launch' pill is genuinely considered and rewarding.",
+    "/review page reads as a polished, centered sign-off document with per-link cards, badge, reviewer, and the note in quotes.",
+    "Empty/zero-review state is graceful: 'No links have been reviewed yet · 0 of 1 reviewed · Open the workspace to review →'.",
+    "Approve (green check) vs Needs changes (amber warning) are clearly distinct from the existing Audit/Launch-Check controls.",
+    "Copy tone throughout is human and precise; 'last edited by Aisha' attribution in the header is a nice touch.",
+    "No-signup, server-synced shared state with the secret link as access control — frictionless and clearly explained."
+  ]
+}

@@ -1,43 +1,20 @@
-# Round 1 — Tester 8 (Rob, freelance brand/visual designer) — QR feature
-
-Device: desktop, color-calibrated monitor. Tech: medium. Benchmark: "I'd type query
-strings by hand in ~4 min" + my per-client Google Sheet; for QR I'd normally paste each
-URL into a free QR site one-by-one or trace one in Illustrator.
-
-## What I did
-Cold open → tagged 3 client links (acme spring-sale: newsletter/email, instagram/social,
-facebook/cpc) → left a 4th row invalid (no source/medium/campaign) → Export CSV → opened
-per-row QR popover → downloaded PNG + SVG → ran top-level "Download QR codes" ZIP.
-
-## QR output quality — the part I care about
-- SVG is a REAL vector: `viewBox="0 0 43 43"`, `shape-rendering="crispEdges"`, QR modules
-  drawn as `<path>` data, ZERO embedded raster. This scales infinitely — I can drop it in
-  Illustrator and print it at any size razor-sharp. This is the right call and rare for a
-  free tool. Big win.
-- PNGs are LOW-RES: single-download = 160x160px, ZIP = 200x200px. At 300dpi that's ~0.5–
-  0.67 inch. Fine for screen/Slack, useless if a client wants it on a flyer or poster and
-  grabs the PNG instead of the SVG. No size/DPI option.
-- Contact sheet (708x276) is a neat idea but tiny/screen-only — not a print-ready sheet.
-
-## Real bug — invalid row NOT skipped
-The brief says invalid rows are skipped. My row 4 was flagged in-grid ("utm_source is
-required", etc.) yet the ZIP still produced `03.png` encoding the bare
-`https://acme.com/no-utm` — a QR with NO tracking. It also appears on the contact sheet
-labeled "03 https://acme.com/no-utm…". Repro: add a row with only a base URL, no UTMs →
-Download QR codes → invalid row gets a QR anyway. Handing a client an untracked QR to
-print is a liability, not a convenience.
-
-## CLARITY: Yes — H1 "Clean UTM links for your whole campaign — in one grid" + subhead is
-instantly legible. CSV exported clean (generated_url column present).
-
-## VALUE: Yes — bulk QR from the same grid genuinely beats pasting each URL into a QR site
-one at a time; the SVG saves me Illustrator tracing. Marginal-to-yes only because the
-low-res PNG and the invalid-row leak mean I can't trust the bulk PNG output blind.
-
-## ADVOCACY: 8 — true-vector SVG + bulk export is exactly the grunt-work killer I want, but
-the invalid-row QR leak and 200px PNGs hold it back from a 9. Quote that worries me:
-"03 https://acme.com/no-utm" sitting on a print contact sheet.
-
-```json
-{"name":"Rob","clarity":"Yes","value":"Yes","advocacy":8,"qr_reaction":"SVG is a genuine print-ready vector (path-based, crispEdges, no embedded raster) which is exactly what I need for client print work; but the PNGs are only 160–200px (screen-res, no DPI option) and the bulk ZIP did NOT skip my invalid row — it shipped a QR for the bare untracked URL.","likes":["SVG export is a true scalable vector, drops straight into Illustrator","Per-row QR popover shows the exact encoded URL so I can verify before downloading","Bulk 'Download QR codes' ZIP + auto-named files (01-spring-2026.png) saves real one-by-one grunt work","Contact sheet is a nice at-a-glance index"],"complaints":["Invalid row NOT skipped: a row with only a base URL (flagged 'utm_source required' in-grid) still produced 03.png encoding the bare https://acme.com/no-utm with no tracking, and it appears on the contact sheet — repro: add base-URL-only row, no UTMs, click Download QR codes","PNG resolution too low for print: single download 160x160, ZIP 200x200, no size/DPI choice — only ~0.5in at 300dpi","Contact sheet is 708x276, screen-only, not a print-ready sheet"],"verdict_summary":"The vector SVG export is genuinely the thing that'd pull me off pasting URLs into a QR site one at a time — that part's excellent for a designer. But I can't trust the bulk PNG output: it handed me a QR for an invalid, untracked row, and the PNGs are screen-res. Fix the invalid-row skip and give me a print-DPI PNG and this is a 9."}
-```
+{
+  "name": "Rob",
+  "clarity": "Yes",
+  "clarity_reason": "Headline 'Clean UTM links for your whole campaign — in one grid' plus 'Auto-fix messy casing and typos... no login, nothing leaves your browser' told me exactly what it is and that it's free/no-signup within ~10s. As a designer who occasionally tags client links, I got it immediately: a bulk query-string builder with a CSV export.",
+  "value": "Yes",
+  "value_reason": "Today I hand-type query strings or paste into a generic single-link UTM builder one URL at a time — tedious for a 3-5 link campaign. The grid + auto-fix-casing (it caught my 'Google'/'CPC'/'Spring Sale 2026' uppercase+space errors with a one-click Fix) + Export CSV genuinely beats my Photoshop-in-4-min reflex because this is text work, not pixel work. The warnings catching analytics-splitting typos is the real time-saver, not the typing itself. Recurring: I tag links most weeks, so yes.",
+  "advocacy": 8,
+  "advocacy_reason": "Strong build. Grid is clean, generated URLs populate live, CSV export is there, and the NEW review column did NOT cause overflow — at both 1280px and 1440px ALL editable columns (campaign/term/content) plus Generated URL and Actions fit fully on screen (table ~1258px, no horizontal scroll). The recurring overflow problem this app has had is NOT present. Held back from 9: (1) two confusing identity fields — I set my name once and it became 'Editing as: Rob', but my approval still logged 'by Anonymous' because there's a SEPARATE hidden 'Reviewing as' identity I never found a control to set. As a reviewer I want my approval to carry my name without hunting. (2) Review dialog opens below the fold on a tall page, so it's easy to think the click did nothing.",
+  "top_issues": [
+    "Dual identity confusion: 'Editing as: Rob' and 'Reviewing as: Anonymous' are separate; my approval showed 'by Anonymous' even after I entered my name once — no obvious way to set the reviewer name from the review dialog.",
+    "Review dialog opens below the fold (no scroll-to / no visible anchor), making the click feel unresponsive on a long workspace page.",
+    "Minor: the review summary's 'by Anonymous' attribution undermines the whole point of a team approval log."
+  ],
+  "liked": [
+    "No horizontal overflow at 1280px or 1440px — every editable column + Generated URL + Actions fully visible; the new REVIEW column added no cramping.",
+    "Auto-fix naming caught my uppercase/space UTM errors with one-click Fix — the actual value over hand-typing.",
+    "Live roll-up ('1 approved · 0 need changes · 2 unreviewed') updated instantly and matched the read-only /review page.",
+    "Frictionless: built a grid, created a synced /w/<id> workspace, and got a shareable read-only review page with zero signup."
+  ]
+}

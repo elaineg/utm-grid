@@ -350,6 +350,64 @@ describe("deserializeReviewMap", () => {
   });
 });
 
+// ── FIX A: Unified identity — reviewer name attaches to ReviewEntry (not "Anonymous") ─────
+
+describe("FIX A: unified identity attaches reviewer name to ReviewEntry.reviewer", () => {
+  it("setRowReview stores the reviewer name on the entry (not 'Anonymous')", () => {
+    const map = setRowReview(undefined, "row-1", "approved", "Sam", "LGTM");
+    expect(map["row-1"].reviewer).toBe("Sam");
+    expect(map["row-1"].reviewer).not.toBe("Anonymous");
+  });
+
+  it("setRowReview with empty string stores '' (not 'Anonymous')", () => {
+    // Unified identity: empty string = name not set; caller decides display fallback.
+    // The ReviewEntry.reviewer must NOT be "Anonymous" — that was the P0 bug.
+    const map = setRowReview(undefined, "row-1", "approved", "", "LGTM");
+    expect(map["row-1"].reviewer).toBe("");
+    expect(map["row-1"].reviewer).not.toBe("Anonymous");
+  });
+
+  it("setRowReview with trimmed name stores trimmed value", () => {
+    const map = setRowReview(undefined, "row-1", "approved", "  Priya  ", "looks good");
+    expect(map["row-1"].reviewer).toBe("Priya");
+  });
+
+  it("note persists on the ReviewEntry and round-trips through serialize/deserialize", () => {
+    // FIX B: note must survive serialization (the 'note persists' requirement)
+    const map = setRowReview(undefined, "row-1", "needs-changes", "Wen", "fix campaign casing");
+    expect(map["row-1"].note).toBe("fix campaign casing");
+
+    const serialized = JSON.parse(JSON.stringify(map)) as unknown;
+    const result = deserializeReviewMap(serialized);
+    expect(result).not.toBeUndefined();
+    expect(result!["row-1"].note).toBe("fix campaign casing");
+    expect(result!["row-1"].reviewer).toBe("Wen");
+  });
+});
+
+// ── FIX B: Note persistence ───────────────────────────────────────────────────
+
+describe("FIX B: note persists on ReviewEntry and renders on /review", () => {
+  it("note is stored in ReviewEntry and survives setRowReview", () => {
+    const map = setRowReview(undefined, "row-1", "needs-changes", "Wen", "needs lower case");
+    expect(map["row-1"].note).toBe("needs lower case");
+  });
+
+  it("note is preserved when updating state of the same row", () => {
+    const initial = setRowReview(undefined, "row-1", "needs-changes", "Wen", "original note");
+    // Update with a new note
+    const updated = setRowReview(initial, "row-1", "approved", "Wen", "fixed now");
+    expect(updated["row-1"].note).toBe("fixed now");
+  });
+
+  it("empty note is stored as empty string (not null/undefined)", () => {
+    const map = setRowReview(undefined, "row-1", "approved", "Sam", "");
+    expect(map["row-1"].note).toBe("");
+    expect(map["row-1"].note).not.toBeNull();
+    expect(map["row-1"].note).not.toBeUndefined();
+  });
+});
+
 // ── Legacy workspace backward compatibility ───────────────────────────────────
 
 describe("legacy workspace backward compatibility (guard #3: legacy-empty default)", () => {

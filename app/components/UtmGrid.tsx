@@ -139,6 +139,11 @@ export interface UtmGridProps {
   onReviewChange?: (newReviewMap: ReviewMap) => void;
   /** The reviewer's display name from localStorage (for the ReviewBadge popover). */
   reviewerName?: string;
+  /**
+   * FIX A: Called when reviewer sets/changes their name inside the review popover.
+   * Parent persists to the unified editor-name localStorage key.
+   */
+  onReviewerNameChange?: (name: string) => void;
 }
 
 export function UtmGrid({
@@ -151,6 +156,7 @@ export function UtmGrid({
   reviewMap,
   onReviewChange,
   reviewerName = "",
+  onReviewerNameChange,
 }: UtmGridProps = {}) {
   const router = useRouter();
 
@@ -1299,7 +1305,10 @@ export function UtmGrid({
   const handleSetReview = useCallback(
     (rowId: string, state: "approved" | "needs-changes", note: string) => {
       if (!onReviewChangeRef.current) return;
-      const next = setRowReview(reviewMap, rowId, state, reviewerName || "Anonymous", note);
+      // FIX A: use reviewerName directly (empty string = no name set, stored as "").
+      // The ReviewBadge popover calls onNameChange before calling onSetReview so the
+      // parent has already updated reviewerName in the unified identity before this fires.
+      const next = setRowReview(reviewMap, rowId, state, reviewerName, note);
       onReviewChangeRef.current(next);
     },
     // reviewMap and reviewerName are stable enough — called only in event handlers
@@ -2179,6 +2188,7 @@ export function UtmGrid({
                           reviewerName={reviewerName}
                           onSetReview={handleSetReview}
                           onClearReview={handleClearReview}
+                          onNameChange={onReviewerNameChange}
                           testidSuffix="table"
                         />
                       </td>
@@ -2605,6 +2615,7 @@ export function UtmGrid({
                         reviewerName={reviewerName}
                         onSetReview={handleSetReview}
                         onClearReview={handleClearReview}
+                        onNameChange={onReviewerNameChange}
                         testidSuffix="card"
                       />
                     </div>

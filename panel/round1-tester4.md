@@ -1,30 +1,34 @@
-# Round (QR feature) — Tester 4 (Tomás, Ops analyst, Edge on corporate laptop)
+# Round (Review & Approval) — Tester 4 (Tomás, Ops analyst, Edge on corporate laptop)
 
-I know this app (prior round I gave a 9). This round the new thing is **QR codes**, and my
-job is to confirm QR generation stays on my machine — I won't paste company campaign URLs
-into a site that round-trips them to a server.
+I know this app (prior rounds I gave 9). This round's new feature is **Workspace Review &
+Approval** on a shared /w/<id>: per-row Approve / Needs-changes + note, a reviewer name, a
+roll-up, and a read-only /w/<id>/review summary.
 
-## What I verified
-- CSV round-trip: imported a 3-row Excel-style sheet (messy casing, spaces in campaign,
-  a `?ref=q3` base). Column auto-mapping caught all headers; "Import 3 rows" confirmed.
-  Data NOT mangled — `Newsletter`/`LinkedIn` casing preserved, existing `?ref=q3` kept and
-  UTMs appended with `&`, spaces encoded `%20` in the generated URL. Export CSV round-trips
-  cleanly back to Excel.
-- QR per-row: popover shows "QR Code — Row 1", the full encoded URL, an inline
-  `data:image/png;base64,...` preview, and Download PNG/SVG. Download PNG fires an anchor
-  with `href=data:image/png;base64,...` `download="qr-row-1.png"` — pure local, no fetch.
-- Top-level "Download QR codes": ZIP (`utm-qr-codes.zip`) with one PNG per valid row +
-  `contact-sheet.png` (printable). Invalid/empty rows SKIPPED correctly (empty row 2 absent;
-  ZIP kept original numbering 01/03). Contact sheet is a nice touch for ops handoffs.
-- **THE privacy check**: across cold load, CSV import, QR popover, all PNG/SVG downloads,
-  and the ZIP build — NON-GET network requests = **0**. Nothing uploaded. QR is generated
-  100% client-side. This is exactly what lets me use it with company data.
+## Prior concerns re-checked
+- **CSV missing UTF-8 BOM (my standing half-point across rounds): FIXED.** Export CSV now
+  starts with bytes EF BB BF — it'll open in the right codepage on Excel/Edge/Windows. This
+  is the thing I dinged twice; good to see it resolved.
+
+## What I tested this round
+Built a 2-row ops grid, created a shared workspace, set my name "Tomas R.", approved row 1,
+marked row 2 Needs-changes with a note, watched the roll-up, opened /review as a teammate.
+- Roll-up updates live and correctly: "1 approved · 1 need changes · 0 unreviewed" with a
+  green/orange progress bar. Per-row chips ("Approved" / "Needs changes") are clear.
+- /review summary page is genuinely good: read-only (0 editable inputs), per-link status,
+  my note quoted verbatim, and an honest banner "Review state is server-persisted... anyone
+  with this secret link can view this page."
+- **Data trust: handled honestly.** Builder still says nothing leaves the browser; the
+  workspace explicitly warns review state IS stored server-side and the secret link is the
+  access control. That upfront disclosure is exactly why I'll use it for campaign URLs.
 
 ## Holding it down
-Same half-point as before: Export/report CSV has **no UTF-8 BOM** — on Edge/Windows a
-double-click into Excel can mis-guess the codepage. My ASCII data was fine, but it's the
-one rough edge for the Windows-Excel user this courts. Not fixed this round.
+- **Reviewer name doesn't attach to the approval.** I typed "Tomas R." but the /review page
+  shows both rows "by Anonymous" — the name is "saved on this device" only, not bound to the
+  review record teammates see. For sign-off the entire point is accountability ("who
+  approved this?"). This is the main thing stopping a 9.
+- Secret link grants full view+edit to anyone holding it; no view-only/approver role, so I
+  can't separate a reviewer from an editor.
 
 ```json
-{"name":"Tomás","clarity":"Yes","value":"Yes","advocacy":9,"qr_reaction":"QR is fully local — popover renders a base64 data-URI, PNG/SVG download via data-anchors, ZIP+contact-sheet built in-browser with ZERO non-GET requests; exactly what a data-wary ops analyst needs, and it correctly skips invalid rows.","likes":["QR generation 100% client-side — verified 0 uploads across import+QR+ZIP","CSV round-trip preserves my casing/special chars and keeps existing ?ref query param","ZIP ships a printable contact sheet and skips invalid/empty rows automatically","Per-row PNG/SVG + bulk ZIP covers both one-off and batch ops needs"],"complaints":["Export/report CSV still has no UTF-8 BOM, so non-ASCII chars can mojibake on double-click into Excel on Edge/Windows","QR popover's Download PNG/SVG labels collide with the toolbar 'Download QR codes' button by accessible name — minor, but a screen-reader/keyboard user could pick the wrong one"],"verdict_summary":"The QR feature nails my one hard requirement: it never sends my campaign URLs anywhere — all generation is in-browser, confirmed by zero non-GET traffic. CSV round-trips without mangling and the ZIP+contact-sheet is genuinely useful for ops handoffs. Still a 9, held off 10 only by the missing CSV BOM I flagged before."}
+{"name":"Tomás","clarity":"Yes","value":"Yes","advocacy":8,"clarity_reason":"Headline + 'no login, nothing leaves your browser' answered the job and my data worry in ~10s; REVIEW STATUS roll-up and per-row Review chips are self-explanatory, and live-sync vs frozen-snapshot is clearly labeled.","value_reason":"Real weekly ops job: I build tagged links in Excel and chase sign-off in Teams with no record. Shared per-link Approve/Needs-changes + notes + a clean read-only /review page beats a spreadsheet+Teams thread, needs zero install, and the BOM fix means CSV round-trips into Excel cleanly now.","advocacy_reason":"Solves a real recurring pain with honest data disclosure, no install, and my prior CSV BOM gripe is fixed — but the reviewer name shows 'by Anonymous' on the summary, undercutting the accountability sign-off is for; that's the gap from a 9.","top_issues":["Reviewer name is local-only ('saved on this device') and does NOT attach to the review record — /review shows 'by Anonymous' even after I entered 'Tomas R.', defeating sign-off accountability","Secret link = full view+edit for anyone who has it; no view-only/approver-only role to separate reviewers from editors","No real auth on the workspace link, so I'd still never paste confidential URLs"],"liked":["Prior complaint fixed: Export CSV now has UTF-8 BOM (EF BB BF) so it opens correctly in Excel on Windows/Edge","Live, correct roll-up with progress bar + clear per-row Approved/Needs-changes chips","Clean read-only /review summary with the note quoted verbatim — an artifact I'd attach to a sign-off ticket","Honest, upfront disclosure that review state is server-persisted and the secret link is the access control","Auto-fix caught my uppercase 'Email' medium with a clear inline lowercase prompt"],"priorConcernsAddressed":"all"}
 ```

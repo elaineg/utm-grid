@@ -2113,3 +2113,91 @@ the established copy-cue pattern; never a fast-fading corner toast. Verify the c
   - **Pre-filled example:** the first visible content is real workspace data — the live roll-up counts
     + ratio bar and the per-link state badges with reviewer names/notes — never a blank box (empty
     state shows "0 of N reviewed" + the friendly start line).
+
+## Workspace Review & Approval — Round 1 panel fixes (2026-06-14)
+
+Panel R1 = **0/10 at the 9-bar** (Priya 8, Marcus 8, Wen 6, Tomás 8, Dana 7, Jules 7, Aisha 7, Rob 8,
+Elena 7, Sam 6). Clarity + value near-unanimous Yes (Elena partial clarity). One dominant blocker
+caps every score, plus a few real secondary bugs. Additive / CSS / logic / copy only — do NOT touch
+the headline, subhead, lint toggles, grid layout, Presets, Campaigns/UTM-Spec panels, Bulk edit, CSV,
+the ≤640px card view, or the ≥640px desktop table. Keep ALL existing invariants: anonymous-first (name
+always optional, never blocks editing), NO horizontal overflow at 1280px (Rob confirmed clean — do not
+regress), mobile tappable, mode-aware server-persisted copy, distinct "Review/Approve/Needs changes"
+verb + indigo accent. Re-tests all 10 (no carry-forward). Each fix maps to a synthesis cause + the
+testers behind it.
+
+**Fix A — UNIFY to ONE identity; approvals must NEVER log "by Anonymous" (P0, THE blocker; Cause A —
+Priya, Wen, Tomás, Dana, Jules, Aisha, Rob, Elena, Sam = 9/10).** Root problem: a visible "Your name"
+/ "Editing as" identity drives edit attribution, but review uses a SEPARATE hidden "Reviewing as"
+identity that confuses (two labels), doesn't persist across reload, and never attaches to the
+approval — so every approval reads "by Anonymous" on `/w/<id>` and `/w/<id>/review`. Fix:
+- **Collapse to ONE canonical identity.** A single **"Your name"** control on `/w/<id>` drives BOTH
+  edit attribution AND review attribution — one canonical localStorage identity key. For backward
+  compat, READ the old reviewer-name / editor-name keys if present, but WRITE and SHOW exactly one
+  name. There is no second "Reviewing as" concept; "Editing as: <name>" and the review attribution are
+  the same name. Eliminate the dual-label confusion Dana/Aisha/Rob flagged.
+- **It MUST persist across reload.** Read the name from localStorage in an **effect** (not a lazy
+  initializer that can race hydration), so a reload never reverts to "Anonymous" and never flickers
+  "Editing as: Wen" → "Anonymous" (Wen, Priya, Sam). Name stays sticky.
+- **The name MUST bind to the review record.** When a user marks Approved / Needs-changes,
+  `ReviewEntry.reviewer = that name`; it shows on the row tooltip/sub-row AND on `/w/<id>/review` —
+  never "by Anonymous" once a name is set. Anonymous-first is preserved: an unnamed user can still
+  review; the mark just reads "Anonymous".
+- **Surface identity AT THE POINT OF ACTION.** Inside the review popover, show **"Reviewing as:
+  <name>"** with an **inline name field** so a user with NO name set can name themselves RIGHT THERE
+  before confirming Approve / Needs-changes. An approval must never silently log "Anonymous" without
+  the user having had the chance to name themselves in the popover. Setting the name here writes the
+  same canonical identity (so it persists and back-fills the header label too).
+
+**Fix B — Note must reliably persist + render on `/review` (P1; Cause B — Wen, partly Sam).** The
+per-row "Needs changes" NOTE currently has no save (only "✓ Approve") and is dropped on blur+reload,
+absent on `/review`. Fix: **autosave the note on commit/blur** (and when a state is chosen) as part of
+the same server-persisted review record — no separate save button required, but committing must
+reliably write it. After reload the note re-renders in the popover/row sub-row AND on
+`/w/<id>/review`. The note is the actionable rejection reason; it must survive.
+
+**Fix C — Review popover open + position (P1; Cause C — Aisha, Jules, echoed Rob).**
+- **First-click must open the popover even after using "Your name."** Today the popover won't open if
+  you FIRST focus/fill the name field — a first-click-swallowed / focus-blur race (and the UI nudges
+  setting a name first, so most users hit it). Render the popover **synchronously on first click**;
+  do not let an onBlur / auto-focus handler eat the first click. Verify: fill the name field, then
+  click a row's Review badge — popover opens on that single click.
+- **Anchor it visible without scrolling (desktop).** The popover currently opens BELOW the row and
+  falls under the fold (Jules: Approve ~y1036 on a 900px viewport; Rob: "feels like the click did
+  nothing"). Position/flip the popover so Approve / Needs-changes are visible without scrolling — reuse
+  the proven viewport-clamped/tethered popover pattern, flipping above the row when below would clip.
+
+**Fix D — `/w/<id>/review` mobile layout at 375px (P1; Cause D — Sam).** The Needs-changes note text
+collides with the URL/medium and the URL truncates to "h." Fix the `/review` responsive row layout so
+at 375px each link's **URL, medium, status, reviewer, and note are each readable** — STACK them
+vertically (label-over-value, full-width, wrapping/selectable URL), never mash note over URL. No
+horizontal scroll. (Keep the otherwise-clean `/review` mobile render Dana/Jules/Elena praised.)
+
+**Fix E — Per-row review chip label legible at 1280px (P1; Cause E — Marcus).** The row review chip
+truncates to "Needs cha…" at 1280px. Give the chip enough width to read fully, OR use a shorter
+label / icon+short-word ("Changes", or warning-glyph + "Needs changes" tooltip) — whichever reads
+fully at 1280px WITHOUT re-introducing horizontal overflow (Rob confirmed the grid is clean at
+1280/1440px — do not regress that). Keep the indigo review accent and the green "Approved ✓" state.
+
+**Fix F — Consolidate the share cluster into ONE compact "Share ▾" (P2; Cause F — Marcus, Priya,
+Aisha).** The `/w/<id>` header now stacks ~5 overlapping Copy/Share buttons (Copy workspace link /
+Share style guide / Copy report link / Share review summary / Copy share link). Consolidate them into
+**ONE compact "Share ▾" menu/cluster** so the toolbar reads clean and the new "Share review summary"
+isn't lost in the noise. Every action stays reachable inside the menu, each with its existing distinct
+sublabel. Keep the established **green-fill-in-place "Copied ✓"** cue (ref-stable timer survives
+re-render, `aria-live`, execCommand fallback) on each copy action; verify it fires at 375px.
+
+**Fix G — Roll-up copy makes the sign-off purpose obvious (P2; Cause G — Elena, Jules).** A teammate
+opening a bare `/w/<id>` link must immediately understand the review/sign-off purpose. Keep review
+`/w/<id>`-only BY DESIGN — do NOT add any review surface to cold `/`. The existing above-grid roll-up
+panel already helps; tighten its copy so the purpose is obvious at a glance, e.g. a one-line subtitle
+under "Workspace Review — Approval Status": **"Mark each link Approved or Needs changes to sign off
+before launch."** No new page, no new surface — copy only.
+
+### 5-second check (Round 1 fixes — unchanged above the fold)
+- `/w/<id>`: hero/grid loads and is editable WITHOUT a name set; the **"Workspace Review — Approval
+  Status"** roll-up (now with the "mark each link… to sign off before launch" subtitle) sits above the
+  grid; each row carries a compact, FULLY-LEGIBLE state chip; the header shows ONE clean **"Share ▾"**.
+- A review action now logs the user's real name everywhere — the popover shows **"Reviewing as:
+  <name>"** with an inline name field, the name persists across reload, and `/w/<id>/review` reads
+  **"approved by <name>"**, never "by Anonymous".

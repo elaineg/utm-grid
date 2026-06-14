@@ -4,6 +4,9 @@
  * ReviewRollupPanel — full-width review roll-up summary shown ABOVE the grid
  * on /w/<id> workspace pages.
  *
+ * FIX G (P2): Added subtitle "Mark each link Approved or Needs changes to sign off
+ *   before launch." so the sign-off purpose is clear at a glance.
+ *
  * Design spec:
  * - Full-width, in normal page flow (NOT a side panel, NOT inside grid columns).
  * - Shows "N approved · N need changes · N unreviewed" + a ratio bar.
@@ -48,33 +51,39 @@ export function ReviewRollupPanel({ rollup }: ReviewRollupPanelProps) {
       className="w-full rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-3 mb-4"
     >
       {/* Header row */}
-      <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold uppercase tracking-wider text-indigo-600">
-            Review status
-          </span>
-          {allApproved && (
-            <span
-              role="status"
-              aria-live="polite"
-              className="inline-flex items-center gap-1 rounded-full bg-green-100 border border-green-300 px-2 py-0.5 text-[11px] font-semibold text-green-800"
-            >
-              <span aria-hidden="true">✓</span>{" "}
-              <span>All approved — ready to launch</span>
+      <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
+        <div className="flex flex-col gap-0.5">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold uppercase tracking-wider text-indigo-600">
+              Review status
             </span>
-          )}
-          {someNeedChanges && !allApproved && (
-            <span
-              role="status"
-              aria-live="polite"
-              className="inline-flex items-center gap-1 rounded-full bg-amber-100 border border-amber-300 px-2 py-0.5 text-[11px] font-semibold text-amber-800"
-            >
-              <span aria-hidden="true">⚠</span>{" "}
-              <span>{needsChanges} need{needsChanges === 1 ? "s" : ""} changes</span>
-            </span>
-          )}
+            {allApproved && (
+              <span
+                role="status"
+                aria-live="polite"
+                className="inline-flex items-center gap-1 rounded-full bg-green-100 border border-green-300 px-2 py-0.5 text-[11px] font-semibold text-green-800"
+              >
+                <span aria-hidden="true">✓</span>{" "}
+                <span>All approved — ready to launch</span>
+              </span>
+            )}
+            {someNeedChanges && !allApproved && (
+              <span
+                role="status"
+                aria-live="polite"
+                className="inline-flex items-center gap-1 rounded-full bg-amber-100 border border-amber-300 px-2 py-0.5 text-[11px] font-semibold text-amber-800"
+              >
+                <span aria-hidden="true">⚠</span>{" "}
+                <span>{needsChanges} need{needsChanges === 1 ? "s" : ""} changes</span>
+              </span>
+            )}
+          </div>
+          {/* FIX G: sign-off subtitle — makes the purpose clear at a glance */}
+          <p className="text-xs text-indigo-600 leading-snug">
+            Mark each link Approved or Needs changes to sign off before launch.
+          </p>
         </div>
-        <p className="text-xs text-indigo-500">
+        <p className="text-xs text-indigo-400 shrink-0">
           Server-synced — all teammates on this link see the same review state.
         </p>
       </div>

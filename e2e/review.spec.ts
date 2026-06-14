@@ -224,8 +224,8 @@ test("R4 — Needs-changes row 2 with note: rollup + badge update correctly", as
   // Popover closes
   await expect(popover).not.toBeVisible({ timeout: 3_000 });
 
-  // Row 1 badge shows Needs changes
-  await expect(btn1).toContainText("Needs changes", { timeout: 5_000 });
+  // Row 1 badge shows "Changes" (FIX E: short chip label — full text in aria-label)
+  await expect(btn1).toContainText("Changes", { timeout: 5_000 });
 
   // Roll-up shows 1 need changes
   const countLine = page.locator('[data-testid="review-count-line"]');
@@ -322,8 +322,10 @@ test("R6 — legacy workspace (no reviewMap): per-row badges render, roll-up sho
   const badge1 = page.locator('[data-testid="review-badge-btn-row-1-table"]');
   await expect(badge1).toBeVisible({ timeout: 5_000 });
 
-  // Badges show "Unreviewed" state (empty map = all unreviewed)
-  await expect(badge0).toContainText("Unreviewed");
+  // Badges show the unreviewed state — the ReviewBadge labels this "Review" (verb)
+  // when the state is "unreviewed" (the button is the action: click to leave a review).
+  // Confirming text "Review" (not "Approved"/"Needs changes") proves the row is unreviewed.
+  await expect(badge0).toContainText("Review");
 
   // /w/<id>/review page also loads without crash on legacy workspace
   await page.goto(`/w/${id}/review`);
@@ -394,8 +396,13 @@ test("R9 — Share review summary: button shows Copied! cue, copied URL ends in 
   await page.goto(`/w/${id}`);
   await expect(page.locator('[data-testid="workspace-banner"]')).toBeVisible({ timeout: 12_000 });
 
+  // FIX F: share actions are now inside a "Share ▾" dropdown — open the menu first.
+  const shareMenuBtn = page.locator('[data-testid="share-menu-btn"]');
+  await expect(shareMenuBtn).toBeVisible({ timeout: 8_000 });
+  await shareMenuBtn.click();
+
   const shareBtn = page.locator('[data-testid="share-review-summary-btn"]');
-  await expect(shareBtn).toBeVisible({ timeout: 8_000 });
+  await expect(shareBtn).toBeVisible({ timeout: 5_000 });
   await shareBtn.click();
 
   // Button shows Copied! cue
@@ -545,11 +552,6 @@ test("R14 — reviewer-name control frictionless: cold open still lets user edit
   await page.goto(`/w/${id}`);
   await expect(page.locator('[data-testid="workspace-banner"]')).toBeVisible({ timeout: 12_000 });
 
-  // Reviewer name button is visible (actual testid from DOM probe)
-  const reviewerBtn = page.locator('[data-testid="reviewer-name-btn"]');
-  await expect(reviewerBtn).toBeVisible({ timeout: 8_000 });
-  await expect(reviewerBtn).toContainText("Reviewing as:");
-
   // Grid cells are editable without setting a reviewer name — first click works
   const campaignCell = page.getByLabel("utm_campaign row 1", { exact: true }).first();
   await expect(campaignCell).toBeVisible({ timeout: 5_000 });
@@ -563,10 +565,112 @@ test("R14 — reviewer-name control frictionless: cold open still lets user edit
   await badge.click();
   const popover = page.locator('[data-testid="review-popover-row-0-table"]');
   await expect(popover).toBeVisible({ timeout: 5_000 });
-  await expect(popover).toContainText("Anonymous");
+  // Popover has inline name input (FIX A)
+  const nameInput = popover.locator('[data-testid="review-popover-name-input-row-0-table"]');
+  await expect(nameInput).toBeVisible();
   await popover.locator('[data-testid="review-approve-btn-row-0-table"]').click();
 
   await expect(badge).toContainText("Approved", { timeout: 5_000 });
+
+  await ctx.close();
+});
+
+// ─── R15: FIX A — unified identity: name set in popover attaches to ReviewEntry ─
+
+test("R15 — FIX A: name set in review popover attaches to ReviewEntry.reviewer (not Anonymous)", async ({
+  browser,
+}) => {
+  const id = await createWorkspace();
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+  const page = await ctx.newPage();
+
+  await page.goto(`/w/${id}`);
+  await expect(page.locator('[data-testid="workspace-banner"]')).toBeVisible({ timeout: 12_000 });
+
+  // Open review popover for row 0
+  const badge = page.locator('[data-testid="review-badge-btn-row-0-table"]');
+  await expect(badge).toBeVisible({ timeout: 8_000 });
+  await badge.click();
+
+  const popover = page.locator('[data-testid="review-popover-row-0-table"]');
+  await expect(popover).toBeVisible({ timeout: 5_000 });
+
+  // FIX A: set name inside the popover
+  const nameInput = popover.locator('[data-testid="review-popover-name-input-row-0-table"]');
+  await expect(nameInput).toBeVisible();
+  await nameInput.fill("Priya");
+
+  // Approve
+  await popover.locator('[data-testid="review-approve-btn-row-0-table"]').click();
+
+  // Badge shows Approved
+  await expect(badge).toContainText("Approved", { timeout: 5_000 });
+
+  // Wait for autosave
+  await expect(
+    page.locator('[data-testid="workspace-banner"]').getByText(/last edited by/i)
+  ).toBeVisible({ timeout: 8_000 });
+
+  // Check /review page — reviewer must be "Priya", NOT "Anonymous"
+  await page.goto(`/w/${id}/review`);
+  await expect(page.locator('[data-testid="review-summary-badge"]')).toBeVisible({ timeout: 12_000 });
+
+  const row0 = page.locator('[data-testid="review-summary-row-0"]');
+  await expect(row0).toBeVisible({ timeout: 8_000 });
+  await expect(row0).toContainText("Priya");
+  // Critical: must NOT show "Anonymous"
+  const row0Text = await row0.innerText();
+  expect(row0Text).not.toContain("Anonymous");
+
+  await ctx.close();
+});
+
+// ─── R16: FIX B — note persists across reload and renders on /review ─────────
+
+test("R16 — FIX B: Needs-changes note persists across reload and renders on /review", async ({
+  browser,
+}) => {
+  const id = await createWorkspace();
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+  const page = await ctx.newPage();
+
+  await page.goto(`/w/${id}`);
+  await expect(page.locator('[data-testid="workspace-banner"]')).toBeVisible({ timeout: 12_000 });
+
+  // Open review popover for row 0
+  const badge = page.locator('[data-testid="review-badge-btn-row-0-table"]');
+  await expect(badge).toBeVisible({ timeout: 8_000 });
+  await badge.click();
+
+  const popover = page.locator('[data-testid="review-popover-row-0-table"]');
+  await expect(popover).toBeVisible({ timeout: 5_000 });
+
+  // Enter a note
+  const noteArea = popover.locator("textarea").first();
+  await noteArea.fill("fix campaign casing before launch");
+
+  // Click Needs changes
+  await popover.locator('[data-testid="review-needs-changes-btn-row-0-table"]').click();
+  await expect(popover).not.toBeVisible({ timeout: 3_000 });
+
+  // Wait for autosave
+  await expect(
+    page.locator('[data-testid="workspace-banner"]').getByText(/last edited by/i)
+  ).toBeVisible({ timeout: 8_000 });
+
+  // Reload — note must survive
+  await page.reload();
+  await expect(page.locator('[data-testid="workspace-banner"]')).toBeVisible({ timeout: 12_000 });
+  const reloadedBadge = page.locator('[data-testid="review-badge-btn-row-0-table"]');
+  await expect(reloadedBadge).toContainText("Changes", { timeout: 8_000 });
+
+  // Check /review page — note must render
+  await page.goto(`/w/${id}/review`);
+  await expect(page.locator('[data-testid="review-summary-badge"]')).toBeVisible({ timeout: 12_000 });
+
+  const row0 = page.locator('[data-testid="review-summary-row-0"]');
+  await expect(row0).toBeVisible({ timeout: 8_000 });
+  await expect(row0).toContainText("fix campaign casing before launch");
 
   await ctx.close();
 });

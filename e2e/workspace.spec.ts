@@ -388,8 +388,9 @@ test("Check 8 — mobile 375px: workspace banner does NOT occlude grid cells or 
     expect(elementBelowBanner).not.toBe("banner");
   }
 
-  // The workspace banner must be visible and the copy-workspace-link button reachable
-  await expect(page.locator('[data-testid="copy-workspace-link"]')).toBeVisible();
+  // The workspace banner must be visible and the share menu button reachable
+  // FIX F: share actions are inside the "Share ▾" dropdown; assert the menu trigger is visible.
+  await expect(page.locator('[data-testid="share-menu-btn"]')).toBeVisible();
 
   // Check banner is not position:fixed or position:sticky (it must be in normal flow)
   const bannerPosition = await page.evaluate(() => {

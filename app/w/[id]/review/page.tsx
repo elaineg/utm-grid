@@ -280,54 +280,56 @@ export default function ReviewPage({ params }: { params: Promise<{ id: string }>
                 <div
                   key={row.id}
                   data-testid={`review-summary-row-${rowIndex}`}
-                  className="flex flex-wrap items-start gap-3 rounded-md border border-gray-100 bg-white px-3 py-2.5"
+                  className="rounded-md border border-gray-100 bg-white px-3 py-2.5 flex flex-col gap-1.5"
                 >
-                  {/* Row number */}
-                  <span className="text-xs font-medium text-gray-400 shrink-0 mt-0.5">
-                    #{rowIndex + 1}
-                  </span>
-
-                  {/* State badge */}
-                  <span
-                    className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold shrink-0 ${STATE_BADGE_CLASS[state]}`}
-                  >
-                    <span aria-hidden="true">
-                      {state === "approved" ? "✓" : state === "needs-changes" ? "⚠" : "—"}
+                  {/* FIX D: stacked layout at 375px — everything on its own line. */}
+                  {/* Top bar: row number + state badge */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs font-medium text-gray-400 shrink-0">
+                      #{rowIndex + 1}
                     </span>
-                    {STATE_LABELS[state]}
-                  </span>
-
-                  {/* URL info */}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-mono text-gray-500 truncate" title={row.baseUrl || undefined}>
-                      {row.baseUrl || <span className="italic text-gray-300">(no base URL)</span>}
-                    </p>
-                    {row.utm_campaign && (
-                      <p className="text-[10px] text-gray-400 mt-0.5">
-                        {row.utm_source && <span>{row.utm_source}</span>}
-                        {row.utm_source && row.utm_medium && <span> · </span>}
-                        {row.utm_medium && <span>{row.utm_medium}</span>}
-                        {(row.utm_source || row.utm_medium) && row.utm_campaign && <span> · </span>}
-                        {row.utm_campaign && <span className="font-medium">{row.utm_campaign}</span>}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Reviewer + note */}
-                  {entry && (
-                    <div className="flex flex-col gap-0.5 shrink-0 text-right">
-                      <span className="text-[10px] text-gray-500">
+                    <span
+                      className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-semibold shrink-0 ${STATE_BADGE_CLASS[state]}`}
+                    >
+                      <span aria-hidden="true">
+                        {state === "approved" ? "✓" : state === "needs-changes" ? "⚠" : "—"}
+                      </span>
+                      {STATE_LABELS[state]}
+                    </span>
+                    {entry && (
+                      <span className="text-[10px] text-gray-500 shrink-0">
                         by{" "}
                         <span className="font-semibold text-gray-700">
                           {entry.reviewer || "Anonymous"}
                         </span>
                       </span>
-                      {entry.note && (
-                        <span className="text-[10px] text-gray-400 max-w-[160px] text-right">
-                          &ldquo;{entry.note}&rdquo;
-                        </span>
-                      )}
-                    </div>
+                    )}
+                  </div>
+
+                  {/* URL — full-width, breaks or truncates on narrow screens */}
+                  <p
+                    className="text-xs font-mono text-gray-500 break-all leading-tight"
+                    title={row.baseUrl || undefined}
+                  >
+                    {row.baseUrl || <span className="italic text-gray-300">(no base URL)</span>}
+                  </p>
+
+                  {/* Source / medium / campaign — single line, wraps */}
+                  {(row.utm_source || row.utm_medium || row.utm_campaign) && (
+                    <p className="text-[10px] text-gray-400 flex flex-wrap gap-x-1">
+                      {row.utm_source && <span>{row.utm_source}</span>}
+                      {row.utm_source && row.utm_medium && <span>·</span>}
+                      {row.utm_medium && <span>{row.utm_medium}</span>}
+                      {(row.utm_source || row.utm_medium) && row.utm_campaign && <span>·</span>}
+                      {row.utm_campaign && <span className="font-medium">{row.utm_campaign}</span>}
+                    </p>
+                  )}
+
+                  {/* Note — full-width, never collides with URL */}
+                  {entry?.note && (
+                    <p className="text-[10px] text-gray-400 italic leading-snug">
+                      &ldquo;{entry.note}&rdquo;
+                    </p>
                   )}
                 </div>
               ))}
