@@ -74,6 +74,8 @@ import {
   BLOCKING_QR_LINT_RULES,
 } from "../../lib/qr";
 import { MyWorkspacesPanel } from "./MyWorkspacesPanel";
+import { SetupTransferPanel } from "./SetupTransferPanel";
+import type { ApplyResult as SyncApplyResult } from "../../lib/syncBundle";
 
 type EditableField = "baseUrl" | UtmField;
 const COLUMNS: EditableField[] = ["baseUrl", ...UTM_FIELDS];
@@ -1447,6 +1449,8 @@ export function UtmGrid({
   const [activeToolsPanel, setActiveToolsPanel] = useState<"presets" | "bulk" | null>(null);
 
   const [toolsMenuOpen, setToolsMenuOpen] = useState(false);
+  // "move-to-device" setup transfer panel (D10 / UX_BRIEF)
+  const [setupTransferOpen, setSetupTransferOpen] = useState(false);
   const [rulesPopoverOpen, setRulesPopoverOpen] = useState(false);
   // R2-D: Share ▾ menu state
   const [shareMenuOpen, setShareMenuOpen] = useState(false);
@@ -1491,14 +1495,23 @@ export function UtmGrid({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toolsMenuOpen, rulesPopoverOpen, shareMenuOpen]);
 
-  const openToolsPanel = (panel: "presets" | "bulk" | "spec" | "template" | "campaigns"): void => {
+  const openToolsPanel = (panel: "presets" | "bulk" | "spec" | "template" | "campaigns" | "move-to-device"): void => {
+    // "move-to-device": toggle the setup transfer panel (opens inline in the panel zone)
+    if (panel === "move-to-device") {
+      setActiveToolsPanel(null);
+      setSetupTransferOpen((prev) => !prev);
+      setToolsMenuOpen(false);
+      return;
+    }
     // presets + bulk: open inline panel above the grid (no below-grid equivalent)
     // spec, template, campaigns: scroll to the always-visible below-grid panel
     if (panel === "presets" || panel === "bulk") {
+      setSetupTransferOpen(false);
       setActiveToolsPanel((prev) => (prev === panel ? null : panel));
     } else {
       // Scroll to the below-grid panel instead of opening a duplicate
       setActiveToolsPanel(null);
+      setSetupTransferOpen(false);
       const testidMap: Record<string, string> = {
         spec: "utm-spec-panel",
         template: "naming-template-panel",
@@ -1749,6 +1762,21 @@ export function UtmGrid({
                 >
                   Run Launch Check
                 </button>
+              )}
+              {/* Move to another device — only on main builder (local-only feature) */}
+              {!isWorkspaceMode && (
+                <>
+                  <hr className="my-1 border-gray-100" />
+                  <button
+                    type="button"
+                    data-testid="move-to-device-btn"
+                    onClick={() => openToolsPanel("move-to-device")}
+                    className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-50"
+                  >
+                    Move to another device
+                    <span className="block text-[10px] text-gray-400">export / import your setup</span>
+                  </button>
+                </>
               )}
             </div>
           )}
@@ -2102,6 +2130,46 @@ export function UtmGrid({
             qrResultMessage={qrResultMessage}
           />
         </div>
+      )}
+
+      {/* ── Setup Transfer panel (D10: "Move to another device") ─────────────────
+          Opens in the panel zone, full-width, stacked. Only on main builder.
+          Conflict-safe merge: never wipes existing state. Zero-network. */}
+      {!isWorkspaceMode && setupTransferOpen && (
+        <SetupTransferPanel
+          onClose={() => setSetupTransferOpen(false)}
+          onImportComplete={(result: SyncApplyResult) => {
+            // Refresh campaigns in parent state so the Campaigns panel updates live
+            if (result.campaigns) {
+              // setCampaigns takes Campaign[] — use serializeCampaigns path
+              setCampaigns(result.campaigns);
+            }
+            // Refresh presets
+            if (result.presets) {
+              setPresets(result.presets);
+            }
+            // Refresh spec
+            if (result.spec) {
+              setStoredSpec(result.spec);
+            }
+            // Refresh naming template
+            if (result.namingTemplate) {
+              setStoredNamingTemplate(result.namingTemplate);
+            }
+            // Refresh lint settings
+            if (result.lintSettings) {
+              setStoredSettings(result.lintSettings);
+            }
+            // myWorkspaces is managed by MyWorkspacesPanel via its own useSyncExternalStore;
+            // writing to localStorage in writeMergedState() will trigger a storage event
+            // which the panel's store picks up automatically — no additional call needed.
+          }}
+          presets={[...SEEDED_PRESETS, ...userPresets]}
+          campaigns={campaigns}
+          spec={spec}
+          namingTemplate={namingTemplate}
+          lintSettings={settings}
+        />
       )}
 
       {importError && (

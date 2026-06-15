@@ -40,6 +40,12 @@
 > Constraints: mobile-card-only; no horizontal overflow at 375px; no sticky/overlay
 > occlusion; effect-based reads / getSnapshot stability unchanged. DEFER (unchanged):
 > Tomás's clean-on-CSV-import — he remains the one accepted holdout at 8.
+>
+> **THIS REVISION — ONE NEW FEATURE: cross-device "Move my setup" (Sync Code / portable
+> bundle), spec flow 3.** Export ALL local accumulation as a `.json` file AND a copyable code;
+> import via a CONFLICT-SAFE MERGE with a pre-apply added/updated/skipped summary the user
+> confirms. Surfaced inside the EXISTING **Tools ▾** menu (no new above-grid banner, grid stays
+> the hero). See **D10** + landing-structure Tools ▾ entry. All other sections unchanged.
 
 ## 1. Problem statement
 Build clean, consistent campaign tracking links in a grid — so a stray capital or stray space
@@ -182,6 +188,74 @@ Rationale: Elena (375px) was capped at 8 solely because the green generated URL 
 the fold behind two empty optional fields; Sam (passing) named the identical wish. This is
 the "payoff in the first mobile screenful" fix.
 
+**D10 — Cross-device "Move my setup" (Sync Code / portable bundle) lives inside Tools ▾,
+opens a below-grid stacked panel; conflict-safe merge with a pre-apply summary (cites
+`added-feature-buried-panel-surfaces-not-function`, `optional-ui-gated-on-data-presence-vanishes-for-empty-case`,
+`copy-confirmation-survives-tick-rerender`, `side-panel-squeezes-grid-hides-editable-columns`,
+`mobile-sticky-overlay-occludes-tap-targets`). NEW FEATURE — this is the only addition this pass.**
+
+This is the free manual on-ramp to a future paid account-sync: export ALL local accumulation
+(Campaigns + Presets + UTM Spec + Naming Template + lint toggles + editor/reviewer name +
+My-Workspaces secret-link keychain) as one versioned bundle, and merge it into another device.
+
+**Surfacing (decision):** ONE launcher entry inside the existing **Tools ▾** menu (the group
+that already holds Campaigns / Presets / UTM Spec / Naming Template — the very state this
+bundles), labeled **"Move to another device"** (sub-caption in the menu: *"export / import your
+setup"*). It opens the **Setup transfer panel** as a full-width stacked strip BELOW the toolbar
+per D3 — it adds NO new full-width banner above the grid, does NOT push the grid below the fold,
+and the entry is **always present even with empty localStorage** (it sits in the menu, not in
+prime above-grid real estate; an empty export shows a graceful message, see below).
+
+**Setup transfer panel — two clearly separated halves, EXPORT (top) and IMPORT (bottom):**
+
+*EXPORT half — "Move this device's setup":*
+- One-line privacy reassurance at the top: **"This is your own local data — nothing is uploaded.
+  Your shared workspaces already live online; this bundle just carries the secret links back."**
+- A compact "what's included" count line: e.g. **"4 campaigns · 3 presets · UTM Spec · Naming
+  Template · 2 saved workspaces"** so the user sees what they're moving.
+- TWO side-by-side (stacked on mobile) primary actions:
+  - **"Download .json"** — downloads the versioned bundle file (`utm-grid-setup-<date>.json`).
+  - **"Copy code"** — copies the bundle as a code string. **The "Copied!" confirmation flashes
+    GREEN-FILL-IN-PLACE on the persistent "Copy code" button itself for ~1.8s with a ref-stable
+    timer + `aria-live="polite"` (D5), NEVER on a menu item or a transient element** — the
+    canonical copy-confirmation-survives-tick-rerender treatment.
+- **Empty-export graceful state:** when there is nothing saved yet, the export actions are
+  disabled with an inline hint **"Nothing saved yet — create a campaign, preset, or workspace
+  first, then come back to move it."** (never a silent dead button, per D7).
+
+*IMPORT half — "Bring a setup onto this device":*
+- A **paste-a-code textarea** OR an **"Upload .json"** file picker (both accepted).
+- A reassurance line that makes the conflict-safe nature legible BEFORE acting:
+  **"We merge into what's already here — we never overwrite your saved campaigns."**
+- On submit, parse + diff LOCALLY, then show a **pre-apply MERGE SUMMARY** before anything is
+  written: **"X added · Y updated · Z skipped"**, with the affected items NAMED under each
+  bucket (campaign / preset / workspace names), e.g. *Added: "Black Friday", "Q3 Taxonomy" ·
+  Updated: "Spring Sale" · Skipped: "Holiday" (already up to date)*. Singleton settings
+  (UTM Spec / Naming Template / lint toggles / names) are shown as **"adopt"** only when local
+  is empty/default, otherwise as a checkbox-gated **"overwrite your current UTM Spec?"** the user
+  must opt into. Two explicit buttons: **"Confirm import"** and **"Cancel"** — nothing is
+  written to localStorage until Confirm.
+- **Error states (reassure existing data is untouched):**
+  - Malformed/garbage string → **"That doesn't look like a UTM Grid setup code. Your saved data
+    is unchanged."**
+  - Unknown/newer `version` → **"This setup was exported from a newer version of UTM Grid.
+    Update, then import again. Nothing was changed here."**
+  - Both leave existing local state intact and never reach the merge-summary step.
+
+**Roadmap tease (honest, not a dark pattern):** a single muted line at the BOTTOM of the panel:
+**"Coming soon: optional accounts sync your setup automatically — no export step. This manual
+move is free and always will be."** It is informational only — it does NOT block, gate, or
+interrupt export/import, and is NOT a signup CTA (no accounts exist this version).
+
+**Mobile 375px:** the panel opens BELOW/stacked at full constrained width (per D3, never a side
+panel that squeezes the grid). EXPORT and IMPORT halves stack vertically; the two export buttons
+stack; the paste textarea is full-width; the merge-summary list wraps with no horizontal scroll;
+Confirm/Cancel are ≥44px thumb targets. NO sticky/overlay element occludes any control
+(elementFromPoint lands on the intended button). No horizontal page overflow at 375px or 1280px.
+
+**Zero-network invariant:** export AND import (including the merge diff) run entirely client-side
+— no `/api/` call fires from this panel. The privacy copy above is accurate.
+
 ## 5. Landing structure (top → bottom)
 
 **Desktop ≥1280px:**
@@ -194,8 +268,9 @@ the "payoff in the first mobile screenful" fix.
      **"Unsaved grid / In: <name>"** status pill.
    - *Divider · Data:* **Import CSV**, **Export CSV**, **Audit URLs**.
    - *Divider · Tools ▾* (one menu) → **Presets**, **Bulk edit**, **UTM Spec**, **Naming
-     Template**, **Campaigns**, **Run Launch Check** (+ **Share style guide** / **Share review
-     summary** on `/w/<id>`). Each opens its panel below the toolbar per D3.
+     Template**, **Campaigns**, **Run Launch Check**, **Move to another device** (export/import
+     setup, per D10) (+ **Share style guide** / **Share review summary** on `/w/<id>`). Each
+     opens its panel below the toolbar per D3.
    - *Divider · Share ▾* (one menu, per D6) → **Copy snapshot link**, **Create live
      workspace**, **Copy all URLs** (+ **Copy workspace link** on `/w/<id>`). Confirmation
      flashes on the persistent Share ▾ trigger, never on a menu item.
