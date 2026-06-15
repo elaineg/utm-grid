@@ -1,45 +1,22 @@
-{"name":"Dana","clarity":"Yes","value":"Yes","advocacy":10,"top_fix":"Still the same nice-to-have: a surfaced one-tap 'Copy all rows' on mobile so a 30-link batch isn't card-by-card Copy URL taps","priorConcernsAddressed":"all"}
+{"name":"Dana","clarity":"Yes","value":"Yes","advocacy":"9","prior_concerns_addressed":"Yes"}
 
-# Dana — Demand-gen marketer (round 3: mobile-card preview-position re-check)
+# Dana — Round 3 sentinel re-check (demand-gen marketer, MacBook in cafe)
 
-## What I re-checked first (the small change) — NO REGRESSION
-The change: generated-URL preview moved higher in each mobile card, after utm_campaign and
-above the optional utm_term/utm_content. Re-tested LIVE cold on a real 375x812 phone, driving
-it myself. The card order is now exactly: Base URL -> utm_source -> utm_medium -> utm_campaign
--> **GENERATED URL (green pill) + Copy URL button** -> THEN utm_term/utm_content. Right call: I
-fill the three required fields, immediately see a finished link + Copy without scrolling past
-the optional stuff I rarely touch. Reads like a payoff, not a detour.
+I passed at 9 last round and I'm holding at 9. Nothing regressed; the polish is a small net positive.
 
-Regression sweep — all clean:
-- Horizontal scroll: bodyScrollWidth 375 == viewport 375. No overflow.
-- Cramming: spacing still roomy; even with a messy field showing "2 warnings · Fix this value"
-  the card doesn't get cramped.
-- Example row still grid-first on phone (editable Base URL y358, all 3 required inputs above
-  the 812 fold) AND desktop (editable input y214). Confirmed both.
-- Auto-fix: typed "Paid Social" into utm_medium on the phone, inline warning fired, one tap of
-  global Auto-fix -> "paid_social". Works.
-- Copy URL: tapped on the phone, label flipped to "Copied!", clipboard held the real URL
-  (...?utm_source=newsletter&utm_medium=paid_soc...). Verified end-to-end.
-- 0 console errors across phone + desktop.
+## Prior round-2 likes — still intact
+- Subhead STILL leads with bulk value: "Build and tag a whole batch of 30+ campaign links at once — and auto-fix the casing and spacing that splits a campaign into two in your analytics, then export a clean CSV." That's the line that sold me. Unchanged, reads in the first scroll, no scrolling needed.
+- Tools / Share / Rules are still grouped into tidy menus. Toolbar not noisier.
 
-## 1. CLARITY — Yes
-"Clean campaign links in a grid. Auto-fix the casing/spacing that splits one campaign into two
-in GA, export a clean CSV into your sheet." The split-in-two subhead is still my exact pain.
-Landed in one read on the phone.
+## The landing tweak — improvement, not clutter
+- De-weighted toolbar works for me. "+ Add row" is the only blue button now; Auto-fix / Import CSV / Export CSV / Tools / Share / Rules are all muted grey. My eye goes straight to the grid (the hero), then to the one action I'd take first. Cleaner than r2.
+- Fresh-visit Presets panel auto-opens pre-expanded. As a brand-new visitor this is a PLUS, not clutter — it immediately shows Email / Paid Social–LinkedIn / Google CPC / Organic Social / X / Twitter / Mastodon with one-click Apply. That's the "oh, it knows my channels" moment that makes me screenshot a tool for the team channel. It sits in one screen with the grid still visible below; never pushed the grid off-screen on my 1280 laptop.
 
-## 2. VALUE — Yes
-Today: a Sheet CONCATENATE + eyeballing 30 links for "Paid Social"-type typos (~15 min, errors
-still ship). This catches and one-tap-fixes them on the phone I grab between meetings, and the
-preview-now-above-the-optional-fields tweak shaves a scroll off every row — across 30 links
-that adds up. Net faster than my sheet.
+## No regression — I drove it
+- Filled base URL, applied a preset to the selected row, added a 2nd row, hit Copy → button confirmed "Copied", generated URL populated correctly. Zero console errors across the whole flow.
 
-## 3. ADVOCACY — 10
-A genuine micro-improvement with zero downside; my round-2 mobile grid-first fix still holds.
-The only thing between this and a flawless batch flow is the same nice-to-have: a surfaced
-"Copy all rows" on mobile so tagging 30 links isn't 30 individual Copy taps. Not a blocker,
-doesn't hold the score — I'd still screenshot the "messy link cleaned in one tap on my phone"
-moment to the team channel unprompted.
+## What I do today vs this
+- Today: a shared Google Sheet with CONCATENATE formulas + manual lowercasing. This still beats it — the auto-fix-casing-that-splits-a-campaign angle is the thing my sheet silently gets wrong and pollutes GA4. Value: Yes, same as r2.
 
-```json
-{"tester":5,"round":3,"clarity":"Yes","value":"Yes","advocacy":10,"topComplaints":["Mobile still lacks a surfaced 'Copy all rows' — batch-copying 30 links means tapping each card's Copy URL (nice-to-have, not blocking)"],"priorConcernsAddressed":"all"}
-```
+## The single thing holding back a 10
+- It's still a tab-by-myself tool until I share. The Channel Presets are generic (Email, LinkedIn, etc.) — they're not MY team's locked source/medium taxonomy on cold open. A 10 for me is opening it and seeing my org's presets already enforced without me setting up a Team Workspace first. The viral "screenshot for the channel" moment is there, but the "my team can't create a bad UTM" lock-in isn't instant on a fresh visit. That gap is what keeps it a 9, not the landing (the landing is fine).

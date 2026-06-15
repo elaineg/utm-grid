@@ -1,19 +1,54 @@
+{"name":"Elena","clarity":"Yes","value":"Yes","advocacy":"9","prior_concerns_addressed":"Partly"}
+
+# Elena — Round 3 sentinel re-check (eng manager, 375px phone + laptop)
+
+Quick sentinel skim after the craft-polish landing tweak. Verified live on phone (375×812)
+and laptop (1280). Re-checked my own prior complaint first, then re-answered fresh.
+
+## My round-2 complaint, re-checked first
+**"Green GENERATED URL box truncates mid-string ('…utm_sourc…') — I can see THAT a link was
+produced but can't eyeball the casing/spacing fix the headline promises without copying."**
+Status: PARTLY addressed. On the phone the green box STILL reads
+`https://acme.com/spring-sale?utm_sourc…` — same visual truncation, not changed this round.
+BUT this round's layout puts the UTM_SOURCE/MEDIUM/CAMPAIGN fields (newsletter / email /
+spring_sale_2026) fully legible directly ABOVE the green box in the first screenful, so I
+can now eyeball the cleaned values in the fields themselves, and the full URL is in the DOM
+(hover-title). So the underlying worry is softened, but the box itself never shows the
+fixed tail. Not a regression — same minor cosmetic, just no longer my hard blocker because
+the source fields read clean.
+
+## No regression on what I praised — confirmed
+- **Grouped "GOVERN CONVENTIONS" menu: intact.** Opened Tools → still cleanly grouped
+  BUILD & REUSE / GOVERN CONVENTIONS / IMPORT & MOVE, each item with a one-line subtitle
+  (UTM Spec, Naming Template, Run Launch Check). That labeled grouping — the reason I'd
+  hand this to a team lead — is exactly as I liked it. No regression.
+- **De-weighted toolbar (the tweak): improvement, holds.** Grid is unmistakably the hero;
+  only "+ Add row" is the blue primary, everything else muted secondary. My eye lands on
+  the editable row instantly. Headline + subhead legible in well under 30s.
+- **Presets auto-open (new visitor): helpful, not noisy.** Channel Presets panel
+  pre-expanded on my fresh visit — shows the one-click batch value without making me hunt.
+- **Phone wrap:** toolbar + grouped Tools/Share/Rules menus survive the 375px wrap and stay
+  legible. No horizontal scroll on the chrome.
+
+## Clarity — Yes
+Friend pitch unchanged: "A spreadsheet for building clean, consistently-tagged campaign
+links in bulk; auto-fixes the casing/spacing that splits a campaign in two in your
+analytics, and enforces your team's naming — no login." The "splits a campaign into two in
+your analytics" line is the hook. Nothing confused me.
+
+## Value — Yes
+Today my reports use a shared Google Sheet + CONCATENATE with nobody policing casing. This
+beats it on the governance layer (Allowed Values + UTM Spec + Launch Check). Still the
+reason I'd forward it.
+
+## Advocacy — 9
+Unchanged, unprompted-recommend territory. Holding at 9, not 10, for two things: (1) the
+green generated-URL box still truncates on phone so I verify the fix from the fields, not
+the result box; and (2) the GOVERN menu promises team standardization, but the default
+experience is solo/device-local — the Team Workspace path isn't surfaced on the cold
+landing, so the team value prop the menus advertise undersells itself on first open. Close
+either and it's a 10. No regression this round.
+
 ```json
-{"name":"Elena","clarity":"Yes","value":"Yes","advocacy":9,"top_fix":"The green generated-URL box truncates mid-string ('...utm_sourc…') — I can see THAT a link was produced but can't actually eyeball the casing/spacing fix the headline promises without copying it out; show the fixed tail (or highlight what changed) on tap.","priorConcernsAddressed":"all"}
+{"tester": 9, "round": 3, "clarity": "Yes", "value": "Yes", "advocacy": 9, "topComplaints": ["Green GENERATED URL box still truncates on phone ('…utm_sourc…') — can't eyeball the fixed tail in the result box", "GOVERN menu promises team standardization but default experience is solo/device-local; Team Workspace not surfaced on cold landing"], "priorConcernsAddressed": "some"}
 ```
-
-Re-test as Elena — eng manager, 30-sec phone skim between meetings, 375px (where I actually use this). Verified live on the phone viewport (375×812).
-
-### My round-2 blocker — re-checked first
-**"Green generated URL sits one flick below the fold, behind two empty UTM_TERM/CONTENT fields."** RESOLVED. In the seeded example card the order is now BASE URL → SOURCE → MEDIUM → CAMPAIGN → **GENERATED URL (green box) + Copy URL button** → then optional UTM_TERM (which only just peeks in at the very bottom of the first screen). On cold open, no typing, the clean green tagged link for acme.com/spring-sale is in the first screenful — measured at ~674px in an 812px viewport, in-fold. The "messy in → clean link out" payoff is the thing I see, not something I scroll to find.
-
-### 1. CLARITY — Yes
-Unchanged, still good. "Clean campaign links in a grid" + the working example row = I get it in ~8s: a no-login spreadsheet that builds and auto-fixes consistent UTM tracking links. The seeded row does the explaining for me.
-
-### 2. VALUE — Yes
-Today I'd use a shared Google Sheet + CONCATENATE. This beats it on inline casing/typo validation (so a stray capital doesn't fork a campaign in GA), a no-login live link my reports can edit, and a clean CSV export back into the sheet. I'd tell the report "yes, pilot it."
-
-### 3. ADVOCACY — 9/10
-Up from 8. The one thing keeping me at 8 last round — payoff hiding below the fold — is fixed, and fixed correctly: the green result is now the hero of the first screenful. That earns the 9; I'd raise this unprompted to the report who asked.
-
-Not a 10 only because the green box truncates the URL ("...utm_sourc…"), so I see THAT a link was produced but can't actually verify the casing/spacing got cleaned — which is the literal promise in the headline. Letting me see the fixed tail (or highlighting what changed) on tap would close the last gap.

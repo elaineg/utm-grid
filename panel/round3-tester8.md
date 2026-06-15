@@ -1,13 +1,38 @@
-{"name":"Rob","clarity":"Yes","value":"Yes","advocacy":9}
+{"name":"Rob","clarity":"Yes","value":"Yes","advocacy":"9","prior_concerns_addressed":"Yes"}
 
-PRIOR CONCERN (round 2): wide-viewport grid width — resolved last round. Re-checked this round after they narrowed the read-only Generated URL column + switched to a fixed table layout. NO REGRESSION.
+# Rob — Round 3 (freelance brand/visual designer, desktop, "I could do this by hand")
 
-WIDE-VIEWPORT RESULT (1280/1440/1680px): zero PAGE horizontal scroll at all three widths (docWidth == winWidth every time). All columns visible in one row: Base URL(167px), utm_source/medium/campaign/term/content(125px each — comfortable, not cramped), Generated URL(250px), Actions(121px). The starved sub-pane that pinned me at 8 two rounds ago is still gone.
+## What I re-checked (my exact prior complaints)
+- **Clipped action icons** — FIXED. Zoomed the ACTIONS column at 1280px: Copy / QR /
+  duplicate / trash all fully visible, padded, none cut off. Clean.
+- **Post-import "where did my rows go?" gap** — FIXED, better than I asked for. Imported a
+  3-row CSV: rows append *below* my existing row (not a silent replace), a "Imported 3 rows
+  (appended) · Undo" toast confirms it, and it immediately threw inline consistency warnings
+  — "Inconsistent utm_source across rows… will split campaign data in GA4" plus uppercase
+  flags with "Fix this value" links. That catch is the whole reason a tool beats a sheet.
+- **Wide-viewport grid width** (older concern) — still no regression; columns fit, full URL
+  copies even though the cell truncates.
 
-GENERATED URL COPYABLE IN FULL: yes. Display column truncates to "...spring?utm_s…" but the row Copy button put the FULL string on the clipboard: https://acme.com/spring?utm_source=Facebook&utm_medium=CPC&utm_campaign=Spring_Sale%202026 . Truncated display, full copy — exactly what I want.
+## Fresh read this round
+- Cold landing is genuinely grid-first now: the editable row is the hero, presets sit
+  pre-expanded right above it, Tools/Share/Rules clutter is muted to secondary. A peer
+  lands and gets it in well under 30s. Tagline still earns its keep.
+- Presets apply in one click, Generated URL updates live, and Copy put a clean,
+  properly-encoded URL on the clipboard (verified the actual clipboard text, not the label):
+  https://shop.com/x?utm_source=newsletter&utm_medium=email&utm_campaign=spring_sale_2026
 
-FUNCTION: messy client row (Facebook/CPC/"Spring_Sale 2026") still live-flagged inline ("Contains uppercase letters — use lowercase only"). Beats hand-typing query strings.
+## Recommending it
+By hand I'd open a Sheet, fumble CONCATENATE/ENCODEURL, and *still* never catch that
+"Newsletter" vs "newsletter" silently forks a campaign in GA4. This does the encoding, the
+casing normalization, and the cross-row audit for me, in-browser, no login. For a peer who
+tags links weekly I'd bring it up unprompted. The craft is at least as tight as the build I
+gave a 9 — icons fixed, landing calmer, presets faster.
 
-MINOR NIT (not a blocker, not new): the table wrapper carries a constant 10px inner overflow (scrollWidth 1240 vs clientWidth 1230) at every width — a hairline sliver, invisible, no functional effect. That plus the still-busy cold toolbar are what keep me off 10.
+## Single thing holding the score
+Back to a 9, not a 10. Only thing keeping me off 10: the value still leans on *believing* the
+"splits your campaign in GA4" claim. I'd love a tiny before/after that shows the two phantom
+campaigns this prevented, so a skeptical peer trusts it instantly instead of on faith. Minor.
 
-REMAINING BLOCKER: none. I hold my 9.
+```json
+{"tester": 8, "round": 3, "clarity": "Yes", "value": "Yes", "advocacy": 9, "topComplaints": ["Value still rests on trusting the 'splits your campaign in GA4' claim — no visible before/after proof of the harm prevented"], "priorConcernsAddressed": "all"}
+```

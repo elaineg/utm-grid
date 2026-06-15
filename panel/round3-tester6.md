@@ -1,44 +1,35 @@
-```json
-{"name":"Jules","clarity":"Yes","value":"Yes","advocacy":9,"top_fix":"Surface the per-platform preset chips (X/Twitter, LinkedIn, Mastodon, Buffer) on first paint — still buried under Tools ▾ → Channel Presets. That 'it knows my channels' signal is the only thing keeping this off a 10.","priorConcernsAddressed":"some"}
-```
+{"name":"Jules","clarity":"Yes","value":"Yes","advocacy":"9","prior_concerns_addressed":"Yes"}
 
-# Jules — Content & community marketer, round 3 (mobile sentinel)
+# Jules — Round 3 (Content & community marketer, 50/50 desktop+mobile, allergic to logins)
 
-## The small change this round: did it regress my mobile experience? No — it helped.
-The mobile card now shows GENERATED URL (green pill + full-width **Copy URL** button)
-*immediately after UTM_CAMPAIGN*, above the optional UTM_TERM/UTM_CONTENT fields. Verified
-the vertical order at 375px: utm_campaign (y573) → Generated URL (y652) → utm_term (y772) →
-utm_content (y851). Preview builds correctly and live:
-`https://acme.com/spring-sale?utm_source=newsletter&utm_medium=email&utm_campaign=spring_sale_2026`.
-Zero console errors on cold load.
+## What I re-checked (my blocker: "presets take ~3 hops; surface on fresh visit")
+Tested a genuinely FRESH/incognito visit (clean context, empty localStorage) on BOTH
+desktop (1280) and mobile (375px), since I'm half-and-half.
 
-Why it's a real win for a phone poster: I almost never touch term/content. Before, the
-finished link sat *below* two empty fields I scrolled past every time. Now the second I've
-typed my three required fields, the link + a big thumb-sized "Copy URL" button are right
-there — fill three, copy, paste into Buffer/X. No regression; genuine friction removed.
-(Button is labeled "Copy URL" on mobile, full-width; verified visually — clipboard read is
-blocked in the test env, not an app bug.)
+- **Fresh-visit auto-open: YES.** On first paint the Presets panel is already open and
+  pre-expanded. I see all 6 platform chips before clicking anything: Email, Paid Social –
+  LinkedIn, Google/CPC, Organic Social, X/Twitter, Mastodon — each with an inline "Apply".
+  No Tools ▾ dig. Confirmed identical on mobile 375px — chips sit right under the toolbar.
+- **One-click apply, no expand hop: YES.** Clicking "Apply" on the LinkedIn chip is a
+  single click and it filled the row (medium came through as "linkedin"). The old
+  Tools ▾ → Channel Presets → *expand* → apply chain is dead — Tools ▾ → Channel Presets
+  now lands straight on the apply-able chips too.
+- **Return-visit behavior: sane.** After saved state + reload, the Presets bar collapses by
+  default (doesn't shove my grid down every visit) but stays reachable via Tools ▾ →
+  Channel Presets, which opens pre-expanded. Right tradeoff.
 
-## Re-checking my standing round-2 gripe
-**Preset chips still behind Tools ▾ → Channel Presets.** Unchanged (expected — presets
-weren't touched this round). On cold paint, desktop or 375px, I still see a grid + example
-row, not "X / LinkedIn / Mastodon / Buffer." My reason to pick this over my Notion snippet
-stays invisible until I dig a menu.
+## Did this resolve my ask?
+Yes, completely. You shipped my exact alternative — auto-open on fresh visit AND killed the
+expand hop. As a poster who switches channels all day with no login, seeing my platforms the
+second I land is the whole reason I'd pick this over hand-pasting ?utm_source=... and
+fat-fingering casing in my Notion snippet table.
 
-## 1. CLARITY — Yes
-"No-login grid: type your links, it auto-fixes UTM casing/spacing so one campaign doesn't
-split into two in analytics, copy each clean link, export a CSV." H1 + filled example row +
-the now-prominent Generated URL carry it under 30s on both viewports.
+## Single thing holding back a 10
+The presets are great but generic. My real killer feature is MY presets: there's a
+"Save preset…" button, but on a brand-new device my custom chips don't travel (without a
+login I won't touch), and the built-ins aren't ordered by what I actually post to most.
+"Good for everyone" vs "perfect for me" is the last gap — not a regression, just the 10th
+point. With my own saved chips greeting me on a fresh device, this is a flat 10.
 
-## 2. VALUE — Yes
-Today I hand-build UTMs in a Notion snippet and paste one-by-one into Buffer/X/LinkedIn/
-Mastodon, fat-fingering casing. Auto-fix + per-row copy + CSV, zero login, now with the link
-surfaced first on mobile — hits my exact daily stack. Bookmarked.
-
-## 3. ADVOCACY — 9/10
-Held at 9. The mobile change polished an already-9 experience; it didn't touch the thing
-gating the 10th point. The one fix to make it a 10 and an unprompted recommendation in my
-marketing Discord: **put the platform preset chips on first paint** — a visible row of
-X/LinkedIn/Mastodon/Buffer chips above the grid — so a poster sees "it knows my channels"
-before clicking anything. The card got cleaner; the door still opens onto a grid, not my
-channels.
+Score: 9 — now that presets greet me on arrival instead of hiding three clicks deep, I'd
+bring this up unprompted in my marketing Discord.
