@@ -46,6 +46,107 @@
 > import via a CONFLICT-SAFE MERGE with a pre-apply added/updated/skipped summary the user
 > confirms. Surfaced inside the EXISTING **Tools ▾** menu (no new above-grid banner, grid stays
 > the hero). See **D10** + landing-structure Tools ▾ entry. All other sections unchanged.
+>
+> **PANEL ROUND-2 PASS (this revision, from panel round 1 = 1/10). Craft + IA only — NO new
+> feature, NO new above-grid banner, grid-first landing MUST NOT regress.** The new "Move to
+> another device" item tipped the **Tools ▾** menu into an 8–9-item junk drawer (5 testers:
+> Elena, Dana, Jules, Priya, Wen) + two craft bugs. Six fixes, each tagged **[P2]** and
+> checkable:
+> - **P2-A Tools ▾ grouped into labeled sections (DOMINANT).** The flat menu becomes 3 LABELED
+>   sections with tiny section headers, so it reads as an organized index, not a junk drawer.
+>   Channel Presets surfaces FIRST (Jules + Dana: killer feature, was buried). See **D11** + §5.
+> - **P2-B Copy-code confirms reliably even when clipboard is blocked.** The persistent
+>   "Copy code" button flips to a green "Code copied!" fill the MOMENT it's clicked (optimistic),
+>   with a clipboard fallback that selects the textarea + shows "press ⌘C / Ctrl-C". aria-live +
+>   real accessible name. (Aisha, the craft judge; friction copy-confirmation-survives-tick-rerender.)
+>   See **D10** EXPORT half (revised) + **D5**.
+> - **P2-C Export "show what's inside" disclosure.** A muted, collapsed "Show what's inside"
+>   toggle on the export panel reveals the human-readable JSON + one line "Export & import run
+>   fully offline — zero network requests." (Wen, Tomás.) See **D10**.
+> - **P2-D Post-import "Open to load it into the grid" hint.** After a confirmed import, a
+>   one-line affordance points the user to Open a campaign to load it into the grid. (Rob.) See **D10**.
+> - **P2-E Subhead reframes bulk-builder value FIRST.** Subhead now leads with "Build and tag a
+>   batch of 30 campaign links at once" BEFORE the auto-fix/CSV framing. (Dana.) Copy-only; hero
+>   structure unchanged. See **D1** (revised) + §6.
+> - **P2-F ACTIONS column clip @1280px (builder note, no UX decision).** The 3rd per-row action
+>   icon is clipped off the right edge at 1280px (Marcus) — pure CSS. Requirement: ALL per-row
+>   action icons must be fully visible at 1280px, never clipped; no horizontal page overflow.
+
+> **PANEL ROUND-3 FIX PASS (this revision, from panel round 2 = 6/10). Craft + IA only —
+> NO new feature, NO new above-grid element, the grid-first landing and the 6 passers
+> (Wen, Tomás, Dana, Aisha, Elena, Sam) MUST NOT regress.** Four fixes, each tagged **[P3]**
+> and checkable. Flips Marcus + Priya + Jules → pass; Rob is the allowed miss.
+>
+> **What the "three persistent governance cards" actually are (investigation result — read
+> before P3-B).** I inspected the real cold-open DOM (`app/page.tsx` + `UtmGrid.tsx`). On a
+> cold open in default mode there are **NO persistent cards rendered above the grid.** The
+> only things above the grid header are: the hero (H1 + subhead + trust line) and **ONE slim
+> toolbar row**. `MyWorkspacesPanel` returns null when empty; the Compliance/Audit panels and
+> the shared-grid banner are all absent on a cold open. What Priya read as "three persistent
+> governance cards around a one-row grid" and Aisha (R1) as "home side-cards duplicating
+> Tools/Rules entry points" are the **three dropdown launchers in that one toolbar row —
+> `Tools ▾` / `Share ▾` / `Rules ▾`** (and, once Tools ▾ is opened, its three labeled section
+> headers BUILD & REUSE / GOVERN CONVENTIONS / IMPORT & MOVE read as "three governance
+> blocks"). They are launchers, not cards, and they do not duplicate each other. So P3-B is a
+> de-WEIGHTING / visual-hierarchy fix, NOT a delete-features fix — and it confirms no feature
+> is lost because nothing is removed.
+>
+> - **[P3-A] ACTIONS column clip @1280px (builder note, no UX decision — Marcus).** The
+>   per-row ACTIONS cell now holds 4 icon-buttons (Copy · ⊞ QR · ⧉ duplicate · 🗑 trash). At
+>   the current 160px width (px-2 padding) the content is ~174px, so the trash icon clips
+>   ~12px past the cell's right edge at 1280px. **Requirement:** widen ACTIONS so all 4 icons
+>   are fully visible at 1280px with NO cell or page horizontal overflow. Take the added width
+>   (~+18–20px → ACTIONS ≈178–180px) from the read-only **Generated-URL** slab (currently
+>   228px → ≈208–210px; it stays truncated with the full value on `title` hover per D8, so the
+>   narrower slab loses nothing). Keep the table min-width within ~1217px so there is no
+>   horizontal page overflow at 1280px. Desktop table only; the mobile card view is untouched.
+>
+> - **[P3-B] Cold landing is grid-first: de-weight the launcher row so nothing competes with
+>   the grid (Priya).** Do NOT remove the editable grid, the example row, or the launcher row.
+>   Do NOT remove any feature (nothing is a duplicate — see investigation above). Instead make
+>   the one toolbar row read as a quiet utility strip the eye skips over on the way to the
+>   grid: keep **+ Add row** as the single accent (filled) control; render **Auto-fix**,
+>   Import/Export CSV, and the **Tools ▾ / Share ▾ / Rules ▾** launchers as lower-contrast
+>   ghost/muted controls (thin border, gray text, no fills) so the colorful, editable grid is
+>   unmistakably the hero. The three launchers stay as the SINGLE consolidated entry to the
+>   long-tail tools — no second set of buttons, no above-grid cards, no panel auto-opens on
+>   cold load. Acceptance: on a 1280px cold open, above the grid header there is exactly the
+>   hero + one toolbar row; the most visually prominent element on screen is the example grid
+>   row (its accent Add-row button + live Generated URL), not the toolbar. Every tool remains
+>   reachable in one click of its launcher (no feature lost).
+>
+> - **[P3-C] Surface Channel Presets faster, with ZERO new above-grid element for returning
+>   users (Jules — protect Dana/Elena).** Two changes, both low-risk:
+>   1. **Cut the hop inside the menu (always on):** `Tools ▾ → Channel Presets` opens the
+>      Presets panel ALREADY EXPANDED to the apply-able platform chips (the seeded
+>      channel field-sets), so applying a preset is ONE click after opening the panel — not
+>      "open → expand → apply". This removes Jules's extra "expand" hop for everyone with no
+>      landing-density cost (the panel only exists once she opens it).
+>   2. **Auto-open the Presets panel on a FIRST-EVER visit ONLY:** when localStorage has no
+>      saved state — detected by the SAME empty-grid condition that seeds the example row
+>      (`utm-grid:rows` absent/empty AND no saved campaigns/presets/workspaces) — the Presets
+>      panel opens in the active-panel zone pre-expanded on first load, directly below the
+>      toolbar and ABOVE the single example row, so a first-timer sees the platform chips
+>      without hunting. **The MOMENT the user has ANY saved state** (edits a cell, applies a
+>      preset, saves a campaign, or simply returns with non-empty localStorage) the panel does
+>      NOT auto-open — it returns to closed-by-default, reachable only via Tools ▾.
+>   **Exact empty-vs-returning condition:** auto-open fires iff the cold-open example-seed
+>   condition is true (the `didSeedExample` empty check). First-ever visit = auto-open
+>   pre-expanded; ANY subsequent visit / ANY saved state = closed, no auto-open. This adds NO
+>   persistent above-grid element for returning users (cites
+>   `optional-ui-gated-on-data-presence-vanishes-for-empty-case` — the regression that took
+>   Dana 9→8 was an ALWAYS-ON above-grid element; this one is present ONLY in the empty/example
+>   state and vanishes the instant there is data, which is exactly the safe shape). Per D3 the
+>   panel is a full-width stacked strip, never a sidebar; it must not push the example row's
+>   BASE URL below ~720px on desktop. Once dismissed/closed on the first visit it stays closed.
+>
+> - **[P3-D] OPTIONAL team-value line (Elena/Dana 9→10 nudge) — SKIP unless zero-cost.** Elena
+>   and Dana already pass at 9; the only safe move is a copy tweak that adds NO banner and does
+>   NOT push the grid down. The existing subhead already carries the "splits a campaign into
+>   two in your analytics" payoff; you MAY tighten its tail to name team consistency WITHOUT
+>   adding a line — e.g. end the existing one-line subhead with "…so your whole team's links
+>   stay consistent." Only if it fits the existing subhead line at 1280px (no extra wrap, no
+>   new element). Otherwise skip — do not add a banner or a second subtitle line.
 
 ## 1. Problem statement
 Build clean, consistent campaign tracking links in a grid — so a stray capital or stray space
@@ -90,9 +191,11 @@ wrap to two lines on desktop, then a subhead that LEADS WITH THE PAYOFF, then a 
 trust line. Ship this exact copy:
 - **Headline (H1, ~28-32px, one line desktop, ≤2 short lines mobile):**
   **"Clean campaign links in a grid"**
-- **Subhead (one muted line, leads with the payoff for marketer AND engineer):**
-  **"Auto-fix the casing and spacing that splits a campaign into two in your analytics, and
-  export a clean CSV that drops straight into your sheet."**
+- **Subhead (one muted line, leads with the BULK-BUILDER payoff first, THEN the auto-fix
+  framing — [P2-E], Dana read the old casing-first copy as a CSV-cleanup utility and missed
+  the 30-link batch value):**
+  **"Build and tag a whole batch of 30+ campaign links at once — and auto-fix the casing and
+  spacing that splits a campaign into two in your analytics, then export a clean CSV."**
 - **Trust line (smaller, muted, BELOW the subhead — kept, not the lead):**
   **"No login — nothing leaves your browser."**
 Rationale: Jules nearly read the old GA-analyst headline as "not for me"; Rob/Aisha wanted
@@ -215,10 +318,26 @@ prime above-grid real estate; an empty export shows a graceful message, see belo
   Template · 2 saved workspaces"** so the user sees what they're moving.
 - TWO side-by-side (stacked on mobile) primary actions:
   - **"Download .json"** — downloads the versioned bundle file (`utm-grid-setup-<date>.json`).
-  - **"Copy code"** — copies the bundle as a code string. **The "Copied!" confirmation flashes
-    GREEN-FILL-IN-PLACE on the persistent "Copy code" button itself for ~1.8s with a ref-stable
-    timer + `aria-live="polite"` (D5), NEVER on a menu item or a transient element** — the
-    canonical copy-confirmation-survives-tick-rerender treatment.
+  - **"Copy code"** — copies the bundle as a code string. **[P2-B] CONFIRMATION MUST FIRE
+    RELIABLY EVEN WHEN `navigator.clipboard` IS BLOCKED** (Aisha rated the feature value=No
+    because she saw no visible confirmation; friction copy-confirmation-survives-tick-rerender):
+    - The button flips to a green-fill **"Code copied!"** state OPTIMISTICALLY the moment the
+      user clicks — NOT gated on the async clipboard promise resolving — held ~1.8s on the SAME
+      persistent button (ref-stable timer that survives grid re-renders), with
+      `aria-live="polite"` announcing "Code copied" and a real accessible name on the button
+      (`aria-label="Copy setup code"`).
+    - **Fallback when the clipboard write throws/rejects:** select the bundle textarea's
+      contents and show an inline hint **"Press ⌘C (Ctrl-C on Windows) to copy"** right beside
+      the button, so the user can always complete the copy manually. The green cue still shows
+      (the code is selected and copyable).
+    - Never flash the cue on a menu item or a transient/unmounting element — it lives on the
+      persistent Copy-code button only.
+- **[P2-C] "Show what's inside" disclosure (export trust — Wen, Tomás).** Below the two primary
+  actions, UNDERSTATED: a muted, collapsed **"Show what's inside"** toggle that, when expanded,
+  reveals the bundle's **human-readable (pretty-printed) JSON** in a read-only scroll box so a
+  data-hygiene user can verify it is only their own local data. Directly under it, one explicit
+  muted line: **"Export and import run fully offline — zero network requests."** Collapsed by
+  default; it must NOT push the primary export actions below the fold.
 - **Empty-export graceful state:** when there is nothing saved yet, the export actions are
   disabled with an inline hint **"Nothing saved yet — create a campaign, preset, or workspace
   first, then come back to move it."** (never a silent dead button, per D7).
@@ -235,6 +354,13 @@ prime above-grid real estate; an empty export shows a graceful message, see belo
   is empty/default, otherwise as a checkbox-gated **"overwrite your current UTM Spec?"** the user
   must opt into. Two explicit buttons: **"Confirm import"** and **"Cancel"** — nothing is
   written to localStorage until Confirm.
+- **[P2-D] Post-import "load it into the grid" affordance (Rob — merged campaigns land in the
+  library, not the active grid).** After a SUCCESSFUL confirmed import, the success line names
+  what merged AND tells the user the next step: e.g. **"Imported 2 campaigns into your library.
+  Open one from Campaigns to load it into the grid."** — with **"Open Campaigns"** as an inline
+  link/button that opens the Campaigns panel (per D3). The hint makes clear the import populated
+  the LIBRARY, and the working grid is loaded by Opening a campaign — never leaving the user
+  wondering why the grid looks unchanged.
 - **Error states (reassure existing data is untouched):**
   - Malformed/garbage string → **"That doesn't look like a UTM Grid setup code. Your saved data
     is unchanged."**
@@ -256,6 +382,38 @@ Confirm/Cancel are ≥44px thumb targets. NO sticky/overlay element occludes any
 **Zero-network invariant:** export AND import (including the merge diff) run entirely client-side
 — no `/api/` call fires from this panel. The privacy copy above is accurate.
 
+**D11 — Tools ▾ de-densified into 3 LABELED sections, not a flat junk drawer  [P2-A]
+(DOMINANT round-1 fix — Elena, Dana, Jules, Priya, Wen; cites
+`added-feature-buried-panel-surfaces-not-function`). NO new above-grid banner; grid-first
+landing UNCHANGED — this is purely the internal IA of the existing Tools ▾ menu.** The flat
+~8-item list reads as overwhelming clutter and buries the killer features. Reorganize the menu
+into 3 sections, each with a tiny muted UPPERCASE section header (non-clickable label, ~11px),
+in THIS fixed order. Channel **Presets** sits FIRST in the first group (Jules + Dana: presets
+were buried two hops deep). Exact buckets, labels, and item order:
+
+1. **BUILD & REUSE** — *Presets* (sub-caption "saved channel field sets") · *Bulk edit* ·
+   *Campaigns* ("saved grids library")
+2. **GOVERN CONVENTIONS** — *UTM Spec* ("allowed values") · *Naming Template* ("utm_campaign
+   structure") · *Run Launch Check* ("whole-grid compliance report")
+3. **IMPORT & MOVE** — *Audit URLs* ("paste existing tagged links") · *Move to another device*
+   ("export / import your setup")
+
+Notes:
+- *Import CSV* and *Export CSV* stay as inline toolbar buttons in the "Data" group (per §5) —
+  they are NOT moved into the menu; only *Audit URLs* (the paste-inbound counterpart) lives in
+  the menu's "Import & move" section.
+- On `/w/<id>` workspace pages ONLY, the menu additionally shows a 4th section **SHARE
+  GOVERNANCE** — *Share style guide* · *Share review summary* — so those two `/w/`-only entries
+  group cleanly instead of dangling in the flat list. (They do not appear on `/`.)
+- Section headers are visual dividers/labels only: they do not collapse, are not focusable as
+  buttons, and add no extra click. Every item stays reachable in ONE click of opening Tools ▾,
+  exactly as before — only the visual grouping changes. No item removed, no item renamed except
+  the addition of the muted sub-captions above.
+- The menu should read top-to-bottom as a scannable index: a marketer scanning for "presets"
+  finds it FIRST; an eng/manager scanning for governance finds the three convention tools
+  grouped together. Goal-met test: a cold tester opening Tools ▾ can name what's in the menu
+  without it reading as an undifferentiated dump.
+
 ## 5. Landing structure (top → bottom)
 
 **Desktop ≥1280px:**
@@ -267,10 +425,12 @@ Confirm/Cancel are ≥44px thumb targets. NO sticky/overlay element occludes any
    - *Left — grid primary:* **Add row** (accent), **Auto-fix naming**, the
      **"Unsaved grid / In: <name>"** status pill.
    - *Divider · Data:* **Import CSV**, **Export CSV**, **Audit URLs**.
-   - *Divider · Tools ▾* (one menu) → **Presets**, **Bulk edit**, **UTM Spec**, **Naming
-     Template**, **Campaigns**, **Run Launch Check**, **Move to another device** (export/import
-     setup, per D10) (+ **Share style guide** / **Share review summary** on `/w/<id>`). Each
-     opens its panel below the toolbar per D3.
+   - *Divider · Tools ▾* (one menu, GROUPED into labeled sections per **D11** [P2-A]) →
+     **BUILD & REUSE** (Presets · Bulk edit · Campaigns) · **GOVERN CONVENTIONS** (UTM Spec ·
+     Naming Template · Run Launch Check) · **IMPORT & MOVE** (Audit URLs · Move to another
+     device, export/import setup per D10) (+ a 4th **SHARE GOVERNANCE** section — Share style
+     guide · Share review summary — on `/w/<id>` ONLY). Each item opens its panel below the
+     toolbar per D3; section headers are labels only, no extra click.
    - *Divider · Share ▾* (one menu, per D6) → **Copy snapshot link**, **Create live
      workspace**, **Copy all URLs** (+ **Copy workspace link** on `/w/<id>`). Confirmation
      flashes on the persistent Share ▾ trigger, never on a menu item.
@@ -310,9 +470,10 @@ flow, never overlay a cell. Desktop grid-first (already passing) must NOT regres
 
 ## 6. 5-second check (cold visitor, above the fold)  [R2-B, R2-C]
 - **Headline:** **"Clean campaign links in a grid"** (one line, not a wrapping sentence).
-- **Subtitle:** **"Auto-fix the casing and spacing that splits a campaign into two in your
-  analytics, and export a clean CSV that drops straight into your sheet."** Trust line below:
-  "No login — nothing leaves your browser."
+- **Subtitle [P2-E]:** **"Build and tag a whole batch of 30+ campaign links at once — and
+  auto-fix the casing and spacing that splits a campaign into two in your analytics, then export
+  a clean CSV."** (Bulk-builder value reads FIRST; Dana misread the old casing-first copy as a
+  CSV-cleanup utility.) Trust line below: "No login — nothing leaves your browser."
 - **Primary action:** the pre-filled example grid row with a live Generated URL + Copy, plus
   Add row / Auto-fix visible in the one toolbar; Share ▾ as the single share control.
 - **Pre-filled example (ship literally):** BASE `https://acme.com/spring-sale`,

@@ -1,33 +1,52 @@
-```json
-{"name":"Wen","clarity":"Yes","value":"Yes","advocacy":9,"top_fix":"On a cross-row inconsistency warning, give a one-click 'standardize this column to <chosen value>' — Auto-fix only lowercases, it can't reconcile a real value mismatch (fb vs facebook) for me"}
-```
+{"name":"Wen","clarity":"Yes","value":"Yes","advocacy":"9","prior_concerns_addressed":"n/a for round 1"}
 
-# Wen — Marketing data analyst — Round 1 (grid-first redesign)
+# Wen — Marketing data analyst (GA4 / BigQuery / Sheets / dbt), data-hygiene zealot
 
-## Prior-version note
-Old version opened with a tall jargon hero + ~6 stacked feature banners that buried the grid. This redesign is grid-first: the editable grid sits above the fold, hero is one sharp line, clutter gone. Real improvement — I land in the tool, not a pitch.
+## What I did
+Cold-opened on desktop (1440px). Built a row with dirty values (`Newsletter `, `Email`,
+`Spring_Sale 2026`), watched lint, ran Auto-fix, exported CSV, saved a campaign, then
+hammered the new "Move to another device" migration with my data-hygiene paranoia:
+exported a setup, imported it into a SECOND window that already had its own saved campaign,
+re-imported to test skip, and threw garbage at it.
 
-## 1. CLARITY — Yes
-Got it in ~5s. The H1 "Tag every campaign link with clean, consistent UTM tags in one grid — so a stray capital letter never splits your data in Google Analytics" is my exact recurring pain. Subline "Edit links in a grid, auto-fix naming, export clean CSV — no login, nothing leaves your browser" seals it. Friend pitch: "A grid to build/clean UTM links that lints the casing/spacing inconsistencies that split GA4 campaigns, with faithful CSV in/out." Visible headers (UTM_SOURCE*, UTM_MEDIUM*…) confirmed instantly. Nothing confused me.
+## What worked (this is genuinely good)
+- **Lint is exactly my pain.** It flagged "Contains uppercase letters — use lowercase only
+  ("newsletter ")" and "Contains spaces — use "_" or "-" instead", quoting the OFFENDING
+  value. This is the casing/spacing that splits one campaign into two in GA4. Auto-fix
+  produced clean `newsletter` / `email` / `spring_sale_2026`, showed a toast "Auto-fixed 3
+  cells — Undo", and turned cells green. Reversible = I trust it; it's not a black box.
+- **CSV is clean and round-trips.** Export has a UTF-8 BOM (Excel/Sheets won't mangle it),
+  proper `base_url,utm_source,...,generated_url` headers. CSV in/out — my one
+  non-negotiable — is here.
+- **Merge does NOT mangle my data.** Imported Device A's setup into a window already
+  holding "DeviceB-Existing": result was Campaigns (1)->(2), BOTH survived. Preview showed
+  "1 added · 0 updated · 0 skipped" with a "Confirm import" gate BEFORE applying.
+  Re-importing the same code gave "0 added · 0 updated · 1 skipped" — idempotent, no
+  duplicates. The X/Y/Z summary is honest.
+- **Garbage is fail-safe.** Plaintext junk, valid-base64-wrong-schema, and raw
+  `{"foo":"bar"}` all got: "That doesn't look like a UTM Grid setup code. Your saved data
+  is unchanged." in red, NO Confirm button offered. Empty input leaves Preview disabled.
+  My saved campaign survived every attempt.
+- **"Nothing is uploaded" is believable — I verified it.** I monitored network: ZERO
+  POST/PUT/PATCH during both export and import. The dialog is also honest about the one
+  nuance ("Your shared workspaces already live online; this bundle just carries the secret
+  links back"). For a distrust-driven analyst, that specificity earns trust.
 
-## 2. VALUE — Yes
-Today I catch this AFTER the damage: a LOWER()/CASE audit in BigQuery or a Sheets pivot that surfaces "Google" vs "google" as two campaigns once Looker is already wrong. This catches it BEFORE links ship. Killer feature is the CROSS-ROW lint, not just per-cell casing:
-  "⚠ Inconsistent utm_source across rows: 'Google' vs 'google' — these will split campaign data in GA4."
-That's the precise failure mode that wrecks my dashboards, and no link builder I've used flags it.
+## What confused / annoyed me (minor)
+- "Move to another device" lives buried in Tools four items down — I'd have looked for it
+  under Share. Fine once found.
+- The export bundle is a base64 blob, not raw JSON. I can `base64 -d` it (decodes to clean
+  `{"app":"utm-grid","version":1,...}`), but a "view as JSON" affordance would let a hygiene
+  person eyeball what's leaving before trusting the .json file. Small ask.
+- "Coming soon: optional accounts sync" — fine, but manual move is honestly good enough.
 
-Data-hygiene trust checks — all passed:
-- Import opens a column-MAPPING modal ("4 data rows", pre-mapped, Append vs Replace, Undo available). Explicit, not magic.
-- CSV round-trip is faithful: imported Google/google, exported the identical values — no silent transform. I control when fixes apply.
-- Export carries a UTF-8 BOM (Sheets/Excel-safe) + appends generated_url. Correct CSV hygiene.
-- Rules ▾ toggles (Lowercase only, No spaces, Enforce UTM Spec / naming template) + per-field Allowed Values = a real, visible lint config.
-This replaces my after-the-fact SQL audit with a before-the-fact gate. I'd use it.
+## Bug
+None found. Lint, auto-fix, CSV round-trip, merge (add/update/skip), schema validation, and
+the no-upload claim all behaved correctly under adversarial testing. Zero console errors.
 
-## 3. ADVOCACY — 9
-I'd raise this unprompted in our marketing-analytics Slack. The consolidated Tools ▾ / Rules ▾ toolbar did NOT slow me down — scans faster than the old banner wall; I found CSV Import/Export, Launch Check, UTM Spec, and the lint rules without hunting. 0 console errors across import/export/auto-fix.
-
-Holding it back from 10 (top_fix): Auto-fix lowercases, which collapses "Google"/"google" only because lowercasing happens to merge them. For a true value mismatch ("fb" vs "facebook", "Summer_Sale" vs "summer-sale") I still hand-pick the canon. Put a one-click "standardize this column to <chosen value>" right on the inconsistency warning and this becomes the tool I open every launch. Allowed Values partly covers the prevention side, but reconciling existing dirty rows to a canon should be one click from the warning.
-
-priorConcernsAddressed: some — prior round's "Auto-fix leaves cross-FIELD casing" concern is mitigated by the new cross-row inconsistency lint that explicitly flags it; the deeper "reconcile a real value mismatch in one click" gap remains (now my top_fix). Workspace raw-ID labeling appears addressed elsewhere (rename/friendly names per recent build), not re-tested here. CSV round-trip skepticism resolved: verified faithful import→export.
-```json
-{"tester": 3, "round": 1, "clarity": "Yes", "value": "Yes", "advocacy": 9, "topComplaints": ["Auto-fix can't reconcile a genuine value mismatch (fb vs facebook) — only lowercases; cross-row warning needs a one-click 'standardize column to <value>'", "Standardization to a canonical value still requires manual per-cell work for non-casing splits"], "priorConcernsAddressed": "some"}
-```
+## Single thing most holding back the score (why 9 not 10)
+The export is an opaque base64 string. As someone who "distrusts tools that transform data
+invisibly," I want to SEE the JSON I'm carrying between devices before I commit to it — a
+one-click "show raw JSON" / human-readable bundle would close the last trust gap. That, plus
+burying migration under Tools, is all that stands between a 9 and a 10. This is the first
+UTM tool I'd actually push to my team Slack unprompted.

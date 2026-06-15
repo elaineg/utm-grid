@@ -1480,6 +1480,65 @@ export function UtmGrid({
     }
   };
 
+  // P3-C: Auto-open Presets panel on FIRST-EVER visit only.
+  // Fires iff the same empty-state condition that seeds the example row is true:
+  // utm-grid:rows absent/empty AND no saved campaigns/presets/workspaces.
+  // SSR-safe: reads localStorage inside useEffect (never in render/useState initializer).
+  // Once any saved state exists, the panel stays closed-by-default.
+  const didAutoOpenPresets = useRef(false);
+  useEffect(() => {
+    if (didAutoOpenPresets.current) return;
+    didAutoOpenPresets.current = true;
+    if (typeof window === "undefined") return;
+    // Only in default mode (not workspace mode)
+    if (storageKeyPrefix !== "") return;
+
+    // Check all four saved-state keys — same condition as the example-seed
+    const rawRows = window.localStorage.getItem("utm-grid:rows");
+    const rawCampaigns = window.localStorage.getItem("utm-grid:campaigns");
+    const rawPresets = window.localStorage.getItem("utm-grid:presets");
+    const rawWorkspaces = window.localStorage.getItem("utm-grid:workspaces");
+
+    const hasRows = (() => {
+      if (!rawRows) return false;
+      try {
+        const parsed = JSON.parse(rawRows) as unknown;
+        const rows: unknown = typeof parsed === "string" ? JSON.parse(parsed) : parsed;
+        return Array.isArray(rows) && rows.length > 0;
+      } catch { return false; }
+    })();
+    const hasCampaigns = (() => {
+      if (!rawCampaigns) return false;
+      try {
+        const parsed = JSON.parse(rawCampaigns) as unknown;
+        const arr: unknown = typeof parsed === "string" ? JSON.parse(parsed) : parsed;
+        return Array.isArray(arr) && arr.length > 0;
+      } catch { return false; }
+    })();
+    const hasPresets = (() => {
+      if (!rawPresets) return false;
+      try {
+        const parsed = JSON.parse(rawPresets) as unknown;
+        const arr: unknown = typeof parsed === "string" ? JSON.parse(parsed) : parsed;
+        return Array.isArray(arr) && arr.length > 0;
+      } catch { return false; }
+    })();
+    const hasWorkspaces = (() => {
+      if (!rawWorkspaces) return false;
+      try {
+        const parsed = JSON.parse(rawWorkspaces) as unknown;
+        const arr: unknown = typeof parsed === "string" ? JSON.parse(parsed) : parsed;
+        return Array.isArray(arr) && arr.length > 0;
+      } catch { return false; }
+    })();
+
+    // Auto-open Presets only on first-ever visit (all saved state absent)
+    if (!hasRows && !hasCampaigns && !hasPresets && !hasWorkspaces) {
+      setActiveToolsPanel("presets");
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Close menus when clicking outside
   const toolsMenuRef = useRef<HTMLDivElement>(null);
   const rulesPopoverRef = useRef<HTMLDivElement>(null);
@@ -1649,13 +1708,13 @@ export function UtmGrid({
           + Add row
         </button>
 
-        {/* Auto-fix naming */}
+        {/* Auto-fix naming — P3-B: de-weighted to ghost/muted; + Add row stays the sole accent */}
         <button
           type="button"
           onClick={cleanAll}
           title="Lowercase + normalize all flagged cells"
           data-testid="auto-fix-naming-btn"
-          className="rounded-md border border-amber-400 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 hover:bg-amber-100 whitespace-nowrap"
+          className="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-500 hover:bg-gray-50 whitespace-nowrap"
         >
           Auto-fix
         </button>
@@ -2334,17 +2393,17 @@ export function UtmGrid({
               FULL PAGE width (~1232px at 1280px minus padding). Table min-width 1212px fits
               within the container at 1280px — all 6 editable columns visible with no scroll.
               table-fixed prevents warning badges/chips from stretching td widths beyond header.
-              Generated URL (sticky right-[148px]) and Actions (sticky right-0) are
+              Generated URL (sticky right-[178px]) and Actions (sticky right-0) are
               pinned to THIS container's right edge with a solid opaque background and
               z-index above the scrolling middle columns — they no longer overlap editable cells
               because the container is now ~274px wider than before the fix. */}
           <div ref={tableContainerRef} className="hidden sm:block overflow-x-auto rounded-lg border border-gray-200 bg-white">
-          {/* Table min-width: when reviewMap present: 1212px (32+32+80+160+5×120+148+160).
-              When reviewMap absent: 1212px (32+32+160+5×120+228+160).
-              P2-F: Actions widened 148→160px; GenURL reduced 240→228px. Budget stays 1212px.
+          {/* Table min-width: when reviewMap present: 1212px (32+32+80+160+5×120+148+178).
+              When reviewMap absent: 1212px (32+32+160+5×120+210+178).
+              P3-A: Actions widened 160→178px; GenURL reduced 228→210px. Budget stays 1212px.
               Both budgets fit within ≈1217px at 1280px — no horizontal page overflow.
               table-fixed: column widths set by headers; cell content clipped, not expanded.
-              When Review column is active, genUrl shrinks from 228→148px (still truncated+tooltip). */}
+              When Review column is active, genUrl shrinks from 210→148px (still truncated+tooltip). */}
           <table className="w-full border-collapse text-sm table-fixed" style={{ minWidth: "1212px" }}>
             <thead>
               <tr className="border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase">
@@ -2391,15 +2450,15 @@ export function UtmGrid({
                   </th>
                 ))}
                 {/* Generated URL: sticky, right-offset = Actions width.
-                    When review active (onReviewChange set): 160px (shrunk from 240 to balance +80 review col).
-                    When review absent: 240px (existing). Both keep total budget at 1212px. */}
-                <th className="sticky right-[160px] z-30 bg-gray-50 px-2 py-2.5 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] whitespace-nowrap" style={{ width: onReviewChange !== undefined ? "148px" : "228px" }}>
+                    P3-A: GenURL reduced 228→210px; Actions widened 160→178px. Total stays 388px.
+                    When review active (onReviewChange set): 148px (shrunk from 210 to balance review col). */}
+                <th className="sticky right-[178px] z-30 bg-gray-50 px-2 py-2.5 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] whitespace-nowrap" style={{ width: onReviewChange !== undefined ? "148px" : "210px" }}>
                   Generated URL
                 </th>
-                {/* Actions: sticky right-0, 160px wide (P2-F: widened from 148px so all 4 per-row
-                    action icons are fully visible at 1280px — the 3rd icon was clipped at 148px).
-                    Budget stays at 1212px: Actions 160px + GenURL 228px = 388px (same as 148+240). */}
-                <th className="sticky right-0 z-30 bg-gray-50 px-2 py-2.5 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] whitespace-nowrap" style={{ width: "160px" }}>
+                {/* Actions: sticky right-0, 178px wide (P3-A: widened from 160px so all 4 per-row
+                    action icons are fully visible at 1280px — trash was clipped at 160px).
+                    Budget: Actions 178px + GenURL 210px = 388px; table stays ≤1217px, no h-scroll. */}
+                <th className="sticky right-0 z-30 bg-gray-50 px-2 py-2.5 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] whitespace-nowrap" style={{ width: "178px" }}>
                   Actions
                 </th>
               </tr>
@@ -2688,10 +2747,10 @@ export function UtmGrid({
                       );
                     })}
                     {/* Sticky Generated URL — truncated with title tooltip.
-                        Width: 148px when Review column active (to keep 1212px budget), 228px otherwise.
-                        P2-F: reduced from 240→228 so Actions column can grow from 148→160 (fits 4 icons).
+                        Width: 148px when Review column active (to keep budget), 210px otherwise.
+                        P3-A: reduced from 228→210px so Actions column can grow from 160→178px (fits 4 icons).
                         Copy button (in Actions) copies the FULL untruncated URL (title has full value). */}
-                    <td className="sticky right-[160px] z-20 px-2 py-2 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] overflow-hidden bg-white" style={{ width: onReviewChange !== undefined ? "148px" : "228px" }}>
+                    <td className="sticky right-[178px] z-20 px-2 py-2 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] overflow-hidden bg-white" style={{ width: onReviewChange !== undefined ? "148px" : "210px" }}>
                       <output
                         aria-label={`Generated URL row ${i + 1}`}
                         title={generated}
@@ -2702,12 +2761,12 @@ export function UtmGrid({
                         {generated || "—"}
                       </output>
                     </td>
-                    {/* Sticky Actions — P2-F: widened to 160px (from 148px) so all 4 per-row action
-                        icons are fully visible at 1280px (the 3rd icon was clipped at 148px).
+                    {/* Sticky Actions — P3-A: widened to 178px (from 160px) so all 4 per-row action
+                        icons are fully visible at 1280px (trash was clipped at 160px).
                         z-20 ensures it floats above scrolling cells.
                         relative: anchor for the absolute-positioned QR popover (z-50).
-                        px-2 (not px-3) to give buttons maximum room in the 160px budget. */}
-                    <td className="relative sticky right-0 z-20 px-2 py-2 whitespace-nowrap shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] bg-white" style={{ width: "160px" }}>
+                        px-2 (not px-3) to give buttons maximum room in the 178px budget. */}
+                    <td className="relative sticky right-0 z-20 px-2 py-2 whitespace-nowrap shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] bg-white" style={{ width: "178px" }}>
                       <span className="inline-flex flex-col gap-1">
                         <span className="inline-flex items-center gap-1">
                           <button

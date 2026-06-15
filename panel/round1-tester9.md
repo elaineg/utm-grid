@@ -1,20 +1,46 @@
 ```json
-{"name":"Elena","clarity":"Partially","value":"No","advocacy":5,"top_fix":"Phone cold-open: show ONE pre-filled example row with a green generated URL already visible above the fold so I see it WORKS in 5s — desktop got cleaner but mobile still buries the grid under a 3-line headline + 10-button toolbar."}
+{"name":"Elena","clarity":"Yes","value":"Yes","advocacy":"8","prior_concerns_addressed":"n/a for round 1"}
 ```
 
-## Re-test (Elena — eng manager, 30-sec budget, skimming on my phone between meetings)
+## Elena — Engineering manager, 30-second budget, skimmed on phone (375px)
 
-### Did my prior complaints get fixed?
-1. **"Home is wall-to-wall dense, can't tell the ONE main action"** — PARTIALLY FIXED *on desktop*. The toolbar is now a single clean row and secondary stuff folded into **Tools ▼** and **Rules ▼**; Presets/Bulk Edit/Launch Check no longer clutter the cold view, and the grid sits directly under the toolbar. Real improvement. But on my PHONE (375px) it's still a 3-line jargon headline + a stacked wall of ~10 buttons before the grid — so for me, where I actually use it, the density complaint stands.
-2. **"My Workspaces buried below grid/Presets/Bulk Edit"** — APPEARS ADDRESSED per the redesign (it's meant to surface above the grid when non-empty), but I couldn't re-trigger it cold this round: clicking **Create workspace** on an empty grid did nothing and showed no error. So I can't confirm it from a skim, and silent no-op is its own small problem.
-3. **"Workspaces named by random ID, no rename"** — can't verify (couldn't create one), but commit notes/redesign claim rename + friendly names + search now exist; crediting cautiously.
-4. **"Two near-identical share concepts"** — STILL THERE: "Copy share link" and "Create workspace" sit side by side with no inline one-liner telling me snapshot-vs-live; I'd still have to stop and think.
+**What I did:** Opened it cold on my phone between meetings. Read the headline, glanced at
+the toolbar, peeked into "Tools ▾" because my report mentioned a "move between devices"
+thing, then confirmed the example link actually generates.
 
-### 1. CLARITY — Partially
-Headline is still a 3-line sentence ("…so a stray capital letter never splits your data in Google Analytics"). On desktop the clean grid right under it now does the explaining and that's genuinely better. On my phone the grid collapses to one row rendered as a full-screen vertical stack of empty fields, so the "grid" promise isn't visible in my first 30s. I'd say "it's a spreadsheet for building clean campaign links" — but only after scrolling.
+### Re-check of what I griped about before
+- **"Cold open shows empty fields, I can't see it WORKS in 5s"** — FIXED. It now lands with a
+  filled example row (acme.com/spring-sale, newsletter/email/spring_sale_2026) and the live
+  generated URL `…?utm_source=newsletter&utm_medium=email&utm_campaign=spring_sale_2026` is
+  right there. Even after I cleared storage it re-seeded the example. This was my #1 ask and
+  it's done — "messy in → clean tagged link out" is now legible on my phone without scrolling.
 
-### 2. VALUE — No (for telling 8 reports to standardize)
-Today my team uses a shared Google Sheet + CONCATENATE; it's ugly but zero-setup and everyone has it. This app's edge is the inline typo/consistency validation (real, my sheet can't do it) and the no-login live link. But the cold landing still shows me empty fields, not a working result, and the silent Create-workspace no-op plus the snapshot-vs-live ambiguity are exactly the "make me think / set up" friction that's dead to me between meetings. I won't move 8 people off a sheet that already works for something I had to scroll and poke to understand.
+### What worked (30-second test passes)
+- Headline "Clean campaign links in a grid" + subhead about "casing and spacing that splits a
+  campaign into two in your analytics" names the exact pain my team screws up. Instant.
+- "No login — nothing leaves your browser" is the line that makes it recommendable — setup-free
+  is my entire bar. I'd forward it to my report without a second thought.
+- Phone layout is a clean vertical stack, fully usable one-handed.
+- **The new "Move to another device — export / import your setup" is at the BOTTOM of Tools ▾,
+  tucked away. It does NOT clutter the landing — I only found it by hunting. Correct call;
+  zero in the way of the core value.**
 
-### 3. ADVOCACY — 5/10
-Up from where it sat, because the desktop declutter is a clear step forward and the core (validation + shareable in-browser, login-free) is genuinely good. Not higher because the value isn't visible in a phone skim and I hit a dead-button. The ONE thing that gets this to an 8: **pre-fill ONE example row on cold open with its green generated URL already showing above the fold (especially on mobile), so in 5 seconds I see "messy in → clean tagged link out"** — and add a one-line "snapshot vs live" caption between the two share buttons.
+### What annoyed me
+- Tools ▾ is a junk drawer: 8 items (Channel Presets, Bulk edit, UTM Spec, Naming Template,
+  Campaigns library, Download QR codes, Run Launch Check, Move to another device). Collapsed
+  it's fine for a skim, but it smells like a tool accreting features.
+- Three dropdowns (Tools / Share / Rules) on a tiny toolbar is one more than I want to parse;
+  I can't tell at a glance what's in "Rules" vs "Tools."
+
+**Bug:** None. Live URL generates correctly, no console errors, clean re-seed. Copy fired
+cleanly (clipboard read blocked in my test env, not an app issue).
+
+**SINGLE thing holding back the score (8, not 9):** The core "clean one link, copy it" is now
+an instant yes. But my report asked whether to *standardize the team* on it, and that depends
+on the team features (shared style guide, consistent naming across 8 reports) — which are
+buried in dropdowns I won't open between meetings. Put the ONE team benefit ("keep everyone's
+UTMs consistent — shareable style guide, no login") in a sentence on the landing and this is a
+9 I'd raise unprompted in a staff meeting.
+```json
+{"tester": 9, "round": 1, "clarity": "Yes", "value": "Yes", "advocacy": 8, "topComplaints": ["Tools ▾ is an 8-item junk drawer that smells like feature accretion", "Team-standardization value (style guide, consistent naming across reports) is buried in dropdowns, not visible on landing"], "priorConcernsAddressed": "all"}
+```

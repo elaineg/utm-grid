@@ -1,18 +1,51 @@
-{"name":"Sam","clarity":"Yes","value":"Yes","advocacy":8,"top_fix":"On mobile the grid is buried below a tall hero + 3 accordions + a Select-all bar — the first input sits ~700px down, so on a phone the cold-open shows no grid at all. Make the grid the hero on mobile too."}
+{"name":"Sam","clarity":"Yes","value":"Yes","advocacy":"8","prior_concerns_addressed":"n/a for round 1"}
 
-# Sam — PM, mobile-heavy between meetings (grid-first landing redesign)
+## Sam — Product manager, mobile-heavy, won't debug anything (focus: Move to another device)
 
-## Prior gripe re-check (last time: tall jargon hero + ~6 stacked banners buried the grid)
-- **Desktop: fixed.** Toolbar + the real grid (BASE URL / UTM_SOURCE / UTM_MEDIUM headers) sit right at the top — grid IS the hero. The old 6 banners collapsed into 3 tidy accordion cards below the grid. Big improvement.
-- **Mobile: only half-fixed.** Still a 4-line hero paragraph, then the toolbar, then 3 accordion cards (Campaign Naming Template / Campaigns / Allowed values), then a "Select all" bar — and only THEN row #1. On my 667px-tall phone the first BASE URL field is ~700px down. Cold open on mobile I scroll past everything before I see a single field. The grid is NOT the hero on mobile.
+### What I did
+Cold-opened on my phone (375x812). Built a 2-row batch, deliberately typed sloppy values
+("Email", "summer launch 2026"). Exported the CSV. Then ran the new "Tools ▾ → Move to
+another device" round-trip end to end: saved a campaign on "device A", copied the code,
+opened a FRESH window, saved a DIFFERENT campaign there, pasted the code, hit Preview
+import, then Confirm import.
 
-## 1. CLARITY — Yes
-Within 30s I get it: a grid for tagging campaign links with consistent UTMs, export a clean CSV, share a link, no login. Subhead "Edit links in a grid, auto-fix naming, export clean CSV — no login, nothing leaves your browser" nails it. The H1 about "a stray capital letter never splits your data in Google Analytics" is my exact pain. Column headers + toolbar buttons (Export CSV, Copy share link, Create workspace) are all legible. This is for me.
+### What worked (genuinely good)
+- **Clarity in 5s.** "Clean campaign links in a grid" + "auto-fix the casing and spacing
+  that splits a campaign into two in your analytics." That's my exact pain, said in my
+  words. The grid card (editable BASE URL field) is visible on the mobile cold-open — about
+  one short scroll down, not buried.
+- **Lint is the product for me.** Flagged "Email" → "use lowercase ('email')" and
+  "summer launch 2026" → "use '_' ('summer_launch_2026')", each with a one-tap "Fix this
+  value." Looking organized without debugging — delivered.
+- **CSV is clean.** utm-grid.csv, proper headers, Excel-safe BOM, full generated_url column.
+  Drops straight into a sheet.
+- **Move-to-device nailed my #1 fear.** Copy: "We merge into what's already here — we never
+  overwrite your saved campaigns," plus a DRY-RUN preview showing exactly
+  "1 added · 0 updated · 0 skipped" and the named item BEFORE I commit, with Confirm/Cancel.
+  After Confirm the fresh device showed "Campaigns (2)" — both my old and the imported
+  campaign intact. Zero data loss, zero debugging, clean stacked-card layout at phone width.
+  Reassurance "This is your own local data — nothing is uploaded" and the honest "coming
+  soon: accounts auto-sync" set expectations well.
 
-## 2. VALUE — Yes
-Today: a shared Google Sheet with a CONCAT formula nobody maintains, where someone types "Email" vs "email" and splits the data in GA/Amplitude. This app's **Auto-fix actually fixed it** in one tap: `Email`→`email`, `Spring Launch`→`spring_launch`. Export gave `utm-grid.csv` with a real header row, Excel-safe BOM, and a fully-built `generated_url` per row — drop-in for the team. Copy share link produced a self-contained `/#g=...` URL that **restored the whole batch in a fresh browser** (verified). That's "build a batch → export → share → look organized" with zero debugging. Beats my spreadsheet.
+### What annoyed / held it back
+- **It's a transfer, not a sync.** The move is manual: copy a 1191-char code (or a .json)
+  out of my phone and into my laptop. It works, but I'm mobile-heavy between meetings — do
+  this twice and I'll stop. Change something on my phone later and the laptop is stale until
+  I re-export. That's the gap vs. the shared Sheet I'd be replacing.
+- **Disabled buttons read as broken.** Until you save a campaign, the export shows "Nothing
+  saved yet" with Download/Copy code greyed out. For a beat I thought the feature was bust
+  before realizing I had nothing to move. A one-liner on the disabled buttons ("save a
+  campaign or preset first") would kill that confusion.
+- Saving a campaign is two taps deep (expand Campaigns panel → "+ Save as campaign" → name →
+  Save). Minor.
 
-## 3. ADVOCACY — 8
-I'd recommend it to my growth/marketing channel unprompted — recurring, annoying coordination pain, and it makes me look organized. Not a 9 because **I live on my phone between meetings and the mobile cold-open hides the grid** behind hero + 3 accordions + Select-all bar. A teammate I send the link to on mobile might bounce thinking it's a marketing page, not a tool. Get one editable row above the fold on mobile (push the 3 accordion cards below the grid by default) and this is a 9.
+### Bug / environment notes
+No bugs. Zero console/page errors across every flow (build, lint, CSV, full export/import
+round-trip). Copy code: clipboard read worked once permissions were granted — copy verified,
+no app issue.
 
-Verified clean on a 375px viewport: 0 console/page errors; Auto-fix, Export CSV, Copy share link, and share-link restore all worked.
+### Single thing most holding back my score
+It's a **transfer, not a sync.** I'd recommend it today for "set up the team's UTM rules
+once and carry them across devices," but because keeping phone and laptop in step still
+means re-exporting a code by hand, I can't yet say it replaces juggling a shared Sheet.
+Ship the optional-account auto-sync and this is a 9–10 I bring up in standup unprompted.

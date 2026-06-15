@@ -5,7 +5,7 @@
  * Locator strategy:
  *   - The app dual-mounts table and card views; use .first() on cell inputs.
  *   - Audit status uses role="status" (not role="alert") — confirmed from live DOM.
- *   - The audit button has data-testid="audit-urls-btn".
+ *   - The audit button has data-testid="audit-urls-btn" and lives inside Tools ▾ menu (P2-A).
  */
 import { expect, test, type Page } from "@playwright/test";
 
@@ -17,8 +17,12 @@ const PREVIEW =
 const cell = (page: Page, field: string, rowNum: number) =>
   page.getByLabel(`${field} row ${rowNum}`, { exact: true }).first();
 
-// Helper: open the Audit dialog.
+// Helper: open the Tools ▾ menu and click "Audit URLs" (P2-A: moved into Tools menu IMPORT & MOVE section).
 async function openAudit(page: Page) {
+  // Open Tools ▾ menu first, then click "Audit URLs" inside it
+  const toolsBtn = page.getByTestId("tools-menu-btn").first();
+  await expect(toolsBtn).toBeVisible({ timeout: 8000 });
+  await toolsBtn.click();
   await page.getByTestId("audit-urls-btn").click();
   await expect(page.getByRole("dialog")).toBeVisible();
 }
@@ -164,7 +168,11 @@ test("Audit entry point and dialog reachable at 375px without horizontal scroll"
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto(PREVIEW);
 
-  // Audit button visible without scroll
+  // P2-A: Audit URLs is now inside Tools ▾ menu → open Tools first
+  const toolsBtn = page.getByTestId("tools-menu-btn").first();
+  await expect(toolsBtn).toBeVisible();
+  await toolsBtn.click();
+
   const btn = page.getByTestId("audit-urls-btn");
   await expect(btn).toBeVisible();
 

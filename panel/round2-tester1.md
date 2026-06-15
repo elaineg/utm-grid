@@ -1,22 +1,50 @@
+{"name":"Priya","clarity":"Yes","value":"Yes","advocacy":"8","prior_concerns_addressed":"Partly — menu grouping + Naming/Allowed disambiguation + icon clipping all fixed; overall scope still broad but now navigable"}
+
+# Priya — Round 2 re-test (utm-grid)
+(My round-1 verdict for this thread: clarity Yes, value Yes, advocacy 7. Blocker: "Tools ▾
+packs ~8 power features — the tool is bigger than the problem for occasional use." Also
+noted Naming-Template-vs-Allowed-Values confusion and a truncated Generated-URL column.)
+
+## What I re-checked (my three round-1 gripes)
+
+1. **"Tools ▾ junk drawer of ~8 features" — my blocker.** Opened Tools. It's now a grouped,
+   labeled menu: **BUILD & REUSE** (Channel Presets, Bulk edit, Campaigns) / **GOVERN
+   CONVENTIONS** (UTM Spec, Naming Template, Run Launch Check) / **IMPORT & MOVE** (Audit
+   URLs, Move to another device). Each item carries a gray one-line sub-caption ("saved
+   channel field sets", "whole-grid compliance report"). I can find the one thing I want
+   without reading all eight — it reads as a scannable index, not a flat dump. This changed
+   my view: the menu no longer feels overwhelming. Partly resolves the blocker (see score).
+
+2. **Naming-Template vs Allowed-Values confusion — RESOLVED.** Naming Template card now says
+   "Define your campaign-name *structure* — its parts and their order… **Different from
+   Allowed Values**"; Allowed Values says "Define allowed values per field — catch typos."
+   The explicit cross-reference is exactly the disambiguation I asked for.
+
+3. **Truncated Generated-URL column / clipped row icons — icons FIXED.** All four row action
+   buttons (Copy, QR, duplicate ⧉, delete 🗑) sit inside the 1280 viewport (rightmost edge
+   1267px) — not clipped. The Generated-URL *input* still visually truncates to `…spring-sa…`,
+   but the value is complete: Copy yielded the full
+   `https://acme.com/spring-sale?utm_source=news_letter&utm_medium=e_mail&utm_campaign=spring_sale_2026`.
+   Display-only ellipsis, not data loss. Minor nit.
+
+## Core grid flow
+Typed messy values (" News Letter ", "E Mail", "Spring Sale 2026") → Auto-fix normalized to
+`news_letter`/`e_mail`/`spring_sale_2026`, highlighted the 3 changed cells green, toast
+"Auto-fixed 3 cells — Undo" with a working Undo. Zero console errors, instant. Faster than my
+current habit (hand-editing a Google Sheet UTM template then manually lowercasing). Value: Yes.
+
+## Score: 8 (up from 7)
+The grouping fixed my actual blocker as a *readability* problem — same surface area, but now
+navigable, so the tool no longer feels bigger than the problem. Subhead leading with "build a
+batch of 30+ links at once" is the right hook.
+
+**Single thing holding back a 9:** it's still a lot of chrome for an occasional solo user —
+three top-level menus (Tools / Share / Rules) plus three persistent cards (Naming Template,
+Campaigns, Allowed values) wrapped around a one-row grid. For my weekly batch I touch ~20% of
+it; the rest is team/governance I'd never use solo. Well-organized now, not overwhelming — but
+a "just the grid" default that collapses the governance cards until invoked would earn the 9.
+I'd recommend it to a teammate who manages UTMs, with the caveat "ignore most of the panels."
+
 ```json
-{"name":"Priya","clarity":"Yes","value":"Yes","advocacy":9,"top_fix":"Full Generated URL is now reachable, but only as a native title tooltip (mouse-park + OS delay) — give a one-click 'expand full URL' / read-only full-width reveal so a keyboard-first person can eyeball the exact string without parking the mouse.","priorConcernsAddressed":"all"}
+{"tester": 1, "round": 2, "clarity": "Yes", "value": "Yes", "advocacy": 8, "topComplaints": ["Still heavy chrome for occasional solo use — 3 top-level menus + 3 persistent governance cards around a 1-row grid; would prefer a 'just the grid' default that hides governance until invoked", "Generated-URL field still visually truncates (underlying value is complete; display-only)"], "priorConcernsAddressed": "some"}
 ```
-
-## Priya — Senior backend engineer, keyboard-first, hates signups
-
-**Re-check of my two round-1 blockers (the only reason I sat at 8):**
-
-1. **Per-cell "Fix" was flaky / ambiguous — RESOLVED.** The relabel to "Fix this value" makes per-cell scope obvious, and it now reliably normalizes the exact cell it points at. I tested the two cases that failed me last round: "Google Ads" -> `google_ads`, "Twitter" -> `twitter`. After each click the inline link disappears, the cell goes green/valid, the Generated URL updates in lockstep (`utm_source=google_ads`), and a "Fixed 1 cell" toast + a toolbar Undo confirm it fired. The headline promise ("a stray capital never splits your data") is now trustworthy from the most local affordance — I no longer hunt for the global Auto-fix. Auto-fix is also right there in the toolbar, so even when I want the global one it's discoverable.
-
-2. **Generated URL truncated with no way to read it — RESOLVED.** The Generated-URL `<output>` cell now carries a full `title` tooltip with the complete query string (`https://acme.com/spring-sale?utm_source=...&utm_medium=email&utm_campaign=spring_sale_2026`). Hovering shows exactly what I'd ship before I hit Copy — my hard requirement as someone who wants to eyeball the bytes.
-
-**Cold open:** the new pre-filled example row (acme.com/spring-sale, source=newsletter, medium=email, campaign=spring_sale_2026) with a live Generated URL is the right call — I understood the grid contract in ~5 seconds instead of staring at an empty table. 0 console errors, 0 page errors.
-
-### 1. CLARITY — Yes
-H1 "Clean campaign links in a grid" + subline about casing/spacing splitting a campaign in analytics + clean CSV export, plus the pre-filled row, land it in under 30s. Required-asterisk columns (SOURCE*/MEDIUM*/CAMPAIGN*) make the contract obvious. "No login — nothing leaves your browser" is why I didn't open the network tab.
-
-### 2. VALUE — Yes
-Today I hand-edit query strings in neovim or dump links into a spreadsheet; neither catches a capital or a space. This does, inline, per-cell, with a reliable one-click fix and a clean CSV out. Faster than hand-editing for a multi-link launch post.
-
-### 3. ADVOCACY — 9
-Both things that capped me at 8 are fixed, and they were trust issues, not nits — so this clears my recommend bar. I'd bring it up unprompted to the marketer on my team and to devs on the no-login/client-side pitch. Not a 10 only because the full-URL reveal is a native OS title tooltip (mouse-park + delay), slightly off-grain for a keyboard-first person; click-to-expand the full string would earn the last point.

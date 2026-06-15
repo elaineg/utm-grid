@@ -1,24 +1,58 @@
-{"name":"Aisha","clarity":"Yes","value":"Yes","advocacy":9,"top_fix":"Subhead is one comma-spliced run-on ('Auto-fix the casing and spacing that splits a campaign into two in your analytics, and export a clean CSV that drops straight into your sheet') — split into two short payoff lines and the hero is flawless.","priorConcernsAddressed":"all"}
+```json
+{"name":"Aisha","clarity":"Yes","value":"Yes","advocacy":"9","prior_concerns_addressed":"Yes — Copy code confirmation"}
+```
 
-# Round 2 (re-test) — Tester 7 (Aisha, Product designer)
+# Aisha (Product designer) — Round 2
 
-I judge craft. Re-checked my one 8→9 blocker first, then re-judged fresh.
+## Re-check of my round-1 blocker
+My ONLY blocker last round: "'Copy code' gives no text confirmation — label stays
+'Copy code', only a faint blue tint, no 'Copied'." **Fixed, cleanly.** I drove the panel:
+the instant I click Copy code it flips to a solid-green **"✓ Code copied!"** within ~60ms
+and holds it (verified at 60/150/400/1200ms). The clipboard actually receives the base64
+setup bundle (decodes to `{"app":"utm-grid","version":1,...}`). It has a proper accessible
+name ("Copy setup code") and a polite aria-live region announces the action. No more
+faint-tint ambiguity — exactly the considered confirmation I asked for. Prior concern:
+**resolved.**
 
-## Prior concern — re-checked
-- **Run-on hero H1 wrapping two lines like a promoted tooltip → FIXED.** The headline is now "Clean campaign links in a grid" — short, bold, single-line, a real headline with a verb-led promise. The GA jargon I asked to demote is demoted: a payoff subhead ("Auto-fix the casing and spacing… export a clean CSV that drops straight into your sheet") and a separate muted trust line ("No login — nothing leaves your browser"). That's a considered three-tier hero stack — type weight, color, and rhythm all step down correctly. Exactly the fix I named. Resolved.
-- **Two-doors-to-the-same-room side-cards (round-1 minor):** still present (Campaign Naming Template / Campaigns / Allowed values mirror Tools/Rules), but the teal-tinted Naming card now carries a "Different from Allowed Values" disambiguator — it reads as deliberate signposting now, not accidental duplication. No longer bugs me.
+## Craft of the Move-to-another-device panel
+Considered now, not merely functional:
+- **Two-column EXPORT / IMPORT layout** with all-caps section headers — instantly legible.
+- **Disabled states done right:** with nothing saved, Download/Copy are greyed with
+  `aria-disabled`, the summary reads "Nothing saved yet", and the empty-state line ("create
+  a campaign, preset, or workspace first, then come back to move it") names the next step.
+  Save a campaign and the summary flips to "1 campaign" and the buttons enable.
+- **"Show what's inside"** disclosure expands to "Hide contents" and shows pretty-printed
+  JSON in a mono block, footed by "Export and import run fully offline — zero network
+  requests." For a privacy-positioned tool that's a real trust beat.
+- **Merge copy is honest:** "We merge into what's already here — we never overwrite your
+  saved campaigns," plus a Preview-import step before committing. No destructive surprise.
+- The "Save as campaign" flow uses an inline "Name this campaign" field (Save disabled until
+  named) instead of a browser prompt, and the save confirms with a green "Saved!" + a top
+  pill "In: Spring Sale Q2 · Saved!". Coherent confirmation language across the whole flow.
 
-## 1. Clarity — Yes
-Cold open, ~8s: "a spreadsheet for building clean UTM campaign links — type source/medium/campaign, it cleans casing/spacing and exports a tidy URL + CSV." The new **pre-filled example row** does the heavy lifting: a live GENERATED URL (`https://acme.com/spring-sale?utm_source=newsletter&utm_medium=email&utm_campaign=spring_sale_2026`) shows the payoff before I touch anything — a worked example beats an empty state, and it's the right kind of considered. Column headers with red `*` required markers reinforce it instantly.
+## IA — the new labeled Tools menu
+Now sectioned into **BUILD & REUSE / GOVERN CONVENTIONS / IMPORT & MOVE**, each item with a
+quiet subtitle. Far cleaner than the old flat dump — I found "Move to another device" in two
+seconds. Good IA work.
 
-## 2. Value — Yes
-Still not my daily tool (I make a few UTMs a year), but I'd forward it to growth without wincing — and now I'd do it because it *looks* made-with-taste, not despite the copy. Copy on the example row worked (clipboard returned the exact clean URL, 0 console errors). The whole loop is legible in one screen.
+## Clarity — Yes
+Cold open, ~8s: "a spreadsheet for building clean UTM campaign links in a batch — it
+auto-fixes the casing/spacing that splits a campaign in GA, then exports a tidy CSV." The
+pre-filled example row with a live GENERATED URL sells the payoff before I touch anything.
 
-## 3. Advocacy — 9/10
-Up from 8. My single craft blocker is gone and nothing new replaced it at that severity. The hero now reads as authored, not auto-generated; the worked-example row is a thoughtful touch; spacing and the muted-trust-line restraint are right. I'd bring this up unprompted to growth.
+## Value — Yes (judged for the real user, weekly marketers — as in R1)
+For a marketer tagging 30+ links a week, grid + Auto-fix + clean CSV is a genuine recurring
+time-saver over hand-editing URLs or a fragile spreadsheet. Anonymous-first save plus this
+device-move flow build real return value. Restoring my round-1 read: value Yes.
 
-What keeps it off a 10: the subhead is one comma-spliced run-on sentence — "…that splits a campaign into two in your analytics, and export a clean CSV…". The H1 got the polish; the subhead is the last line that still reads like it was written in one breath. Break it into two short payoff phrases and the hero is flawless.
+## Single thing most holding back the score
+Advocacy **9** (up from 8 — blocker closed, nothing new at that severity replaced it). Off a
+10 because the device-move flow is, by the panel's own admission, a temporary chore:
+"Coming soon: optional accounts sync your setup automatically — no export step." It's a
+well-crafted patch over a gap, not a delight; once sync ships this panel should recede.
+Until then, a confident 9 — I'd recommend the app unprompted to any marketer drowning in
+UTM spreadsheets.
 
 ```json
-{"tester": 7, "round": 2, "clarity": "Yes", "value": "Yes", "advocacy": 9, "topComplaints": ["Subhead is a single comma-spliced run-on sentence — the H1 got polished but the subhead still reads like one breath; split into two short payoff lines"], "priorConcernsAddressed": "all"}
+{"tester": 7, "round": 2, "clarity": "Yes", "value": "Yes", "advocacy": 9, "topComplaints": ["Move-to-another-device is an admitted temporary chore ('Coming soon: accounts sync… no export step') — a polished patch over a missing sync, not a delight"], "priorConcernsAddressed": "all"}
 ```

@@ -26,8 +26,9 @@ export function PresetsBar({
   onApplyToSelected: (presetId: string) => void;
   onNewRowPresetChange: (id: string | null) => void;
 }) {
-  // P1: collapsed by default on cold open; one tap expands
-  const [panelExpanded, setPanelExpanded] = useState(false);
+  // P3-C: pre-expanded by default so applying a preset is ONE click after opening the panel
+  // (the parent controls whether the panel is even shown; here we always start open)
+  const [panelExpanded, setPanelExpanded] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
   const [name, setName] = useState("");
   const [saveToast, setSaveToast] = useState<string | null>(null);

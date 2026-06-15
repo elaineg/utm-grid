@@ -1,29 +1,24 @@
 ```json
-{"name":"Tomás","clarity":"Yes","value":"Yes","advocacy":8,"top_fix":"Offer an optional 'clean as I import' (apply Auto-fix during ingest) so I don't click Fix on every flagged cell across a 30-row sheet — with a clear promise Auto-fix only normalizes values, never drops/merges rows"}
+{"name":"Tomás","clarity":"Yes","value":"Yes","advocacy":"8","prior_concerns_addressed":"n/a for round 1"}
 ```
 
-# Tomás — Ops analyst, Excel power user, Edge on locked-down Windows laptop (grid-first redesign)
+**Who I am:** Ops analyst, Excel power user, Edge on a locked-down corporate laptop (no installs). I build tagged links in a spreadsheet today and I'm paranoid about pasting company data into random web tools.
 
-## Re-check of the redesign promise
-The old version opened with a tall jargon hero + stacked feature banners that buried the grid. This version: the **editable grid is the hero, above the fold**, with one ready row. The feature panels (Naming Template / Campaigns / Allowed values) are now demoted below it. Much better — I land on a tool, not a pitch.
+**What I did:** Cold-opened. Typed messy data the way a real sheet has it ("Newsletter ", "E Mail", "Spring Sale 2026!"), hit Auto-fix. Exported CSV, re-imported it. Saved a campaign, then exercised the new Tools ▾ → "Move to another device": copied the code, opened a FRESH browser (my "home laptop"), pasted, previewed, merged. Re-imported the same code to check for duplicates.
 
-## 1. CLARITY — Yes
-Got it in under 30s. Subhead "Edit links in a grid, auto-fix naming, export clean CSV — **no login, nothing leaves your browser**" answered *what is this* and *is my data safe* in one line. Toolbar reads like a tool: Add row / Auto-fix / Import CSV / Export CSV / Audit URLs. Import CSV and Export CSV are right there in the toolbar — not hidden. I'd tell a coworker: "a spreadsheet that builds and cleans UTM links and exports a clean CSV, all in-browser — IT can't object, nothing installs, nothing uploads." Only nit: the H1 is long/jargon-y, but it didn't slow me.
+**What worked (and won me over):**
+- 30-sec clarity is real. "Clean campaign links in a grid" + "drops straight into your sheet" + "No login — nothing leaves your browser" told me what it is and that it respects my data. I'd tell a coworker: "browser UTM builder that round-trips CSV with Excel and never phones home."
+- Auto-fix is the trust-builder. Cleaned "E Mail"→`e_mail`, killed the trailing space, highlighted the 3 changed cells green, and gave an **Auto-fixed 3 cells — Undo** toast. It tells me what it touched and lets me revert — the opposite of "mangling my data."
+- **CSV round-trip is exact.** Export → re-import returned my row byte-for-byte ("https://acme.com/Spring Sale", space and all). Import opens a "Map CSV columns" dialog that PRE-MAPPED my headers correctly and made me pick Append vs "Replace — wipe current grid", with "you can Undo immediately." No silent overwrite. This is the whole reason I'd use it over my sheet's CONCATENATE.
+- **Move to another device:** the privacy story lands. "This is your own local data — nothing is uploaded... this bundle just carries the secret links back," and import says "we never overwrite your saved campaigns." The fresh-window preview showed a real diff — "1 added · 0 updated · 0 skipped — Q3 Ops Launch" — before I committed. Re-importing the same code correctly showed "0 added · 1 skipped" (no duplicate). Code is base64'd JSON, so I decoded it and saw it isn't doing anything sneaky. Zero console errors every step. I'd actually use this to move work→home.
 
-## 2. VALUE — Yes
-Today I hand-build links with CONCATENATE in Excel and eyeball encoding — and get burned by spaces, `&`, and `Email` vs `email` splitting GA/Tableau. I round-tripped a deliberately messy CSV (mixed case, spaces, `&`, an embedded-comma field, an empty field, an existing `?ref=x`):
-- **Zero mangling.** Every field exact. `"discount, big"` re-quoted correctly; empty utm_term stayed empty.
-- **Respected my existing query param:** `?ref=x` → `?ref=x&utm_source=...`, not clobbered. Excel gets this wrong.
-- **Correct encoding** (`%20`, `%26`, `%2C`) in the generated URL.
-- **UTF-8 BOM on export** — opens clean in Excel, no garbled chars. As an Excel guy that earns trust.
-- **Import is safe:** "Map CSV columns" dialog auto-mapped my headers, said "3 data rows", offered Append vs Replace in plain English, promised "you can Undo immediately"; post-import toast had a working Undo.
-- **Privacy verified myself:** watched the network during import — ZERO POST/PUT/PATCH. "Nothing leaves your browser" is real, not marketing. That's the deciding factor for company link data.
-Beats my Excel formula and saves real time every campaign week.
+**What annoyed / mild friction:**
+- Export code is a wall of base64. I trust it because I decoded it; a less-technical teammate sees gibberish and gets nervous. A one-line "what's in this code" summary would help.
+- "Save as campaign" needs a name + an extra Save click — I expected one click.
+- It's clearly built for many rows; with one row the "in a grid" value is understated. Fine for me.
 
-## 3. ADVOCACY — 8/10
-I'd raise this unprompted with ops/marketing peers as "the browser UTM tool that won't mangle your CSV and doesn't phone home." What blocks 9–10: after import it flags every off-spec cell (uppercase, spaces) with an individual "Fix" link — fine for 3 rows, painful for 30. Let me opt into auto-fix during import, with an explicit guarantee it only normalizes and never drops rows. Do that and it's a 9.
+**Single thing holding back the score:** It's still my word against the marketing that "nothing leaves your browser." As a wary corporate user I'd want proof I can hand IT/security — a verifiable "0 network requests" claim or an explicit "works fully offline" note. Until I can give security a reason it's safe, I'd quietly use it myself but hesitate to push it company-wide. That caps me at 8, not 9.
 
-Notes: no JS console/page errors; copy/clipboard not exercised this round.
 ```json
-{"tester": 4, "round": 1, "clarity": "Yes", "value": "Yes", "advocacy": 8, "topComplaints": ["No 'clean as I import' option — must click Fix per flagged cell, doesn't scale to a 30-row sheet", "H1 is long and GA-jargony for a first read"], "priorConcernsAddressed": "n/a"}
+{"tester": 4, "round": 1, "clarity": "Yes", "value": "Yes", "advocacy": 8, "topComplaints": ["Can't prove to IT/security that 'nothing leaves your browser' — no verifiable claim or offline note", "Export code is opaque base64; non-technical teammates won't trust pasting/importing it"], "priorConcernsAddressed": "n/a"}
 ```

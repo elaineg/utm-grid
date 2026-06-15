@@ -610,7 +610,10 @@ test("LC-10 — regression: Paste & Audit (violet) panel is visually distinct an
 }) => {
   await page.goto("/");
 
-  // Open Audit URLs and submit to get the violet panel
+  // Open Audit URLs via Tools ▾ menu (P2-A: moved into IMPORT & MOVE section)
+  const toolsBtn = page.getByTestId("tools-menu-btn").first();
+  await expect(toolsBtn).toBeVisible({ timeout: 8000 });
+  await toolsBtn.click();
   const auditBtn = page.getByTestId("audit-urls-btn").first();
   await expect(auditBtn).toBeVisible();
   await auditBtn.click();

@@ -1,71 +1,26 @@
-# UTM Grid — Panel SYNTHESIS Round 2 (grid-first landing pass)
+# UTM Grid — Panel SYNTHESIS Round 2 (cross-device feature; craft/IA fix pass)
 
-**Headline: 8/10 pass the 9-advocacy bar, up from 4/10 in round 1.** All six R2 landing
-fixes landed; nearly every round-1 blocker is resolved. The two sub-bar testers are (1) the
-accepted backlog holdout (Tomás — clean-on-CSV-import, deliberately deferred) and (2) ONE
-in-scope mobile blocker (Elena — the green generated-URL payoff sits below the 375px fold),
-which a passing tester (Sam) named identically. Round 3 is a single mobile-card fix.
+**6/10 pass the bar, up from 1/10.** The Tools-menu de-densification + craft fixes worked.
 
-## Score table
+## Score table (Δ vs round 1)
+| Tester | clarity | value | advocacy | pass? | note |
+|--------|---------|-------|----------|-------|------|
+| Wen    | Yes | Yes | **10** (↑9) | YES | "Show what's inside" JSON + offline claim resolved both gaps |
+| Tomás  | Yes | Yes | **9** (↑8) | YES | offline-zero-network line + JSON view → can show IT |
+| Dana   | Yes | Yes | **9** (↑8) | YES | subhead now leads with bulk value |
+| Aisha  | Yes | Yes | **9** (↑8) | YES | copy-cue fix resolved her blocker; value back to Yes |
+| Elena  | Yes | Yes | **9** (↑8) | YES | "GOVERN CONVENTIONS" label surfaced team value |
+| Sam    | Yes | Yes | **9** (↑8) | YES | reliable copy + clean mobile menu |
+| Priya  | Yes | Yes | 8 (↑7) | no | menu grouping fixed; wants a "just the grid" landing (governance cards too present for occasional use) |
+| Marcus | Yes | Yes | **7 (↓8)** | no | **REAL CSS bug: ACTIONS cell now has 4 icons; the trash icon is clipped ~12px past the cell edge @1280px (174px content in 162px cell)** |
+| Jules  | Yes | Yes | 8 | no | wants platform preset chips on COLD LOAD (or auto-expand presets on first visit); menu-surfacing didn't touch her landing-chips ask |
+| Rob    | Yes | Yes | 8 | no | self-described personal recurrence ("a me-problem, not an app defect"); concrete post-import gap WAS fixed |
 
-| Tester | Persona | clarity | value | advocacy | priorConcernsAddressed | top_fix (1-liner) |
-|--------|---------|---------|-------|----------|------------------------|-------------------|
-| Priya  | Backend eng, keyboard-first | Yes | Yes | **9** | all | click-to-expand full generated URL (vs native title tooltip) |
-| Marcus | Frontend eng, devtools | Yes | Yes | **10** | all | (non-blocking) tuck under-grid cards behind Tools ▾ |
-| Wen    | Marketing data analyst | Yes | Yes | **9** | some | one-click "standardize column to <value>" from inconsistency warning |
-| Tomás  | Ops analyst, Excel | Yes | Yes | **8** | some | **clean-on-CSV-import (DEFERRED backlog item)** |
-| Dana   | Demand-gen marketer (mobile) | Yes | Yes | **10** | all | (non-blocking) surface "Copy all rows" on mobile |
-| Jules  | Content/community marketer | Yes | Yes | **9** | some | surface platform preset chips on first paint (not behind Tools ▾) |
-| Aisha  | Product designer (craft) | Yes | Yes | **9** | all | split comma-spliced subhead into two short payoff lines |
-| Rob    | Freelance brand designer | Yes | Yes | **9** | all | (non-blocking) personal recurrence occasional, not weekly |
-| Elena  | Eng manager, 375px mobile | Yes | Yes | **8** | all | **green generated URL above the mobile fold (in-scope blocker)** |
-| Sam    | PM, mobile-heavy | Yes | Yes | **9** | all | compact one-line generated-URL preview at top of each mobile row |
+## Holdout analysis → round-3 plan
+- **Marcus (must-fix, definite +1):** FIX-2 widened ACTIONS 148→160 but a 4th per-row icon (duplicate) was added; trash now clips ~12px. Widen ACTIONS to fit all 4 icons (~+18-20px, taken from the Generated-URL slab) so every icon is fully visible at 1280px with no cell/page overflow. Zero regression risk; flips Marcus 7→9.
+- **Priya (de-densify landing):** she sees "three persistent governance cards around a one-row grid" and wants a "just the grid" default. Aisha (R1) also flagged "home side-cards duplicating Tools/Rules entry points." Collapse/remove any persistent landing cards that DUPLICATE the menu entries so the cold landing is grid-first with the launchers, nothing more. Reinforces Elena/Dana's clean-landing approval (low regression risk — removing clutter).
+- **Jules (surface presets, low-density):** her ask (chips on cold load) conflicts with grid-first / the "no above-grid banner" rule and risks regressing Dana (friction: optional-ui-gated... an always-on above-grid element regressed Dana 9→8 before). LOWER-RISK alternative she herself offered: auto-expand the Presets bar on a FIRST-EVER visit only (empty grid anyway), and/or make Tools ▾ → Channel Presets open straight to apply-able chips (cut her "three hops" to one). Try that, not landing chips.
+- **Rob (structural):** occasional user by his own account; gave 9 in the prior PASS, so re-test after polish but treat as the allowed 1 miss if he holds at 8.
 
-Pass (adv≥9, clarity+value Yes): Priya, Marcus, Wen, Dana, Jules, Aisha, Rob, Sam = **8/10**.
-Clarity: 10/10 Yes. Value: 10/10 Yes (both round-1 value=No testers now Yes).
-
-## Round-1 concerns resolved by the R2 fixes (most resolved)
-
-- **R2-A Mobile grid-first** → Dana, Sam, Elena all confirmed the cold 375px open now lands
-  on an editable grid; first BASE URL field at y≈358 (Sam/Dana measured), accordions
-  collapsed BELOW the grid. All three round-1 mobile blockers resolved.
-- **R2-B Pre-filled example row** → every tester cited the seeded acme/spring-sale row with
-  a live generated URL as "I see it work before typing." Wen + Tomás verified it does NOT
-  leak into a real export (Replace-on-import wipes it; `grep acme` = 0 hits).
-- **R2-C Hero rewrite** → Jules ("no longer reads as not-for-me"), Aisha ("authored, not
-  auto-generated" — value flipped No→Yes), Rob ("payoff-first subhead is what moved me") all
-  moved 8→9.
-- **R2-D Share ▾ consolidation** → Marcus 9→10 ("self-explaining via header + sublabels");
-  Elena confirmed snapshot-vs-live ambiguity gone.
-- **R2-E Empty-grid feedback** → Elena confirmed the former silent "Create workspace" no-op
-  now shows inline "Add at least one link before…".
-- **R2-F Generated-URL + Fix legibility** → Priya/Dana confirmed per-cell "Fix this value"
-  relabel + discoverable global Auto-fix; full URL on native title hover.
-
-Deferred-as-planned (NOT gating; carried to backlog): Wen's standardize-column-to-canon,
-Jules's preset chips on first paint, Aisha's split-subhead, Dana's mobile "Copy all rows,"
-Marcus's tuck-cards-behind-Tools, Priya's click-to-expand full URL.
-
-## The two sub-bar testers
-
-1. **Tomás — 8 (accepted holdout).** Blocked ONLY on the deliberately-deferred
-   clean-on-CSV-import feature (a backlog item, not built this run; he confirmed it cold).
-   Everything else passes: clarity Yes, value Yes, raises it unprompted to ops/marketing
-   peers. This is the ONE expected holdout against a 9/10 bar — do NOT build clean-on-import
-   to chase his point.
-
-2. **Elena — 8 (up from 5; ONE in-scope blocker remains).** All three round-1 blockers
-   resolved (grid-first mobile, dead empty-grid button, snapshot-vs-live ambiguity). Sole
-   remaining blocker: on MOBILE (375px) the green generated-URL payoff sits one scroll-flick
-   BELOW the fold, behind the two empty utm_term/utm_content fields, so the "messy in →
-   clean link out" payoff is NOT in the first mobile screenful. **Sam (passing, 9) named the
-   identical wish** — a compact one-line generated-URL preview near the top of each mobile
-   row. This is the single round-3 fix (see UX_BRIEF §4 D9 / §5 mobile).
-
-## Round 3 = DELTA re-test
-
-Round-3 fix is mobile-card-only (≤640px), desktop table view unchanged. Re-test scope:
-- **Re-test:** Elena (the blocker) + the mobile-surface passers **Dana, Sam, Jules**.
-- **Carry forward (desktop-only passers, untouched by the mobile fix):** Priya, Marcus,
-  Wen, Aisha, Rob.
-- **Carry forward at 8 (accepted holdout):** Tomás.
+## Bar math
+Need 9/10. The 6 passers hold (carry Wen/Tomás/Aisha/Sam — surfaces untouched; sentinel-retest Dana/Elena since the landing changes). Flipping Marcus + Priya + Jules → 9/10 with Rob as the allowed miss. Re-test R3: Marcus, Priya, Jules, Rob + sentinels Dana, Elena.

@@ -1,25 +1,27 @@
-```json
-{"name":"Sam","clarity":"Yes","value":"Yes","advocacy":9,"top_fix":"On mobile each row is a tall vertical stack of single fields, so to sanity-check 'did this build a clean URL?' I still scroll past ~6 inputs to find the generated link — pin a compact one-line generated-URL preview at the top of each row.","priorConcernsAddressed":"all"}
-```
+{"name":"Sam","clarity":"Yes","value":"Yes","advocacy":"9","prior_concerns_addressed":"Partly — the manual move is now smooth, reliable & honestly framed; it is still manual by design (auto-sync teased), so not a true sync"}
 
-# Sam — PM, mobile-heavy between meetings (round 2)
+# Sam — PM, mobile-heavy between meetings (round 2, cross-device re-test)
 
-## Prior blocker re-check — RESOLVED
-Round-1 gripe (advocacy 8): on a phone the editable grid sat ~700px down behind a tall hero + 3 stacked accordion banners + a Select-all bar, so the cold open showed no grid — looked like a marketing page.
-Re-checked the LIVE 375px cold open this round:
-- Hero is now 3 tight lines ("Clean campaign links in a grid" + one-line value + "No login — nothing leaves your browser").
-- Toolbar sits right under it; the old 3 banners are collapsed dropdowns (Tools / Share / Rules), not tall cards.
-- **First editable BASE URL field measures at y=358px — inside the 667px fold.** Below it, still above the fold: UTM_SOURCE (`newsletter`), UTM_MEDIUM (`email`), UTM_CAMPAIGN (`spring_sale_2026`) — all pre-seeded from an example row with a live generated URL.
-A teammate I send the link to on a phone now lands on an obviously-editable tool, not a brochure. This is exactly what I asked for.
+## My round-1 blocker re-checked
+Blocker was: "it's a MANUAL transfer, not a sync — hand-copying a 1191-char code phone→laptop is a chore, and devices go stale after any edit." Judging it now as the intended free manual portable move (auto-sync needs accounts, honestly teased), I ran the real round-trip phone→laptop at 375px:
+- Saved a campaign ("Sam Spring Launch") on mobile → Tools ▾ → "Move to another device" → **Copy code**. Button flipped to "✓ Code copied!" and the clipboard genuinely held the 1190-char bundle (I read the clipboard back, not just the label). Last round this confirmation was flaky — now it's reliable and visible.
+- On a fresh laptop context: pasted → **Preview import** showed a real non-destructive diff: "What will be merged: **1 added · 0 updated · 0 skipped** · Campaigns: 1 added — 'Sam Spring Launch'", with "we never overwrite your saved campaigns." → Confirm import → campaign was there.
 
-## 1. CLARITY — Yes
-Within 30s: a grid to tag campaign links with consistent UTMs, auto-fix casing/spacing, export a clean CSV, share a link, no login. Subhead "Auto-fix the casing and spacing that splits a campaign into two in your analytics" is my literal pain. The seeded example row makes it self-explanatory — I see a real filled row, not empty boxes.
+That merge-preview is what actually killed my staleness fear: it's non-destructive, shows the diff before I commit, and never clobbers what's on the target device. As a manual backup/move, this round-trip is clean and trustworthy. So the blocker is largely addressed — what's left ("it's still manual") is by design.
 
-## 2. VALUE — Yes
-Today: a shared Google Sheet with a CONCAT formula nobody maintains, where "Email" vs "email" splits the data in GA. Verified on mobile this round: typed `Spring Launch` into source → Auto-fix → `spring_launch`. Export gave `utm-grid.csv` with Excel-safe BOM, a real header row (`base_url,utm_source,…,generated_url`), and a fully-built `generated_url` per row. Drop-in for my team, zero debugging. Beats the spreadsheet.
+## Did the polish move me — yes
+- **Tools ▾ on mobile is genuinely cleaner.** Three labeled sections — BUILD & REUSE / GOVERN CONVENTIONS / IMPORT & MOVE — each item with a one-line gray subtitle. Between meetings on a phone I found "Move to another device" in one read, not by scanning a flat list.
+- **Subhead leads with bulk value:** "Build and tag a whole batch of 30+ campaign links at once... then export a clean CSV." That's the line I'd actually use to pitch it.
+- **The auto-sync tease is honest, not bait:** "Coming soon: optional accounts sync your setup automatically... This manual move is free and always will be." Right expectation-setting.
 
-## 3. ADVOCACY — 9
-I'd bring this up unprompted in my growth/marketing channel — recurring coordination pain, makes me look organized, and now the mobile cold-open sells the tool instead of hiding it. The blocker that capped me at 8 is gone.
-Not a 10 only because on mobile each row is a tall vertical stack of single fields, so to confirm "did this build a clean URL?" I still scroll past ~6 inputs to reach the generated link. A compact generated-URL preview pinned at the top of each row would make the phone feel as fast as desktop — the one thing left.
+## Clarity — Yes
+A grid to tag a batch of campaign links with consistent UTMs, auto-fix casing/spacing so GA doesn't split a campaign in two, export a clean CSV, share a read-only link, no login. The seeded example row + "No login — nothing leaves your browser" make it self-explanatory in 30s.
 
-Verified clean at 375px: first editable field at 358px (in fold), Auto-fix worked, Export CSV worked (BOM + header + generated_url), 0 console/page errors.
+## Value — Yes
+Today I keep a shared Google Sheet with a CONCAT formula nobody maintains, where "Email" vs "email" splits the data. This is a drop-in upgrade: Auto-fix normalizes, export is Excel-safe, and now I can carry my saved setup between my phone and laptop without a server. Zero debugging — which for me matters as much as features.
+
+## Advocacy — 9
+I'd bring this up unprompted in my marketing channel. Recurring pain, makes me look organized, no bugs hit. Not a 10 for one reason: it's still a manual hop, so it's a portable *backup*, not a live workspace — edit on my laptop and my phone's copy is stale until I re-export. As a manual move it's now polished to a 9; the last point is genuinely gated on the teased account auto-sync that, by design, isn't in this version. Round-1 was an 8 on the rough flow — the reliable copy, the labeled menu, and the merge-preview earned the bump.
+
+## Single thing most holding back the score
+Still a manual round-trip rather than real sync. Everything else about the feature is now well-executed.

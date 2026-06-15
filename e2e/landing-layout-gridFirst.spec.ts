@@ -192,10 +192,20 @@ test("(b) All features reachable from toolbar: Import/Export CSV (1 click), Audi
   const openToolsDropdown = () =>
     page.locator('div.absolute').filter({ has: page.locator('[data-testid="tools-presets-btn"]') }).first();
 
-  // Click "Channel Presets" from within Tools menu to open the Presets panel
+  // Click "Channel Presets" from within Tools menu to open the Presets panel.
+  // P3-C: on a fresh (empty) context the Presets panel auto-opens, so clicking Channel Presets
+  // toggles it OFF then back ON — use a two-pass approach: ensure the panel is open after the click.
   await openToolsDropdown().locator('[data-testid="tools-presets-btn"]').click();
-  // Panel should appear below toolbar
-  await page.waitForTimeout(500);
+  await page.waitForTimeout(300);
+  // If the panel was auto-opened (empty localStorage) clicking toggled it off — re-open it
+  const presetsSection = page.locator('section').filter({ hasText: /Presets/ }).first();
+  const presetsPanelVisible = await presetsSection.isVisible().catch(() => false);
+  if (!presetsPanelVisible) {
+    // It was auto-open and got toggled off — open Tools again and click to re-open
+    await toolsBtn.click();
+    await openToolsDropdown().locator('[data-testid="tools-presets-btn"]').click();
+    await page.waitForTimeout(300);
+  }
   // Presets panel is rendered in the active panel zone (some content about presets)
   const hasPresetsPanel = await page.locator('text=/preset|Preset/i').count();
   expect(hasPresetsPanel).toBeGreaterThan(0);

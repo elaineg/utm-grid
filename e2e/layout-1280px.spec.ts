@@ -13,7 +13,7 @@
  * Key assertions:
  *   (a) No page-level horizontal overflow (scrollWidth <= clientWidth).
  *   (b) Row-1 Actions Copy button is fully visible/reachable within the viewport.
- *   (c) Generated URL column header has rendered width >= 220px (Dana readability).
+ *   (c) Generated URL column header has rendered width >= 200px (Dana readability; P3-A narrowed 228→210px).
  *   (d) The inner grid scroll container is horizontally scrollable (its own
  *       scrollWidth > clientWidth) confirming internal-scroll, not page-scroll.
  */
@@ -88,7 +88,7 @@ test("1280px with Campaigns sidebar: Copy button is fully visible and not clippe
   await ctx.close();
 });
 
-test("1280px with Campaigns sidebar: four invariants — no page overflow, Copy visible, Generated URL >= 220px, inner container scrolls", async ({
+test("1280px with Campaigns sidebar: four invariants — no page overflow, Copy visible, Generated URL >= 200px, inner container scrolls", async ({
   browser,
 }) => {
   const ctx = await browser.newContext({
@@ -128,14 +128,15 @@ test("1280px with Campaigns sidebar: four invariants — no page overflow, Copy 
     expect(copyBox.width).toBeGreaterThan(20);
   }
 
-  // (c) Generated URL column header has rendered width >= 220px (Dana readability guard).
+  // (c) Generated URL column header has rendered width >= 200px (Dana readability guard).
+  // P3-A: column narrowed from 228→210px so Actions can widen 160→178px (fits all 4 icons).
   // The header th has text "Generated URL" — find it in the table header.
   const genUrlHeader = page.locator("table thead th").filter({ hasText: "Generated URL" }).first();
   await expect(genUrlHeader).toBeVisible();
   const genHeaderBox = await genUrlHeader.boundingBox();
   expect(genHeaderBox).not.toBeNull();
   if (genHeaderBox) {
-    expect(genHeaderBox.width).toBeGreaterThanOrEqual(220);
+    expect(genHeaderBox.width).toBeGreaterThanOrEqual(200);
   }
 
   // Also check the Generated URL cell width for row 1.
@@ -144,8 +145,8 @@ test("1280px with Campaigns sidebar: four invariants — no page overflow, Copy 
   const genCellBox = await genUrlCell.boundingBox();
   expect(genCellBox).not.toBeNull();
   if (genCellBox) {
-    // The output element inside the td — its container should be >= 200px.
-    expect(genCellBox.width).toBeGreaterThanOrEqual(200);
+    // The output element inside the td — its container should be >= 180px.
+    expect(genCellBox.width).toBeGreaterThanOrEqual(180);
   }
 
   // (d) The inner grid scroll container is horizontally scrollable (internal scroll, not page scroll).

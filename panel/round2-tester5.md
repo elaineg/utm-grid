@@ -1,40 +1,36 @@
-{"name":"Dana","clarity":"Yes","value":"Yes","advocacy":10,"top_fix":"Nothing blocking — would love a surfaced 'Copy all rows' on mobile so a 30-link batch doesn't mean tapping each card's Copy URL","priorConcernsAddressed":"all"}
+{"name":"Dana","clarity":"Yes","value":"Yes","advocacy":"9","prior_concerns_addressed":"Yes — both"}
 
-# Dana — Demand-gen marketer (round 2: mobile grid-first re-check)
+# Dana — Demand-gen marketer — Round 2 (bulk-value subhead + Tools-menu re-check)
 
-## Prior blocker (mine): MOBILE was NOT grid-first — RESOLVED
-Round 1 (advocacy 9) my one ding: at 375px the hero + 3 info cards filled the whole first
-screen and the first editable input sat far below the fold. Re-tested the LIVE app cold on
-a 375x812 phone, driving the page myself:
-- Hero is now 2 tight lines. Toolbar at y~132; the editable example row starts at y~282
-  with **Base URL pre-filled `https://acme.com/spring-sale` at y358, and utm_source
-  `newsletter`, utm_medium `email`, utm_campaign `spring_sale_2026` ALL above the 812
-  fold.** I see and can type in the grid in one phone screen — no scroll to start.
-- The 3 feature accordions (Campaign Naming Template / Campaigns / Allowed values) now sit
-  BELOW the grid (y~1056+) and default collapsed. Exactly the inversion I asked for.
-- The seeded example row shows a working GENERATED URL + Copy URL button immediately, so a
-  cold visitor sees a clean result before typing anything. priorConcernsAddressed: **all**.
+## What I re-checked (my two round-1 blockers)
 
-## 1. CLARITY — Yes
-"Clean campaign links in a grid" + "Auto-fix the casing and spacing that splits a campaign
-into two in your analytics, and export a clean CSV that drops straight into your sheet."
-The split-in-two line is my exact GA pain. Landed in one read on the phone.
+**1. Headline framed it as CSV-cleanup, not a bulk link-builder.** FIXED. The subhead now
+LEADS with the thing I'd actually open this for: "Build and tag a whole batch of 30+
+campaign links at once — and auto-fix the casing and spacing that splits a campaign into two
+in your analytics, then export a clean CSV." That ordering is exactly right — bulk first,
+casing-fix second, CSV last (a feature, not the pitch). As a one-scroll skimmer I now get it:
+this kills my 30-link Thursday grind. The "30+ at once" number does the work — it tells me
+the scale instantly. On mobile (where I triage tools between meetings) the full subhead is
+visible in the first scroll too.
 
-## 2. VALUE — Yes
-Today: a Google Sheet CONCATENATE formula + eyeballing 30 links for typos (~15 min, still
-ship the odd "Paid Social"). On the PHONE I typed "Paid Social" into the example row's
-utm_medium — inline warnings fired instantly ("uppercase — use lowercase only", "spaces —
-use '_' or '-'") and one tap on global **Auto-fix** cleaned it to `paid_social`. This now
-works on the device I grab between meetings, which is when I tag half my links.
+**2. Move feature buried in a flat 9-item junk-drawer menu.** FIXED. Tools ▾ is now three
+labeled groups — BUILD & REUSE / GOVERN CONVENTIONS / IMPORT & MOVE — each item with a
+one-line description. "Move to another device" sits under IMPORT & MOVE ("export / import
+your setup"), so I'd find it without hunting. Presets (Channel Presets) lead under BUILD &
+REUSE. Reads like a real tool menu now, not a dumping ground.
 
-## 3. ADVOCACY — 10
-My mobile blocker is gone; grid-first on phone AND desktop with a live seeded example. My
-round-1 minor gripe (confusing single-field per-row "Fix") is also gone — there's no
-per-row Fix button anymore, just one clear global Auto-fix. I'd screenshot the "typed a
-messy link on my phone, one tap cleaned it" moment for the team channel unprompted.
-Only wish (not a blocker): surface a one-tap "Copy all rows" on mobile so a 30-link batch
-doesn't mean tapping each card's Copy URL — nice-to-have, not what holds it back.
+## Core flow re-verified
+Added 4 rows in a few clicks; Auto-fix / Bulk edit / Export CSV all present and reachable.
+The grind-killer loop (build many rows → auto-clean casing/spacing → export CSV) is intact
+and obvious from the top toolbar.
+
+## Single thing most holding back the score
+The H1 itself still reads "Clean campaign links in a grid" — cleanup-first. The bulk-speed
+value rests entirely on the subhead carrying it. When I screenshot the top of a tool for the
+marketing Slack (which is literally my habit), the H1 alone wouldn't sell the batch speed.
+Half-point nitpick, not a blocker — but it's the one thing keeping this off a 10. Up from 8
+to 9: both blockers gone, value reads in one scroll, I'd bring it up unprompted.
 
 ```json
-{"tester":5,"round":2,"clarity":"Yes","value":"Yes","advocacy":10,"topComplaints":["Mobile lacks a surfaced 'Copy all rows' — batch-copying 30 links means tapping each card's Copy URL (nice-to-have, not blocking)"],"priorConcernsAddressed":"all"}
+{"tester": 5, "round": 2, "clarity": "Yes", "value": "Yes", "advocacy": 9, "topComplaints": ["H1 still reads 'Clean campaign links in a grid' (cleanup-first); a top-of-page screenshot alone wouldn't convey the bulk-speed value the subhead carries"], "priorConcernsAddressed": "all"}
 ```

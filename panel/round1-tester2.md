@@ -1,25 +1,44 @@
-```json
-{"name":"Marcus","clarity":"Yes","value":"Yes","advocacy":9,"top_fix":"Toolbar still has 3 share verbs ('Copy share link' frozen snapshot vs 'Create workspace' live vs 'Copy all URLs') side by side — disambiguate them so I don't have to think about which one shares the live state"}
-```
+{"name":"Marcus","clarity":"Yes","value":"Yes","advocacy":"8","prior_concerns_addressed":"n/a for round 1"}
 
-Re-test as Marcus (frontend eng, Chrome+devtools, desktop). 0 console errors across build / create-workspace / return-home / rename / copy / remove.
+# Marcus — Frontend engineer, 2yr (desktop Chrome, devtools open)
 
-## Prior concerns — re-checked first
-1. **"Workspaces auto-named after the secret-id prefix ('Workspace BQQvR7BV'), no rename" — FIXED.** Created a workspace from my acme.com launch grid; the My Workspaces panel now names it **"spring_launch"** (friendly, derived from the campaign), not a secret-id blob. There's a **"Rename workspace"** button — I clicked it, the name became an editable text input pre-filled "spring_launch", I typed "Spring Launch — Email", hit Enter, and it persisted. Exactly what I asked for.
-2. **"No way to tell 3 launches apart" — FIXED.** A **"Search workspaces"** box sits at the top of the panel, plus rename means I can label them email/Twitter/blog myself.
-3. **"Secret id leaked into the visible label" — FIXED.** No id prefix shown; label is the campaign name + an "Owner" badge + "just now".
+## What I did
+Cold-opened, read above the fold, then ran my real launch task: tagged two announcement
+links in the grid (twitter/social and newsletter/email, both utm_campaign=product_launch),
+watched the Generated URL build live, saved them as a campaign ("Launch Q2"). Then exercised
+the NEW Tools ▾ → Move to another device: copied the code (1395-char base64 bundle, clipboard
+verified — read 1395 chars), opened a fresh incognito context, pasted into the Import side,
+hit Preview import, reviewed the diff, Confirmed.
 
-## 1. CLARITY — Yes
-The grid-first redesign lands. H1 "Tag every campaign link with clean, consistent UTM tags in one grid — so a stray capital letter never splits your data in Google Analytics" + subline "Edit links in a grid, auto-fix naming, export clean CSV — no login, nothing leaves your browser" + a visible empty grid = I'm typing in row 1 within 10s. The toolbar reads as a *tidy* toolbar, not hidden controls; Tools ▾ neatly tucks Channel Presets / Bulk edit / UTM Spec / Naming Template / Campaigns / QR / Launch Check.
+## What worked (genuinely well)
+- **Clarity is instant.** H1 "Clean campaign links in a grid" + subhead about casing/spacing
+  "that splits a campaign into two in your analytics" nailed my pain. "No login — nothing
+  leaves your browser" killed my usual hesitation. One-line pitch to a teammate: "spreadsheet-
+  style bulk UTM builder, lints as you type, CSV in/out, no account."
+- **Core flow beats hand-editing query params.** Generated URL was correct and live:
+  `...?utm_source=twitter&utm_medium=social&utm_campaign=product_launch&utm_content=hero_tweet`.
+  Per-row Copy + QR is a nice touch. Genuinely saves the fiddly by-hand work I do today.
+- **The Move feature is well thought out.** Export/Import split panel, honest microcopy
+  ("This is your own local data — nothing is uploaded", "we merge... we never overwrite your
+  saved campaigns"). The killer detail: **Preview import shows a real dry-run diff** — "1 added
+  · 0 updated · 0 skipped — Campaigns: 1 added — 'Launch Q2'" — BEFORE I commit. That's exactly
+  what makes me trust a merge into existing data. End state: "✓ Import complete! Your setup has
+  been merged," campaign restored as "Launch Q2 · 2 links · saved just now." Zero console errors
+  in either context. I'd actually use the .json export as a poor-man's backup.
 
-## 2. VALUE — Yes
-Did my real task: tagged `acme.com/launch` (Twitter/Social/Spring Launch 2026). Auto-fix lowercased Twitter→twitter, Social→social, spaced the campaign→spring_launch_2026 with an "Auto-fixed 3 cells — Undo" toast and a green fixed-cell highlight. Per-row **"Copy URL"** copied exactly `https://acme.com/launch?utm_source=twitter&utm_medium=social&utm_campaign=spring_launch` — clean, just that row. That's the casing/format failure my Google Sheet CONCATENATE doesn't catch. Grid + Export CSV beats hand-editing query params and the old one-link-at-a-time Campaign URL Builder, easily.
+## What annoyed / craft nits (I notice CSS instantly)
+- **The ACTIONS column is clipped at 1280px.** The third per-row icon button's border runs off
+  the right edge of the table — visibly cut. Small, but first thing my eye caught; reads as
+  unfinished on the flagship desktop width.
+- Grid input cells are narrow and truncate values ("https://acme.co", "product_la", "hero_twee").
+  Functional, but with this much horizontal room at 1280 it feels cramped — want wider URL/
+  campaign columns.
+- Move dialog footer: "Coming soon: optional accounts sync your setup automatically." Honest, but
+  quietly admits today's cross-device story is a manual copy-paste chore — fine as a backup,
+  mild as true multi-device.
 
-## 3. ADVOCACY — 9
-Up from 8 — I'd drop this in team Slack unprompted for launch week. Craft is genuinely clean: consistent spacing, no jank, crisp dropdowns, green fixed-cell feedback, the workspace panel sits below the grid without shoving layout. The live team workspace (synced, review status Approved/Needs-changes, history) is real collaboration, not a gimmick.
-
-The one thing keeping it off 10: the toolbar still puts **three share verbs side by side** — "Copy share link" (a frozen `/#g=...` snapshot), "Create workspace" (a live server-synced `/w/<id>`), and "Copy all URLs". On first load I genuinely had to stop and reason about which one gives a teammate the *live* editable thing vs a snapshot. Group them under one "Share ▾" or label them by what they produce, and this is a 10.
-
-```json
-{"tester": 2, "round": 2, "clarity": "Yes", "value": "Yes", "advocacy": 9, "topComplaints": ["Three share verbs side by side ('Copy share link' snapshot vs 'Create workspace' live vs 'Copy all URLs') force me to reason about which shares the live state", "Three cards under the grid (Naming Template / Campaigns / Allowed values) plus loud blue 'Create workspace' compete slightly with the grid that's meant to be the only hero"], "priorConcernsAddressed": "all"}
-```
+## Single thing most holding back the score
+The clipped ACTIONS column at desktop width. One-line overflow fix, but as a frontend engineer
+it's the polish gap that stops me dropping the link in team Slack with "this is clean" — a
+designer's first reaction will be "that button's cut off." Fix that + the cramped columns and
+this is a 9 I'd share unprompted.

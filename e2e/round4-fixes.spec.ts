@@ -15,7 +15,7 @@
  *            adjacent cell concurrently)
  *
  * E2-1  TOOLBAR PRIMARY EMPHASIS: "Add row" has the visually-emphasized blue style;
- *        "Auto-fix naming" has a promoted amber-border style.
+ *        "Auto-fix naming" has a muted ghost style (P3-B de-weighted from amber).
  *        Import, Audit, Export, QR codes, Copy all are still present and clickable.
  *
  * E3-1  FOOTER COPY UPDATED: the stale "source cells are left as typed" line is
@@ -264,7 +264,7 @@ test("E2-1a: 'Add row' has blue/primary styling (bg-blue-600)", async ({
   expect(classList).toMatch(/bg-blue/);
 });
 
-test("E2-1b: 'Auto-fix naming' is present with promoted styling (amber border)", async ({
+test("E2-1b: 'Auto-fix naming' is present as a muted ghost control (P3-B de-weighted)", async ({
   page,
 }) => {
   await page.goto("/");
@@ -273,9 +273,10 @@ test("E2-1b: 'Auto-fix naming' is present with promoted styling (amber border)",
   const autoFixBtn = page.locator('[data-testid="auto-fix-naming-btn"]');
   await expect(autoFixBtn).toBeVisible({ timeout: 5_000 });
 
-  // Amber border promotion — check for amber class
+  // P3-B: Auto-fix de-weighted to ghost/muted (border-gray) so + Add row is the sole accent.
+  // No longer amber — it now uses gray border + muted text.
   const classList = await autoFixBtn.getAttribute("class") ?? "";
-  expect(classList).toMatch(/amber/);
+  expect(classList).toMatch(/border-gray/);
 });
 
 test("E2-1c: all demoted controls still present — Import, Audit, Export, QR, Copy all", async ({
@@ -286,13 +287,13 @@ test("E2-1c: all demoted controls still present — Import, Audit, Export, QR, C
 
   // Import CSV
   await expect(page.getByRole("button", { name: /import csv/i }).first()).toBeVisible({ timeout: 5_000 });
-  // Paste & Audit
-  await expect(page.getByRole("button", { name: /paste.*audit|audit/i }).first()).toBeVisible();
   // Export CSV
   await expect(page.getByRole("button", { name: /export csv/i }).first()).toBeVisible();
-  // Download QR codes — now inside Tools ▾ dropdown; open it to verify button is present
+  // Paste & Audit — P2-A: now inside Tools ▾ menu (IMPORT & MOVE section); open Tools first
   const toolsMenuBtn = page.locator('[data-testid="tools-menu-btn"]');
   await toolsMenuBtn.click();
+  await expect(page.locator('[data-testid="audit-urls-btn"]').first()).toBeVisible({ timeout: 5_000 });
+  // Download QR codes — also inside Tools ▾ dropdown
   await expect(page.locator('[data-testid="download-qr-codes-btn"]').first()).toBeVisible({ timeout: 5_000 });
   await toolsMenuBtn.click(); // close dropdown
   // Copy all URLs — now inside the Share ▾ menu (R2-D consolidation); open it first

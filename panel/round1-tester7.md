@@ -1,24 +1,33 @@
-{"name":"Aisha","clarity":"Yes","value":"Yes","advocacy":8,"top_fix":"Tighten the hero — the single run-on sentence wrapping to two lines reads like a promoted tooltip; lead with a 4-5 word headline and demote the GA jargon to the subhead."}
+```json
+{"name":"Aisha","clarity":"Yes","value":"No","advocacy":"8","prior_concerns_addressed":"some"}
+```
 
-# Round 1 (re-test) — Tester 7 (Aisha, Product designer)
+# Tester 7 — Aisha (Product designer) — re-test
 
-I judge craft, not utility — and this grid-first redesign genuinely landed. I re-checked my three prior complaints first.
+I judge craft. I re-checked my two prior complaints first, then re-answered fresh and exercised the new "Move to another device" feature hard.
 
 ## Prior concerns — re-checked
-- **Raw machine-ID workspace label / no rename** → FIXED. The header now reads "Team Workspace — synced" with a "+" that opens an inline rename field with the placeholder "e.g. Q3 Paid Campaigns" — exactly the human name + considered onboarding tone I asked for. The "My Workspaces (1)" index lists it as **"launch"** (friendly, derived from the campaign), not "Workspace dJHSGA5W". The Search box is now useful because items are readable.
-- **Over-stuffed landing, grid below the fold** → FIXED. The two full-width banners (PRE-LAUNCH QA / LIVE TEAM WORKSPACE) are gone. I land directly on a working grid at the top.
-- **Three competing share concepts** → MOSTLY FIXED. Inside a workspace it's now one tidy "Share ▾" button with one access-control line ("anyone with this secret link can view and edit"). The home toolbar still carries "Copy share link" + "Create workspace" separately, but that's a legible snapshot-vs-synced split, not the old three-way pile-up.
+- **Hero H1 was a run-on explainer** → PARTIALLY. The headline is now a tight "Clean campaign links in a grid" (good). But the *subhead* underneath is still one long run-on — "Auto-fix the casing and spacing that splits a campaign into two in your analytics, and export a clean CSV that drops straight into your sheet." It reads like a promoted tooltip. The jargon just moved down a line; it didn't get shorter.
+- **Home side-cards duplicate Tools/Rules entry points** → NOT ADDRESSED. Naming Template / Campaigns / Allowed values cards still reach the same dialogs as Tools ▾ / Rules ▾. Two doors to the same room remains.
+
+## New feature — "Move to another device" (the part I was asked to judge)
+This is the considered part. Empty state (opened with NOTHING saved) is graceful: Download/Copy greyed out, "Nothing saved yet — create a campaign, preset, or workspace first, then come back to move it." Two-column EXPORT/IMPORT split is balanced. Copy tone is honest and on-brand: "your own local data — nothing is uploaded… this bundle just carries the secret links back" and "We merge into what's already here — we never overwrite your saved campaigns." The "Coming soon: optional accounts sync… this manual move is free and always will be" footnote sets roadmap expectations like someone who thought about it.
+Error state nailed it: junk code → red "That doesn't look like a UTM Grid setup code. Your saved data is unchanged." That second sentence is the safety net I look for. Merge summary is clear — blue "What will be merged: 0 added · 0 updated · 1 skipped / Campaigns: 1 skipped" + Confirm/Cancel — and it correctly SKIPPED my identical re-import instead of duping. That dedupe restraint is real craft.
+
+## Craft nits in the new feature
+- **Copy code has no text confirmation.** After click the label stays "Copy code" — only a faint blue tint, no "Copied ✓". For a copy action that's too quiet; I wasn't sure it fired. (Clipboard read was blocked in my test env — copy verified visually, clipboard read blocked in test env — so I treat the copy itself as working.)
+- Export summary just says "1 campaign" — I'd want a one-line manifest (campaigns / presets / workspaces / allowed-values) so I know exactly what I'm carrying.
+- The panel is a touch wordy — long paragraphs around what is ultimately two buttons + a textarea.
 
 ## 1. Clarity — Yes
-In ~10s: "a spreadsheet for campaign tracking links — type source/medium/campaign, it lints them, exports a clean URL." Headers (UTM_SOURCE*, GENERATED URL) + subhead carried it. The * required markers help. Only friction: the H1 is a run-on explainer wrapping two lines — tone of a tooltip, not a headline.
+Pitch in one breath: bulk UTM builder that lints as you type and exports a clean CSV. Headers (UTM_SOURCE*, GENERATED URL) and the required * markers carry it. Only the run-on subhead reads off.
 
-## 2. Value — Yes
-Not my daily tool (I make a few UTMs a year), but the craft is good enough that I'd forward it to growth without wincing. Lint sold me: typing "Google Ads / CPC / Summer Sale 2026" surfaced count badges ("2 warnings  Fix") + amber "utm_campaign is required" + disabled the QR action while the URL was invalid. Auto-fix → google_ads / cpc / summer_sale_2026, tinted fixed cells green, dropped a "Auto-fixed 3 cells — Undo" toast AND a toolbar Undo. Reversible, clearly communicated = made with taste.
+## 2. Value — No (for me)
+I'm a designer; I build a few UTMs a year and have no "today" tool for this — a teammate shared it. So it doesn't save ME time. My growth teammates would get real value, and the cross-device move is a thoughtful answer to "set up on my laptop, now I'm on the studio iMac." Judged against MY workflow, though: No.
 
 ## 3. Advocacy — 8/10
-Up from 6 last round. Toolbar consolidation (Tools ▾ with teal-tinted second-tier items, Rules ▾ with a separator before the advanced "Enforce" options + "Define structure →") feels intentional, not cramped; nothing felt awkwardly buried. Empty states are honest and warm ("No saved campaigns yet — build a grid, then 'Save as campaign' to reuse it next week"). REVIEW STATUS bar (approved / need changes / unreviewed) is restrained.
-What holds it from 9–10: the hero copy is the one unconsidered detail against an otherwise tidy UI. Fix the headline and I'd bring it up unprompted. Minor: the three muted home side-cards reach the same dialogs as Tools/Rules — a flicker of "two doors to the same room."
+The new feature is the best-crafted thing in the app — empty/error/merge states are all considered. Held from 9 by: (1) the silent "Copy code" confirmation breaks the considered illusion in the exact feature I was judging — make it an explicit "Copied ✓"; (2) my two prior nits (run-on subhead, duplicated side-cards) are still only partly resolved; (3) it's not a tool I personally use weekly.
 
 ```json
-{"tester": 7, "round": 1, "clarity": "Yes", "value": "Yes", "advocacy": 8, "topComplaints": ["Hero H1 is a run-on explainer sentence wrapping two lines — reads like a promoted tooltip; lead with 4-5 words, demote GA jargon to the subhead", "Home side-cards (Naming Template/Campaigns/Allowed values) duplicate entry points already in Tools/Rules — two doors to the same room"], "priorConcernsAddressed": "all"}
+{"tester": 7, "round": 1, "clarity": "Yes", "value": "No", "advocacy": 8, "topComplaints": ["'Copy code' gives no text confirmation — label stays 'Copy code', only a faint blue tint; expected 'Copied ✓' in the very feature I was asked to judge", "Hero subhead is still a run-on explainer reading like a promoted tooltip; and home side-cards still duplicate Tools/Rules entry points"], "priorConcernsAddressed": "some"}
 ```

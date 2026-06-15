@@ -18,6 +18,15 @@ const PREVIEW = process.env.BASE_URL ?? "http://localhost:3811";
 const cell = (page: Page, field: string, rowNum: number) =>
   page.getByLabel(`${field} row ${rowNum}`, { exact: true }).first();
 
+/** P2-A: Audit URLs is now in the Tools ▾ menu. Open Tools then click Audit URLs. */
+async function openAuditViaToolsMenu(page: Page) {
+  const toolsBtn = page.getByTestId("tools-menu-btn").first();
+  await expect(toolsBtn).toBeVisible({ timeout: 8000 });
+  await toolsBtn.click();
+  await page.getByTestId("audit-urls-btn").click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+}
+
 // ── FIX 1: UTM param column visibility at 1280px with panel open ─────────────
 
 test("FIX1 @ 1280px with UTM Spec panel open: utm_source/medium/campaign columns visible without page scroll", async ({
@@ -114,9 +123,8 @@ test("FIX1 @ 1280px after Audit: utm_source/medium/campaign columns visible with
   await page.goto(PREVIEW);
   await page.waitForLoadState("networkidle");
 
-  // Open audit dialog and paste two URLs that produce case + cross-row warnings.
-  await page.getByTestId("audit-urls-btn").click();
-  await expect(page.getByRole("dialog")).toBeVisible();
+  // Open audit dialog via Tools ▾ menu (P2-A) and paste two URLs that produce case + cross-row warnings.
+  await openAuditViaToolsMenu(page);
   await page.getByTestId("audit-textarea").fill(
     "https://example.com/sale?utm_source=Newsletter&utm_medium=email&utm_campaign=spring_sale\nhttps://example.com/buy?utm_source=newsletter&utm_medium=Email&utm_campaign=Spring-Sale"
   );
@@ -239,8 +247,7 @@ test("FIX2: Replace with non-empty grid fires window.confirm; cancel leaves grid
     await dialog.dismiss();
   });
 
-  await page.getByTestId("audit-urls-btn").click();
-  await expect(page.getByRole("dialog")).toBeVisible();
+  await openAuditViaToolsMenu(page);
   await page.getByTestId("audit-textarea").fill("https://audited.com/new?utm_source=newsletter");
   await page.getByRole("radio", { name: "Replace" }).click();
   await page.getByTestId("audit-submit-btn").click();
@@ -288,8 +295,7 @@ test("FIX2: Replace with non-empty grid — confirm proceeds and replaces grid",
     await dialog.accept();
   });
 
-  await page.getByTestId("audit-urls-btn").click();
-  await expect(page.getByRole("dialog")).toBeVisible();
+  await openAuditViaToolsMenu(page);
   await page.getByTestId("audit-textarea").fill("https://audited.com/new?utm_source=newsletter&utm_medium=email&utm_campaign=spring");
   await page.getByRole("radio", { name: "Replace" }).click();
   await page.getByTestId("audit-submit-btn").click();
@@ -327,9 +333,8 @@ test("FIX2: Append mode does NOT trigger window.confirm guard", async ({
     await dialog.dismiss(); // safety: dismiss any unexpected confirm
   });
 
-  // Open audit dialog — Append mode (default), submit.
-  await page.getByTestId("audit-urls-btn").click();
-  await expect(page.getByRole("dialog")).toBeVisible();
+  // Open audit dialog via Tools ▾ menu — Append mode (default), submit.
+  await openAuditViaToolsMenu(page);
   await page.getByTestId("audit-textarea").fill("https://audited.com/new?utm_source=newsletter");
   // Append is the default mode — do NOT click Replace.
   await page.getByTestId("audit-submit-btn").click();
@@ -371,8 +376,7 @@ test("FIX2: Empty working grid + Replace does NOT trigger confirm (only non-empt
     await dialog.dismiss();
   });
 
-  await page.getByTestId("audit-urls-btn").click();
-  await expect(page.getByRole("dialog")).toBeVisible();
+  await openAuditViaToolsMenu(page);
   await page.getByTestId("audit-textarea").fill("https://audited.com/new?utm_source=newsletter");
   await page.getByRole("radio", { name: "Replace" }).click();
   await page.getByTestId("audit-submit-btn").click();

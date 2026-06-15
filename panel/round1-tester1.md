@@ -1,19 +1,51 @@
-```json
-{"name":"Priya","clarity":"Yes","value":"Yes","advocacy":8,"top_fix":"Make the inline per-cell 'Fix' link reliably normalize the exact cell it points at — my uppercase source survived inline Fix and only the global Auto-fix cleaned it; a flaky one-click fix undercuts the 'no stray capital' headline promise. Also let me see the full GENERATED URL (it's truncated with no expand/hover)."}
-```
+{"name":"Priya","clarity":"Yes","value":"Yes","advocacy":7,"prior_concerns_addressed":"n/a for round 1"}
 
-## Priya — Senior backend engineer, keyboard-first, hates signups
+# Priya — Senior backend engineer, keyboard-first, network-tab skeptic
 
-**Prior-round complaints, re-checked on this build:**
-- Auto-fix left punctuation ("Launch Day!" -> "launch_day!") — **FIXED.** Now "Launch Day!" -> "launch_day", the "!" is stripped. Good.
-- My Workspaces panel rendered twice in the DOM — **no longer visible:** the panel is hidden on an empty grid (0 references on landing), so the duplicate-render smell isn't in my face anymore.
-- Crowded toolbar on an empty grid — **partially:** still a full toolbar (Add row / Auto-fix / Import-Export CSV / Audit URLs / Tools / Copy share link / Copy all URLs / Create workspace / Rules) before I've typed a row, but it's now a single tidy row above the grid, not 6 stacked banners, so I'll let it go.
+## What I did
+Cold-opened on desktop. Built 2 tagged links in the grid (HN referral + a deliberately
+sloppy "Twitter / launch 2026" row to test the linter). Saved a campaign "Launch HN".
+Opened Tools ▾ → Move to another device, hit Copy code, decoded the base64 myself, then
+imported it into a fresh (clean-storage) browser context. Watched the network tab throughout.
 
-### 1. CLARITY — Yes
-Grid-first redesign lands. Two-line headline + grid above the fold, no scrolling to find the point. I'd tell a teammate: "spreadsheet-style grid that builds clean UTM links in bulk, flags messy values, exports CSV, all client-side, no login." Subline "auto-fix naming, export clean CSV — no login, nothing leaves your browser" sold both the job and the privacy story — that line is why I didn't open the network tab. The required-asterisk columns (SOURCE*/MEDIUM*/CAMPAIGN*) make the contract obvious.
+## What worked
+- Clarity is immediate: H1 "Clean campaign links in a grid" + "Auto-fix the casing and
+  spacing that splits a campaign into two in your analytics" + "No login — nothing leaves
+  your browser." Knew what it is and who it's for in well under 30s.
+- The linter IS the value, not the grid. It caught uppercase "Twitter", the space in
+  "launch 2026", AND flagged "Inconsistent utm_campaign across rows ... these will split
+  campaign data in GA4." That cross-row check is a mistake I'd make hand-editing query
+  strings in neovim and not catch until GA4 was already polluted. That's where it beat my
+  "just edit the querystring" habit.
+- Move to another device: clean. Export code is base64 of plain, human-readable JSON of
+  ONLY my own data — no device IDs, no telemetry, no remote URLs. Import shows a real diff
+  BEFORE applying: "1 added · 0 updated · 0 skipped — Campaigns: 1 added 'Launch HN'", with
+  explicit "we never overwrite your saved campaigns." Confirm import in the fresh context
+  regenerated the exact URL and opened the campaign correctly. A non-destructive merge with
+  a preview is exactly the trust contract I want from a sync feature.
+- Network tab: across edit, save, export AND import, the ONLY offsite request was
+  vercel.live/feedback.js (Vercel's own widget). Zero analytics, zero data POSTs. The
+  "nothing is uploaded" claim is verifiably true. I trust it.
 
-### 2. VALUE — Yes
-Today I hand-edit query strings in neovim or dump into a teammate's spreadsheet. This is faster for a launch post: live validation caught my mistakes inline ("Contains uppercase letters — use lowercase only", "Not a valid http(s) URL (include https://)", "utm_campaign is required"), Auto-fix normalized the row and showed an "Auto-fixed 2 cells — Undo" toast, and Copy share link returned a full state-encoded URL (clipboard verified). The Tools menu is genuinely deep without cluttering the page — Channel Presets, Bulk edit, UTM Spec/allowed values, Naming Template, Campaigns library, QR codes, Run Launch Check. A spreadsheet doesn't catch capitalization; this does.
+## What annoyed / confused me
+- It's doing a LOT. Tools ▾ alone holds Channel Presets, Bulk edit, UTM Spec, Naming
+  Template, Campaigns library, QR, Launch Check, Move-to-device. For my actual job — tag a
+  launch post's 3 links and copy them — most of that is noise I scroll past.
+- "Campaign Naming Template ... Different from Allowed Values": the copy tells me they're
+  different but not which one I need. Two overlapping config concepts with no clear "use
+  this when" guidance.
+- The GENERATED URL column truncates ("https://acme.com/spring-sale…") with no obvious
+  expand/hover — as the person who cares about the exact query string, I want to eyeball
+  the whole thing without clicking Copy and pasting elsewhere.
+- Minor: vercel.live feedback.js loading made me look twice before confirming it's the
+  platform, not the app phoning home. Not the app's fault, but it costs a beat of trust for
+  exactly the skeptical persona this feature courts.
 
-### 3. ADVOCACY — 8
-I'd recommend it to the marketer on my team, and to a dev on the no-login/client-side pitch. Held at 8, not 9–10, by two things: (a) the **inline per-cell "Fix" link wasn't trustworthy** — my uppercase "Google"/"Twitter" source survived clicking the inline Fix, and only the global Auto-fix button cleaned it. For a tool whose headline is "a stray capital never splits your data," the most local fix affordance must work 100% of the time or I stop trusting all of them. (b) **GENERATED URL is truncated** ("...ut…") with no hover/expand to read the full string before I copy — a keyboard person wants to eyeball exactly what they're shipping.
+## Single thing most holding back advocacy (7, not higher)
+Surface area vs. my actual frequency. This is polished and the export/import is genuinely
+well-built and trustworthy — but my recommend bar is "would I send this unprompted instead
+of telling a teammate to just edit the querystring." For a once-in-a-while UTM job the tool
+is bigger than the problem. I'd send it to a *marketer* who lives in campaigns at 9; for a
+backend peer doing an occasional launch post it's a 7 — great, but I'd qualify it as
+"overkill unless you tag links weekly." Tighten the cold path to "paste base URL → fill 3
+fields → copy clean link" and bury the power-tools, and this is an 8–9.
