@@ -1,14 +1,45 @@
+{"name":"Dana","clarity":"Yes","value":"Yes","advocacy":10,"top_fix":"Still the same nice-to-have: a surfaced one-tap 'Copy all rows' on mobile so a 30-link batch isn't card-by-card Copy URL taps","priorConcernsAddressed":"all"}
+
+# Dana — Demand-gen marketer (round 3: mobile-card preview-position re-check)
+
+## What I re-checked first (the small change) — NO REGRESSION
+The change: generated-URL preview moved higher in each mobile card, after utm_campaign and
+above the optional utm_term/utm_content. Re-tested LIVE cold on a real 375x812 phone, driving
+it myself. The card order is now exactly: Base URL -> utm_source -> utm_medium -> utm_campaign
+-> **GENERATED URL (green pill) + Copy URL button** -> THEN utm_term/utm_content. Right call: I
+fill the three required fields, immediately see a finished link + Copy without scrolling past
+the optional stuff I rarely touch. Reads like a payoff, not a detour.
+
+Regression sweep — all clean:
+- Horizontal scroll: bodyScrollWidth 375 == viewport 375. No overflow.
+- Cramming: spacing still roomy; even with a messy field showing "2 warnings · Fix this value"
+  the card doesn't get cramped.
+- Example row still grid-first on phone (editable Base URL y358, all 3 required inputs above
+  the 812 fold) AND desktop (editable input y214). Confirmed both.
+- Auto-fix: typed "Paid Social" into utm_medium on the phone, inline warning fired, one tap of
+  global Auto-fix -> "paid_social". Works.
+- Copy URL: tapped on the phone, label flipped to "Copied!", clipboard held the real URL
+  (...?utm_source=newsletter&utm_medium=paid_soc...). Verified end-to-end.
+- 0 console errors across phone + desktop.
+
+## 1. CLARITY — Yes
+"Clean campaign links in a grid. Auto-fix the casing/spacing that splits one campaign into two
+in GA, export a clean CSV into your sheet." The split-in-two subhead is still my exact pain.
+Landed in one read on the phone.
+
+## 2. VALUE — Yes
+Today: a Sheet CONCATENATE + eyeballing 30 links for "Paid Social"-type typos (~15 min, errors
+still ship). This catches and one-tap-fixes them on the phone I grab between meetings, and the
+preview-now-above-the-optional-fields tweak shaves a scroll off every row — across 30 links
+that adds up. Net faster than my sheet.
+
+## 3. ADVOCACY — 10
+A genuine micro-improvement with zero downside; my round-2 mobile grid-first fix still holds.
+The only thing between this and a flawless batch flow is the same nice-to-have: a surfaced
+"Copy all rows" on mobile so tagging 30 links isn't 30 individual Copy taps. Not a blocker,
+doesn't hold the score — I'd still screenshot the "messy link cleaned in one tap on my phone"
+moment to the team channel unprompted.
+
 ```json
-{"name":"Dana","clarity":"Yes","value":"Yes","advocacy":9,"priorConcernsAddressed":"all","top_issues":["'Create shared workspace' makes a SERVER-SYNCED team page (different feature) — there's no longer an obvious localStorage 'My Workspaces' panel, so I couldn't exercise the compact return-visit panel in one pass; the chip top-left just says 'Unsaved grid'.","Banner stack is still five collapsed rows (Launch Check, Create Shared Workspace, Presets, Bulk Edit, Campaigns) between the toolbar and the grid — collapsed is the right call, but five labels is still vertical noise above the table."],"loved":["My exact ask shipped: cold open is hero -> toolbar -> collapsed banners -> editable grid, and the BASE URL row sits at 643px — fully inside my 800px screen. No My Workspaces card buried between me and the table anymore.","Banners now collapse to one-line accordions by default; the grid is the FIRST interactive thing I reach, not the last.","X/Twitter, Mastodon, LinkedIn, Google CPC presets + Auto-fix naming still match my weekly channels and kill the HubSpot casing-drift grind."]}
+{"tester":5,"round":3,"clarity":"Yes","value":"Yes","advocacy":10,"topComplaints":["Mobile still lacks a surfaced 'Copy all rows' — batch-copying 30 links means tapping each card's Copy URL (nice-to-have, not blocking)"],"priorConcernsAddressed":"all"}
 ```
-Re-test of my two round-2 blockers, point by point:
-
-1) "Editable grid buried at 816px under five stacked cards + an empty My Workspaces card" — FIXED. On a cold 1280x800 load the My Workspaces panel is gone entirely (verified: "My Workspaces" absent from DOM), the four secondary banners are collapsed to single accordion rows, and the BASE URL input now sits at 643px — visible above the fold without scrolling. Exactly the hero -> grid -> banners trade I asked for.
-
-2) "Only float My Workspaces above the grid once it has entries" — honored: nothing pushes the grid down on an empty visit. I couldn't directly confirm the compact-panel-with-entries behavior because the save flow I found ('Create shared workspace') spins up a server-synced Team Workspace, not a local saved-grid list. Clarity nit, not a regression — it doesn't bury the grid.
-
-Clarity: Yes. "Clean UTM links for your whole campaign — in one grid" + "Auto-fix messy casing and typos before they split your Google Analytics" still nails what + who in 2 seconds.
-
-Value: Yes, unchanged. Auto-fix + Export CSV + Copy all URLs + my channel presets still beat my HubSpot+spreadsheet grind.
-
-Advocacy: 9, back up from 8. The one concrete thing I dinged you for went the right way — the grid I came to use is now the first thing I touch. Held back from 10 only by the five-banner stack still sitting above the table and the muddy "Create shared workspace" vs saved-grid distinction. Fix those and it's a 10.

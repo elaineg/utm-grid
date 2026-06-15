@@ -1,12 +1,19 @@
 ```json
-{"name":"Elena","clarity":"Yes","value":"No","advocacy":8,"priorConcernsAddressed":"all","top_issues":["Two share concepts are now LABELED clearly but still live as two separate buttons in two separate places — 'Copy share link' (frozen) up in the toolbar, 'Create Shared Workspace' (live) as its own collapsed bar below. Better, but I'd still pause to pick which one to hand a report.","Presets and Bulk Edit are collapsed now too — good — but the toolbar itself still carries ~9 controls (Add row, Auto-fix, Import, Paste & Audit, Export, QR, Copy share, Copy all URLs, Naming Rules). It reads as a control strip, not 'fill this grid first.' No single highlighted PRIMARY CTA."],"loved":["The wall is GONE: Launch Check, Create Shared Workspace, Presets, Bulk Edit are all one-line collapsed accordions now, so the editable grid + its headers sit in the first screenful. I can see UTM_SOURCE/MEDIUM/CAMPAIGN cells without scrolling.","Share duplication is disambiguated inline: 'frozen snapshot — no server' vs 'live, synced via secret link' — I finally understand the difference in one read.","Empty My Workspaces adds no banner — cold load is noticeably calmer than round 2."]}
+{"name":"Elena","clarity":"Yes","value":"Yes","advocacy":9,"top_fix":"The green generated-URL box truncates mid-string ('...utm_sourc…') — I can see THAT a link was produced but can't actually eyeball the casing/spacing fix the headline promises without copying it out; show the fixed tail (or highlight what changed) on tap.","priorConcernsAddressed":"all"}
 ```
 
-Re-test, laptop @1280px, 30-sec cold open. Re-checked my round-2 blockers.
+Re-test as Elena — eng manager, 30-sec phone skim between meetings, 375px (where I actually use this). Verified live on the phone viewport (375×812).
 
-1. Clarity — Yes. Headline + visible grid tell me what it does in 5s, same as before.
-2. Value — still No for standardizing across my 8 reports, but it's close now. The find-again loop, naming, and the calmer first screen are genuinely good; what keeps it from beating my shared Sheet is no single highlighted primary action and two share paths I still have to choose between.
+### My round-2 blocker — re-checked first
+**"Green generated URL sits one flick below the fold, behind two empty UTM_TERM/CONTENT fields."** RESOLVED. In the seeded example card the order is now BASE URL → SOURCE → MEDIUM → CAMPAIGN → **GENERATED URL (green box) + Copy URL button** → then optional UTM_TERM (which only just peeks in at the very bottom of the first screen). On cold open, no typing, the clean green tagged link for acme.com/spring-sale is in the first screenful — measured at ~674px in an 812px viewport, in-fold. The "messy in → clean link out" payoff is the thing I see, not something I scroll to find.
 
-Prior concerns ADDRESSED: dense landing wall FIXED (secondary panels collapsed, grid is now near the top), share duplication FIXED via descriptor labels (frozen vs live), empty-My-Workspaces banner FIXED (gone). All four of my standing complaints are resolved.
+### 1. CLARITY — Yes
+Unchanged, still good. "Clean campaign links in a grid" + the working example row = I get it in ~8s: a no-login spreadsheet that builds and auto-fixes consistent UTM tracking links. The seeded row does the explaining for me.
 
-Advocacy 8/10 (up from 6). The collapse + share-label work directly cleared what I flagged, and the first screen finally points a skimmer at the grid. To hit 9: pick ONE primary CTA visually (or merge the two share buttons into one "Share ▾" with frozen/live options) so a report never has to pause to choose.
+### 2. VALUE — Yes
+Today I'd use a shared Google Sheet + CONCATENATE. This beats it on inline casing/typo validation (so a stray capital doesn't fork a campaign in GA), a no-login live link my reports can edit, and a clean CSV export back into the sheet. I'd tell the report "yes, pilot it."
+
+### 3. ADVOCACY — 9/10
+Up from 8. The one thing keeping me at 8 last round — payoff hiding below the fold — is fixed, and fixed correctly: the green result is now the hero of the first screenful. That earns the 9; I'd raise this unprompted to the report who asked.
+
+Not a 10 only because the green box truncates the URL ("...utm_sourc…"), so I see THAT a link was produced but can't actually verify the casing/spacing got cleaned — which is the literal promise in the headline. Letting me see the fixed tail (or highlighting what changed) on tap would close the last gap.

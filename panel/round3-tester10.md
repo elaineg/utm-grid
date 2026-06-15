@@ -1,12 +1,25 @@
 ```json
-{"name":"Sam","clarity":"Yes","value":"Yes","advocacy":10,"priorConcernsAddressed":"all","top_issues":["Nothing blocking. Minor: 'Auto-fix naming' is off by default, so my messy 'NewsletterCASE' passes through untouched until I notice the inline 'Fix' chip — a PM in a hurry could ship the un-fixed link. Defaulting auto-fix ON, or a one-tap 'Fix all' at the top, would close it."],"loved":["The two share paths are now unmistakable: toolbar 'Copy share link' carries the sublabel 'frozen snapshot — no server', and the separate CREATE SHARED WORKSPACE panel says in plain words 'live, synced via secret link... Different from Copy share link, which sends a frozen snapshot'. Zero beats lost.","Secondary panels (Launch Check, Create Shared Workspace, Presets, Campaigns, Allowed values, Bulk Edit) all collapsed by default — the cold mobile screen is headline + grid, not a wall of features.","Inline lint flags messy fields ('Contains uppercase letters — use lowercase only (newslettercase). Fix') with a '2 warnings · Fix' chip — catches the exact thing that splits my GA reports.","Mobile card layout clean at 375px, 44px tap targets, no horizontal overflow, 0 console errors."]}
+{"name":"Sam","clarity":"Yes","value":"Yes","advocacy":10,"top_fix":"Nothing blocking — a one-tap 'copy/share ALL rows' on mobile, as prominent as the per-row Copy, would make the BATCH story (the reason I open this) feel first-class. Export CSV already covers it, so it's polish.","priorConcernsAddressed":"all"}
 ```
 
-## Re-checking my ONE round-2 nit (mobile, 375px)
-- "'Copy share link' vs 'Create shared workspace' cost one beat to disambiguate" — FIXED, more thoroughly than I'd have asked. The snapshot action reads 'Copy share link' / 'frozen snapshot — no server'; the live one is its own collapsed panel 'CREATE SHARED WORKSPACE — live, synced via secret link' that, when opened, explicitly contrasts itself with the snapshot. The labels now decide for me; no thinking required.
-- Sentinel: collapsed landing did NOT break my flow. Cold open = headline + grid; everything else folds away and opens on tap. My Workspaces is a single instance. Build flow (base URL + source/medium/campaign) worked first try in the card layout, campaign URL-encoded correctly.
+# Sam — PM, mobile-heavy between meetings (round 3)
 
-## Fresh take (Sam, PM, between meetings)
-CLARITY Yes — H1 + 'Share one link anyone can open and reuse — no login, nothing leaves your browser' tells me in 5 seconds it's a team UTM grid I can hand off.
-VALUE Yes — replaces my Google Sheet + Slack approval thread: live /w link for the team, named searchable workspaces, inline typo-catching Sheets never gave me.
-ADVOCACY 10 — the last friction (share disambiguation) is gone, collapsed panels make the mobile first impression calm instead of busy, and inline 'Fix' lint is the look-organized detail that makes me drop it in our launch channel unprompted. The auto-fix-default item is a polish idea, not a reason to hold back.
+## My one round-2 wish — RESOLVED
+Round-2 (advocacy 9): on a phone each row was a tall stack, so to sanity-check "is this URL clean?" I scrolled past ~6 inputs to reach the generated link. I asked for a compact one-line generated-URL preview pinned high in each mobile row, above the optional fields.
+
+Re-checked LIVE at 375px. The mobile card order is now exactly what I wanted:
+- BASE URL → UTM_SOURCE → UTM_MEDIUM → UTM_CAMPAIGN (y=594) → **GENERATED URL one-line preview (y=674) + Copy URL button (y=714)** → THEN optional UTM_TERM (y=793) / UTM_CONTENT (y=871).
+- The preview renders the full built link on one line (`https://acme.com/spring-sale?utm_source=newsletter&utm_medium=email&utm_campaign=spring_sale_2026`) right under the required fields, ABOVE the optional ones.
+- It's LIVE: I typed `Spring Launch` into source → Auto-fix → field became `spring_launch` AND the high preview instantly re-rendered to `...utm_source=spring_launch...`. So I now confirm the clean URL with one glance, no scrolling past optional fields. My wish is fully resolved.
+
+## 1. CLARITY — Yes
+Same crisp 30s read: "Clean campaign links in a grid" + "Auto-fix the casing and spacing that splits a campaign into two in your analytics, and export a clean CSV." Seeded example row makes it self-explanatory.
+
+## 2. VALUE — Yes
+Today: a shared Google Sheet with a CONCAT nobody maintains, where Email vs email splits GA. This round on mobile: Auto-fix normalized my dirty input, per-row Copy URL flipped "Copy URL" → "Copied!" with the full clean URL on the clipboard, 0 console errors. Drop-in for my team, zero debugging. Beats the sheet.
+
+## 3. ADVOCACY — 10
+The one thing that capped me at 9 is gone: the phone now feels as fast as desktop because I sanity-check the clean URL inline, right under the required fields. Recurring launch-coordination pain, makes me look organized, mobile cold-open sells the tool — I'd bring it up unprompted in my marketing channel.
+Not a complaint, just the next nicety: my real job is the BATCH (build several rows → share/export). Per-row copy is great; an equally-prominent one-tap "copy/share all rows" on mobile would make the batch feel first-class. Export CSV already covers it, so this is polish, not a gap.
+
+Verified at 375px: preview at y=674 above optional fields, Auto-fix `Spring Launch`→`spring_launch` with live preview update, Copy URL→"Copied!" with full URL on clipboard, 0 console errors.
