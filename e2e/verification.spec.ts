@@ -13,6 +13,12 @@ const cell = (page: Page, field: string, rowNum: number) =>
 test("base URL with existing query and fragment: params appended correctly", async ({
   page,
 }) => {
+  // R2-B seeds EXAMPLE_ROW on cold open; clear it so row 1 starts empty.
+  await page.addInitScript(() => {
+    localStorage.setItem("utm-grid:rows", JSON.stringify([
+      { id: "row-1", baseUrl: "", utm_source: "", utm_medium: "", utm_campaign: "", utm_term: "", utm_content: "" },
+    ]));
+  });
   await page.goto("/");
   await cell(page, "Base URL", 1).fill("https://example.com/p?ref=1#section");
   await cell(page, "utm_source", 1).fill("newsletter");
@@ -24,6 +30,12 @@ test("base URL with existing query and fragment: params appended correctly", asy
 test("special characters in UTM values are URL-encoded in generated URL", async ({
   page,
 }) => {
+  // R2-B seeds EXAMPLE_ROW on cold open; clear it so row 1 starts empty.
+  await page.addInitScript(() => {
+    localStorage.setItem("utm-grid:rows", JSON.stringify([
+      { id: "row-1", baseUrl: "", utm_source: "", utm_medium: "", utm_campaign: "", utm_term: "", utm_content: "" },
+    ]));
+  });
   await page.goto("/");
   await cell(page, "Base URL", 1).fill("https://example.com");
   await cell(page, "utm_campaign", 1).fill("50% off & more");
@@ -116,6 +128,12 @@ test("no network requests during editing, CSV import, and export", async ({
 test("export CSV has one data row per grid row with all columns populated", async ({
   page,
 }) => {
+  // R2-B seeds EXAMPLE_ROW on cold open; clear it so the grid starts with no rows.
+  await page.addInitScript(() => {
+    localStorage.setItem("utm-grid:rows", JSON.stringify([
+      { id: "row-1", baseUrl: "", utm_source: "", utm_medium: "", utm_campaign: "", utm_term: "", utm_content: "" },
+    ]));
+  });
   await page.goto("/");
   await cell(page, "Base URL", 1).fill("https://example.com/a");
   await cell(page, "utm_source", 1).fill("s1");
@@ -148,13 +166,21 @@ test("copy-all copies every generated URL to the clipboard", async ({
   await context.grantPermissions(["clipboard-read", "clipboard-write"], {
     origin: baseURL,
   });
+  // R2-B seeds EXAMPLE_ROW on cold open; clear it so the grid starts with no rows.
+  await page.addInitScript(() => {
+    localStorage.setItem("utm-grid:rows", JSON.stringify([
+      { id: "row-1", baseUrl: "", utm_source: "", utm_medium: "", utm_campaign: "", utm_term: "", utm_content: "" },
+    ]));
+  });
   await page.goto("/");
   await cell(page, "Base URL", 1).fill("https://example.com/a");
   await cell(page, "utm_source", 1).fill("s1");
   await page.getByRole("button", { name: "Add row" }).click();
   await cell(page, "Base URL", 2).fill("https://example.com/b");
 
-  await page.getByRole("button", { name: "Copy all URLs" }).click();
+  // R2-D: "Copy all URLs" is inside the Share ▾ dropdown — open it first.
+  await page.locator('[data-testid="share-menu-btn"]').click();
+  await page.locator('[data-testid="copy-all-urls"]').click();
   const clipboard = await page.evaluate(() => navigator.clipboard.readText());
   expect(clipboard).toBe(
     "https://example.com/a?utm_source=s1\nhttps://example.com/b"
@@ -168,6 +194,12 @@ test("row copy button copies that row's generated URL", async ({
 }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"], {
     origin: baseURL,
+  });
+  // R2-B seeds EXAMPLE_ROW on cold open; clear it so row 1 starts empty.
+  await page.addInitScript(() => {
+    localStorage.setItem("utm-grid:rows", JSON.stringify([
+      { id: "row-1", baseUrl: "", utm_source: "", utm_medium: "", utm_campaign: "", utm_term: "", utm_content: "" },
+    ]));
   });
   await page.goto("/");
   await cell(page, "Base URL", 1).fill("https://example.com/sale");

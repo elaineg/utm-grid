@@ -267,6 +267,8 @@ test("Link copied! cue survives a concurrent re-render triggered by editing", as
   await cell(page, "utm_medium", 1).fill("email");
   await cell(page, "utm_campaign", 1).fill("camp");
 
+  // R2-D: "Copy snapshot link" is inside the Share ▾ dropdown — open it first.
+  await openShareMenu(page);
   // Click the share button
   await shareBtn(page).click();
 
@@ -274,8 +276,9 @@ test("Link copied! cue survives a concurrent re-render triggered by editing", as
   // We type without awaiting the cue first, so the re-render races with the cue
   await cell(page, "utm_content", 1).fill("variant_a");
 
-  // Despite the re-render, the cue must still be visible (round-2 text: "Copied ✓")
-  await expect(shareBtn(page)).toContainText("Copied", { timeout: 2000 });
+  // R2-D: After clicking, the dropdown closes and the "Copied ✓" cue appears on the
+  // persistent Share ▾ trigger button, not on the menu item itself.
+  await expect(page.locator('[data-testid="share-menu-btn"]')).toContainText(/copied/i, { timeout: 2000 });
 });
 
 // ── Test 8: P2 lock — share hash wins over pre-seeded localStorage ────────────
@@ -372,11 +375,13 @@ test("Link copied! cue shows even when navigator.clipboard is blocked (execComma
   await cell(page, "Base URL", 1).fill("https://example.com");
   await cell(page, "utm_source", 1).fill("src");
 
+  // R2-D: "Copy snapshot link" is inside the Share ▾ dropdown — open it first.
+  await openShareMenu(page);
   // Click share — clipboard is blocked but the cue should still show
   await shareBtn(page).click();
 
-  // The button shows "Copied ✓" regardless of clipboard success (round-2 text; was "Link copied!")
-  await expect(shareBtn(page)).toContainText("Copied", { timeout: 2000 });
+  // R2-D: The "Copied ✓" cue appears on the persistent Share ▾ trigger (not the menu item).
+  await expect(page.locator('[data-testid="share-menu-btn"]')).toContainText(/copied/i, { timeout: 2000 });
 });
 
 // ── Test 10: P0-1 regression — share fragment wins even when localStorage is pre-populated ──

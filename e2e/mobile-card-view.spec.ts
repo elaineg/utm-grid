@@ -102,12 +102,13 @@ test("375px: every UTM field in the card renders a visible label above its input
   const page = await ctx.newPage();
   await gotoMobile(page);
 
-  // The card container's children:
-  //   [0] = select-all bar (flex items-center gap-2...)
-  //   [1] = first row card (rounded-lg border p-4...)
+  // R2-A removed the select-all bar from above the first card, so the card container's
+  // children are now just the row cards (no leading select-all bar div):
+  //   [0] = first row card (rounded-lg border p-4...)
+  //   [1] = second row card (if any)
   const cardList = page.locator(".sm\\:hidden.flex.flex-col.gap-3");
-  // First actual card row is at index 1
-  const firstCard = cardList.locator("> div").nth(1);
+  // First actual card row is now at index 0
+  const firstCard = cardList.locator("> div").nth(0);
   await expect(firstCard).toBeVisible();
 
   // Labels have text like "Base URL", "utm_source*" etc. — match by substring
@@ -116,6 +117,71 @@ test("375px: every UTM field in the card renders a visible label above its input
     const label = firstCard.locator("label").filter({ hasText: pattern });
     await expect(label.first()).toBeVisible();
   }
+
+  await ctx.close();
+});
+
+// ── Test 3b: R3-A card field ORDER — Generated URL appears before utm_term/utm_content ──
+
+test("375px R3-A: generated URL preview appears in card BEFORE utm_term and utm_content", async ({
+  browser,
+}) => {
+  const ctx = await browser.newContext();
+  const page = await ctx.newPage();
+  await gotoMobile(page);
+
+  // Fill enough fields so a generated URL is produced
+  await cardCell(page, "Base URL", 1).fill("https://example.com/sale");
+  await cardCell(page, "utm_source", 1).fill("newsletter");
+  await cardCell(page, "utm_medium", 1).fill("email");
+  await cardCell(page, "utm_campaign", 1).fill("spring_sale");
+
+  const cardList = page.locator(".sm\\:hidden.flex.flex-col.gap-3");
+  const firstCard = cardList.locator("> div").nth(0);
+
+  // The generated URL output element (role=status implied by <output>)
+  const generatedOutput = firstCard.locator(`output[aria-label="Generated URL row 1"]`);
+  await expect(generatedOutput).toBeVisible();
+
+  // utm_term and utm_content inputs
+  const termInput = firstCard.locator(`input[aria-label="utm_term row 1"]`);
+  const contentInput = firstCard.locator(`input[aria-label="utm_content row 1"]`);
+
+  // Assert DOM order: in the CARD view, generated URL output comes BEFORE utm_term input.
+  // Scope to the card container (.sm:hidden.flex.flex-col.gap-3) to avoid the desktop
+  // table's duplicate aria-labels (both views are mounted simultaneously via CSS breakpoints).
+  const generatedBeforeTerm = await page.evaluate(() => {
+    const cardContainer = document.querySelector(".sm\\:hidden.flex.flex-col.gap-3");
+    if (!cardContainer) return false;
+    const output = cardContainer.querySelector('output[aria-label="Generated URL row 1"]');
+    const termInput = cardContainer.querySelector('input[aria-label="utm_term row 1"]');
+    if (!output || !termInput) return false;
+    // Node.DOCUMENT_POSITION_FOLLOWING means termInput comes after output (output is before)
+    return !!(output.compareDocumentPosition(termInput) & Node.DOCUMENT_POSITION_FOLLOWING);
+  });
+  expect(generatedBeforeTerm, "Generated URL output should appear before utm_term input in DOM").toBe(true);
+
+  const generatedBeforeContent = await page.evaluate(() => {
+    const cardContainer = document.querySelector(".sm\\:hidden.flex.flex-col.gap-3");
+    if (!cardContainer) return false;
+    const output = cardContainer.querySelector('output[aria-label="Generated URL row 1"]');
+    const contentInput = cardContainer.querySelector('input[aria-label="utm_content row 1"]');
+    if (!output || !contentInput) return false;
+    return !!(output.compareDocumentPosition(contentInput) & Node.DOCUMENT_POSITION_FOLLOWING);
+  });
+  expect(generatedBeforeContent, "Generated URL output should appear before utm_content input in DOM").toBe(true);
+
+  // Both utm_term and utm_content inputs are still visible in the card
+  await expect(termInput).toBeVisible();
+  await expect(contentInput).toBeVisible();
+
+  // Generated URL shows the expected URL (green preview)
+  await expect(generatedOutput).toContainText("https://example.com/sale?utm_source=newsletter");
+
+  // No horizontal overflow at 375px
+  const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+  const clientWidth = await page.evaluate(() => document.documentElement.clientWidth);
+  expect(scrollWidth).toBeLessThanOrEqual(clientWidth + 2);
 
   await ctx.close();
 });
@@ -135,8 +201,9 @@ test("375px: per-row duplicate and delete buttons are ≥44px and clickable", as
 
   // The card view container
   const cardList = page.locator(".sm\\:hidden.flex.flex-col.gap-3");
-  // First card row is at index 1 (index 0 = select-all bar)
-  const firstCard = cardList.locator("> div").nth(1);
+  // R2-A removed the select-all bar from above the first card.
+  // First card row is now at index 0.
+  const firstCard = cardList.locator("> div").nth(0);
   await expect(firstCard).toBeVisible();
 
   // Duplicate button (aria-label="Duplicate row 1") in the card
@@ -161,8 +228,8 @@ test("375px: per-row duplicate and delete buttons are ≥44px and clickable", as
   await dupBtn.click();
   await expect(cardCell(page, "Base URL", 2)).toHaveValue("https://example.com/a");
 
-  // Delete button for row 2 — in second card (index 2 now because select-all bar + card1 + card2)
-  const secondCard = cardList.locator("> div").nth(2);
+  // Delete button for row 2 — in second card (index 1 now: card1 at 0, card2 at 1)
+  const secondCard = cardList.locator("> div").nth(1);
   const delBtn = secondCard.getByRole("button", { name: "Delete row 2" });
   await expect(delBtn).toBeVisible();
   const delBox = await delBtn.boundingBox();
@@ -186,8 +253,9 @@ test("375px: per-row selection checkbox is present and clickable", async ({
   await gotoMobile(page);
 
   const cardList = page.locator(".sm\\:hidden.flex.flex-col.gap-3");
-  // First actual card row is at index 1
-  const firstCard = cardList.locator("> div").nth(1);
+  // R2-A removed the select-all bar from above the first card.
+  // First actual card row is now at index 0.
+  const firstCard = cardList.locator("> div").nth(0);
 
   // Checkbox inside the card (not the select-all bar's checkbox)
   const checkbox = firstCard.getByRole("checkbox", { name: "Select row 1 for bulk edit" });
@@ -287,14 +355,11 @@ test("375px: Campaigns panel disclosure button is visible and reachable without 
   const page = await ctx.newPage();
   await gotoMobile(page);
 
-  // At 375px the mobile campaigns is a disclosure button inside min-[900px]:hidden
-  // The button has text containing "Campaigns" and opens the panel
-  const mobileContainer = page.locator(".min-\\[900px\\]\\:hidden").first();
-  await expect(mobileContainer).toBeVisible();
-
-  // The first child button should be the campaigns disclosure
-  const campaignsBtn = mobileContainer.locator("> button").first();
-  await expect(campaignsBtn).toBeVisible();
+  // R2-A: the mobile campaigns panel is now rendered via CampaignsSidebar with mobileOnly=true
+  // inside the "sm:hidden flex flex-col gap-1 mt-2" container. The old min-[900px]:hidden
+  // wrapper is no longer used. The campaigns disclosure button has data-testid="campaigns-mobile-toggle".
+  const campaignsBtn = page.locator('[data-testid="campaigns-mobile-toggle"]').first();
+  await expect(campaignsBtn).toBeVisible({ timeout: 5000 });
   await expect(campaignsBtn).toContainText(/campaign/i);
 
   const box = await campaignsBtn.boundingBox();

@@ -295,9 +295,11 @@ test("E2-1c: all demoted controls still present — Import, Audit, Export, QR, C
   await toolsMenuBtn.click();
   await expect(page.locator('[data-testid="download-qr-codes-btn"]').first()).toBeVisible({ timeout: 5_000 });
   await toolsMenuBtn.click(); // close dropdown
-  // Copy all URLs — locator by text or testid
-  const copyAllBtn = page.locator('button', { hasText: /copy all/i }).first();
-  await expect(copyAllBtn).toBeVisible();
+  // Copy all URLs — now inside the Share ▾ menu (R2-D consolidation); open it first
+  const shareMenuBtn = page.locator('[data-testid="share-menu-btn"]').first();
+  await shareMenuBtn.click();
+  await expect(page.locator('[data-testid="copy-all-urls"]').first()).toBeVisible({ timeout: 5_000 });
+  await shareMenuBtn.click(); // close menu
 });
 
 // ── E3-1: Footer copy — stale "left as typed" line GONE ───────────────────────

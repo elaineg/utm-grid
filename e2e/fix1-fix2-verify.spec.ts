@@ -104,6 +104,13 @@ test("FIX1 @ 1280px after Audit: utm_source/medium/campaign columns visible with
 }) => {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   const page = await ctx.newPage();
+  // R2-B seeds EXAMPLE_ROW on cold open making scratchHasContent=true.
+  // Accept the Replace-guard confirm so the audit proceeds normally.
+  await page.addInitScript(() => {
+    localStorage.setItem("utm-grid:rows", JSON.stringify([
+      { id: "row-1", baseUrl: "", utm_source: "", utm_medium: "", utm_campaign: "", utm_term: "", utm_content: "" },
+    ]));
+  });
   await page.goto(PREVIEW);
   await page.waitForLoadState("networkidle");
 
@@ -114,6 +121,8 @@ test("FIX1 @ 1280px after Audit: utm_source/medium/campaign columns visible with
     "https://example.com/sale?utm_source=Newsletter&utm_medium=email&utm_campaign=spring_sale\nhttps://example.com/buy?utm_source=newsletter&utm_medium=Email&utm_campaign=Spring-Sale"
   );
   await page.getByRole("radio", { name: "Replace" }).click();
+  // Accept the Replace guard confirm if it fires (non-empty grid)
+  page.once("dialog", (dialog) => dialog.accept());
   await page.getByTestId("audit-submit-btn").click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await page.waitForTimeout(400);
@@ -344,10 +353,17 @@ test("FIX2: Empty working grid + Replace does NOT trigger confirm (only non-empt
 }) => {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   const page = await ctx.newPage();
+  // R2-B seeds EXAMPLE_ROW on cold open; pre-seed an explicitly empty row so
+  // scratchHasContent=false and the Replace guard does NOT fire.
+  await page.addInitScript(() => {
+    localStorage.setItem("utm-grid:rows", JSON.stringify([
+      { id: "row-1", baseUrl: "", utm_source: "", utm_medium: "", utm_campaign: "", utm_term: "", utm_content: "" },
+    ]));
+  });
   await page.goto(PREVIEW);
   await page.waitForLoadState("networkidle");
 
-  // Leave grid empty (fresh context, just the default empty starter row).
+  // Grid is empty (no content in any cell).
 
   let confirmFired = false;
   page.on("dialog", async (dialog) => {

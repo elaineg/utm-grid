@@ -2747,8 +2747,12 @@ export function UtmGrid({
                     </div>
                   )}
 
-                  {/* Stacked fields: label above each full-width input */}
-                  {COLUMNS.map((field) => {
+                  {/* R3-A: Stacked fields split into two groups with Generated URL preview in between.
+                      Group 1: baseUrl → utm_source → utm_medium → utm_campaign
+                      Group 2: utm_term → utm_content
+                      The Generated URL preview (+ Copy) is injected between the two groups so
+                      it appears within the first screenful on a 375px cold open. */}
+                  {(["baseUrl", "utm_source", "utm_medium", "utm_campaign"] as EditableField[]).map((field) => {
                     const cellKey = warningKey(row.id, field);
                     const rawCellWarnings = warnings.get(cellKey);
                     // P2: on a fresh preset row, suppress "required" warnings until touched
@@ -2929,15 +2933,21 @@ export function UtmGrid({
                     );
                   })}
 
-                  {/* Generated URL block — full width, no truncation */}
+                  {/* R3-A: Generated URL block — surfaces AFTER utm_campaign, BEFORE utm_term/utm_content.
+                      Compact one-line preview (truncate + title tooltip) so the green URL is
+                      visible within the first screenful at 375px. Full value available via tooltip
+                      and the Copy button. No horizontal overflow: w-full + min-w-0 + truncate. */}
                   <div className="flex flex-col gap-1.5">
                     <span className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">
                       Generated URL
                     </span>
                     <output
                       aria-label={`Generated URL row ${i + 1}`}
-                      className={`w-full break-all rounded-md bg-gray-50 px-3 py-2 font-mono text-xs select-all ${
-                        generated ? "text-gray-800" : "text-gray-400"
+                      title={generated || undefined}
+                      className={`w-full min-w-0 truncate rounded-md px-3 py-2 font-mono text-xs select-all ${
+                        generated
+                          ? "bg-green-50 text-green-800 border border-green-200"
+                          : "bg-gray-50 text-gray-400 border border-gray-100"
                       }`}
                     >
                       {generated || "—"}
@@ -2959,6 +2969,115 @@ export function UtmGrid({
                       </span>
                     )}
                   </div>
+
+                  {/* R3-A: Optional fields (utm_term / utm_content) rendered AFTER the Generated URL preview. */}
+                  {(["utm_term", "utm_content"] as EditableField[]).map((field) => {
+                    const cellKey = warningKey(row.id, field);
+                    const rawCellWarnings = warnings.get(cellKey);
+                    const cellWarnings = (presetFreshRows.has(row.id) && rawCellWarnings)
+                      ? rawCellWarnings.filter((w) => w.rule !== "required")
+                      : rawCellWarnings;
+                    const isPresetFreshRequired = false; // utm_term/utm_content are never required
+                    const flashKey = `${row.id}:${field}`;
+                    const isFlashing = flashCells.has(flashKey);
+                    const canFix =
+                      cellWarnings &&
+                      hasCellFix(cellWarnings) &&
+                      isCellFixable(row[field], settings);
+                    const datalistId =
+                      spec.enforceSpec && spec.allowedValues[field as UtmField].length > 0
+                        ? `datalist-${field}`
+                        : undefined;
+                    const offSpecWarning = cellWarnings?.find((w) => w.rule === "off-spec");
+                    const offSpecNearest = offSpecWarning
+                      ? nearestAllowedValue(row[field as UtmField] ?? "", spec.allowedValues[field as UtmField])
+                      : null;
+                    const hasOffSpec = !!offSpecWarning;
+                    const hasOffTemplateCard = false; // utm_term/utm_content never off-template
+                    void isPresetFreshRequired; void hasOffTemplateCard; // suppress unused lint
+                    return (
+                      <div key={field} className="flex flex-col gap-1">
+                        <label
+                          htmlFor={`card-${row.id}-${field}`}
+                          className="text-[11px] font-semibold uppercase tracking-wide text-gray-400"
+                        >
+                          {FIELD_LABELS[field]}
+                        </label>
+                        <input
+                          id={`card-${row.id}-${field}`}
+                          value={row[field]}
+                          onChange={(e) => !isPreview && updateCell(row.id, field, e.target.value)}
+                          onFocus={() => !isPreview && setSelectedId(row.id)}
+                          aria-label={`${FIELD_LABELS[field]} row ${i + 1}`}
+                          aria-invalid={!!cellWarnings}
+                          aria-disabled={isPreview || undefined}
+                          placeholder=""
+                          spellCheck={false}
+                          list={!isPreview ? datalistId : undefined}
+                          readOnly={isPreview}
+                          disabled={isPreview}
+                          className={`w-full rounded-md border px-3 py-3 font-mono text-sm transition-colors duration-300 min-h-[44px] ${
+                            isPreview
+                              ? "border-gray-200 bg-slate-100 text-gray-400 cursor-not-allowed focus:outline-none"
+                              : isFlashing
+                              ? "border-green-400 bg-green-50 focus:outline-none"
+                              : cellWarnings && hasOffSpec
+                              ? "border-violet-400 bg-violet-50 focus:outline-none focus:border-violet-500"
+                              : cellWarnings
+                              ? "border-amber-400 bg-amber-50 focus:outline-none focus:border-amber-500"
+                              : "border-gray-200 bg-white focus:outline-none focus:border-blue-500"
+                          }`}
+                        />
+                        {/* Inline "Fix to <value>" chip */}
+                        {offSpecNearest && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              pushUndo("Fix to allowed value", rows);
+                              setRows((prev) =>
+                                prev.map((r) =>
+                                  r.id === row.id ? { ...r, [field]: offSpecNearest } : r
+                                )
+                              );
+                              flashCellKeys([`${row.id}:${field}`]);
+                            }}
+                            aria-label={`Fix to ${offSpecNearest}`}
+                            data-testid={`fix-to-${offSpecNearest}-card`}
+                            className="inline-flex min-h-[44px] items-center self-start rounded-full border border-violet-300 bg-violet-100 px-3 py-2 text-[12px] font-medium text-violet-800 hover:bg-violet-200 active:bg-violet-300"
+                          >
+                            Fix to{" "}{offSpecNearest}
+                          </button>
+                        )}
+                        {/* Lint warnings inline under field */}
+                        {cellWarnings && (
+                          <CellWarnings
+                            warnings={cellWarnings}
+                            canFix={!!canFix}
+                            onFix={
+                              canFix
+                                ? () => fixCell(row.id, field as UtmField, row[field])
+                                : undefined
+                            }
+                            offSpecNearest={offSpecNearest ?? undefined}
+                            onFixOffSpec={
+                              offSpecNearest
+                                ? () => {
+                                    pushUndo("Fix to allowed value", rows);
+                                    setRows((prev) =>
+                                      prev.map((r) =>
+                                        r.id === row.id ? { ...r, [field]: offSpecNearest } : r
+                                      )
+                                    );
+                                    flashCellKeys([`${row.id}:${field}`]);
+                                  }
+                                : undefined
+                            }
+                          />
+                        )}
+                      </div>
+                    );
+                  })}
 
                   {/* QR panel — Fix 2: stacked BELOW the card's fields, in normal card flow.
                       Never overlays a field, checkbox, or button. Full-width at ≤640px.

@@ -61,6 +61,13 @@ test("cold visit: sample spec is NOT auto-loaded (empty spec preserved)", async 
 }) => {
   const ctx = await browser.newContext();
   const page = await ctx.newPage();
+  // R2-B seeds EXAMPLE_ROW (acme.com) on cold open. Pre-seed an empty row so
+  // the test can confirm no demo rows were auto-loaded (one blank row only).
+  await page.addInitScript(() => {
+    localStorage.setItem("utm-grid:rows", JSON.stringify([
+      { id: "row-1", baseUrl: "", utm_source: "", utm_medium: "", utm_campaign: "", utm_term: "", utm_content: "" },
+    ]));
+  });
   await gotoWide(page);
 
   // On cold visit the enforce toggle must be unchecked (default)
@@ -113,6 +120,9 @@ test("'Try an example spec' loads sample taxonomy + demo rows; off-spec Fix-to a
   await expandSpecPanel(page);
   const tryBtn = page.locator('[data-testid="load-sample-spec-btn"]');
   await expect(tryBtn).toBeVisible();
+  // R2-B seeds EXAMPLE_ROW on cold open, so the unsaved-edits guard fires when
+  // "Try an example spec" is clicked. Accept the confirm to let it proceed.
+  page.once("dialog", (dialog) => dialog.accept());
   await tryBtn.click();
 
   // Should now have 2 demo rows (row-sample-1 and row-sample-2)

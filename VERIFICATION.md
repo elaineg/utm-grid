@@ -1,109 +1,68 @@
 PASS
 
-Preview URL verified: https://utm-grid-ifyj0mwvw-elainegao.vercel.app
+Preview URL verified: https://utm-grid-af58jyw1h-elainegao.vercel.app
 
 ---
 
 ## Checklist
 
-### npm run build
-- [PASS] Next.js build exits 0, all 8 routes emitted (/, /_not-found, /api/workspace, /api/workspace/[id], /api/workspace/[id]/history, /w/[id], /w/[id]/check, /w/[id]/guide)
+### Unit tests (npm test)
+PASS — 17 test files, 565 tests, 0 failures
+```
+Test Files  17 passed (17)
+Tests       565 passed (565)
+Duration    597ms
+```
 
-### npm test (vitest unit tests)
-- [PASS] 455 tests, 15 test files — "455 passed (455)" in 355ms
+### R2-specific gating e2e (19 tests — r2-verification + landing-layout-gridFirst + enforce-check-independent)
+PASS — 19/19 green
+```
+e2e/r2-verification.spec.ts           10/10 passed
+e2e/landing-layout-gridFirst.spec.ts   8/8  passed
+e2e/enforce-check-independent.spec.ts  1/1  passed
+```
 
-### npm run test:e2e (against live preview)
-- [PASS] 237 passed, 0 failed — ran in 1.6m against https://utm-grid-ifyj0mwvw-elainegao.vercel.app
+### Full e2e suite (341 tests vs preview https://utm-grid-af58jyw1h-elainegao.vercel.app)
+PASS — 341/341 green (was 310 passed / 31 failed before test fixes)
 
-One test-maintenance fix applied before the full run: `e2e/utm-grid.spec.ts` line 94 was checking the CSV header without stripping the UTF-8 BOM (`﻿`) that the app correctly adds (per spec + confirmed present since commit ea65d5b). The test comparison now strips the BOM before comparing — the round-trip import still works and all remaining 237 tests pass.
+```
+341 passed (2.2m)
+```
 
 ---
 
-## Per-Fix Status
+## Test fixes applied (NO product code changed)
 
-### Fix 1 — Lint-aware QR eligibility: PASS
+All 31 previously-failing tests were test locator/setup bugs caused by two R2 changes.
 
-Previously FAIL: the qrEligibilityMap was stale. Builder rewrote to compute eligibility DIRECTLY from the `warnings` useMemo on each render (UtmGrid.tsx lines 2052–2060 and 2415–2420 — identical inline checks, no separate stale map).
+### Root Cause 1 — R2-B EXAMPLE_ROW seeded on cold open (22 tests fixed)
 
-E2e proof (qr-codes.spec.ts, all 17 tests PASS):
-- `Fix1-proof: row with base URL + utm_medium + utm_campaign but NO utm_source → QR button disabled AND bulk skips it` — PASS
-- `eligibility: row with missing utm_source (blocking lint) is skipped from bulk QR` — PASS
-- Both table + card DOM instances of the QR button are disabled when utm_source is missing
-- Bulk download shows "No QR codes" message when all rows are blocked
-- Row with only a style warning (e.g. uppercase utm_campaign) still generates QR (button enabled) — confirmed by `3-row grid (2 valid, 1 invalid)` test and `select rows 1 & 3` test
+`e2e/audit-urls.spec.ts` (7): Added `acceptConfirm=true` default to `submitAudit` helper — seeds a `page.once("dialog", accept)` handler before Replace-mode audit submit, since EXAMPLE_ROW makes `scratchHasContent=true`.
 
-Single source of truth verified: the inline `BLOCKING_QR_LINT_RULES.has(w.rule)` check in the per-row button render reads `warnings.get(warningKey(row.id, f))` — the same map that drives the visible lint warning icons. Both the button disabled state and the visible warning come from the same `warnings` useMemo.
+`e2e/verification.spec.ts` (4): Added `page.addInitScript` to pre-seed localStorage with one empty row before page load (prevents EXAMPLE_ROW seed). Tests at lines 13, 24, 116, 143, 164. `copy-all` test also updated to open Share ▾ menu before clicking "Copy all URLs" (moved to dropdown in R2-D).
 
-### Fix 2 — Mobile QR at 375px: PASS
+`e2e/utm-grid.spec.ts` (3): Lines 31 (required-param test), 120 (import test), 205 (persist test) — pre-seeded empty row via `addInitScript` with sentinel flag on persist test to survive reload.
 
-Previously FAIL on test locator (`.first()` returned hidden table-layout img). Builder fixed to `.filter({ visible: true }).first()` throughout qr-codes.spec.ts.
+`e2e/bulk-ops.spec.ts` (1): Line 95 — pre-seeded empty row via `addInitScript` with sentinel flag (test has a reload).
 
-E2e proof:
-- `375px mobile: QR button, popover, and bulk control reachable and hittable` — PASS
-- QR image visible in card layout at 375px: `getByAltText(/QR code for row 1/i).filter({ visible: true }).first()` confirms the visible card-layout img renders
-- No horizontal scroll (bodyScrollWidth <= windowWidth + 2)
-- QR button not occluded (elementFromPoint confirms BUTTON is hit)
-- No scroll-jump (scrollYBefore matches scrollYAfter within 300px)
-- Per-row Download PNG/SVG fire a file via blob URL (card-layout Download buttons present)
+`e2e/fix1-fix2-verify.spec.ts` (2): Line 102 (FIX1 audit) — pre-seeded empty row; line 342 (FIX2 empty-grid guard) — pre-seeded empty row so `scratchHasContent=false`.
 
-### Regression: Channel-aware filenames — PASS
+`e2e/launch-check.spec.ts` (1): Line 676 — converted `page.evaluate`+`reload` to `addInitScript` to prevent debounce race clobbering the seeded rows.
 
-Unit tests: `stableQrFilename(1, "spring_sale", "newsletter", "email")` → "01-spring-sale-newsletter-email.png", etc. (8 stableQrFilename + 5 contactSheetLabel tests all pass in qr.test.ts)
+`e2e/mobile-card-view.spec.ts` (4): R2-A removed the select-all bar from above card rows; fixed `nth(1)` → `nth(0)` for first card access in 3 tests. Fixed campaigns disclosure locator from `.min-[900px]:hidden` to `[data-testid="campaigns-mobile-toggle"]` (new mobileOnly path).
 
-### Regression: Desktop popover anchored within viewport — PASS
+`e2e/qr-codes.spec.ts` (3): Lines 117, 141, 224 — pre-seeded empty row so QR button is disabled and utm_source stays empty.
 
-Confirmed in prior run; no change to popover clamping logic. round3-fixes.spec.ts 9/9 pass (includes overflow and scroll checks at 1280px).
+`e2e/round3-fixes.spec.ts` (2): Line 59 — pre-seeded empty row; line 105 — added `page.once("dialog", accept)` for the "Try an example spec" unsaved-edits guard.
 
-### Regression: Export CSV UTF-8 BOM — PASS
+### Root Cause 2 — Share ▾ dropdown not opened before clicking menu item (2 tests fixed)
 
-CSV first bytes confirmed 0xEF 0xBB 0xBF (BOM) from prior spot-check. The test locator fix in utm-grid.spec.ts now strips the BOM before header comparison so the round-trip test correctly PASSES while confirming BOM is present.
-
-### Regression: Launch Check Copy-summary green confirmation at 375px — PASS
-
-launch-check.spec.ts and style-guide.spec.ts all pass (included in 237 total).
+`e2e/share.spec.ts` lines 257 and 353: Added `await openShareMenu(page)` before `shareBtn(page).click()`. Updated cue assertion from `shareBtn(page)` (unmounted after click) to `page.locator('[data-testid="share-menu-btn"]')` with `/copied/i` regex (cue appears on persistent trigger, not menu item).
 
 ---
 
-## Additional E2E Coverage Verified
+## Gate decision: PASS
 
-| Spec | Tests | Result |
-|------|-------|--------|
-| qr-codes.spec.ts | 17 | PASS — Fix1-proof + Fix2 mobile + no-network + returning-user + re-render survival |
-| utm-grid.spec.ts | 11 | PASS (BOM-strip fix applied) |
-| verification.spec.ts | 10 | PASS |
-| share.spec.ts | 10 | PASS |
-| workspace.spec.ts | 10 | PASS |
-| launch-check.spec.ts | 15 | PASS |
-| round3-fixes.spec.ts | 9 | PASS |
-| style-guide.spec.ts | 10 | PASS |
-| check-route.spec.ts | 8 | PASS |
-| campaigns.spec.ts | 18 | PASS |
-| bulk-ops.spec.ts | (included) | PASS |
-| workspace-history.spec.ts | 13 | PASS |
-| All others | — | PASS |
-
----
-
-## Manual Spot-Check (curl)
-
-```
-curl -s -o /dev/null -w "%{http_code}" https://utm-grid-ifyj0mwvw-elainegao.vercel.app/
-200
-<title>UTM Grid — bulk UTM campaign URL builder</title>
-```
-
-## Unit Test Summary
-
-```
- Test Files  15 passed (15)
-      Tests  455 passed (455)
-   Start at  07:46:56
-   Duration  355ms
-```
-
-## E2E Test Summary (against https://utm-grid-ifyj0mwvw-elainegao.vercel.app)
-
-```
-  237 passed (1.6m)
-  0 failed
-```
+1. Unit suite: 565/565 pass
+2. Full e2e suite: 341/341 pass (0 failures)
+3. No product code changed — only e2e test setup/locators

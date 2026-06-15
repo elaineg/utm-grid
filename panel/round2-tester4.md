@@ -1,27 +1,32 @@
 ```json
-{"name":"Tomás","clarity":"Yes","value":"Yes","advocacy":9,"priorConcernsAddressed":"some","top_issues":["Edit-access model unchanged: the LIVE TEAM WORKSPACE secret link is still edit-capability — for company campaign data I'd still want a read-only share before I drop it in a Teams channel","Two share concepts ('Copy share link' frozen snapshot vs 'Create shared workspace' live synced) sit on one screen — clearer now with the inline contrast text, but a first-timer still has to read carefully to pick"],"loved":["Cryptic auto-names are GONE — new workspace defaults to a friendly domain name (example.com / shop.acme.com), and inline Rename worked and persisted across reload (renamed mine 'Q2 Ops Push')","'Saved on THIS device only — not synced. Sign-in to sync... is coming' is one clean honest line — no more crowded local-vs-server confusion","Search workspaces box for when the list grows; panel now sits above the grid so I see actions first","X / Twitter and Mastodon presets added alongside LinkedIn/Google/Email"]}
+{"name":"Tomás","clarity":"Yes","value":"Yes","advocacy":8,"top_fix":"Apply Auto-fix during CSV import (opt-in 'clean as I import'), with an explicit guarantee it only normalizes values and never drops/merges rows — so a 30-row off-spec sheet doesn't mean clicking Fix per cell","priorConcernsAddressed":"some"}
 ```
 
-PRIOR CONCERNS — re-checked the three I raised at 8:
-1. Cryptic auto-named workspaces: FIXED. Creating a workspace now names it after the domain
-   ("example.com"), not "Workspace 2_deQGNL". Hover-reveal Rename let me set "Q2 Ops Push"
-   and it survived a full reload. This was my biggest annoyance and it's solved.
-2. Crowded local-vs-server privacy framing: FIXED. The My Workspaces blurb is now one
-   unmistakable line — "saved on THIS device only — not synced... Sign-in to sync is coming"
-   — and the grid header keeps "nothing leaves your browser." I trusted which mode I was in
-   immediately this time.
-3. "Anyone with link can edit": NOT addressed (and you flagged it stays). The live workspace
-   link is still an edit capability. The new copy ("changes save to a private link and sync
-   across devices", distinct from the frozen "Copy share link" snapshot) is genuinely clearer
-   about WHAT the link does, but for sharing real company campaign data I still want a
-   read-only option before pasting it in Teams. That's the one thing keeping me off a 10.
+# Tomás — Ops analyst, Excel power user, Edge on locked-down Windows laptop (round 2)
 
-CLARITY — Yes. Still a 5-second read: paste your campaign links in a grid, it cleans UTM
-casing/typos, exports a clean CSV for your sheet. Headline + "nothing leaves your browser."
+## Re-check of my round-1 blocker
+My one blocker at 8 was an opt-in "clean as I import" (Auto-fix during ingest). I was told this round it was deliberately deferred to backlog — and I confirmed it cold: Auto-fix is still a separate toolbar button, NOT offered inside the Import dialog. So my specific ask is not addressed. The round did land real polish, so "some."
 
-VALUE — Yes. Same strong case as round 1: my Excel does concatenation but not normalization
-or a pre-launch check. CSV round-trip (BOM, full URL, lowercasing) is exactly my workflow.
+## This round's landing/craft changes — all present, all good
+- **New H1 "Clean campaign links in a grid"** — fixes my round-1 nit. Short, plain, no GA jargon. The subhead now names the pain in my words: "Auto-fix the casing and spacing that splits a campaign into two in your analytics, and export a clean CSV that drops straight into your sheet." That's exactly why I built CONCATENATE formulas.
+- **Pre-filled example row** on cold open (acme.com / newsletter / email / spring_sale) with a Generated URL already rendered — I land on a working example, not a blank grid. Saw the output shape without typing.
+- **Consolidated "Share ▾" menu** — clean. Header line disambiguates "Snapshot = frozen copy · Workspace = live shared edit," then three options each with a one-line explainer. The snapshot-vs-workspace confusion is handled in the menu itself.
 
-ADVOCACY — 9 (up from 8). The two fixes that bugged me are done and the device-scoping is now
-honest and legible. I'd bring this up to my marketing counterparts unprompted. It's a 10 the
-day there's a read-only share for the live workspace.
+## 1. CLARITY — Yes
+Faster than round 1. Under 15s I knew what it is and that my data stays local ("No login — nothing leaves your browser"). I'd tell a coworker: "a browser spreadsheet that builds and cleans UTM links and exports an Excel-clean CSV, nothing uploads — IT can't object."
+
+## 2. VALUE — Yes
+Re-ran my deliberately messy CSV (mixed case, spaces, `&`, embedded-comma field, empty field, existing `?ref=x`). Verified myself:
+- **Zero POSTs** during load, share, and import — privacy promise is real, the deciding factor for company link data.
+- **UTF-8 BOM** on export (confirmed first bytes EF BB BF) — opens clean in Excel.
+- `"discount, big"` re-quoted correctly; empty utm_term stayed empty; `?ref=x` preserved as `?ref=x&utm_source=...`; encoding `%20 %26 %2C` correct.
+- Source columns kept verbatim; encoding lives only in generated_url — true round-trip, no mangling. Beats my Excel formula every campaign week.
+
+## 3. ADVOCACY — 8/10
+Honestly still 8, and I'll say why plainly: the craft changes are real and I'd raise this unprompted to ops/marketing peers as "the UTM tool that won't mangle your CSV and doesn't phone home." But my 9 was gated on clean-on-import, and that's the one thing not built. For the 3-row example it's a non-issue; for the 30-row off-spec sheets I actually import, clicking Fix per flagged cell (or running a separate Auto-fix pass and re-checking) is the friction that keeps me one notch short. Build opt-in Auto-fix-on-import with the no-drop-rows guarantee and it's a 9. The landing polish was worth doing — it just wasn't my blocker.
+
+No JS console or page errors. Copy verified visually; clipboard read blocked in test env, not exercised.
+
+```json
+{"tester": 4, "round": 2, "clarity": "Yes", "value": "Yes", "advocacy": 8, "topComplaints": ["Clean-on-import still not built — must run Auto-fix as a separate pass / click Fix per cell, doesn't scale to a 30-row off-spec sheet", "(resolved) H1 jargon — now 'Clean campaign links in a grid', plain and clear"], "priorConcernsAddressed": "some"}
+```

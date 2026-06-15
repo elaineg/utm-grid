@@ -27,6 +27,19 @@
 >   Dana.)
 > DEFER to backlog (NOT this pass): Wen's "standardize column to <value>" from the
 > inconsistency warning; Tomás's "apply Auto-fix during CSV import." Tomás may stay at 8.
+>
+> **ROUND-3 EDIT (this revision, from panel round 2 = 8/10). ONE fix only — MOBILE CARD
+> VIEW ≤640px ONLY, do NOT touch the desktop table view.**
+> - **R3-A Mobile generated-URL preview high in the card** — in the mobile per-row CARD,
+>   surface the row's GENERATED URL as a compact, legible ONE-LINE preview HIGH in the card,
+>   directly under the base-URL / utm_campaign area and ABOVE the optional empty
+>   utm_term/utm_content fields, so on a 375px cold open the example row's clean generated
+>   URL is visible within the FIRST screenful (≤~667px). Width-contained (ellipsize/wrap
+>   gracefully, NO horizontal scroll at 375px); keep the existing per-row copy affordance
+>   reachable. (Elena's sole in-scope blocker; Sam named the identical wish. See D9 + §5.)
+> Constraints: mobile-card-only; no horizontal overflow at 375px; no sticky/overlay
+> occlusion; effect-based reads / getSnapshot stability unchanged. DEFER (unchanged):
+> Tomás's clean-on-CSV-import — he remains the one accepted holdout at 8.
 
 ## 1. Problem statement
 Build clean, consistent campaign tracking links in a grid — so a stray capital or stray space
@@ -147,6 +160,28 @@ a row-level "Auto-fix row" or a hint pointing at the global Auto-fix) so users w
 inline Fix and saw one field change (Priya, Dana) immediately find the whole-row/whole-grid
 fix. Do NOT change Auto-fix's normalization behavior — labeling and discoverability only.
 
+**D9 — Mobile card surfaces the generated URL above the optional fields  [R3-A]
+(MOBILE CARD VIEW ≤640px ONLY — desktop table view UNCHANGED).** In the mobile per-row
+CARD, render the row's **GENERATED URL as a compact one-line preview HIGH in the card** —
+positioned directly under the BASE URL / utm_campaign block and **ABOVE the optional empty
+utm_term / utm_content fields**. On a 375×667 cold open this puts the example row's clean
+green generated URL (`https://acme.com/spring-sale?utm_source=newsletter&utm_medium=email&utm_campaign=spring_sale_2026`)
+inside the FIRST screenful (≤~667px), so the "messy in → clean tagged link out" payoff is
+visible without a scroll-flick. Requirements:
+- **Width-contained**: single line, ellipsized (or graceful wrap) — **NO horizontal scroll
+  at 375px**, no page overflow.
+- The existing **per-row Copy affordance stays reachable** (the preview carries / sits
+  beside the row's Copy URL button; copy still confirms in place per D5).
+- **No sticky/overlay element** occludes the preview or any grid input
+  (elementFromPoint at 375px lands on the intended control, never a cell behind it).
+- **Desktop table view is untouched** — the read-only Generated-URL column there keeps its
+  D3/D8 treatment (width-capped, ellipsized, full value on `title` hover).
+- Behavior/data unchanged: effect-based reads / getSnapshot stability are NOT altered —
+  this is a per-card layout reorder of an already-computed value, not new state.
+Rationale: Elena (375px) was capped at 8 solely because the green generated URL sat below
+the fold behind two empty optional fields; Sam (passing) named the identical wish. This is
+the "payoff in the first mobile screenful" fix.
+
 ## 5. Landing structure (top → bottom)
 
 **Desktop ≥1280px:**
@@ -185,8 +220,11 @@ Required ordering and budget at 375px, cold open:
    plus **Tools ▾** / **Share ▾** / **Rules ▾** disclosures, ALL collapsed by default.
 3. **The grid (HERO)** — the pre-filled example grid CARD (label-over-input fields with the
    live Generated URL + Copy) **must begin within ONE viewport height** of a 375×667 screen,
-   i.e. the example's BASE URL field top ≤ ~600px; at least the example card's first field +
-   its green Generated URL are visible WITHOUT scrolling.
+   i.e. the example's BASE URL field top ≤ ~600px. **Card-internal order [R3-A / D9]:**
+   BASE URL → utm_source/medium/campaign → **the compact one-line GENERATED-URL preview +
+   Copy** → THEN the optional utm_term / utm_content fields. The green generated URL must be
+   visible WITHOUT scrolling (≤~667px), NOT pushed below the two empty optional fields.
+   Width-contained, no horizontal scroll at 375px.
 4. **BELOW the grid, collapsed:** the three secondary feature panels/accordions (Campaign
    Naming Template / Campaigns / Allowed values) default COLLAPSED and sit beneath the grid —
    they must NOT appear above or between the hero and the first grid card. The "Select all"

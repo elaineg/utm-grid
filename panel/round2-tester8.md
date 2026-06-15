@@ -1,13 +1,38 @@
+{"name":"Rob","clarity":"Yes","value":"Yes","advocacy":9,"top_fix":"Personal recurrence is the only ceiling — I tag links occasionally, not weekly, so I won't surface it unprompted as often as a daily marketer; a post-export 'save this as a reusable campaign' nudge would pull occasional users like me back. No app blocker remains.","priorConcernsAddressed":"all"}
+
+# Rob — freelance brand/visual designer, desktop, medium tech
+
+## Prior concern check (subhead payoff re-test)
+Round 1 I gave 8 and said the ONE blocker was the landing selling "no login, nothing leaves
+your browser" harder than the payoff I actually care about. RESOLVED. The subhead now reads:
+"Auto-fix the casing and spacing that splits a campaign into two in your analytics, and
+export a clean CSV that drops straight into your sheet." That is my exact pain (the
+casing-split report I can't catch by eye) and my exact payoff (a CSV I forward to a client),
+in one line. "No login — nothing leaves your browser" is demoted to a muted grey trust line.
+A pre-filled example row (acme.com / newsletter / email / spring_sale) also seeds on cold
+open, so I see what it does before typing. Both changes landed for me.
+
+## 1. CLARITY — Yes
+Under 10 seconds. Headline "Clean campaign links in a grid" + the payoff subhead + the live
+example row told me what it does, who it's for, and why I'd bother before I clicked anything.
+
+## 2. VALUE — Yes
+Today I hand-type query strings or copy an old link and swap words ("I could do this in 4
+minutes by hand"). Re-tested the real job: added a row, typed sloppy on purpose — Facebook /
+Paid Social / Spring Sale 2026 — hit Auto-fix. It rewrote them to facebook / paid_social /
+spring_sale_2026, highlighted the 3 changed cells green, and gave an "Auto-fixed 3 cells —
+Undo" toast plus a toolbar Undo. Export CSV downloaded utm-grid.csv with a real BOM (verified
+ef bb bf) and the full generated_url column, so it opens clean in Excel and drops into a
+client sheet. Beats by-hand because it kills the casing-split I can't see by eye. Zero
+console errors.
+
+## 3. ADVOCACY — 9/10 (was 8)
+The payoff-first subhead is what moved me. A freelancer friend now lands, reads one line,
+sees a live example, and gets why it matters — the difference between me forwarding the link
+and not. Off a 10 only because of MY usage pattern, not the app: I tag links occasionally,
+not weekly, so I won't raise it unprompted as often as a daily-tagging marketer. No app
+blocker left for me. Subhead-payoff concern: RESOLVED.
+
 ```json
-{"name":"Rob","clarity":"Yes","value":"Yes","advocacy":9,"priorConcernsAddressed":"all","top_issues":["'Save as campaign' / Campaigns / Allowed values / Naming Template / Launch Check are several overlapping save-and-reuse boxes — as a solo freelancer I'm not sure which one remembers my client setup vs. a one-off","Workspaces are 'THIS device only — not synced'; the 'Sign-in to sync is coming' note means switching to my laptop loses my client list"],"loved":["Workspaces now show FRIENDLY names — created two and they auto-labeled 'acme.com'/'zenith.io' from the URL instead of gibberish IDs","Inline ✏ Rename works: renamed them to 'Acme' and 'Zenith' in two clicks, names stuck","Search 'acme' now FINDS Acme and hides Zenith — case-insensitive — the exact thing that returned zero last round","Auto-fix casing + inconsistent-campaign warning still the core reason I'd use it over hand-typing"]}
+{"tester": 8, "round": 2, "clarity": "Yes", "value": "Yes", "advocacy": 9, "topComplaints": ["My own usage is occasional, not weekly — personal recurrence is the only ceiling; a post-export 'save as reusable campaign' nudge would bring occasional users back"], "priorConcernsAddressed": "all"}
 ```
-
-I'm Rob, freelance brand designer; I tag client links a few times a month and benchmark everything against "I could hand-type this in 4 minutes."
-
-**Prior concern re-checked (my round-1 blocker):** FIXED, all three parts. I created two workspaces — instead of "Workspace HbqwUjvW" they came up as friendly names derived from the base URL ("acme.com", "zenith.io"). Each row has a clear "✏ Rename" button (proper label, not a faint "+"); I renamed them to "Acme" and "Zenith" and the names persisted. Then I searched "acme" (lowercase) and it returned exactly the Acme workspace and hid Zenith — last round this returned ZERO. That is the multi-client findability I needed.
-
-**Clarity — Yes.** "Clean UTM links for your whole campaign — in one grid" + "Auto-fix messy casing and typos before they split your Google Analytics" still lands in under 10s. I'd tell a friend: "a spreadsheet for building tracking links that auto-fixes sloppy capitalization and remembers each client."
-
-**Value — Yes.** Auto-fix + the inconsistent-campaign warning beats my hand-typing (where I get Facebook in one link, facebook in another, and GA splits them). Now that My Workspaces is navigable by client name, it also beats my Chrome "Clients" bookmarks folder for re-finding a campaign next month.
-
-**Advocacy — 9 (real, not polite).** They shipped exactly what I asked, so it jumps 7 to 9. Held off a 10 by two things: (1) the page has several overlapping "save/reuse" surfaces — Save as campaign, Campaigns, Allowed values, Campaign Naming Template, Launch Check — and as a solo freelancer I can't immediately tell which one remembers a client vs. a one-off, so I'd fumble the first time. (2) Workspaces are "THIS device only — not synced," and "Sign-in to sync is coming" means switching to my laptop loses my client list. Fix those and it's a 10.

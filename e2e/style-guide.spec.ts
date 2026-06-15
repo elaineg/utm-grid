@@ -206,7 +206,8 @@ test("Check 7 — Share style guide button exists, labeled, shows Copied! cue on
   await expect(page.locator('[data-testid="workspace-banner"]')).toBeVisible({ timeout: 15_000 });
 
   // FIX F: share actions are inside a "Share ▾" dropdown — open the menu first.
-  const shareMenuBtn = page.locator('[data-testid="share-menu-btn"]');
+  // On /w/<id> there are 2 share-menu-btn elements (banner + toolbar); use .first() (banner).
+  const shareMenuBtn = page.locator("[data-testid=\"share-menu-btn\"]").first();
   await expect(shareMenuBtn).toBeVisible({ timeout: 8_000 });
   await shareMenuBtn.click();
 
@@ -269,7 +270,7 @@ test("Check 7b — Share style guide copies URL ending in /guide (returning-user
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
 
   // FIX F: open the "Share ▾" dropdown first
-  const shareMenuBtn = page.locator('[data-testid="share-menu-btn"]');
+  const shareMenuBtn = page.locator("[data-testid=\"share-menu-btn\"]").first();
   await expect(shareMenuBtn).toBeVisible({ timeout: 8_000 });
   await shareMenuBtn.click();
 
@@ -368,7 +369,7 @@ test("Check 10 — Share style guide Copied! cue survives during live autosave t
   await expect(page.locator('[data-testid="workspace-banner"]')).toBeVisible({ timeout: 15_000 });
 
   // FIX F: open the "Share ▾" dropdown first
-  const shareMenuBtn = page.locator('[data-testid="share-menu-btn"]');
+  const shareMenuBtn = page.locator("[data-testid=\"share-menu-btn\"]").first();
   await expect(shareMenuBtn).toBeVisible({ timeout: 8_000 });
   await shareMenuBtn.click();
 

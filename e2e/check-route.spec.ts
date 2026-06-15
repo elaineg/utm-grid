@@ -186,7 +186,8 @@ test("CHK-6 — /w/<id> 'Copy report link' button visible and distinct from othe
   await expect(page.locator('[data-testid="workspace-banner"]')).toBeVisible({ timeout: 10_000 });
 
   // FIX F: share actions are inside the "Share ▾" dropdown — open the menu first.
-  const shareMenuBtn = page.locator('[data-testid="share-menu-btn"]');
+  // On /w/<id> there are 2 share-menu-btn elements (banner + toolbar); use .first() (banner).
+  const shareMenuBtn = page.locator('[data-testid="share-menu-btn"]').first();
   await expect(shareMenuBtn).toBeVisible({ timeout: 8_000 });
   await shareMenuBtn.click();
 

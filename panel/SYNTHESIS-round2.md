@@ -1,96 +1,71 @@
-# UTM Grid — Panel SYNTHESIS Round 2
+# UTM Grid — Panel SYNTHESIS Round 2 (grid-first landing pass)
 
-Build under test: utm-grid (latest DEEPEN — My Workspaces moved above grid, friendly names,
-inline rename, search-by-name, X/Mastodon presets, share-action sublines). Re-test of the
-round-1 holdouts.
+**Headline: 8/10 pass the 9-advocacy bar, up from 4/10 in round 1.** All six R2 landing
+fixes landed; nearly every round-1 blocker is resolved. The two sub-bar testers are (1) the
+accepted backlog holdout (Tomás — clean-on-CSV-import, deliberately deferred) and (2) ONE
+in-scope mobile blocker (Elena — the green generated-URL payoff sits below the 375px fold),
+which a passing tester (Sam) named identically. Round 3 is a single mobile-card fix.
 
-## Score table (R1 → R2)
+## Score table
 
-| # | Name   | Persona                          | Clarity | Value | Advocacy | Δ (R1→R2)  |
-|---|--------|----------------------------------|---------|-------|----------|------------|
-| 1 | Priya  | Senior backend eng, keyboard     | Yes     | Yes   | 8        | 8 → 8 (=)  |
-| 2 | Marcus | Eng, devtools-open               | Yes     | Yes   | 9        | 8 → 9 (+1) |
-| 3 | Wen    | Analytics / data                 | Yes     | Yes   | 9        | 8 → 9 (+1) |
-| 4 | Tomás  | Marketing ops                    | Yes     | Yes   | 9        | 8 → 9 (+1) |
-| 5 | Dana   | Marketer, 30–50 links/wk         | Yes     | Yes   | 8        | 9 → 8 (−1) |
-| 6 | Jules  | Content & community mktr (mobile)| Yes     | Yes   | 9        | 8 → 9 (+1) |
-| 7 | Aisha  | Product designer                 | Yes     | No    | 7        | 6 → 7 (+1) |
-| 8 | Rob    | Freelance brand designer         | Yes     | Yes   | 9        | 7 → 9 (+2) |
-| 9 | Elena  | Mktg manager, 8 reports          | Yes     | No    | 6        | 5 → 6 (+1) |
-|10 | Sam    | PM (mobile)                      | Yes     | Yes   | 10       | 9 → 10 (+1)|
+| Tester | Persona | clarity | value | advocacy | priorConcernsAddressed | top_fix (1-liner) |
+|--------|---------|---------|-------|----------|------------------------|-------------------|
+| Priya  | Backend eng, keyboard-first | Yes | Yes | **9** | all | click-to-expand full generated URL (vs native title tooltip) |
+| Marcus | Frontend eng, devtools | Yes | Yes | **10** | all | (non-blocking) tuck under-grid cards behind Tools ▾ |
+| Wen    | Marketing data analyst | Yes | Yes | **9** | some | one-click "standardize column to <value>" from inconsistency warning |
+| Tomás  | Ops analyst, Excel | Yes | Yes | **8** | some | **clean-on-CSV-import (DEFERRED backlog item)** |
+| Dana   | Demand-gen marketer (mobile) | Yes | Yes | **10** | all | (non-blocking) surface "Copy all rows" on mobile |
+| Jules  | Content/community marketer | Yes | Yes | **9** | some | surface platform preset chips on first paint (not behind Tools ▾) |
+| Aisha  | Product designer (craft) | Yes | Yes | **9** | all | split comma-spliced subhead into two short payoff lines |
+| Rob    | Freelance brand designer | Yes | Yes | **9** | all | (non-blocking) personal recurrence occasional, not weekly |
+| Elena  | Eng manager, 375px mobile | Yes | Yes | **8** | all | **green generated URL above the mobile fold (in-scope blocker)** |
+| Sam    | PM, mobile-heavy | Yes | Yes | **9** | all | compact one-line generated-URL preview at top of each mobile row |
 
-Clarity: 10/10 Yes. Value: 8/10 Yes (Aisha + Elena = No). **Advocacy ≥9: 6/10.**
+Pass (adv≥9, clarity+value Yes): Priya, Marcus, Wen, Dana, Jules, Aisha, Rob, Sam = **8/10**.
+Clarity: 10/10 Yes. Value: 10/10 Yes (both round-1 value=No testers now Yes).
 
-## Pass set (advocacy ≥9) — 6/10
+## Round-1 concerns resolved by the R2 fixes (most resolved)
 
-Marcus 9 · Wen 9 · Tomás 9 · Jules 9 · Rob 9 · Sam 10.
+- **R2-A Mobile grid-first** → Dana, Sam, Elena all confirmed the cold 375px open now lands
+  on an editable grid; first BASE URL field at y≈358 (Sam/Dana measured), accordions
+  collapsed BELOW the grid. All three round-1 mobile blockers resolved.
+- **R2-B Pre-filled example row** → every tester cited the seeded acme/spring-sale row with
+  a live generated URL as "I see it work before typing." Wen + Tomás verified it does NOT
+  leak into a real export (Replace-on-import wipes it; `grep acme` = 0 hits).
+- **R2-C Hero rewrite** → Jules ("no longer reads as not-for-me"), Aisha ("authored, not
+  auto-generated" — value flipped No→Yes), Rob ("payoff-first subhead is what moved me") all
+  moved 8→9.
+- **R2-D Share ▾ consolidation** → Marcus 9→10 ("self-explaining via header + sublabels");
+  Elena confirmed snapshot-vs-live ambiguity gone.
+- **R2-E Empty-grid feedback** → Elena confirmed the former silent "Create workspace" no-op
+  now shows inline "Add at least one link before…".
+- **R2-F Generated-URL + Fix legibility** → Priya/Dana confirmed per-cell "Fix this value"
+  relabel + discoverable global Auto-fix; full URL on native title hover.
 
-All six confirm the round-1 fixes landed: lowercase-all auto-fix, friendly workspace names,
-inline rename (persists across reload), search-by-name, X/Twitter + Mastodon presets, 44px
-mobile targets, panel-above-grid, share-action sublines. Zero console errors, no React #185,
-no enforceSpec crash reported.
+Deferred-as-planned (NOT gating; carried to backlog): Wen's standardize-column-to-canon,
+Jules's preset chips on first paint, Aisha's split-subhead, Dana's mobile "Copy all rows,"
+Marcus's tuck-cards-behind-Tools, Priya's click-to-expand full URL.
 
-## Complaints behind advocacy<9 or value=No — grouped by cause (with recurrence)
+## The two sub-bar testers
 
-### Cause 1 — Landing density / editable grid buried (the dominant gate) — 5 testers
-Dana(8, regressed), Elena(6, value No), Aisha(7, value No); also flagged by Sam & Wen.
-- Moving My Workspaces ABOVE the grid pushed the editable grid DOWN: utm_source header now at
-  **816px vs round-1's 668px** (Dana, measured).
-- On a cold open My Workspaces is an empty "No workspaces yet" card — reads as "one more
-  banner" between hero and grid for a first-timer (Dana, Aisha).
-- The grid sits behind a stack of full-width banners — Pre-launch QA / Launch Check, Live Team
-  Workspace, Presets, Bulk Edit (+ UTM Spec, Naming Template) — so a 30-sec skimmer hits a
-  control wall and can't find the ONE primary action. "Above the grid" is technically true but
-  it's the 6th block down (Elena, Aisha, Dana). This is the previously-DEFERRED landing pass;
-  it now gates the 9-bar for all three non-passers.
+1. **Tomás — 8 (accepted holdout).** Blocked ONLY on the deliberately-deferred
+   clean-on-CSV-import feature (a backlog item, not built this run; he confirmed it cold).
+   Everything else passes: clarity Yes, value Yes, raises it unprompted to ops/marketing
+   peers. This is the ONE expected holdout against a 9/10 bar — do NOT build clean-on-import
+   to chase his point.
 
-### Cause 2 — Dual-render DOM smell — 3 testers
-Priya(8), Marcus(9, off-10), Wen(9, off-10).
-- My Workspaces panel + grid each render TWICE (desktopOnly + mobileOnly twins): 2
-  "My Workspaces" headings, 2 search inputs (one at 36px < 44px), duplicate hidden grid inputs
-  (idx 13-18 mirror 5-10), sharing one aria-label. Harmless on screen, trust-nicking to an
-  engineer with devtools open; the desktop search input is also under the 44px target.
+2. **Elena — 8 (up from 5; ONE in-scope blocker remains).** All three round-1 blockers
+   resolved (grid-first mobile, dead empty-grid button, snapshot-vs-live ambiguity). Sole
+   remaining blocker: on MOBILE (375px) the green generated-URL payoff sits one scroll-flick
+   BELOW the fold, behind the two empty utm_term/utm_content fields, so the "messy in →
+   clean link out" payoff is NOT in the first mobile screenful. **Sam (passing, 9) named the
+   identical wish** — a compact one-line generated-URL preview near the top of each mobile
+   row. This is the single round-3 fix (see UX_BRIEF §4 D9 / §5 mobile).
 
-### Cause 3 — Auto-fix leaves trailing punctuation — 1 tester (credibility bug)
-Priya(8). "Launch Day!" → "launch_day!" — the "!" survives. Casing is genuinely fixed, but a
-"clean" utm_campaign shouldn't carry a "!".
+## Round 3 = DELTA re-test
 
-### Cause 4 — Friendly default name not distinguishable — 4 testers (all passing, flagged)
-Marcus(9), Wen(9), Jules(9), Tomás(9).
-- Default label uses date/domain, so two same-day or same-domain workspaces both default to
-  identical names ("Workspace — Jun 14" / "example.com") until manually renamed. Marcus made
-  workspaces with campaigns "blackfriday2026" and "summer_promo" and BOTH defaulted to the
-  date. Rename is load-bearing rather than just nice-to-have. Ask: derive default from the
-  first row's utm_campaign first.
-
-### Cause 5 — Two share concepts read confusingly similar — ~5 testers across rounds
-Marcus, Jules, Tomás, Elena, Sam (recurring nit; all note it's clearer with the sublines).
-- "Copy share link" (frozen snapshot) vs "Create shared workspace" (live synced) still cost
-  "one beat" — a first-timer must read the fine print to pick. Labeling-only ask.
-
-### Cause 6 — Rename affordance too quiet — 1 tester (craft)
-Aisha(7). Low-contrast gray "Rename" chip + a redundant ✏ pencil that looks like a separate
-control; she clicked twice before trusting it. Ask: click-the-name to rename, and/or raise
-contrast and drop the duplicate pencil.
-
-### Cause 7 — Persona-rooted value=No (accepted holdout) — 1 tester
-Aisha(value No). Makes "a handful of UTMs a year"; Notion covers her — she rates her own
-recurring use and it doesn't earn a slot. Out of the recurrence ICP; this is the accepted 1
-fail. Her advocacy=7 still rose on the naming fix; her craft notes feed Fix A/B/F.
-
-### Non-blocking nits (noted, not gating)
-- Live workspace link is still edit-capability; Tomás wants a read-only share before pasting in
-  Teams (flagged it stays out of scope, off a 10).
-- Overlapping "save/reuse" surfaces (Save as campaign / Campaigns / Allowed values / Naming
-  Template / Launch Check) confuse which remembers a client vs a one-off (Rob).
-- "THIS device only — not synced" loses the list on a laptop switch (Rob; structural, needs
-  accounts; out of scope).
-- Easy to spawn near-duplicate workspaces with no dedupe cue (Aisha).
-
-## Read-through to Round 3 plan
-6/10 today. The three reachable flips are **Dana (regressed, Cause 1), Priya (Causes 2+3),
-Elena (Cause 1+5)**. Aisha's value=No is persona-rooted (Cause 7) and is the accepted single
-fail. Round-3 fixes A–F (encoded in UX_BRIEF.md) address every gating cause: A+B de-densify
-the landing / un-bury the grid (Cause 1 → flips Dana/Elena, helps Aisha); C kills the
-dual-render + trailing punctuation (Causes 2+3 → flips Priya); D distinguishable default name
-(Cause 4); E share disambiguation (Cause 5); F discoverable rename (Cause 6 → nudges Aisha).
+Round-3 fix is mobile-card-only (≤640px), desktop table view unchanged. Re-test scope:
+- **Re-test:** Elena (the blocker) + the mobile-surface passers **Dana, Sam, Jules**.
+- **Carry forward (desktop-only passers, untouched by the mobile fix):** Priya, Marcus,
+  Wen, Aisha, Rob.
+- **Carry forward at 8 (accepted holdout):** Tomás.

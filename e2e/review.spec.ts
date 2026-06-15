@@ -397,7 +397,8 @@ test("R9 — Share review summary: button shows Copied! cue, copied URL ends in 
   await expect(page.locator('[data-testid="workspace-banner"]')).toBeVisible({ timeout: 12_000 });
 
   // FIX F: share actions are now inside a "Share ▾" dropdown — open the menu first.
-  const shareMenuBtn = page.locator('[data-testid="share-menu-btn"]');
+  // On /w/<id> there are 2 share-menu-btn elements (banner + toolbar); use .first() (banner).
+  const shareMenuBtn = page.locator('[data-testid="share-menu-btn"]').first();
   await expect(shareMenuBtn).toBeVisible({ timeout: 8_000 });
   await shareMenuBtn.click();
 
@@ -572,7 +573,7 @@ test("R18 — Share trigger shows visible 'Copied!' cue after copy-review-link a
   await page.goto(`/w/${id}`);
   await expect(page.locator('[data-testid="workspace-banner"]')).toBeVisible({ timeout: 12_000 });
 
-  const shareBtn = page.locator('[data-testid="share-menu-btn"]');
+  const shareBtn = page.locator('[data-testid="share-menu-btn"]').first();
   await expect(shareBtn).toBeVisible({ timeout: 8_000 });
   await shareBtn.click();
 
@@ -874,7 +875,7 @@ test("R21 — Share trigger shows 'Copied!' for both 'Copy workspace link' and '
   await page.goto(`/w/${id}`);
   await expect(page.locator('[data-testid="workspace-banner"]')).toBeVisible({ timeout: 12_000 });
 
-  const shareMenuBtn = page.locator('[data-testid="share-menu-btn"]');
+  const shareMenuBtn = page.locator('[data-testid="share-menu-btn"]').first();
   await expect(shareMenuBtn).toBeVisible({ timeout: 8_000 });
 
   // --- Action 1: Copy workspace link ---

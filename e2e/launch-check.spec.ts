@@ -676,8 +676,9 @@ test("LC-workspace — /w/<id>: Launch Check over seeded rows shows correct scor
 test("LC-returning-user — returning user with seeded localStorage state: Launch Check works correctly", async ({
   page,
 }) => {
-  // Seed localStorage with a 2-row grid before navigation
-  const savedRows = JSON.stringify([
+  // Seed localStorage with a 2-row grid BEFORE navigation (addInitScript runs before any
+  // page scripts, so the R2-B EXAMPLE_ROW seeding is skipped — rows.length > 0 already).
+  const savedRows = [
     {
       id: "ret-r1",
       baseUrl: "https://example.com/a",
@@ -696,13 +697,12 @@ test("LC-returning-user — returning user with seeded localStorage state: Launc
       utm_term: "",
       utm_content: "",
     },
-  ]);
+  ];
 
-  await page.goto("/");
-  await page.evaluate((rows) => {
-    localStorage.setItem("utm-grid:rows", rows);
+  await page.addInitScript((rows) => {
+    localStorage.setItem("utm-grid:rows", JSON.stringify(rows));
   }, savedRows);
-  await page.reload();
+  await page.goto("/");
 
   // Verify pre-existing rows are loaded
   await expect(cell(page, "utm_source", 1)).toHaveValue("newsletter");

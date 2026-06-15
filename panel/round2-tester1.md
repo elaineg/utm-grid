@@ -1,15 +1,22 @@
 ```json
-{"name":"Priya","clarity":"Yes","value":"Yes","advocacy":8,"priorConcernsAddressed":"some","top_issues":["Dual-render DOM smell is STILL there — the grid AND the My Workspaces panel each render twice (hidden duplicate): 2 'My Workspaces' nodes, 2 search boxes, duplicate hidden grid inputs (idx 13-18 mirror 5-10). Same code-review red flag from r1, now spread wider.","Auto-fix still leaves punctuation: 'Launch Day!' -> 'launch_day!' (the '!' survives). Casing is now genuinely fixed, but the headline sells 'clean' and a clean utm_campaign shouldn't carry '!'.","Toolbar above an empty grid is even denser now (Auto-fix / Import / Paste & Audit / Export / Download QR / Copy share link / Copy all URLs / Naming rules / Launch Check / Create workspace) before I've typed a row."],"loved":["Auto-fix now lowercases ALL fields uniformly incl utm_source (Google->google, CPC->cpc) — exactly the r1 ask, fixed.","Workspaces show a FRIENDLY name (campaign 'Spring Sale') instead of the raw secret id.","Inline RENAME works — pencil opens an edit field pre-filled with the friendly name, persists, and panel SEARCH filters by that name.","My Workspaces panel moved ABOVE the grid; mobile tap targets are big and well-spaced at 375px."]}
+{"name":"Priya","clarity":"Yes","value":"Yes","advocacy":9,"top_fix":"Full Generated URL is now reachable, but only as a native title tooltip (mouse-park + OS delay) — give a one-click 'expand full URL' / read-only full-width reveal so a keyboard-first person can eyeball the exact string without parking the mouse.","priorConcernsAddressed":"all"}
 ```
 
 ## Priya — Senior backend engineer, keyboard-first, hates signups
 
-**Prior concerns, re-checked:**
-- (a) Auto-fix capitalization — FIXED. `Google`->`google`, `CPC`->`cpc`; utm_source is no longer special-cased, everything lowercases uniformly. The punctuation half is still open: `Launch Day!` -> `launch_day!`, the `!` stays.
-- (b) Dual-render DOM smell — NOT FIXED, and wider now. DOM inspection shows two `My Workspaces` headings (node 0 hidden, node 1 visible), two search inputs, and a hidden duplicate of the entire grid row (inputs 13-18 mirror 5-10). Works for the user; still the sloppiness I'd block in review.
+**Re-check of my two round-1 blockers (the only reason I sat at 8):**
 
-**1. Clarity — Yes.** Same strong headline + "no login, nothing leaves your browser." Network tab quiet. Unchanged from r1.
+1. **Per-cell "Fix" was flaky / ambiguous — RESOLVED.** The relabel to "Fix this value" makes per-cell scope obvious, and it now reliably normalizes the exact cell it points at. I tested the two cases that failed me last round: "Google Ads" -> `google_ads`, "Twitter" -> `twitter`. After each click the inline link disappears, the cell goes green/valid, the Generated URL updates in lockstep (`utm_source=google_ads`), and a "Fixed 1 cell" toast + a toolbar Undo confirm it fired. The headline promise ("a stray capital never splits your data") is now trustworthy from the most local affordance — I no longer hunt for the global Auto-fix. Auto-fix is also right there in the toolbar, so even when I want the global one it's discoverable.
 
-**2. Value — Yes.** Still beats hand-editing query strings in neovim/gists. The new wins are real: friendly workspace names + inline rename + name-search make a saved list of campaigns actually navigable instead of a wall of opaque ids — the difference between "saved once" and "I come back." Encoding still correct.
+2. **Generated URL truncated with no way to read it — RESOLVED.** The Generated-URL `<output>` cell now carries a full `title` tooltip with the complete query string (`https://acme.com/spring-sale?utm_source=...&utm_medium=email&utm_campaign=spring_sale_2026`). Hovering shows exactly what I'd ship before I hit Copy — my hard requirement as someone who wants to eyeball the bytes.
 
-**3. Advocacy — 8.** Held at 8, not raised, and honestly so. The persona-facing fixes (lowercase-all, friendly names, rename, search, panel position, mobile targets) all landed and are genuinely good. But the **dual-render is still present and now spans two components** — the exact trust-nicking smell I named last round, unaddressed — so I can't give a 9. Strip punctuation in auto-fix (or warn) and kill the duplicate render and this is a 9 I'd bring up unprompted.
+**Cold open:** the new pre-filled example row (acme.com/spring-sale, source=newsletter, medium=email, campaign=spring_sale_2026) with a live Generated URL is the right call — I understood the grid contract in ~5 seconds instead of staring at an empty table. 0 console errors, 0 page errors.
+
+### 1. CLARITY — Yes
+H1 "Clean campaign links in a grid" + subline about casing/spacing splitting a campaign in analytics + clean CSV export, plus the pre-filled row, land it in under 30s. Required-asterisk columns (SOURCE*/MEDIUM*/CAMPAIGN*) make the contract obvious. "No login — nothing leaves your browser" is why I didn't open the network tab.
+
+### 2. VALUE — Yes
+Today I hand-edit query strings in neovim or dump links into a spreadsheet; neither catches a capital or a space. This does, inline, per-cell, with a reliable one-click fix and a clean CSV out. Faster than hand-editing for a multi-link launch post.
+
+### 3. ADVOCACY — 9
+Both things that capped me at 8 are fixed, and they were trust issues, not nits — so this clears my recommend bar. I'd bring it up unprompted to the marketer on my team and to devs on the no-login/client-side pitch. Not a 10 only because the full-URL reveal is a native OS title tooltip (mouse-park + delay), slightly off-grain for a keyboard-first person; click-to-expand the full string would earn the last point.

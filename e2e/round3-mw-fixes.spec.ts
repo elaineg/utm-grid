@@ -289,9 +289,11 @@ test('R3-4a: Auto-fix naming: "Launch Day!" → "launch_day" (strips trailing pu
   const page = await ctx.newPage();
   await page.setViewportSize({ width: 1280, height: 900 });
 
-  // Seed a row with "Launch Day!" in utm_campaign
+  // Seed a row with "Launch Day!" in utm_campaign.
+  // Wait for networkidle (not just domcontentloaded) before seeding so R2-B useEffect
+  // completes before we overwrite localStorage — prevents a race where R2-B fires after our set.
   await page.goto("/");
-  await page.waitForLoadState("domcontentloaded");
+  await page.waitForLoadState("networkidle");
   await page.evaluate(() => {
     const rows = [
       {
@@ -349,7 +351,7 @@ test("R3-4b: Auto-fix does NOT mangle already-valid lowercase values", async ({
   await page.setViewportSize({ width: 1280, height: 900 });
 
   await page.goto("/");
-  await page.waitForLoadState("domcontentloaded");
+  await page.waitForLoadState("networkidle");
   await page.evaluate(() => {
     const rows = [
       {

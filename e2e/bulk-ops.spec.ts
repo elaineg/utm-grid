@@ -97,6 +97,16 @@ test("Set column (no selection) sets utm_campaign on all 3 rows; generated URLs 
 }) => {
   const ctx = await browser.newContext();
   const page = await ctx.newPage();
+  // R2-B seeds EXAMPLE_ROW (with utm_campaign=spring_sale_2026) on cold open.
+  // Pre-seed an empty row on FIRST load only (sentinel flag prevents overwrite on reload).
+  await page.addInitScript(() => {
+    if (!localStorage.getItem("utm-grid:test-seeded")) {
+      localStorage.setItem("utm-grid:rows", JSON.stringify([
+        { id: "row-1", baseUrl: "", utm_source: "", utm_medium: "", utm_campaign: "", utm_term: "", utm_content: "" },
+      ]));
+      localStorage.setItem("utm-grid:test-seeded", "1");
+    }
+  });
   await gotoWide(page);
   await expandBulkBar(page);
 

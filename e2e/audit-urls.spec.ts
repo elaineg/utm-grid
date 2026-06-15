@@ -24,11 +24,18 @@ async function openAudit(page: Page) {
 }
 
 // Helper: fill textarea and submit.
-async function submitAudit(page: Page, text: string, mode: "append" | "replace" = "replace") {
+// acceptConfirm: if true, auto-accept any window.confirm that fires (e.g. Replace-mode
+// on the seeded EXAMPLE_ROW that R2-B added to all cold-open loads).
+async function submitAudit(page: Page, text: string, mode: "append" | "replace" = "replace", acceptConfirm = true) {
   const textarea = page.getByTestId("audit-textarea");
   await textarea.fill(text);
   if (mode === "replace") {
     await page.getByRole("radio", { name: "Replace" }).click();
+  }
+  if (acceptConfirm) {
+    // R2-B seeds an EXAMPLE_ROW on cold open, so scratchHasContent=true fires a
+    // window.confirm on Replace. Accept it so the test can proceed.
+    page.once("dialog", (dialog) => dialog.accept());
   }
   // Button label is "Audit N URLs"
   await page.getByTestId("audit-submit-btn").click();

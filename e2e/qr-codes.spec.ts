@@ -117,9 +117,15 @@ test("per-row QR button: spring_sale row popover shows QR + encoded URL + Downlo
 test("per-row QR button is disabled when the row has no valid generated URL", async ({
   page,
 }) => {
+  // R2-B seeds EXAMPLE_ROW (valid URL, all required fields) on cold open.
+  // Pre-seed an empty row so the QR button is disabled (no valid generated URL).
+  await page.addInitScript(() => {
+    localStorage.setItem("utm-grid:rows", JSON.stringify([
+      { id: "row-1", baseUrl: "", utm_source: "", utm_medium: "", utm_campaign: "", utm_term: "", utm_content: "" },
+    ]));
+  });
   await page.goto("/");
-  // Row 1 starts empty — no valid generated URL
-  // The QR button is disabled on both desktop and mobile; assert the first instance
+  // Row 1 is empty — no valid generated URL → QR button is disabled
   const qrBtn = page.getByRole("button", { name: "QR code for row 1" }).first();
   await expect(qrBtn).toBeVisible({ timeout: 5000 });
   await expect(qrBtn).toBeDisabled();
@@ -141,6 +147,13 @@ test("cold open: no QR popover visible on /", async ({ page }) => {
 test("Fix1-proof: row with base URL + utm_medium + utm_campaign but NO utm_source → QR button disabled AND bulk skips it", async ({
   page,
 }) => {
+  // R2-B seeds EXAMPLE_ROW (with utm_source=newsletter) on cold open.
+  // Pre-seed an empty row so utm_source stays empty after partial fill below.
+  await page.addInitScript(() => {
+    localStorage.setItem("utm-grid:rows", JSON.stringify([
+      { id: "row-1", baseUrl: "", utm_source: "", utm_medium: "", utm_campaign: "", utm_term: "", utm_content: "" },
+    ]));
+  });
   await page.goto("/");
 
   // Fill row 1 with a valid base URL and some params, but leave utm_source empty.
@@ -148,7 +161,7 @@ test("Fix1-proof: row with base URL + utm_medium + utm_campaign but NO utm_sourc
   // code thought it was eligible. The blocking "utm_source is required." lint error
   // must disable the per-row QR button.
   await cell(page, "Base URL", 1).fill("https://example.com/sale");
-  // Intentionally skip utm_source
+  // Intentionally skip utm_source (it stays empty from our pre-seeded empty row)
   await cell(page, "utm_medium", 1).fill("email");
   await cell(page, "utm_campaign", 1).fill("spring_sale");
 
@@ -224,11 +237,18 @@ test("3-row grid (2 valid, 1 invalid) → bulk Download QR codes → result mess
 test("eligibility: row with missing utm_source (blocking lint) is skipped from bulk QR", async ({
   page,
 }) => {
+  // R2-B seeds EXAMPLE_ROW (with utm_source=newsletter) on cold open.
+  // Pre-seed an empty row so utm_source stays empty after partial fill below.
+  await page.addInitScript(() => {
+    localStorage.setItem("utm-grid:rows", JSON.stringify([
+      { id: "row-1", baseUrl: "", utm_source: "", utm_medium: "", utm_campaign: "", utm_term: "", utm_content: "" },
+    ]));
+  });
   await page.goto("/");
 
   // Row 1: missing utm_source — has a base URL and other fields but utm_source is required
   await cell(page, "Base URL", 1).fill("https://example.com/sale");
-  // Leave utm_source empty — this triggers a blocking "required" lint error
+  // Leave utm_source empty (stays empty from our pre-seeded empty row)
   await cell(page, "utm_medium", 1).fill("email");
   await cell(page, "utm_campaign", 1).fill("spring_sale");
 

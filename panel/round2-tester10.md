@@ -1,14 +1,25 @@
 ```json
-{"name":"Sam","clarity":"Yes","value":"Yes","advocacy":10,"priorConcernsAddressed":"all","top_issues":["Two share concepts still coexist ('Copy share link' frozen snapshot vs 'Create shared workspace' live link) — clear once read but one beat of which-do-I-want","Workspace auto-name defaults to the utm_campaign value, so a blank/multi-campaign grid could default to something generic — but I can now rename, so minor"],"loved":["Workspace auto-names to the friendly utm_campaign ('Summer Sale 2026'), not 'Workspace 35YOkiga' — and inline RENAME works: tap Rename, field pre-fills, 'Enter to save · Esc to cancel', persisted across reload as 'Acme Q3 Product Launch'","My Workspaces action buttons measure exactly 44px tall; Open/Copy link/Rename share one row, 'Remove from list' demoted to its own row in red — no accidental-delete-next-to-Open","X / Twitter and Mastodon presets added; panel (Presets, My Workspaces, Campaign Naming Template) now sits ABOVE the grid so I configure before scrolling into rows","New Search workspaces box — how I'll stay organized once I have several launches saved"]}
+{"name":"Sam","clarity":"Yes","value":"Yes","advocacy":9,"top_fix":"On mobile each row is a tall vertical stack of single fields, so to sanity-check 'did this build a clean URL?' I still scroll past ~6 inputs to find the generated link — pin a compact one-line generated-URL preview at the top of each row.","priorConcernsAddressed":"all"}
 ```
 
-## Re-checking my two round-1 nits (on my phone, 375px)
-- "Auto-named 'Workspace 35YOkiga' with no rename" — FIXED, better than I asked. A new workspace is named after the campaign ("Summer Sale 2026"). The Rename button turns the title into a pre-filled inline field with "Enter to save · Esc to cancel"; I renamed to "Acme Q3 Product Launch", reloaded, and it held. Naming is what makes me look organized, so this is the whole game.
-- "Row buttons ~36px, cramped, Remove next to Open" — FIXED. Every action button measures 44px tall (verified). Open / Copy link / Rename share one comfortable row; "Remove from list" moved to its own row below in red, so my thumb won't nuke a workspace by accident.
+# Sam — PM, mobile-heavy between meetings (round 2)
 
-## Fresh take (Sam, PM, between meetings)
-CLARITY Yes — H1 "Clean UTM links for your whole campaign — in one grid" + "no login, nothing leaves your browser" lands in seconds: bulk UTM builder where the team edits one shared link and signs off.
+## Prior blocker re-check — RESOLVED
+Round-1 gripe (advocacy 8): on a phone the editable grid sat ~700px down behind a tall hero + 3 stacked accordion banners + a Select-all bar, so the cold open showed no grid — looked like a marketing page.
+Re-checked the LIVE 375px cold open this round:
+- Hero is now 3 tight lines ("Clean campaign links in a grid" + one-line value + "No login — nothing leaves your browser").
+- Toolbar sits right under it; the old 3 banners are collapsed dropdowns (Tools / Share / Rules), not tall cards.
+- **First editable BASE URL field measures at y=358px — inside the 667px fold.** Below it, still above the fold: UTM_SOURCE (`newsletter`), UTM_MEDIUM (`email`), UTM_CAMPAIGN (`spring_sale_2026`) — all pre-seeded from an example row with a live generated URL.
+A teammate I send the link to on a phone now lands on an obviously-editable tool, not a brochure. This is exactly what I asked for.
 
-VALUE Yes — replaces my Google Sheet + Slack approval thread. I batch-build, the team edits a live /w link, and I get a named, searchable workspace I can find later. The new X/Mastodon presets match where we actually post now.
+## 1. CLARITY — Yes
+Within 30s: a grid to tag campaign links with consistent UTMs, auto-fix casing/spacing, export a clean CSV, share a link, no login. Subhead "Auto-fix the casing and spacing that splits a campaign into two in your analytics" is my literal pain. The seeded example row makes it self-explanatory — I see a real filled row, not empty boxes.
 
-ADVOCACY 10 — both things holding me at 9 are gone, and they were exactly the "look organized" details that decide whether I share a tool unprompted. Named, renameable workspaces + safe 44px tap targets + presets above the grid make this feel made-for-mobile-PM. I'd drop it in our launch channel today. Only lingering nit (not a blocker): "Copy share link" (snapshot) vs "Create shared workspace" (live) still costs one beat of thought.
+## 2. VALUE — Yes
+Today: a shared Google Sheet with a CONCAT formula nobody maintains, where "Email" vs "email" splits the data in GA. Verified on mobile this round: typed `Spring Launch` into source → Auto-fix → `spring_launch`. Export gave `utm-grid.csv` with Excel-safe BOM, a real header row (`base_url,utm_source,…,generated_url`), and a fully-built `generated_url` per row. Drop-in for my team, zero debugging. Beats the spreadsheet.
+
+## 3. ADVOCACY — 9
+I'd bring this up unprompted in my growth/marketing channel — recurring coordination pain, makes me look organized, and now the mobile cold-open sells the tool instead of hiding it. The blocker that capped me at 8 is gone.
+Not a 10 only because on mobile each row is a tall vertical stack of single fields, so to confirm "did this build a clean URL?" I still scroll past ~6 inputs to reach the generated link. A compact generated-URL preview pinned at the top of each row would make the phone feel as fast as desktop — the one thing left.
+
+Verified clean at 375px: first editable field at 358px (in fold), Auto-fix worked, Export CSV worked (BOM + header + generated_url), 0 console/page errors.
