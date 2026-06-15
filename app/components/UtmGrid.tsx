@@ -1533,7 +1533,10 @@ export function UtmGrid({
     })();
 
     // Auto-open Presets only on first-ever visit (all saved state absent)
-    if (!hasRows && !hasCampaigns && !hasPresets && !hasWorkspaces) {
+    // AND only on desktop (≥640px). On mobile, the presets panel would push the
+    // grid card below the fold — "Mobile grid-first" must stay intact.
+    const isDesktop = window.innerWidth >= 640;
+    if (!hasRows && !hasCampaigns && !hasPresets && !hasWorkspaces && isDesktop) {
       setActiveToolsPanel("presets");
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps

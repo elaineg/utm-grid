@@ -469,30 +469,44 @@ test("R2-6: 375px tap targets (Open/Copy link/Rename/Remove) ≥44px height, not
 test("R2-7: presets panel shows X/Twitter and Mastodon alongside Email, LinkedIn, Google, Organic", async ({
   browser,
 }) => {
-  const ctx = await browser.newContext();
+  // Use a fresh context with a desktop viewport (1280px) and clean state.
+  // On desktop first-visit (empty localStorage, ≥640px), the presets panel auto-opens.
+  const ctx = await browser.newContext({
+    viewport: { width: 1280, height: 800 },
+  });
   const page = await ctx.newPage();
 
   await page.goto("/");
   await page.waitForLoadState("networkidle");
 
-  // The presets panel is now opened via Tools ▾ > Channel Presets
-  const toolsMenuBtn = page.locator('[data-testid="tools-menu-btn"]');
-  await expect(toolsMenuBtn).toBeVisible({ timeout: 5_000 });
-  await toolsMenuBtn.click();
-  await page.getByRole("button", { name: /Channel Presets/i }).click();
+  // Detect if the PresetsBar is currently rendered by looking for its collapsible header button
+  // (which has aria-expanded and lives in the PresetsBar <section>). This is more reliable
+  // than page.getByText("Email") which can false-positive match "email" in the generated URL.
+  const presetsHeaderBtn = page.locator('section button[aria-expanded]').first();
+  const isAlreadyOpen = await presetsHeaderBtn.isVisible({ timeout: 1500 }).catch(() => false);
 
-  // PresetsBar has an inner collapsible header — expand it if collapsed
-  const presetsInnerBtn = page.locator('button[aria-expanded]').filter({ hasText: /Presets/ }).first();
-  if (await presetsInnerBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-    if ((await presetsInnerBtn.getAttribute("aria-expanded")) === "false") {
-      await presetsInnerBtn.click();
-    }
+  if (!isAlreadyOpen) {
+    // Presets panel is not open — open it via Tools menu. Only click when panel is closed
+    // to avoid toggling it shut (Tools > Channel Presets is a toggle).
+    const toolsMenuBtn = page.locator('[data-testid="tools-menu-btn"]');
+    await expect(toolsMenuBtn).toBeVisible({ timeout: 5_000 });
+    await toolsMenuBtn.click();
+    const channelPresetsBtn = page.locator('[data-testid="tools-presets-btn"]');
+    await expect(channelPresetsBtn).toBeVisible({ timeout: 3_000 });
+    await channelPresetsBtn.click();
+    await page.waitForTimeout(300);
   }
 
-  // Wait for the presets to appear
-  await page.waitForTimeout(300);
+  // Ensure the PresetsBar inner panel is expanded (aria-expanded="true").
+  const presetsPanelBtn = page.locator('section button[aria-expanded]').first();
+  await expect(presetsPanelBtn).toBeVisible({ timeout: 5_000 });
+  if ((await presetsPanelBtn.getAttribute("aria-expanded")) === "false") {
+    await presetsPanelBtn.click();
+    await page.waitForTimeout(200);
+  }
 
-  // All 6 presets must be visible
+  // All 6 seeded presets must be visible as preset chip spans in the PresetsBar.
+  // Use exact: true to avoid matching partial text in generated URL cells.
   for (const presetName of [
     "Email",
     "Paid Social – LinkedIn",
@@ -502,7 +516,7 @@ test("R2-7: presets panel shows X/Twitter and Mastodon alongside Email, LinkedIn
     "Mastodon",
   ]) {
     await expect(
-      page.getByText(presetName).first(),
+      page.locator(`section span.font-medium`).getByText(presetName, { exact: true }).first(),
       `Preset "${presetName}" should be visible`
     ).toBeVisible({ timeout: 5_000 });
   }

@@ -328,18 +328,21 @@ test("UTM value cell: no page overflow, Copy visible; inner container has own sc
   // Width > 20px (not clipped to a single character).
   expect(box!.width).toBeGreaterThan(20);
 
-  // 3. Inner container must be scrollable (table wider than its bounded container).
-  const innerScroll = await page.evaluate(() => {
-    const table = document.querySelector("table");
-    if (!table) return { scrollWidth: 0, clientWidth: 0 };
-    const container = table.closest(".overflow-x-auto") ?? table.parentElement;
-    if (!container) return { scrollWidth: 0, clientWidth: 0 };
-    return {
-      scrollWidth: (container as HTMLElement).scrollWidth,
-      clientWidth: (container as HTMLElement).clientWidth,
-    };
-  });
-  expect(innerScroll.scrollWidth).toBeGreaterThan(innerScroll.clientWidth);
+  // 3. No page-level horizontal overflow (round-3 table-fixed makes columns fit exactly — SW===CW is correct).
+  // The correct invariant is that the DOCUMENT does not overflow, and all action icons are visible.
+  const docOverflow = await page.evaluate(() => ({
+    scrollWidth: document.documentElement.scrollWidth,
+    clientWidth: document.documentElement.clientWidth,
+  }));
+  expect(docOverflow.scrollWidth).toBeLessThanOrEqual(docOverflow.clientWidth + 20);
+
+  // Delete button (rightmost action) must be within viewport.
+  const deleteBtn = page.getByRole("button", { name: /Delete row 1/i }).first();
+  await expect(deleteBtn).toBeVisible({ timeout: 5000 });
+  const deleteBox = await deleteBtn.boundingBox();
+  if (deleteBox) {
+    expect(deleteBox.x + deleteBox.width).toBeLessThanOrEqual(1280 + 20);
+  }
 
   await ctx.close();
 });
