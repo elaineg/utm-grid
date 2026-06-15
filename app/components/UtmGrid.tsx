@@ -161,6 +161,12 @@ export interface UtmGridProps {
    * Parent persists to the unified editor-name localStorage key.
    */
   onReviewerNameChange?: (name: string) => void;
+  /**
+   * D11 / P2-A: SHARE GOVERNANCE section in the Tools ▾ menu (workspace /w/<id> mode only).
+   * When provided, a 4th "Share Governance" section appears in the Tools menu.
+   */
+  onShareStyleGuide?: () => void;
+  onShareReviewSummary?: () => void;
 }
 
 export function UtmGrid({
@@ -174,6 +180,8 @@ export function UtmGrid({
   onReviewChange,
   reviewerName = "",
   onReviewerNameChange,
+  onShareStyleGuide,
+  onShareReviewSummary,
 }: UtmGridProps = {}) {
   const router = useRouter();
 
@@ -1690,15 +1698,6 @@ export function UtmGrid({
           Export CSV
         </button>
 
-        <button
-          type="button"
-          data-testid="audit-urls-btn"
-          onClick={() => setAuditDialogOpen(true)}
-          className="rounded-md border border-violet-200 bg-violet-50 px-2.5 py-1.5 text-xs font-medium text-violet-700 hover:bg-violet-100 whitespace-nowrap"
-        >
-          Audit URLs
-        </button>
-
         {/* Audit status */}
         {auditStatus && (
           <span role="status" aria-live="polite" className="text-xs font-medium text-violet-700">
@@ -1709,7 +1708,7 @@ export function UtmGrid({
         {/* Divider */}
         <span className="h-5 w-px bg-gray-200 mx-1" aria-hidden="true" />
 
-        {/* ── Group 3: Tools ▾ ── */}
+        {/* ── Group 3: Tools ▾ — D11 / P2-A: organized into labeled sections ── */}
         <div className="relative" ref={toolsMenuRef}>
           <button
             type="button"
@@ -1721,24 +1720,135 @@ export function UtmGrid({
             Tools <span className="text-gray-400 text-[10px]">{toolsMenuOpen ? "▲" : "▼"}</span>
           </button>
           {toolsMenuOpen && (
-            <div className="absolute left-0 top-full mt-1 z-40 w-52 rounded-lg border border-gray-200 bg-white shadow-lg py-1">
-              <button type="button" className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-50" onClick={() => openToolsPanel("presets")}>
+            <div className="absolute left-0 top-full mt-1 z-40 w-56 rounded-lg border border-gray-200 bg-white shadow-lg py-1">
+
+              {/* ── Section 1: BUILD & REUSE ── */}
+              <p className="px-3 pt-2 pb-0.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400 select-none">
+                Build &amp; Reuse
+              </p>
+              <button
+                type="button"
+                data-testid="tools-presets-btn"
+                className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-50"
+                onClick={() => openToolsPanel("presets")}
+              >
                 Channel Presets
+                <span className="block text-[10px] text-gray-400">saved channel field sets</span>
               </button>
-              <button type="button" className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-50" onClick={() => openToolsPanel("bulk")}>
-                Bulk edit (Set / Find &amp; replace)
+              <button
+                type="button"
+                data-testid="tools-bulk-btn"
+                className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-50"
+                onClick={() => openToolsPanel("bulk")}
+              >
+                Bulk edit
               </button>
-              <button type="button" className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-50" onClick={() => openToolsPanel("spec")}>
-                UTM Spec (allowed values)
+              <button
+                type="button"
+                data-testid="tools-campaigns-btn"
+                className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-50"
+                onClick={() => openToolsPanel("campaigns")}
+              >
+                Campaigns
+                <span className="block text-[10px] text-gray-400">saved grids library</span>
               </button>
-              <button type="button" className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-50" onClick={() => openToolsPanel("template")}>
-                Naming Template
-              </button>
-              <button type="button" className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-50" onClick={() => openToolsPanel("campaigns")}>
-                Campaigns library
-              </button>
+
               <hr className="my-1 border-gray-100" />
-              {/* Download QR codes */}
+
+              {/* ── Section 2: GOVERN CONVENTIONS ── */}
+              <p className="px-3 pt-1 pb-0.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400 select-none">
+                Govern Conventions
+              </p>
+              <button
+                type="button"
+                data-testid="tools-spec-btn"
+                className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-50"
+                onClick={() => openToolsPanel("spec")}
+              >
+                UTM Spec
+                <span className="block text-[10px] text-gray-400">allowed values</span>
+              </button>
+              <button
+                type="button"
+                data-testid="tools-template-btn"
+                className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-50"
+                onClick={() => openToolsPanel("template")}
+              >
+                Naming Template
+                <span className="block text-[10px] text-gray-400">utm_campaign structure</span>
+              </button>
+              {!isWorkspaceMode && (
+                <button
+                  type="button"
+                  data-testid="run-launch-check-btn"
+                  onClick={() => { runLaunchCheck(); setToolsMenuOpen(false); }}
+                  className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-50"
+                >
+                  Run Launch Check
+                  <span className="block text-[10px] text-gray-400">whole-grid compliance report</span>
+                </button>
+              )}
+
+              <hr className="my-1 border-gray-100" />
+
+              {/* ── Section 3: IMPORT & MOVE ── */}
+              <p className="px-3 pt-1 pb-0.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400 select-none">
+                Import &amp; Move
+              </p>
+              {/* Audit URLs (moved from toolbar into menu per D11 / P2-A) */}
+              <button
+                type="button"
+                data-testid="audit-urls-btn"
+                onClick={() => { setAuditDialogOpen(true); setToolsMenuOpen(false); }}
+                className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-50"
+              >
+                Audit URLs
+                <span className="block text-[10px] text-gray-400">paste existing tagged links</span>
+              </button>
+              {!isWorkspaceMode && (
+                <button
+                  type="button"
+                  data-testid="move-to-device-btn"
+                  onClick={() => { openToolsPanel("move-to-device"); }}
+                  className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-50"
+                >
+                  Move to another device
+                  <span className="block text-[10px] text-gray-400">export / import your setup</span>
+                </button>
+              )}
+
+              {/* ── Section 4 (workspace /w/<id> only): SHARE GOVERNANCE ── */}
+              {isWorkspaceMode && (onShareStyleGuide || onShareReviewSummary) && (
+                <>
+                  <hr className="my-1 border-gray-100" />
+                  <p className="px-3 pt-1 pb-0.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400 select-none">
+                    Share Governance
+                  </p>
+                  {onShareStyleGuide && (
+                    <button
+                      type="button"
+                      data-testid="tools-share-style-guide-btn"
+                      onClick={() => { onShareStyleGuide(); setToolsMenuOpen(false); }}
+                      className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-50"
+                    >
+                      Share style guide
+                    </button>
+                  )}
+                  {onShareReviewSummary && (
+                    <button
+                      type="button"
+                      data-testid="tools-share-review-summary-btn"
+                      onClick={() => { onShareReviewSummary(); setToolsMenuOpen(false); }}
+                      className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-50"
+                    >
+                      Share review summary
+                    </button>
+                  )}
+                </>
+              )}
+
+              {/* ── Download QR (utility) ── */}
+              <hr className="my-1 border-gray-100" />
               <button
                 type="button"
                 data-testid="download-qr-codes-btn"
@@ -1751,33 +1861,6 @@ export function UtmGrid({
                   <span className="ml-1 text-[10px] text-blue-600">({selectedRowIds.size} selected)</span>
                 )}
               </button>
-              <hr className="my-1 border-gray-100" />
-              {/* Run Launch Check — always in Tools menu on main builder */}
-              {!isWorkspaceMode && (
-                <button
-                  type="button"
-                  data-testid="run-launch-check-btn"
-                  onClick={() => { runLaunchCheck(); setToolsMenuOpen(false); }}
-                  className="w-full text-left px-4 py-2 text-xs font-semibold text-teal-700 hover:bg-teal-50"
-                >
-                  Run Launch Check
-                </button>
-              )}
-              {/* Move to another device — only on main builder (local-only feature) */}
-              {!isWorkspaceMode && (
-                <>
-                  <hr className="my-1 border-gray-100" />
-                  <button
-                    type="button"
-                    data-testid="move-to-device-btn"
-                    onClick={() => openToolsPanel("move-to-device")}
-                    className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-50"
-                  >
-                    Move to another device
-                    <span className="block text-[10px] text-gray-400">export / import your setup</span>
-                  </button>
-                </>
-              )}
             </div>
           )}
         </div>
@@ -2164,6 +2247,11 @@ export function UtmGrid({
             // writing to localStorage in writeMergedState() will trigger a storage event
             // which the panel's store picks up automatically — no additional call needed.
           }}
+          onOpenCampaignsPanel={() => {
+            // P2-D: open Campaigns panel and close the transfer panel
+            setSetupTransferOpen(false);
+            openToolsPanel("campaigns");
+          }}
           presets={[...SEEDED_PRESETS, ...userPresets]}
           campaigns={campaigns}
           spec={spec}
@@ -2251,11 +2339,12 @@ export function UtmGrid({
               z-index above the scrolling middle columns — they no longer overlap editable cells
               because the container is now ~274px wider than before the fix. */}
           <div ref={tableContainerRef} className="hidden sm:block overflow-x-auto rounded-lg border border-gray-200 bg-white">
-          {/* Table min-width: when reviewMap present: 1212px (32+32+80+160+5×120+160+148).
-              When reviewMap absent: 1212px (32+32+160+5×120+240+148).
+          {/* Table min-width: when reviewMap present: 1212px (32+32+80+160+5×120+148+160).
+              When reviewMap absent: 1212px (32+32+160+5×120+228+160).
+              P2-F: Actions widened 148→160px; GenURL reduced 240→228px. Budget stays 1212px.
               Both budgets fit within ≈1217px at 1280px — no horizontal page overflow.
               table-fixed: column widths set by headers; cell content clipped, not expanded.
-              When Review column is active, genUrl shrinks from 240→160px (still truncated+tooltip). */}
+              When Review column is active, genUrl shrinks from 228→148px (still truncated+tooltip). */}
           <table className="w-full border-collapse text-sm table-fixed" style={{ minWidth: "1212px" }}>
             <thead>
               <tr className="border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase">
@@ -2304,11 +2393,13 @@ export function UtmGrid({
                 {/* Generated URL: sticky, right-offset = Actions width.
                     When review active (onReviewChange set): 160px (shrunk from 240 to balance +80 review col).
                     When review absent: 240px (existing). Both keep total budget at 1212px. */}
-                <th className="sticky right-[148px] z-30 bg-gray-50 px-2 py-2.5 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] whitespace-nowrap" style={{ width: onReviewChange !== undefined ? "160px" : "240px" }}>
+                <th className="sticky right-[160px] z-30 bg-gray-50 px-2 py-2.5 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] whitespace-nowrap" style={{ width: onReviewChange !== undefined ? "148px" : "228px" }}>
                   Generated URL
                 </th>
-                {/* Actions: sticky right-0, 148px wide (widened from 116px for QR button). z-30 same as Generated URL header. */}
-                <th className="sticky right-0 z-30 bg-gray-50 px-2 py-2.5 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] whitespace-nowrap" style={{ width: "148px" }}>
+                {/* Actions: sticky right-0, 160px wide (P2-F: widened from 148px so all 4 per-row
+                    action icons are fully visible at 1280px — the 3rd icon was clipped at 148px).
+                    Budget stays at 1212px: Actions 160px + GenURL 228px = 388px (same as 148+240). */}
+                <th className="sticky right-0 z-30 bg-gray-50 px-2 py-2.5 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] whitespace-nowrap" style={{ width: "160px" }}>
                   Actions
                 </th>
               </tr>
@@ -2597,9 +2688,10 @@ export function UtmGrid({
                       );
                     })}
                     {/* Sticky Generated URL — truncated with title tooltip.
-                        Width: 160px when Review column active (to keep 1212px budget), 240px otherwise.
+                        Width: 148px when Review column active (to keep 1212px budget), 228px otherwise.
+                        P2-F: reduced from 240→228 so Actions column can grow from 148→160 (fits 4 icons).
                         Copy button (in Actions) copies the FULL untruncated URL (title has full value). */}
-                    <td className="sticky right-[148px] z-20 px-2 py-2 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] overflow-hidden bg-white" style={{ width: onReviewChange !== undefined ? "160px" : "240px" }}>
+                    <td className="sticky right-[160px] z-20 px-2 py-2 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] overflow-hidden bg-white" style={{ width: onReviewChange !== undefined ? "148px" : "228px" }}>
                       <output
                         aria-label={`Generated URL row ${i + 1}`}
                         title={generated}
@@ -2610,11 +2702,12 @@ export function UtmGrid({
                         {generated || "—"}
                       </output>
                     </td>
-                    {/* Sticky Actions — widened to 148px to fit QR button beside Copy.
+                    {/* Sticky Actions — P2-F: widened to 160px (from 148px) so all 4 per-row action
+                        icons are fully visible at 1280px (the 3rd icon was clipped at 148px).
                         z-20 ensures it floats above scrolling cells.
-                        relative: anchor for the absolute-positioned QR popover (z-50, above z-20/z-30 sticky cols).
-                        The QR popover is rendered with z-50 so it appears above this column. */}
-                    <td className="relative sticky right-0 z-20 px-3 py-2 whitespace-nowrap shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] bg-white" style={{ width: "148px" }}>
+                        relative: anchor for the absolute-positioned QR popover (z-50).
+                        px-2 (not px-3) to give buttons maximum room in the 160px budget. */}
+                    <td className="relative sticky right-0 z-20 px-2 py-2 whitespace-nowrap shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] bg-white" style={{ width: "160px" }}>
                       <span className="inline-flex flex-col gap-1">
                         <span className="inline-flex items-center gap-1">
                           <button

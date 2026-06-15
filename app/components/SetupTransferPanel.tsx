@@ -196,6 +196,8 @@ export interface SetupTransferPanelProps {
   onClose: () => void;
   /** Called after a successful import so parent can refresh its state. */
   onImportComplete: (result: ApplyResult) => void;
+  /** P2-D: called when user clicks "Open Campaigns" after a successful import. */
+  onOpenCampaignsPanel?: () => void;
   /** Current presets from parent's state (includes seeded). */
   presets: Preset[];
   /** Current campaigns from parent's state. */
@@ -213,6 +215,7 @@ export interface SetupTransferPanelProps {
 export function SetupTransferPanel({
   onClose,
   onImportComplete,
+  onOpenCampaignsPanel,
   presets,
   campaigns,
   spec,
@@ -226,12 +229,18 @@ export function SetupTransferPanel({
   const [copyLabel, setCopyLabel] = useState<"idle" | "copied">("idle");
   const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // ── Export disclosure state (P2-C) ────────────────────────────────────────────
+  const [showContents, setShowContents] = useState(false);
+  const [bundleJson, setBundleJson] = useState<string | null>(null);
+
   // ── Import state ──────────────────────────────────────────────────────────────
   const [importCode, setImportCode] = useState("");
   const [importError, setImportError] = useState<string | null>(null);
   const [mergePlan, setMergePlan] = useState<MergePlan | null>(null);
   const [overwriteSettings, setOverwriteSettings] = useState(false);
   const [importDone, setImportDone] = useState(false);
+  // P2-D: track import counts for post-import hint
+  const [importedCampaignCount, setImportedCampaignCount] = useState(0);
 
   // Derived summary counts from merge plan
   const totalAdded = mergePlan
@@ -300,19 +309,49 @@ export function SetupTransferPanel({
     URL.revokeObjectURL(url);
   }, [buildExportInputs]);
 
-  const handleCopyCode = useCallback(async () => {
+  // Ref for the textarea so we can select its contents on clipboard failure
+  const bundleTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const [clipboardFallbackHint, setClipboardFallbackHint] = useState(false);
+
+  const handleCopyCode = useCallback(() => {
     const inputs = buildExportInputs();
     if (!inputs) return;
     const bundle = serializeBundle(inputs);
     const code = encodeBundle(bundle);
-    await writeClipboard(code);
+
+    // P2-B: Flip to "copied" OPTIMISTICALLY the instant the button is clicked —
+    // do NOT gate this on the async clipboard promise resolving.
     if (copyTimer.current) clearTimeout(copyTimer.current);
     setCopyLabel("copied");
+    setClipboardFallbackHint(false);
     copyTimer.current = setTimeout(() => {
       setCopyLabel("idle");
       copyTimer.current = null;
     }, 1800);
+
+    // Best-effort clipboard write in the background
+    writeClipboard(code).catch(() => {
+      // Fallback: select the textarea contents so the user can Cmd/Ctrl+C manually
+      if (bundleTextareaRef.current) {
+        bundleTextareaRef.current.value = code;
+        bundleTextareaRef.current.select();
+      }
+      setClipboardFallbackHint(true);
+    });
   }, [buildExportInputs]);
+
+  // P2-C: toggle "show what's inside" disclosure
+  const handleToggleContents = useCallback(() => {
+    if (!showContents) {
+      // Lazily build the pretty-printed JSON
+      const inputs = buildExportInputs();
+      if (inputs) {
+        const bundle = serializeBundle(inputs);
+        setBundleJson(JSON.stringify(bundle, null, 2));
+      }
+    }
+    setShowContents((v) => !v);
+  }, [showContents, buildExportInputs]);
 
   // ── Import handlers ────────────────────────────────────────────────────────────
 
@@ -371,6 +410,9 @@ export function SetupTransferPanel({
     if (!mergePlan) return;
     const result = applyMergePlan(mergePlan, { overwriteSettings });
     writeMergedState(result);
+    // P2-D: track how many campaigns were added for post-import hint
+    const addedCount = mergePlan.campaigns.added.length;
+    setImportedCampaignCount(addedCount);
     setImportDone(true);
     setMergePlan(null);
     setImportCode("");
@@ -475,32 +517,83 @@ export function SetupTransferPanel({
           </div>
 
           {hasContent ? (
-            <div className="flex flex-col sm:flex-row gap-2">
-              {/* Download .json */}
-              <button
-                type="button"
-                data-testid="setup-transfer-download-btn"
-                onClick={handleDownloadJson}
-                className="flex-1 rounded-md border border-gray-300 bg-white px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-              >
-                Download .json
-              </button>
+            <div className="space-y-2">
+              <div className="flex flex-col sm:flex-row gap-2">
+                {/* Download .json */}
+                <button
+                  type="button"
+                  data-testid="setup-transfer-download-btn"
+                  onClick={handleDownloadJson}
+                  className="flex-1 rounded-md border border-gray-300 bg-white px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  Download .json
+                </button>
 
-              {/* Copy code — confirmation green-fill-in-place (D5 / copy-confirmation-survives-tick-rerender) */}
-              <button
-                type="button"
-                data-testid="setup-transfer-copy-btn"
-                aria-label="Copy setup code"
-                onClick={handleCopyCode}
-                aria-live="polite"
-                className={`flex-1 rounded-md border px-3 py-2 text-xs font-medium transition-colors duration-200 ${
-                  copyLabel === "copied"
-                    ? "border-green-500 bg-green-500 text-white"
-                    : "border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100"
-                }`}
-              >
-                {copyLabel === "copied" ? "✓ Code copied!" : "Copy code"}
-              </button>
+                {/* Copy code — P2-B: optimistic green-fill the instant clicked; fallback selects textarea + shows hint */}
+                <button
+                  type="button"
+                  data-testid="setup-transfer-copy-btn"
+                  aria-label="Copy setup code"
+                  onClick={handleCopyCode}
+                  className={`flex-1 rounded-md border px-3 py-2 text-xs font-medium transition-colors duration-200 ${
+                    copyLabel === "copied"
+                      ? "border-green-500 bg-green-500 text-white"
+                      : "border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100"
+                  }`}
+                >
+                  {copyLabel === "copied" ? "✓ Code copied!" : "Copy code"}
+                </button>
+              </div>
+
+              {/* P2-B aria-live announcement for screen readers */}
+              <span role="status" aria-live="polite" className="sr-only">
+                {copyLabel === "copied" ? "Code copied" : ""}
+              </span>
+
+              {/* P2-B: clipboard fallback hint — shown only when clipboard.writeText was blocked */}
+              {clipboardFallbackHint && (
+                <p role="status" className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
+                  Press ⌘C (Ctrl-C on Windows) to copy
+                </p>
+              )}
+
+              {/* P2-B: hidden textarea for clipboard fallback — select() target */}
+              <textarea
+                ref={bundleTextareaRef}
+                aria-hidden="true"
+                tabIndex={-1}
+                readOnly
+                className="sr-only"
+                defaultValue=""
+              />
+
+              {/* P2-C: "Show what's inside" disclosure — collapsed by default, below primary actions */}
+              <div className="pt-1">
+                <button
+                  type="button"
+                  data-testid="show-bundle-contents-btn"
+                  onClick={handleToggleContents}
+                  className="flex items-center gap-1 text-[11px] text-gray-400 hover:text-gray-600 transition-colors"
+                  aria-expanded={showContents}
+                >
+                  <span aria-hidden="true">{showContents ? "▾" : "▸"}</span>
+                  {showContents ? "Hide contents" : "Show what's inside"}
+                </button>
+                {showContents && (
+                  <div className="mt-2 space-y-1.5">
+                    <textarea
+                      readOnly
+                      value={bundleJson ?? ""}
+                      rows={8}
+                      className="w-full rounded-md border border-gray-200 bg-gray-50 px-2 py-1.5 font-mono text-[10px] text-gray-600 resize-y focus:outline-none focus:ring-1 focus:ring-blue-200"
+                      aria-label="Bundle contents (read-only)"
+                    />
+                    <p className="text-[11px] text-gray-400">
+                      Export and import run fully offline — zero network requests.
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
           ) : (
             <div className="space-y-2">
@@ -543,12 +636,35 @@ export function SetupTransferPanel({
           </p>
 
           {importDone ? (
-            <div role="status" aria-live="polite" className="rounded-md bg-green-50 border border-green-200 px-3 py-2 text-xs text-green-700 font-medium">
-              ✓ Import complete! Your setup has been merged.
+            <div role="status" aria-live="polite" className="rounded-md bg-green-50 border border-green-200 px-3 py-2 text-xs text-green-700 space-y-1.5">
+              <p className="font-medium">
+                {importedCampaignCount > 0
+                  ? `✓ Imported ${importedCampaignCount} campaign${importedCampaignCount === 1 ? "" : "s"} into your library.`
+                  : "✓ Import complete! Your setup has been merged."}
+              </p>
+              {/* P2-D: next-step hint pointing to Campaigns panel */}
+              {importedCampaignCount > 0 && (
+                <p className="text-green-600">
+                  Open one from{" "}
+                  {onOpenCampaignsPanel ? (
+                    <button
+                      type="button"
+                      data-testid="post-import-open-campaigns-btn"
+                      onClick={() => { onOpenCampaignsPanel(); }}
+                      className="underline hover:no-underline font-medium"
+                    >
+                      Campaigns
+                    </button>
+                  ) : (
+                    <span className="font-medium">Campaigns</span>
+                  )}
+                  {" "}to load it into the grid.
+                </p>
+              )}
               <button
                 type="button"
-                onClick={() => { setImportDone(false); setImportCode(""); }}
-                className="ml-2 text-green-600 underline hover:no-underline"
+                onClick={() => { setImportDone(false); setImportCode(""); setImportedCampaignCount(0); }}
+                className="text-green-600 underline hover:no-underline text-[11px]"
               >
                 Import another
               </button>

@@ -1074,6 +1074,8 @@ export default function WorkspacePage({ params }: { params: Promise<{ id: string
             onReviewChange={handleReviewChange}
             reviewerName={reviewerName}
             onReviewerNameChange={handleReviewerNameChange}
+            onShareStyleGuide={() => { void copyStyleGuideLink(); }}
+            onShareReviewSummary={() => { void copyReviewLink(); }}
           />
         )
       )}

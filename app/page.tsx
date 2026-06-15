@@ -16,9 +16,9 @@ export default function Home() {
         <h1 className="text-lg sm:text-2xl font-bold leading-tight text-gray-900">
           Clean campaign links in a grid
         </h1>
-        {/* R2-C: Payoff-first subhead */}
+        {/* R2-C / P2-E: Payoff-first subhead — bulk-builder value leads, then auto-fix framing */}
         <p className="mt-0.5 text-xs sm:text-sm text-gray-500 leading-snug">
-          Auto-fix the casing and spacing that splits a campaign into two in your analytics, and export a clean CSV that drops straight into your sheet.
+          Build and tag a whole batch of 30+ campaign links at once — and auto-fix the casing and spacing that splits a campaign into two in your analytics, then export a clean CSV.
         </p>
         {/* R2-C: Trust line — smaller, muted, below subhead (not the lead) */}
         <p className="mt-0.5 text-[11px] text-gray-400">
