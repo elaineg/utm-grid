@@ -122,7 +122,7 @@ test("(a) 1280px cold load: grid's first editable row is within the first viewpo
 
 // ── (b) Each feature reachable in ≤1 click from the toolbar ──
 
-test("(b) All features reachable in ≤1 click from toolbar: Import/Export CSV, Audit URLs, Run Launch Check, Presets, UTM Spec, Naming Template, Campaigns, Bulk edit, Copy share link, Copy all URLs, Create workspace", async ({
+test("(b) All features reachable from toolbar: Import/Export CSV (1 click), Audit URLs via Tools menu (2 clicks), Run Launch Check, Presets, UTM Spec, Naming Template, Campaigns, Bulk edit, Copy share link, Copy all URLs, Create workspace", async ({
   browser,
 }) => {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
@@ -138,10 +138,13 @@ test("(b) All features reachable in ≤1 click from toolbar: Import/Export CSV, 
   const exportBtn = page.getByRole("button", { name: "Export CSV" });
   await expect(exportBtn).toBeVisible();
 
-  // Audit URLs — direct button in toolbar
+  // Audit URLs — P2-A: now inside Tools ▾ menu (IMPORT & MOVE section), 2 clicks from toolbar
+  // Open Tools ▾ then click Audit URLs
+  const toolsBtnForAudit = page.locator('[data-testid="tools-menu-btn"]');
+  await expect(toolsBtnForAudit).toBeVisible();
+  await toolsBtnForAudit.click();
   const auditBtn = page.locator('[data-testid="audit-urls-btn"]');
   await expect(auditBtn).toBeVisible();
-  // 1 click opens dialog
   await auditBtn.click();
   // The Audit dialog renders a heading "Paste your existing tagged URLs" — use the heading role
   const auditHeading = page.getByRole("heading", { name: /Paste.*tagged/i });
@@ -171,25 +174,26 @@ test("(b) All features reachable in ≤1 click from toolbar: Import/Export CSV, 
   await toolsBtn.click();
   await expect(page.locator('[data-testid="tools-menu-btn"]')).toHaveAttribute("aria-expanded", "true");
 
-  // Within the Tools dropdown: Channel Presets, Bulk edit, UTM Spec, Naming Template, Campaigns, Launch Check
+  // Within the Tools dropdown: P2-A grouped sections — Channel Presets (BUILD & REUSE), UTM Spec, Naming Template, Launch Check (GOVERN), Audit URLs, Move (IMPORT & MOVE)
   // Scope all dropdown checks to the open dropdown menu container
-  const toolsMenu = page.locator('div.absolute').filter({ has: page.getByRole("button", { name: "Channel Presets" }) }).first();
+  const toolsMenu = page.locator('div.absolute').filter({ has: page.locator('[data-testid="tools-presets-btn"]') }).first();
   await expect(toolsMenu).toBeVisible({ timeout: 3000 });
 
-  await expect(toolsMenu.getByRole("button", { name: "Channel Presets" })).toBeVisible();
-  await expect(toolsMenu.getByRole("button", { name: /Bulk edit/i })).toBeVisible();
-  await expect(toolsMenu.getByRole("button", { name: "UTM Spec (allowed values)" })).toBeVisible();
-  await expect(toolsMenu.getByRole("button", { name: "Naming Template", exact: true })).toBeVisible();
-  await expect(toolsMenu.getByRole("button", { name: /Campaigns library/i })).toBeVisible();
+  await expect(toolsMenu.locator('[data-testid="tools-presets-btn"]')).toBeVisible();
+  await expect(toolsMenu.locator('[data-testid="tools-bulk-btn"]')).toBeVisible();
+  await expect(toolsMenu.locator('[data-testid="tools-spec-btn"]')).toBeVisible();
+  await expect(toolsMenu.locator('[data-testid="tools-template-btn"]')).toBeVisible();
+  await expect(toolsMenu.locator('[data-testid="tools-campaigns-btn"]')).toBeVisible();
   await expect(toolsMenu.locator('[data-testid="run-launch-check-btn"]')).toBeVisible();
+  await expect(toolsMenu.locator('[data-testid="audit-urls-btn"]')).toBeVisible();
   await expect(toolsMenu.locator('[data-testid="download-qr-codes-btn"]')).toBeVisible();
 
   // Helper: get the open Tools dropdown (always scope to it to avoid strict-mode violations)
   const openToolsDropdown = () =>
-    page.locator('div.absolute').filter({ has: page.locator('[data-testid="run-launch-check-btn"]') }).first();
+    page.locator('div.absolute').filter({ has: page.locator('[data-testid="tools-presets-btn"]') }).first();
 
-  // Click "Presets" from within Tools menu to open the Presets panel
-  await openToolsDropdown().getByRole("button", { name: "Channel Presets" }).click();
+  // Click "Channel Presets" from within Tools menu to open the Presets panel
+  await openToolsDropdown().locator('[data-testid="tools-presets-btn"]').click();
   // Panel should appear below toolbar
   await page.waitForTimeout(500);
   // Presets panel is rendered in the active panel zone (some content about presets)
@@ -198,7 +202,7 @@ test("(b) All features reachable in ≤1 click from toolbar: Import/Export CSV, 
 
   // Re-open Tools menu to test UTM Spec panel open
   await toolsBtn.click();
-  await openToolsDropdown().getByRole("button", { name: "UTM Spec (allowed values)" }).click();
+  await openToolsDropdown().locator('[data-testid="tools-spec-btn"]').click();
   await page.waitForTimeout(500);
   // "spec" from Tools menu scrolls to the always-visible below-grid utm-spec-panel (does not toggle)
   // Assert the panel is in the DOM (always rendered, acts as scroll target)
@@ -207,7 +211,7 @@ test("(b) All features reachable in ≤1 click from toolbar: Import/Export CSV, 
 
   // Re-open Tools menu to test Naming Template
   await toolsBtn.click();
-  await openToolsDropdown().getByRole("button", { name: "Naming Template", exact: true }).click();
+  await openToolsDropdown().locator('[data-testid="tools-template-btn"]').click();
   await page.waitForTimeout(500);
   // Naming template panel visible
   const namingPanel = page.locator('[data-testid="naming-template-panel"]');
@@ -215,7 +219,7 @@ test("(b) All features reachable in ≤1 click from toolbar: Import/Export CSV, 
 
   // Re-open Tools menu to test Campaigns
   await toolsBtn.click();
-  await openToolsDropdown().getByRole("button", { name: /Campaigns library/i }).click();
+  await openToolsDropdown().locator('[data-testid="tools-campaigns-btn"]').click();
   await page.waitForTimeout(500);
   // Campaigns panel or sidebar should open — look for campaigns-related text
   const campaignsVisible = await page.locator('text=/Campaigns|No saved campaigns/i').count();
@@ -223,7 +227,7 @@ test("(b) All features reachable in ≤1 click from toolbar: Import/Export CSV, 
 
   // Re-open Tools menu to test Bulk edit
   await toolsBtn.click();
-  await openToolsDropdown().getByRole("button", { name: /Bulk edit/i }).click();
+  await openToolsDropdown().locator('[data-testid="tools-bulk-btn"]').click();
   await page.waitForTimeout(500);
   // Bulk edit bar should appear — look for "Set column" or "Find & replace" controls
   const bulkVisible = await page.locator('text=/Set column|Find.*replace|Bulk/i').count();
@@ -265,9 +269,9 @@ test("(c) Opening Tools panel does NOT push editable utm_* inputs off-screen; no
   // Open Tools menu → UTM Spec panel (which can push content if not bounded)
   const toolsBtn = page.locator('[data-testid="tools-menu-btn"]');
   await toolsBtn.click();
-  // Scope to the dropdown to avoid strict-mode violation (UTM Spec button also appears in Rules menu)
-  const toolsDropdown = page.locator('div.absolute').filter({ has: page.locator('[data-testid="run-launch-check-btn"]') }).first();
-  await toolsDropdown.getByRole("button", { name: "UTM Spec (allowed values)" }).click();
+  // P2-A: UTM Spec is now tools-spec-btn (labeled "UTM Spec" with sub-caption "allowed values")
+  const toolsDropdown = page.locator('div.absolute').filter({ has: page.locator('[data-testid="tools-spec-btn"]') }).first();
+  await toolsDropdown.locator('[data-testid="tools-spec-btn"]').click();
   await page.waitForTimeout(500);
 
   // After opening UTM Spec panel: no page-level horizontal overflow
@@ -301,8 +305,8 @@ test("(c) Opening Tools panel does NOT push editable utm_* inputs off-screen; no
   // Also open the Naming Template panel and re-verify
   // Use the Tools menu dropdown button (not the existing naming-template-toggle panel disclosure)
   await toolsBtn.click();
-  const toolsDropdown2 = page.locator('div.absolute').filter({ has: page.locator('[data-testid="run-launch-check-btn"]') }).first();
-  await toolsDropdown2.getByRole("button", { name: "Naming Template", exact: true }).click();
+  const toolsDropdown2 = page.locator('div.absolute').filter({ has: page.locator('[data-testid="tools-template-btn"]') }).first();
+  await toolsDropdown2.locator('[data-testid="tools-template-btn"]').click();
   await page.waitForTimeout(500);
 
   const overflowAfterTemplate = await page.evaluate(() =>
