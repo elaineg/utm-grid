@@ -567,3 +567,63 @@ too much of the code is auto-capped by the generator, not surfaced as a blocking
   targets, reachable with NO horizontal scroll and NO sticky/overlay occlusion (elementFromPoint
   lands on the intended control). The live preview tile sits above the warning so the amber
   message is visible without hunting. No horizontal page overflow at 375px or 1280px.
+
+## 8. CHANGE — Branded bulk QR is a FIRST-CLASS, always-visible toolbar action
+
+> The branded bulk-QR capability (download ZIP of PNG/SVG QRs with brand color + center logo)
+> is the headline reason a marketer comes here for QR — but today it only appears AFTER the user
+> opens Tools ▾ → Bulk edit (it lives in BulkEditBar) and/or selects rows, so a COLD first-timer
+> never discovers it. This change promotes it to an always-visible primary action with NO prior
+> row-selection and NO mode-switch. Cites two friction lessons we must NOT repeat:
+> `control-in-conditional-container-not-discoverable-in-cold-flow` (an action inside a component
+> that only renders on a prior user action is NOT discoverable — it must be visible in the cold
+> flow) and `added-feature-buried-panel-surfaces-not-function` (on this dense app a new control
+> gets visually lost unless it is made deliberately distinct in the primary toolbar). Honors the
+> existing layout decisions (panels open BELOW the grid full-width per D3; copy/done confirms in
+> place per D5; no silent dead buttons per D7; SSR-safe per Flow 4). Same SSENSE/austere visual
+> language as the rest of the app — no new look.
+
+**C1 — Always-visible "QR codes" button in the grid-primary toolbar group.** Add a single
+**"⊞ QR codes"** button to the LEFT grid-primary group of the slim toolbar, immediately after
+**Auto-fix** (and before the Data divider) — NOT inside Tools ▾, NOT inside BulkEditBar. It is
+present on the cold first paint with empty localStorage, with no row selected and no menu opened.
+Per P3-B the grid stays the hero, so this button is a low-contrast GHOST/outline control in the
+app's teal QR accent (thin border, no fill) — distinct enough to be findable at a glance, quieter
+than the filled "+ Add row" accent. It does NOT add an above-grid banner and does NOT push the
+grid down (one extra button in the existing single toolbar row).
+
+**C2 — Clicking it opens the bulk-QR experience, defaulting to ALL rows.** The button opens a
+full-width **"QR codes" panel** stacked BELOW the toolbar (per D3, never a sidebar; only one
+launcher panel open at a time). Default scope is **ALL current rows**; if rows happen to be
+selected, the panel narrows to the selected set (shows the same "Apply to: all N rows / N selected
+rows" scope pill as the other bulk ops). The panel contains, top→bottom:
+1. **The primary action** — the **"Download QR codes (ZIP)"** button (teal accent), with the scope
+   pill beside it and the in-place green result line "N QR codes generated, M skipped — incomplete
+   or invalid URL" (D5). This is the existing BulkEditBar QR block, surfaced here directly.
+2. **The full QR branding controls** — the existing `QrBrandingPanel` (Output size + PNG/SVG,
+   Foreground/Background pickers + live preview tile + amber scannability guard, optional center-
+   logo upload/thumbnail/remove). So a cold user reaches download ZIP + format + color + logo in
+   ONE click of one always-visible button. The amber low-contrast warning disables BOTH the ZIP
+   download and per-row downloads with the actionable hint (Q4), never a silent dead button.
+
+**C3 — Empty / disabled state (D7, never a silent no-op).** When the grid has no row with a valid
+generated URL, the "Download QR codes (ZIP)" button inside the panel renders DISABLED with the
+hint **"Add at least one complete link first"** (and the same hint on the toolbar button's title).
+The panel still OPENS and the branding controls + live preview tile still render (preview shows the
+example URL), so it is never a blank box — the user sees what branded output will look like and what
+to do to enable the batch.
+
+**C4 — Coexistence (additive, no regression).** (a) The existing **per-row ⊞ QR** affordance
+(QrPopover / mobile card panel: preview + Copy + Download PNG/SVG, reflecting current branding) is
+UNCHANGED. (b) The existing **Tools ▾ → QR Branding** and **Tools ▾ → Download QR codes** entries
+keep working (they may simply open this same panel) — no path is removed; the new toolbar button is
+an ADDITIONAL, more discoverable entry to the same experience. (c) BulkEditBar's QR block stays
+functional for users already in the Bulk-edit panel. The same `QrBranding` state and selection model
+drive all surfaces, so branding set in one place shows everywhere.
+
+**C5 — 5-second legibility (the goal-met test).** On a cold load of `/` at 1280px with empty
+localStorage and no rows selected, the **"⊞ QR codes"** button is visible in the primary toolbar
+without opening any menu or selecting any row; clicking it reveals branded bulk-QR (download ZIP +
+color + logo controls) below the toolbar. At 375px the button sits in the wrapped toolbar and its
+panel stacks full-width below the grid with ≥44px targets, no horizontal scroll, no sticky/overlay
+occlusion.

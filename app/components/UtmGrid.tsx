@@ -1592,9 +1592,9 @@ export function UtmGrid({
 
   // ── New slim toolbar state ─────────────────────────────────────────────────
   // activeToolsPanel: which panel is open in the panel zone (null = none).
-  // Only "presets" and "bulk" open inline above the grid.
+  // Only "presets", "bulk", and "qr" open inline above the grid.
   // "spec" / "template" / "campaigns" scroll to the always-visible below-grid panels.
-  const [activeToolsPanel, setActiveToolsPanel] = useState<"presets" | "bulk" | null>(null);
+  const [activeToolsPanel, setActiveToolsPanel] = useState<"presets" | "bulk" | "qr" | null>(null);
 
   const [toolsMenuOpen, setToolsMenuOpen] = useState(false);
   // "move-to-device" setup transfer panel (D10 / UX_BRIEF)
@@ -1705,7 +1705,7 @@ export function UtmGrid({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toolsMenuOpen, rulesPopoverOpen, shareMenuOpen]);
 
-  const openToolsPanel = (panel: "presets" | "bulk" | "spec" | "template" | "campaigns" | "move-to-device"): void => {
+  const openToolsPanel = (panel: "presets" | "bulk" | "qr" | "spec" | "template" | "campaigns" | "move-to-device"): void => {
     // "move-to-device": toggle the setup transfer panel (opens inline in the panel zone)
     if (panel === "move-to-device") {
       setActiveToolsPanel(null);
@@ -1713,10 +1713,12 @@ export function UtmGrid({
       setToolsMenuOpen(false);
       return;
     }
-    // presets + bulk: open inline panel above the grid (no below-grid equivalent)
+    // presets + bulk + qr: open inline panel above the grid (no below-grid equivalent)
     // spec, template, campaigns: scroll to the always-visible below-grid panel
-    if (panel === "presets" || panel === "bulk") {
+    if (panel === "presets" || panel === "bulk" || panel === "qr") {
       setSetupTransferOpen(false);
+      // "qr" also closes the separate qrBrandingOpen panel (they are now unified)
+      if (panel === "qr") setQrBrandingOpen(false);
       setActiveToolsPanel((prev) => (prev === panel ? null : panel));
     } else {
       // Scroll to the below-grid panel instead of opening a duplicate
@@ -1872,6 +1874,28 @@ export function UtmGrid({
           </button>
         )}
 
+        {/* C1 — Always-visible QR codes toolbar button (Section 8, UX_BRIEF.md).
+            Ghost/outline teal accent — quieter than the filled "+ Add row" accent (P3-B).
+            Visible on cold first paint: no row selection required, no menu to open.
+            Opens the bulk-QR panel (activeToolsPanel="qr") stacked below the toolbar.
+            data-testid unique (one instance only — no dual desktop+mobile render here;
+            the toolbar is a single shared row at all breakpoints). */}
+        <button
+          type="button"
+          data-testid="qr-codes-toolbar-btn"
+          aria-label="QR codes"
+          aria-expanded={activeToolsPanel === "qr"}
+          title={hasNoValidQrRows ? "Add at least one complete link first" : "Generate and download branded QR codes"}
+          onClick={() => { openToolsPanel("qr"); setToolsMenuOpen(false); setShareMenuOpen(false); setRulesPopoverOpen(false); }}
+          className={`rounded-md border px-2.5 py-1.5 text-xs font-medium whitespace-nowrap transition-colors ${
+            activeToolsPanel === "qr"
+              ? "border-teal-500 bg-teal-50 text-teal-700"
+              : "border-teal-300 bg-white text-teal-600 hover:bg-teal-50 hover:border-teal-400"
+          }`}
+        >
+          ⊞ QR codes
+        </button>
+
         {/* Divider */}
         <span className="h-5 w-px bg-gray-200 mx-1" aria-hidden="true" />
 
@@ -1950,9 +1974,9 @@ export function UtmGrid({
                 data-testid="tools-qr-branding-btn"
                 className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-50"
                 onClick={() => {
-                  setQrBrandingOpen((prev) => !prev);
-                  setActiveToolsPanel(null);
-                  setSetupTransferOpen(false);
+                  // C4: Tools ▾ → QR Branding now opens the same unified QR panel.
+                  // Keeps the existing entry point working (additive, no path removed).
+                  openToolsPanel("qr");
                   setToolsMenuOpen(false);
                 }}
               >
@@ -2433,8 +2457,113 @@ export function UtmGrid({
         </div>
       )}
 
-      {/* ── QR Branding panel ────────────────────────────────────────────────────
-          Opens in the panel zone when "QR Branding" is selected in Tools ▾.
+      {/* ── C1/C2: Bulk-QR panel — opened by the always-visible "⊞ QR codes" toolbar button ──
+          Stacked below toolbar per D3 (never a sidebar; one launcher panel at a time).
+          Composes: (1) the download action + scope pill + result line (from BulkEditBar QR block);
+          (2) the full QrBrandingPanel (Output/Colors/Logo controls + live preview + amber guard).
+          Default scope = ALL rows; narrows to selection when rows are selected.
+          Empty/no-valid-url state: panel opens, download disabled with hint, branding preview renders.
+          C4: additive — per-row QrPopover, Tools ▾ entries, and BulkEditBar QR block unchanged. */}
+      {activeToolsPanel === "qr" && (() => {
+        const qrPanelDisabled = !qrContrastOk || hasNoValidQrRows;
+        const qrPanelTitle = !qrContrastOk
+          ? "Fix QR color contrast in Branding first — low contrast may not scan"
+          : hasNoValidQrRows
+          ? "Add at least one complete link first"
+          : undefined;
+        const qrPanelBtnCls = !qrContrastOk
+          ? "border-amber-300 bg-amber-50 text-amber-600 cursor-not-allowed"
+          : hasNoValidQrRows
+          ? "border-gray-200 bg-gray-50 text-gray-300 cursor-not-allowed"
+          : "cursor-pointer border-teal-600 bg-teal-50 text-teal-700 hover:bg-teal-100";
+        const scopeCount = selectedRowIds.size > 0 ? selectedRowIds.size : rows.length;
+        const scopeLabel = selectedRowIds.size > 0
+          ? `Generating for ${scopeCount} selected row${scopeCount === 1 ? "" : "s"}`
+          : `Generating for all ${scopeCount} row${scopeCount === 1 ? "" : "s"}`;
+        return (
+          <div
+            data-testid="bulk-qr-panel"
+            className="rounded-lg border border-gray-200 bg-white w-full"
+          >
+            {/* Panel header */}
+            <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-200">
+              <div>
+                <span className="text-xs font-semibold tracking-wide text-gray-700">QR codes</span>
+                <span className="ml-2 text-[10px] text-gray-400">Bulk download + branding controls</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveToolsPanel(null)}
+                aria-label="Close QR codes panel"
+                className="rounded p-0.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* ── Download action block (top, primary) ── */}
+            <div className="px-4 py-3 border-b border-gray-100 flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                data-testid="bulk-qr-download-btn"
+                onClick={() => void handleBulkDownloadQr()}
+                aria-label="Download QR codes as ZIP"
+                disabled={qrPanelDisabled}
+                title={qrPanelTitle}
+                className={`rounded border px-3 py-1.5 text-xs font-semibold shadow-sm active:scale-95 transition-transform whitespace-nowrap ${qrPanelBtnCls}`}
+              >
+                Download QR codes (ZIP)
+              </button>
+              {/* Scope pill — "Generating for all N rows" / "N selected rows" */}
+              <span
+                className={`text-xs rounded-full px-2.5 py-0.5 ${
+                  selectedRowIds.size > 0
+                    ? "bg-blue-600 text-white font-semibold border border-blue-700"
+                    : "bg-gray-100 text-gray-500 font-medium border border-gray-200"
+                }`}
+                aria-live="polite"
+                role="status"
+              >
+                {scopeLabel}
+              </span>
+              {/* Inline disabled hints */}
+              {!qrContrastOk && (
+                <span role="alert" className="text-[10px] text-amber-700">
+                  Low contrast — fix colors below so scanners can read it
+                </span>
+              )}
+              {qrContrastOk && hasNoValidQrRows && (
+                <span role="status" className="text-[10px] text-gray-400">
+                  Add at least one complete link first
+                </span>
+              )}
+              {/* Result line — green-fill, ref-stable ~3s */}
+              {qrResultMessage && (
+                <span
+                  role="status"
+                  aria-live="polite"
+                  className={`text-xs font-medium px-2 py-0.5 rounded ${
+                    qrResultMessage.startsWith("No QR")
+                      ? "text-amber-700 bg-amber-50"
+                      : "text-green-700 bg-green-50"
+                  }`}
+                >
+                  {qrResultMessage}
+                </span>
+              )}
+            </div>
+
+            {/* ── QR Branding controls (Output + Colors + Logo) ── */}
+            <QrBrandingPanel
+              branding={qrBranding}
+              onChange={setQrBranding}
+            />
+          </div>
+        );
+      })()}
+
+      {/* ── QR Branding panel (standalone) ────────────────────────────────────────────────────
+          Still opens separately when qrBrandingOpen=true (e.g. legacy path).
           Full-width stacked strip, never a sidebar (D3). READ-ONLY of rows. */}
       {qrBrandingOpen && (
         <QrBrandingPanel
