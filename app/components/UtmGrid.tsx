@@ -66,6 +66,7 @@ import {
 } from "../../lib/review";
 import { ReviewBadge } from "./ReviewBadge";
 import { QrPopover } from "./QrPopover";
+import { QrBrandingPanel } from "./QrBrandingPanel";
 import {
   filterValidQrRows,
   buildQrResultMessage,
@@ -73,6 +74,12 @@ import {
   contactSheetLabel,
   BLOCKING_QR_LINT_RULES,
 } from "../../lib/qr";
+import {
+  DEFAULT_QR_BRANDING,
+  isContrastSufficient,
+  maxLogoSizePx,
+  type QrBranding,
+} from "../../lib/qrBranding";
 import { MyWorkspacesPanel } from "./MyWorkspacesPanel";
 import { SetupTransferPanel } from "./SetupTransferPanel";
 import type { ApplyResult as SyncApplyResult } from "../../lib/syncBundle";
@@ -744,6 +751,41 @@ export function UtmGrid({
   const [qrResultMessage, setQrResultMessage] = useState<string | null>(null);
   const qrResultTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // ── QR Branding state ────────────────────────────────────────────────────
+  // Persisted in localStorage alongside other grid state. SSR-safe: initialized
+  // to DEFAULT_QR_BRANDING; localStorage is read in useEffect (never in render/useState init).
+  const [storedQrBranding, setStoredQrBranding] = useLocalStorage<QrBranding>(
+    key("utm-grid:qr-branding"),
+    DEFAULT_QR_BRANDING
+  );
+  const qrBranding: QrBranding = storedQrBranding ?? DEFAULT_QR_BRANDING;
+  const qrContrastOk = isContrastSufficient(qrBranding);
+
+  const setQrBranding = useCallback((next: QrBranding) => {
+    setStoredQrBranding(next);
+  }, [setStoredQrBranding]);
+
+  // QR Branding panel open state (in the active-panel zone)
+  const [qrBrandingOpen, setQrBrandingOpen] = useState(false);
+
+  // hasNoValidQrRows: true when no row (in the current selection, or all rows) has a valid
+  // generated URL with no blocking lint — used to disable the bulk QR download button
+  // with an "Add at least one complete link first" hint instead of a silent no-op.
+  // Derived from `rows` + `warnings` (same source as per-row eligibility).
+  const hasNoValidQrRows = useMemo(() => {
+    const targeted = selectedRowIds.size > 0 ? rows.filter((r) => selectedRowIds.has(r.id)) : rows;
+    return targeted.every((row) => {
+      const generated = buildUtmUrl(row);
+      if (!generated) return true; // no URL → ineligible
+      const hasBlockingLint = [...UTM_FIELDS, "baseUrl" as const].some(
+        (f) => (warnings.get(warningKey(row.id, f)) ?? []).some(
+          (w) => BLOCKING_QR_LINT_RULES.has(w.rule)
+        )
+      );
+      return hasBlockingLint; // if blocking lint → ineligible
+    });
+  }, [rows, selectedRowIds, warnings]);
+
   const showQrResult = useCallback((message: string) => {
     if (qrResultTimer.current) clearTimeout(qrResultTimer.current);
     setQrResultMessage(message);
@@ -783,6 +825,12 @@ export function UtmGrid({
       return;
     }
 
+    // Block bulk download if contrast is too low to scan
+    if (!qrContrastOk) {
+      showQrResult("Fix QR color contrast in Branding before downloading.");
+      return;
+    }
+
     try {
       // Dynamic imports — client-side only, never during SSR render.
       const [QRCode, JSZip] = await Promise.all([
@@ -792,9 +840,17 @@ export function UtmGrid({
 
       const zip = new JSZip();
 
-      // Build one PNG per valid row (named by stable, channel-aware scheme).
+      // Build one image per valid row (named by stable, channel-aware scheme).
       // We need a row-index that matches the 1-based position in the FULL rows array.
       const rowIndexMap = new Map(rows.map((r, i) => [r.id, i + 1]));
+
+      // Error-correction level: H when logo is present (logo covers part of the code)
+      const ecLevel = qrBranding.logoDataUrl ? "H" : "M";
+      const exportSize = qrBranding.size; // PNG export resolution (512/1024/2048)
+      const isSvg = qrBranding.format === "svg";
+
+      // Contact-sheet uses a smaller size for grid readability
+      const sheetQrSize = 200;
 
       const qrEntries: {
         filename: string;
@@ -803,34 +859,118 @@ export function UtmGrid({
         campaign: string;
         source: string;
         medium: string;
-        pngDataUrl: string;
+        sheetDataUrl: string; // always PNG for the contact sheet
       }[] = [];
 
       for (const row of valid) {
-        const url = buildUtmUrl(row);
+        const rowUrl = buildUtmUrl(row);
         const rowIndex = rowIndexMap.get(row.id) ?? 0;
-        // Fix 3: channel-aware filename (campaign + source + medium)
-        const filename = stableQrFilename(rowIndex, row.utm_campaign, row.utm_source, row.utm_medium);
-        const pngDataUrl = await QRCode.toDataURL(url, {
-          width: 200,
-          margin: 1,
-          color: { dark: "#111827", light: "#ffffff" },
-        });
-        // Convert data URL to binary for ZIP
-        const base64 = pngDataUrl.split(",")[1] ?? "";
-        zip.file(filename, base64, { base64: true });
-        qrEntries.push({
-          filename,
-          url,
-          rowIndex,
-          campaign: row.utm_campaign,
-          source: row.utm_source,
-          medium: row.utm_medium,
-          pngDataUrl,
-        });
+
+        if (isSvg) {
+          // SVG format: generate vector SVG and add to ZIP
+          const svgFilename = stableQrFilename(rowIndex, row.utm_campaign, row.utm_source, row.utm_medium).replace(/\.png$/, ".svg");
+          const svgString = await QRCode.toString(rowUrl, {
+            type: "svg",
+            margin: 1,
+            errorCorrectionLevel: ecLevel,
+            color: { dark: qrBranding.fgColor, light: qrBranding.bgColor },
+          });
+          zip.file(svgFilename, svgString);
+
+          // For contact sheet: always use a PNG (canvas doesn't render SVG-string easily)
+          const sheetPng = await QRCode.toDataURL(rowUrl, {
+            width: sheetQrSize,
+            margin: 1,
+            errorCorrectionLevel: ecLevel,
+            color: { dark: qrBranding.fgColor, light: qrBranding.bgColor },
+          });
+          qrEntries.push({
+            filename: svgFilename,
+            url: rowUrl,
+            rowIndex,
+            campaign: row.utm_campaign,
+            source: row.utm_source,
+            medium: row.utm_medium,
+            sheetDataUrl: sheetPng,
+          });
+        } else {
+          // PNG format: generate high-res PNG
+          const pngFilename = stableQrFilename(rowIndex, row.utm_campaign, row.utm_source, row.utm_medium);
+          let pngDataUrl = await QRCode.toDataURL(rowUrl, {
+            width: exportSize,
+            margin: 1,
+            errorCorrectionLevel: ecLevel,
+            color: { dark: qrBranding.fgColor, light: qrBranding.bgColor },
+          });
+
+          // Composite logo onto the high-res PNG if present
+          if (qrBranding.logoDataUrl) {
+            const canvas = document.createElement("canvas");
+            canvas.width = exportSize;
+            canvas.height = exportSize;
+            const ctx = canvas.getContext("2d");
+            if (ctx) {
+              const qrImg = new Image();
+              await new Promise<void>((resolve) => { qrImg.onload = () => resolve(); qrImg.src = pngDataUrl; });
+              ctx.drawImage(qrImg, 0, 0, exportSize, exportSize);
+
+              const maxSide = maxLogoSizePx(exportSize);
+              const logoImg = new Image();
+              await new Promise<void>((resolve) => { logoImg.onload = () => resolve(); logoImg.onerror = () => resolve(); logoImg.src = qrBranding.logoDataUrl; });
+              const side = Math.min(maxSide, logoImg.naturalWidth || maxSide, logoImg.naturalHeight || maxSide);
+              const lx = Math.round((exportSize - side) / 2);
+              const ly = Math.round((exportSize - side) / 2);
+              ctx.fillStyle = "#ffffff";
+              ctx.fillRect(lx - 4, ly - 4, side + 8, side + 8);
+              ctx.drawImage(logoImg, lx, ly, side, side);
+              pngDataUrl = canvas.toDataURL("image/png");
+            }
+          }
+
+          // Add to ZIP
+          const base64 = pngDataUrl.split(",")[1] ?? "";
+          zip.file(pngFilename, base64, { base64: true });
+
+          // For contact sheet: use sheetQrSize PNG (not export-size — contact sheet is display-only)
+          let sheetPngUrl = await QRCode.toDataURL(rowUrl, {
+            width: sheetQrSize,
+            margin: 1,
+            errorCorrectionLevel: ecLevel,
+            color: { dark: qrBranding.fgColor, light: qrBranding.bgColor },
+          });
+          // Composite logo on sheet QR too (scaled to sheet size)
+          if (qrBranding.logoDataUrl) {
+            const sc = document.createElement("canvas");
+            sc.width = sheetQrSize; sc.height = sheetQrSize;
+            const sctx = sc.getContext("2d");
+            if (sctx) {
+              const sqi = new Image();
+              await new Promise<void>((r) => { sqi.onload = () => r(); sqi.src = sheetPngUrl; });
+              sctx.drawImage(sqi, 0, 0, sheetQrSize, sheetQrSize);
+              const sm = maxLogoSizePx(sheetQrSize);
+              const li = new Image();
+              await new Promise<void>((r) => { li.onload = () => r(); li.onerror = () => r(); li.src = qrBranding.logoDataUrl; });
+              const ss = Math.min(sm, li.naturalWidth || sm, li.naturalHeight || sm);
+              const sx = Math.round((sheetQrSize - ss) / 2); const sy = sx;
+              sctx.fillStyle = "#ffffff"; sctx.fillRect(sx - 3, sy - 3, ss + 6, ss + 6);
+              sctx.drawImage(li, sx, sy, ss, ss);
+              sheetPngUrl = sc.toDataURL("image/png");
+            }
+          }
+
+          qrEntries.push({
+            filename: pngFilename,
+            url: rowUrl,
+            rowIndex,
+            campaign: row.utm_campaign,
+            source: row.utm_source,
+            medium: row.utm_medium,
+            sheetDataUrl: sheetPngUrl,
+          });
+        }
       }
 
-      // Build contact-sheet PNG using canvas
+      // Build contact-sheet PNG using canvas (always PNG regardless of format)
       if (qrEntries.length > 0) {
         const canvas = document.createElement("canvas");
         const cols = Math.min(4, qrEntries.length);
@@ -858,10 +998,10 @@ export function UtmGrid({
             const img = new Image();
             await new Promise<void>((resolve) => {
               img.onload = () => {
-                ctx.drawImage(img, x, y, 200, 200);
+                ctx.drawImage(img, x, y, sheetQrSize, sheetQrSize);
                 resolve();
               };
-              img.src = entry.pngDataUrl;
+              img.src = entry.sheetDataUrl;
             });
 
             // Fix 3: channel-aware contact-sheet label: "01 · campaign · source/medium"
@@ -873,7 +1013,7 @@ export function UtmGrid({
               entry.url
             );
             ctx.fillStyle = "#374151";
-            ctx.fillText(label, x, y + 200 + 18, cellSize);
+            ctx.fillText(label, x, y + sheetQrSize + 18, cellSize);
           }
         }
         const sheetDataUrl = canvas.toDataURL("image/png");
@@ -894,7 +1034,7 @@ export function UtmGrid({
       console.error("Bulk QR download failed:", err);
       showQrResult("QR download failed — please try again.");
     }
-  }, [rows, warnings, selectedRowIds, showQrResult]);
+  }, [rows, warnings, selectedRowIds, showQrResult, qrBranding, qrContrastOk]);
 
   /** Toggle a single row checkbox. */
   const toggleRowSelection = useCallback((rowId: string) => {
@@ -1807,6 +1947,20 @@ export function UtmGrid({
               </button>
               <button
                 type="button"
+                data-testid="tools-qr-branding-btn"
+                className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-50"
+                onClick={() => {
+                  setQrBrandingOpen((prev) => !prev);
+                  setActiveToolsPanel(null);
+                  setSetupTransferOpen(false);
+                  setToolsMenuOpen(false);
+                }}
+              >
+                QR Branding
+                <span className="block text-[10px] text-gray-400">colors, logo &amp; size for all QRs</span>
+              </button>
+              <button
+                type="button"
                 data-testid="tools-campaigns-btn"
                 className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-50"
                 onClick={() => openToolsPanel("campaigns")}
@@ -2273,8 +2427,21 @@ export function UtmGrid({
             noMatchMessage={bulkNoMatchMessage}
             onDownloadQr={handleBulkDownloadQr}
             qrResultMessage={qrResultMessage}
+            qrContrastBlocked={!qrContrastOk}
+            hasNoValidRows={hasNoValidQrRows}
           />
         </div>
+      )}
+
+      {/* ── QR Branding panel ────────────────────────────────────────────────────
+          Opens in the panel zone when "QR Branding" is selected in Tools ▾.
+          Full-width stacked strip, never a sidebar (D3). READ-ONLY of rows. */}
+      {qrBrandingOpen && (
+        <QrBrandingPanel
+          branding={qrBranding}
+          onChange={setQrBranding}
+          onClose={() => setQrBrandingOpen(false)}
+        />
       )}
 
       {/* ── Setup Transfer panel (D10: "Move to another device") ─────────────────
@@ -2839,6 +3006,8 @@ export function UtmGrid({
                           rowIndex={i + 1}
                           onClose={() => { setOpenQrRowId(null); setQrTriggerRect(null); }}
                           triggerRect={qrTriggerRect}
+                          branding={qrBranding}
+                          contrastBlocked={!qrContrastOk}
                         />
                       )}
                     </td>
@@ -3312,6 +3481,8 @@ export function UtmGrid({
                         rowIndex={i + 1}
                         onClose={() => setOpenQrRowId(null)}
                         cardFlow
+                        branding={qrBranding}
+                        contrastBlocked={!qrContrastOk}
                       />
                     </div>
                   )}

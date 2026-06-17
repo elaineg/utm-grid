@@ -177,19 +177,17 @@ test("Fix1-proof: row with base URL + utm_medium + utm_campaign but NO utm_sourc
     await expect(allQrBtns.nth(idx)).toBeDisabled();
   }
 
-  // Bulk download must skip this row (it has a generated URL but blocking lint).
-  // When ALL rows are skipped, no ZIP is produced — only the result message fires.
-  // Do NOT await a "download" event here (it won't fire when skippedCount === all).
+  // Bulk QR button: the row has a blocking lint error (utm_source missing).
+  // Polish fix: the button is NOW DISABLED with "Add at least one complete link first" hint
+  // (hasNoValidRows=true because lint blocks the only row).
+  // Open the Bulk edit panel first (Tools ▾ → Bulk edit) — QR section is first-class within it.
   await expandBulkBar(page);
-  await page.getByRole("button", { name: "Download QR codes as ZIP" }).click();
-
-  // Result must show "No QR codes" message (the row had a blocking lint error, was skipped).
-  const resultMsg = page.getByRole("status").filter({ hasText: /QR code/i }).first();
-  await expect(resultMsg).toBeVisible({ timeout: 10000 });
-  // Expect the "all skipped" message, NOT "N QR codes generated"
-  const text = await resultMsg.textContent();
-  expect(text).toMatch(/No QR codes/i);
-  expect(text).not.toMatch(/\d QR codes? generated/i);
+  const bulkQrBtn = page.getByRole("button", { name: "Download QR codes as ZIP" });
+  await expect(bulkQrBtn).toBeVisible({ timeout: 5000 });
+  await expect(bulkQrBtn).toBeDisabled();
+  await expect(bulkQrBtn).toHaveAttribute("title", "Add at least one complete link first");
+  // Also confirm the inline hint text is rendered
+  await expect(page.getByText("Add at least one complete link first")).toBeVisible();
 });
 
 // ── Bulk QR: result message ───────────────────────────────────────────────────
@@ -1057,4 +1055,125 @@ test("Round2-Fix2: encoded-URL Copy affordance copies and shows green confirmati
   // aria-live region should announce "URL copied"
   const liveRegion = popover.locator("[aria-live='polite']");
   await expect(liveRegion).toContainText("URL copied", { timeout: 3000 });
+});
+
+// ── Polish P3-3: "Download QR codes (ZIP)" visible in BulkEditBar WITHOUT accordion ──
+
+test("polish: Download QR codes (ZIP) button is visible in BulkEditBar WITHOUT expanding inner accordion", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await fillSpringSaleRow(page);
+  await page.waitForLoadState("networkidle");
+
+  // Open Tools ▾ and click "Bulk edit" to open the BulkEditBar panel
+  const toolsBtn = page.locator('[data-testid="tools-menu-btn"]');
+  await toolsBtn.click();
+  await page.getByRole("button", { name: /Bulk edit/i }).click();
+
+  // The inner "Bulk edit" collapsible accordion must be COLLAPSED (default)
+  const innerToggle = page.locator('button[aria-controls="bulk-edit-panel"]');
+  await expect(innerToggle).toBeVisible({ timeout: 3000 });
+  const expanded = await innerToggle.getAttribute("aria-expanded");
+  // Default state = collapsed (false) — we do NOT expand it
+  expect(expanded).toBe("false");
+
+  // The "Download QR codes as ZIP" button must be visible WITHOUT expanding the accordion
+  const dlBtn = page.getByRole("button", { name: "Download QR codes as ZIP" });
+  await expect(dlBtn).toBeVisible({ timeout: 5000 });
+  await expect(dlBtn).toBeEnabled();
+});
+
+// ── Polish P2-1: disabled bulk button with amber hint when contrast is too low ──
+
+test("polish: bulk Download QR codes (ZIP) is visibly disabled with amber hint when contrast is too low", async ({
+  page,
+}) => {
+  // Seed low-contrast branding (fg light grey on white bg)
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      "utm-grid:qr-branding",
+      JSON.stringify({ fgColor: "#cccccc", bgColor: "#ffffff", size: 1024, format: "png", logoDataUrl: "" })
+    );
+  });
+  await page.goto("/");
+  await fillSpringSaleRow(page);
+  await page.waitForLoadState("networkidle");
+
+  // Open Bulk edit panel
+  const toolsBtn = page.locator('[data-testid="tools-menu-btn"]');
+  await toolsBtn.click();
+  await page.getByRole("button", { name: /Bulk edit/i }).click();
+
+  // The download button must be DISABLED (contrast too low)
+  const dlBtn = page.getByRole("button", { name: "Download QR codes as ZIP" });
+  await expect(dlBtn).toBeVisible({ timeout: 5000 });
+  await expect(dlBtn).toBeDisabled();
+
+  // Amber hint must be visible — "Low contrast — fix colors in QR Branding"
+  const alertHint = page.getByRole("alert").filter({ hasText: /Low contrast/i }).first();
+  await expect(alertHint).toBeVisible({ timeout: 3000 });
+});
+
+// ── Polish P3-1: bulk Download QR codes (ZIP) disabled with "Add at least one complete link first" ──
+
+test("polish: bulk Download QR codes (ZIP) disabled with 'Add at least one complete link first' when grid is empty", async ({
+  page,
+}) => {
+  // Pre-seed empty row so grid has no valid URLs
+  await page.addInitScript(() => {
+    localStorage.setItem("utm-grid:rows", JSON.stringify([
+      { id: "row-1", baseUrl: "", utm_source: "", utm_medium: "", utm_campaign: "", utm_term: "", utm_content: "" },
+    ]));
+  });
+  await page.goto("/");
+  await page.waitForLoadState("networkidle");
+
+  // Open Bulk edit panel
+  const toolsBtn = page.locator('[data-testid="tools-menu-btn"]');
+  await toolsBtn.click();
+  await page.getByRole("button", { name: /Bulk edit/i }).click();
+
+  // The download button must be DISABLED
+  const dlBtn = page.getByRole("button", { name: "Download QR codes as ZIP" });
+  await expect(dlBtn).toBeVisible({ timeout: 5000 });
+  await expect(dlBtn).toBeDisabled();
+
+  // Hint must read "Add at least one complete link first"
+  const hint = page.locator("text=Add at least one complete link first");
+  await expect(hint).toBeVisible({ timeout: 3000 });
+});
+
+// ── Polish P3-2: QR popover header shows the THIS row's URL ──────────────────
+
+test("polish: QR popover header shows the encoded URL of THIS row (discoverability)", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await fillSpringSaleRow(page);
+
+  // Add a second row with a different URL so we can verify row identity
+  await addRow(page);
+  await cell(page, "Base URL", 2).fill("https://example.com/other");
+  await cell(page, "utm_source", 2).fill("facebook");
+  await cell(page, "utm_medium", 2).fill("paid_social");
+  await cell(page, "utm_campaign", 2).fill("summer");
+
+  // Open row 1's QR popover
+  const qrBtn1 = page.getByRole("button", { name: "QR code for row 1" }).first();
+  await expect(qrBtn1).not.toBeDisabled({ timeout: 3000 });
+  await qrBtn1.click();
+
+  const popover = page.getByRole("dialog", { name: /QR code popover for row 1/i });
+  await expect(popover).toBeVisible({ timeout: 5000 });
+
+  // The popover header must show row 1's URL (not row 2's)
+  const row1Url = "https://example.com/sale?utm_source=newsletter&utm_medium=email&utm_campaign=spring_sale";
+  await expect(popover).toContainText(row1Url, { timeout: 5000 });
+
+  // Must NOT show row 2's base URL in the header/content of row 1's popover
+  // (row 2's URL will differ, confirming we show the right row)
+  const row2Url = "https://example.com/other";
+  // Row 1's popover should not contain row2's base URL
+  await expect(popover).not.toContainText(row2Url, { timeout: 1000 });
 });

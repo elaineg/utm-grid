@@ -483,3 +483,87 @@ flow, never overlay a cell. Desktop grid-first (already passing) must NOT regres
   (BASE URL field top ≤ ~600px). Editable + clearable; never blocks starting fresh.
 - **Shared-link visitor instead sees:** the "Loaded shared grid (N links)" banner pinned at
   top with the shared grid scrolled into view (unchanged from prior spec).
+
+## 7. NEW FEATURE — Branded bulk QR codes (spec Flow 4)
+
+> Additive and unobtrusive: the link-building flow above is untouched. QR is a per-row icon +
+> ONE primary batch button + ONE collapsed branding panel. Same visual language as the rest of
+> the app: Inter, cool neutral grays, the existing single accent for primary actions, amber (not
+> red) for the scannability warning, square/rounded cells unchanged. Do NOT introduce a new look.
+> Honors the existing layout decisions: panels open BELOW the grid at full width, never a side
+> panel (D3); copy/done confirms in place on the persistent trigger (D5); no silent dead buttons
+> (D7); no sticky/overlay occlusion at 375px; SSR-safe (QR rendered in a client effect / on click,
+> never a useState lazy initializer — matches the existing QrPopover).
+
+**Q1 — Placement (the 5-second rule: discoverable, not cluttering).**
+- *Per-row:* a small **⊞ QR** icon-button in the existing per-row ACTIONS column (it already
+  sits there: Copy · ⊞ QR · duplicate · trash — keep all 4 fully visible at 1280px per P3-A). It
+  is the row-level entry; one click opens the preview. No new column, no extra grid width.
+- *Batch (PRIMARY):* a single **"Download QR codes (ZIP)"** button lives with the BULK action
+  group (alongside Set column / Find & replace / Bulk edit), reached from the grid's bulk
+  affordances — visually a notch quieter than the grid hero but unmistakably the batch action,
+  using the existing accent for a primary verb. It is NOT a new above-grid banner and does not
+  push the grid down (P3-B grid-first must not regress).
+- *Branding:* a **"QR branding"** entry sits in the **Tools ▾ → BUILD & REUSE** section (it
+  governs how the batch looks, like presets); opening it renders the Branding panel as a
+  full-width stacked strip BELOW the toolbar (D3), never a sidebar. Closed by default on cold
+  open — a cold visitor sees zero QR chrome beyond the quiet per-row icon.
+
+**Q2 — Per-row vs. batch interaction model.**
+- *Per-row preview = "see one before you commit."* Clicking ⊞ QR opens the existing
+  popover (desktop) / inline card panel (mobile): the QR image, the encoded URL with a Copy
+  affordance (confirms in place, D5), and **Download PNG** / **Download SVG**. The preview ALWAYS
+  reflects the current grid-wide branding (colors + logo + size), so the row preview IS the
+  branding preview — the user tweaks branding, reopens any row, and sees the result.
+- *Batch = "ship the whole set."* "Download QR codes (ZIP)" uses the SAME selection model as
+  other bulk ops (selected rows, or ALL rows when none selected), generates one image per valid
+  row + a contact-sheet PNG, and downloads ONE ZIP. After download, an inline in-place result
+  line reads e.g. **"12 QR codes generated, 2 skipped — incomplete or invalid URL"** (green-fill
+  confirmation on the persistent button, D5), so the marketer knows exactly what they got.
+- *Format/size selector* lives at the TOP of the Branding panel AND is mirrored compactly in the
+  per-row preview: a **Size** segmented control (512 / 1024 / 2048px, default 1024) and a
+  **PNG / SVG** choice; SVG visibly disables the px size (vector — no resolution to pick).
+
+**Q3 — Branding panel layout (the free wedge, per-grid for batch consistency).**
+Top-to-bottom, full-width stacked strip, three quiet groups separated by hairline dividers:
+1. **Output** — Size segmented control + PNG/SVG toggle. One muted line: "Applies to every QR
+   in this grid."
+2. **Colors** — a **Foreground (dark)** swatch+picker and a **Background (light)** swatch+picker
+   side by side, with a small live QR PREVIEW tile to their right that updates as colors change
+   (the worked-example pattern: the user sees the branded result immediately, never a blank box).
+3. **Center logo (optional)** — a drop/upload control accepting PNG or SVG, a thumbnail of the
+   uploaded logo, and a **Remove logo** action. A muted helper: "We bump error-correction and
+   keep a clear margin so it still scans." Logo is composited locally — never uploaded.
+Branding state persists in localStorage and rides saved campaigns / share link / workspace
+payload alongside the existing spec (no new schema). One muted footer line restates the wedge
+honestly: "All client-side — your logo and links never leave your browser."
+
+**Q4 — Scannability-warning UX (amber, actionable, blocks the unscannable batch).**
+When the chosen fg/bg contrast falls below the reliable-scan threshold, the live preview tile
+shows an **amber inline warning** directly beneath the color pickers (not red — this is guidance,
+matching the app's amber lint convention), stating WHAT TO DO next, not what's wrong:
+**"Low contrast — pick a darker foreground or a lighter background so scanners can read it."**
+While the warning is active, both **Download PNG/SVG** (per-row) and **"Download QR codes (ZIP)"**
+are disabled with the same hint on hover/tap, so a user can never ship an unscannable batch
+(D7 — never a silent dead button; the disabled state always carries the reason). The moment a
+high-contrast pair is chosen the warning clears and downloads re-enable. (A logo that would cover
+too much of the code is auto-capped by the generator, not surfaced as a blocking warning.)
+
+**Q5 — Empty & edge states (never a blank box, never a silent no-op).**
+- *No rows / no valid row:* "Download QR codes (ZIP)" renders DISABLED with the hint
+  **"Add at least one complete link first"** (D7). The Branding panel still opens and its preview
+  tile shows a QR of the example/placeholder URL so the controls are never a blank box.
+- *A row with an empty/invalid generated URL:* its per-row ⊞ QR icon is hidden (or shown disabled
+  with the hint "Complete this link to generate a QR") — never a popover that renders an error;
+  in a bulk run that row is silently SKIPPED and counted in the "M skipped" result line.
+- *Logo upload of an unsupported file:* an inline amber hint "Use a PNG or SVG logo" — no crash,
+  the prior logo (if any) is retained.
+
+**Q6 — Mobile (375px).**
+- Per-row ⊞ QR opens the inline CARD-flow panel (not a fixed popover) in normal document flow
+  below the card — no overlay, no scroll-jump (existing QrPopover cardFlow behavior).
+- The Branding panel and "Download QR codes (ZIP)" stack full-width below the grid; color
+  pickers, size/format controls, logo upload, and the download button are all ≥44px thumb
+  targets, reachable with NO horizontal scroll and NO sticky/overlay occlusion (elementFromPoint
+  lands on the intended control). The live preview tile sits above the warning so the amber
+  message is visible without hunting. No horizontal page overflow at 375px or 1280px.

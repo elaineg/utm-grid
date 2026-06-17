@@ -19,6 +19,7 @@
 
 import { useEffect, useRef, useCallback, useState } from "react";
 import { writeClipboard } from "../../lib/share";
+import { DEFAULT_QR_BRANDING, maxLogoSizePx, isContrastSufficient, type QrBranding } from "../../lib/qrBranding";
 
 /** Popover width — used for clamping. */
 const POPOVER_W = 288; // px (matches w-72)
@@ -40,6 +41,17 @@ interface QrPopoverProps {
    * overlaps the right-side config panels or falls below the fold.
    */
   triggerRect?: DOMRect | null;
+  /**
+   * Grid-wide QR branding settings (colors, size, format, logo).
+   * When provided, the generated QR uses these settings.
+   * Defaults to DEFAULT_QR_BRANDING (black on white, 1024px PNG).
+   */
+  branding?: QrBranding;
+  /**
+   * When true, downloads are disabled because contrast is too low to scan.
+   * The popover still shows the QR preview (with a warning).
+   */
+  contrastBlocked?: boolean;
 }
 
 /**
@@ -63,7 +75,9 @@ function triggerBlobDownload(objectUrl: string, filename: string): void {
   setTimeout(() => URL.revokeObjectURL(objectUrl), 5000);
 }
 
-export function QrPopover({ url, rowIndex, onClose, cardFlow = false, triggerRect }: QrPopoverProps) {
+export function QrPopover({ url, rowIndex, onClose, cardFlow = false, triggerRect, branding: brandingProp, contrastBlocked = false }: QrPopoverProps) {
+  const branding = brandingProp ?? DEFAULT_QR_BRANDING;
+
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [qrSvgString, setQrSvgString] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -72,15 +86,32 @@ export function QrPopover({ url, rowIndex, onClose, cardFlow = false, triggerRec
   const popoverRef = useRef<HTMLDivElement>(null);
 
   // Generate QR only in an effect (after mount, client-only) — never during render.
+  // Regenerates when branding (colors, logo, size) changes.
   useEffect(() => {
     let cancelled = false;
     async function generate() {
       try {
         const QRCode = (await import("qrcode")).default;
+        // Use error-correction H when logo is present (logo blocks part of the code).
+        const ecLevel = branding.logoDataUrl ? "H" : "M";
+        // PNG: use branding size, but cap preview at 160px for the popover display
+        const previewSize = 160;
+
         const [dataUrl, svgStr] = await Promise.all([
-          QRCode.toDataURL(url, { width: 160, margin: 1, color: { dark: "#111827", light: "#ffffff" } }),
-          QRCode.toString(url, { type: "svg", margin: 1 }),
+          QRCode.toDataURL(url, {
+            width: previewSize,
+            margin: 1,
+            errorCorrectionLevel: ecLevel,
+            color: { dark: branding.fgColor, light: branding.bgColor },
+          }),
+          QRCode.toString(url, {
+            type: "svg",
+            margin: 1,
+            errorCorrectionLevel: ecLevel,
+            color: { dark: branding.fgColor, light: branding.bgColor },
+          }),
         ]);
+
         if (!cancelled) {
           setQrDataUrl(dataUrl);
           setQrSvgString(svgStr);
@@ -91,7 +122,7 @@ export function QrPopover({ url, rowIndex, onClose, cardFlow = false, triggerRec
     }
     void generate();
     return () => { cancelled = true; };
-  }, [url]);
+  }, [url, branding.fgColor, branding.bgColor, branding.logoDataUrl]);
 
   // Dismiss on Esc.
   useEffect(() => {
@@ -124,31 +155,64 @@ export function QrPopover({ url, rowIndex, onClose, cardFlow = false, triggerRec
 
   /**
    * Round 2 Fix 1: PNG download using Blob + object URL, iOS-safe.
-   * Uses triggerBlobDownload() which uses dispatchEvent(MouseEvent) + 5s revoke delay
-   * for reliable iOS Safari behavior in both table and card view.
-   * Falls back to opening in a new tab if Blob creation fails.
+   * Uses branding.size for the high-res export (not the 160px preview size).
+   * Composites logo onto the high-res canvas if branding.logoDataUrl is set.
    */
-  const downloadPng = useCallback(() => {
-    if (!qrDataUrl) return;
+  const downloadPng = useCallback(async () => {
+    if (contrastBlocked) return;
     const filename = `qr-row-${rowIndex}.png`;
     try {
-      const byteString = atob(qrDataUrl.split(",")[1] ?? "");
+      const QRCode = (await import("qrcode")).default;
+      const ecLevel = branding.logoDataUrl ? "H" : "M";
+      const exportSize = branding.size;
+
+      // Generate full-res QR data URL
+      let exportDataUrl = await QRCode.toDataURL(url, {
+        width: exportSize,
+        margin: 1,
+        errorCorrectionLevel: ecLevel,
+        color: { dark: branding.fgColor, light: branding.bgColor },
+      });
+
+      // Composite logo if present
+      if (branding.logoDataUrl) {
+        const canvas = document.createElement("canvas");
+        canvas.width = exportSize;
+        canvas.height = exportSize;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          const qrImg = new Image();
+          await new Promise<void>((resolve) => { qrImg.onload = () => resolve(); qrImg.src = exportDataUrl; });
+          ctx.drawImage(qrImg, 0, 0, exportSize, exportSize);
+
+          const maxSide = maxLogoSizePx(exportSize);
+          const logoImg = new Image();
+          await new Promise<void>((resolve) => { logoImg.onload = () => resolve(); logoImg.onerror = () => resolve(); logoImg.src = branding.logoDataUrl; });
+          const side = Math.min(maxSide, logoImg.naturalWidth || maxSide, logoImg.naturalHeight || maxSide);
+          const x = Math.round((exportSize - side) / 2);
+          const y = Math.round((exportSize - side) / 2);
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(x - 4, y - 4, side + 8, side + 8);
+          ctx.drawImage(logoImg, x, y, side, side);
+          exportDataUrl = canvas.toDataURL("image/png");
+        }
+      }
+
+      const byteString = atob(exportDataUrl.split(",")[1] ?? "");
       const ab = new ArrayBuffer(byteString.length);
       const ia = new Uint8Array(ab);
-      for (let i = 0; i < byteString.length; i++) {
-        ia[i] = byteString.charCodeAt(i);
-      }
+      for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
       const blob = new Blob([ab], { type: "image/png" });
       const objectUrl = URL.createObjectURL(blob);
       triggerBlobDownload(objectUrl, filename);
     } catch {
-      // Fallback: open data-URI in a new tab (user can long-press Save on iOS).
-      window.open(qrDataUrl, "_blank", "noopener");
+      // Fallback: if the above fails, try the preview data URL
+      if (qrDataUrl) window.open(qrDataUrl, "_blank", "noopener");
     }
-  }, [qrDataUrl, rowIndex]);
+  }, [url, branding, contrastBlocked, rowIndex, qrDataUrl]);
 
   const downloadSvg = useCallback(() => {
-    if (!qrSvgString) return;
+    if (!qrSvgString || contrastBlocked) return;
     const filename = `qr-row-${rowIndex}.svg`;
     try {
       const blob = new Blob([qrSvgString], { type: "image/svg+xml" });
@@ -158,7 +222,7 @@ export function QrPopover({ url, rowIndex, onClose, cardFlow = false, triggerRec
       const dataUri = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(qrSvgString)}`;
       window.open(dataUri, "_blank", "noopener");
     }
-  }, [qrSvgString, rowIndex]);
+  }, [qrSvgString, rowIndex, contrastBlocked]);
 
   /** Round 2 Fix 2: copy the encoded URL with green-fill in-place confirmation (ref-stable timer). */
   const copyEncodedUrl = useCallback(async () => {
@@ -177,14 +241,23 @@ export function QrPopover({ url, rowIndex, onClose, cardFlow = false, triggerRec
 
   const content = (
     <div className="flex flex-col gap-3">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold text-gray-700">QR Code — Row {rowIndex}</span>
+      {/* Header — shows row number + the URL this QR encodes so the user always
+          knows which row's QR is open (especially with fixed-position popovers). */}
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex flex-col gap-0.5 min-w-0">
+          <span className="text-xs font-semibold text-gray-700">QR Code — Row {rowIndex}</span>
+          <span
+            className="block truncate font-mono text-[10px] text-gray-500 max-w-[200px]"
+            title={url}
+          >
+            {url}
+          </span>
+        </div>
         <button
           type="button"
           onClick={onClose}
           aria-label="Close QR popover"
-          className="rounded p-0.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+          className="shrink-0 rounded p-0.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100"
         >
           ✕
         </button>
@@ -242,13 +315,21 @@ export function QrPopover({ url, rowIndex, onClose, cardFlow = false, triggerRec
         </p>
       </div>
 
-      {/* Download buttons */}
+      {/* Contrast warning — amber, blocks downloads */}
+      {contrastBlocked && (
+        <p role="alert" className="rounded border border-amber-200 bg-amber-50 px-2 py-1.5 text-[10px] text-amber-800">
+          Low contrast — fix colors in QR Branding to enable download.
+        </p>
+      )}
+
+      {/* Download buttons — format-aware: show both PNG and SVG; disabled when contrast blocked */}
       <div className="flex gap-2">
         <button
           type="button"
-          onClick={downloadPng}
-          disabled={!qrDataUrl}
+          onClick={() => void downloadPng()}
+          disabled={!qrDataUrl || contrastBlocked}
           aria-label={`Download QR PNG for row ${rowIndex}`}
+          title={contrastBlocked ? "Fix color contrast in QR Branding first" : `Download ${branding.size}px PNG`}
           className="flex-1 rounded border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-300"
         >
           Download PNG
@@ -256,8 +337,9 @@ export function QrPopover({ url, rowIndex, onClose, cardFlow = false, triggerRec
         <button
           type="button"
           onClick={downloadSvg}
-          disabled={!qrSvgString}
+          disabled={!qrSvgString || contrastBlocked}
           aria-label={`Download QR SVG for row ${rowIndex}`}
+          title={contrastBlocked ? "Fix color contrast in QR Branding first" : "Download vector SVG"}
           className="flex-1 rounded border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-300"
         >
           Download SVG
