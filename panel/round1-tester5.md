@@ -1,50 +1,45 @@
-{"name":"Dana","clarity":"Yes","value":"Yes","advocacy":"8","prior_concerns_addressed":"n/a for round 1"}
+# Dana — Demand-gen marketer
 
-# Dana — Demand-gen marketer (round: "Move to another device" feature)
+In-audience, prior advocacy 8. Re-checked my three standing gripes first, then re-judged fresh.
 
-## What I did
-Cold-opened on my cafe MacBook (1280px). Built a real batch: added rows, typed messy values
-(`LinkedIn` / `Social Post` / `Spring Sale 2026`), hit Auto-fix → got
-`linkedin` / `social_post` / `spring_sale_2026`. Exported CSV (clean, Excel-safe). Saved a
-campaign "Spring Sale Batch". Opened Tools ▾ → "Move to another device" and did a FULL
-export→import round-trip on a fresh browser context. Repeated the whole thing at 375px phone.
+## Prior gripes — re-checked
+- **Auto-fix had no before/after diff (couldn't trust it across 30+ links): FIXED.** Clicking
+  Auto-fix now opens an "Auto-fixed 6 cells" panel listing every change per row/field —
+  "Row 1 · utm_source: News Letter → news_letter", "Row 1 · utm_campaign: Spring Sale 2026 →
+  spring_sale_2026" (struck-through before → bold after) — with an Undo button right there. I
+  tested Undo: it reverted every cell and the rollup flipped back to "11 issues found". I trust
+  it across a batch now.
+- **Cross-row lint invisible until a 2nd conflicting row: FIXED.** "All clean ✓" shows on the
+  EMPTY grid above the table, and flips to "11 issues found — jump to first ↓" the instant a
+  conflict exists. Visible before the second row, with a jump.
+- **Bottom panels read as overlapping jargon: FIXED (mostly).** Collapsed by default with plain
+  subtitles: "The STRUCTURE of utm_campaign — segments + separator", "The ALLOWED VALUES for
+  each UTM field", "Your saved grids — reopen a past batch", and even "Different from Allowed
+  Values." Much clearer.
+- Bonus: my old headline gripe ("reads as CSV cleanup, not a bulk builder") is also gone — it
+  now leads "Build and tag a whole batch of 30+ campaign links at once."
 
-## NEW feature: Move to another device — verdict
-Yes, this matters to me: I save campaigns at the cafe and tweak links from my phone between
-meetings, so my presets being stranded on one device is a real annoyance. Tested it and it's good:
-- **Does NOT push the grid below the fold.** It's an item inside the Tools ▾ dropdown, so the
-  grid stays right at the top. The panel only expands when I open it. My one-scroll bounce test
-  passes on desktop.
-- **Round-trip works.** Export gave a 1190-char code (Copy code / Download .json). On a fresh
-  "device" the import Preview showed "1 added · 0 updated · 0 skipped — Campaigns: 1 added
-  'Spring Sale Batch'" with a Confirm import button. The copy "we merge into what's already
-  here — we never overwrite your saved campaigns" is the exact trust I need to actually move
-  stuff between my two devices.
-- **Phone (375px) is real.** Grid becomes stacked cards with a big "Copy URL" button — first
-  BASE URL input is visible in the first viewport, toolbar at top. The Move panel stacks
-  export/import cleanly and is fully readable. (Prior-round mobile "grid buried" gripe looks
-  addressed — it's grid-first enough on phone now.)
-- Honest "Coming soon: accounts sync automatically — this manual move is free and always will
-  be." Sets expectations without overpromising.
+## Buried-feature check (found unprompted?)
+YES to all three on my own. Auto-fix is in the top toolbar; the lint rollup sits right above
+the grid; the cold "We catch near-duplicates like spring_sale vs Spring-Sale" demo banner
+showed on load and vanished the second I typed real data. No hunting.
 
-## What worked (core flow = my Thursday grind, gone)
-Auto-fix is the whole pitch — casing/spacing cleanup is exactly the 15-min grind I do by hand
-in a sheet, and it nukes the whole row in one click. CSV export is BOM-prefixed with a
-`generated_url` column that drops straight into my sheet. No console errors anywhere.
+## 1. Clarity — YES
+"Clean campaign links in a grid" + "Build and tag a whole batch of 30+… auto-fix the casing and
+spacing that splits a campaign into two in your analytics… export a clean CSV." That is my exact
+Thursday job, named. "No login — nothing leaves your browser" seals it.
 
-## What annoyed / confused me
-- **The headline sells the wrong job.** "Clean campaign links… auto-fix casing… export a clean
-  CSV" frames this as a CSV-cleanup utility. My actual job is "tag 30 links across channels
-  before Thursday." Skimming one scroll, I almost read it as a fix-up tool, not a bulk builder.
-- "Move to another device" sits at the BOTTOM of a 9-item Tools menu under "Download QR codes"
-  and "Run Launch Check." Discoverable but not obvious — a returning user wanting to sync
-  presets might not think to look there.
+## 2. Value — YES
+Today I hand-build ~30 UTMs in a Google Sheet and casing drift silently splits campaigns in GA4
+— I only catch it after the fact. This finds cross-row conflicts live AND fixes them in one
+click with a diff I can audit. That's the 15-min grind plus a GA4 cleanup Sheets can't do.
 
-## Single thing most holding back my score
-The headline undersells the real value (fast BULK link-building for a weekly launcher) and
-reads as "CSV cleanup." A ruthless-on-time marketer skimming one scroll might not realize this
-kills the 30-link Thursday grind. Fix the framing and this is a 9 I'd screenshot for the team.
+## 3. Advocacy — 9 / 10
+I'd screenshot this for the team channel unprompted. All three prior gripes resolved (above).
+Why not 10: "UTM Spec / Allowed Values" vs "Campaign Naming Template" are still two taxonomy-ish
+concepts I had to read twice to separate — fine for me now, but a cold 30-sec user might still
+conflate them. Minor. The diff + always-on lint earn the bump from 8.
 
 ```json
-{"tester":5,"round":1,"clarity":"Yes","value":"Yes","advocacy":8,"topComplaints":["Headline frames it as 'CSV cleanup' not 'build 30 tagged links fast' — undersells the actual bulk-builder value to a one-scroll skimmer","'Move to another device' is buried at the bottom of a 9-item Tools menu; discoverable but not obvious for a returning user wanting to sync presets"],"priorConcernsAddressed":"n/a"}
+{"tester": 5, "round": 1, "clarity": "Yes", "value": "Yes", "advocacy": 9, "topComplaints": ["'UTM Spec / Allowed Values' vs 'Campaign Naming Template' still take a second read to tell apart for a cold user", "core flow clean — auto-fix diff/undo, always-on lint, cold demo, headline all landed"], "priorConcernsAddressed": "all"}
 ```

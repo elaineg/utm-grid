@@ -274,6 +274,12 @@ test("(e) UTM Spec is saved in campaign and restored on Open", async ({
   await cell(page, "utm_medium", 1).fill("email");
   await cell(page, "utm_campaign", 1).fill("q3_taxonomy");
 
+  // Open the campaigns panel (collapsed by default) before interacting with inner controls.
+  const campaignsToggle = page.locator('[data-testid="campaigns-desktop-toggle"]');
+  if ((await campaignsToggle.getAttribute("aria-expanded")) !== "true") {
+    await campaignsToggle.click();
+  }
+
   // Save as campaign "Q3 Taxonomy"
   await page.locator('[data-testid="save-as-campaign-btn"]').click();
   const nameInput = page.locator('[data-testid="campaign-name-input"]');
@@ -286,6 +292,12 @@ test("(e) UTM Spec is saved in campaign and restored on Open", async ({
   await page.reload();
   await page.waitForLoadState("networkidle");
   await page.setViewportSize({ width: 1280, height: 900 });
+
+  // Reopen the campaigns panel after reload (state resets to collapsed).
+  const campaignsToggleAfterReload = page.locator('[data-testid="campaigns-desktop-toggle"]');
+  if ((await campaignsToggleAfterReload.getAttribute("aria-expanded")) !== "true") {
+    await campaignsToggleAfterReload.click();
+  }
 
   // Clear the spec: remove all allowed values and disable enforce
   await expandSpecPanel(page);

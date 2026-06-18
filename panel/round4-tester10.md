@@ -1,16 +1,17 @@
+# Sam — Round 4 (PM, mobile-heavy between meetings)
+
+**Prior verdict: 9/10 (HELD in R3, capped by single-grid only). This round: re-checked the cap items + regression on mobile diff, export, panel equality, plus the new Spec-panel visual fix.**
+
+## Prior-concern + this round's fix re-check
+- **UTM Spec panel collapsed state now a pixel-identical peer (this round's shipped fix):** CONFIRMED. Measured all three collapsed cards programmatically — identical: height 73, width 400, padding 0, border 1px, radius 8px, white bg. Visually the three titles + chevrons align perfectly. The Spec panel is no longer the odd one out — three equal peers.
+- **Mobile diff/grid truncation (R2 fix):** NO REGRESSION. At 375px, scrollWidth == clientWidth == 375 before AND after auto-fix; zero elements wider than the viewport; the before→after diff ("NewsLetter" → "newsletter", "Spring Sale 2026" → "spring_sale_2026") wraps fully, nothing clipped. Grid stacks into full-width cards. 0 console errors.
+- **Export:** NO REGRESSION. Export CSV downloads a clean file — proper header (base_url,utm_source,...,generated_url) plus the assembled generated_url column. Paste-ready for Sheets/Slack.
+
+## Fresh answers
+1. **Clarity: Y.** "Clean campaign links in a grid" + the subhead (casing/spacing that splits a campaign into two in your analytics) tells me in 5 seconds what it does and that it's for marketers/PMs running campaigns. The always-on "All clean ✓ / we catch near-dups like spring_sale vs Spring-Sale" line nails the value before I touch anything.
+2. **Value: Y.** Today I keep a Sheets tab of UTMs and eyeball casing by hand — that's exactly where my team's spring_sale vs Spring-Sale splits come from. The Auto-fix "Auto-fixed 2 cells" before→after diff + Undo does the cleanup I do manually, and Export CSV gives me the shareable artifact that makes me look organized. Real time saved per launch.
+3. **Advocacy: 9/10 — HOLD.** Core flow, the auto-fix before→after diff, the always-visible lint rollup, the cold "what we catch" demo, all three setup panels (now visually equal peers), and a clean CSV export all work — desktop and 375px mobile, no truncation, 0 errors. What still caps me at 9, not 10: it's a single local grid. The "Campaigns" save panel is per-device only and a shared Team Workspace isn't usable in this environment, so I can't yet make this the team's shared source of truth — the thing that would make me drop it in our launch channel unprompted. NOT down-scoring the unprovisioned workspace DB (test-env limit); the cap is the single-grid model itself, same as R3.
+
 ```json
-{"name":"Sam","clarity":"Yes","value":"Yes","advocacy":10,"priorConcernsAddressed":"all","top_issues":["Nothing blocking. Tiny: Auto-fix is now a prominent button but still manual — I'd love a passive inline badge that turns green the instant a cell is clean, so I never even have to press it. Pure polish."],"loved":["My round-3 nit is fully resolved: 'Auto-fix naming' is now a prominent gold button right in the toolbar, impossible to miss, AND it confirms it ran ('Nothing to fix — all cells are clean').","One-tap Auto-fix on mobile turned 'Newsletter'/'Summer SALE Promo' into 'newsletter'/'summer_sale_promo' instantly — exactly the GA-splitting typos it promises to kill.","Share is now ONE clean group: 'Copy share link' (frozen snapshot) vs 'Create shared workspace' (live, synced) — no more guessing, and empty-state says 'Nothing to share yet' instead of a dead button.","'+ Add row' is the obvious blue primary; hierarchy reads correctly at a glance on 375px.","Copy share link toggled to '✓ Copied ✓' and wrote a real /#g= URL to clipboard. 0 console/page errors, no horizontal overflow."]}
+{"name":"Sam","clarity":"Y","value":"Y","advocacy":9,"why":"HELD at 9. Spec panel now a pixel-identical peer (this round's fix confirmed: all 3 cards h73/w400/border1/radius8). Mobile diff/grid NO truncation at 375px (scrollWidth==375, no overflow, 0 errors). Auto-fix before→after diff + Undo + always-on lint rollup + clean CSV export all work. Capped only by single-device grid — no usable shared/team source of truth, which is what would make me recommend it unprompted; not down-scoring the unprovisioned Team Workspace DB."}
 ```
-
-## Re-checking my ONE round-3 nit (mobile, 375px)
-- "Auto-fix off by default / easy to miss; wanted a prominent Fix-all" — FIXED. Auto-fix naming is now a standout gold button in the top toolbar, not buried. Tapped it: messy SOURCE/CAMPAIGN normalized in one go, and it confirms with a toast. The look-organized, won't-debug PM is now one tap from a clean grid. I'd still personally love it to run passively, but that's a wish, not a gap.
-
-## Sentinel checks (re-test brief)
-- Consolidated Share works on mobile: single SHARE group, both actions labeled and distinct, empty-state copy present. Copy share link wrote a valid URL to clipboard, label flipped to "Copied".
-- Promoted Auto-fix works on mobile: visible, prominent, functional, gives feedback (verified the actual lowercase/underscore transform).
-- Nothing regressed: cold screen is still calm (headline + grid + folded panels), 44px targets, no horizontal overflow, 0 console/page errors, long labels truncate.
-
-## Fresh take (Sam, PM, between meetings)
-CLARITY Yes — H1 + "Auto-fix messy casing and typos before they split your Google Analytics. Share one link anyone can open and reuse — no login" tells me in 5 seconds it's a team UTM grid that prevents broken reports.
-VALUE Yes — still replaces my Google Sheet + Slack thread: live /w link, named grids, and now a one-tap Fix-all Sheets never gave me.
-ADVOCACY 10 — every prior friction is gone, the mobile first impression is clean, and the promoted one-tap Auto-fix is precisely the detail that makes me drop this in our launch channel unprompted. Holds the 10.

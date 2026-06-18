@@ -72,6 +72,19 @@ export function CampaignsSidebar({
   // Mobile disclosure state
   const [mobileExpanded, setMobileExpanded] = useState(false);
 
+  // Desktop disclosure state — collapsed by default on cold load (P2 fix)
+  const [desktopExpanded, setDesktopExpanded] = useState(false);
+
+  // Ref for the desktop panel element — allows custom event to expand it (e.g. from Tools menu)
+  const desktopPanelRef = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    const el = desktopPanelRef.current;
+    if (!el) return;
+    const handler = () => setDesktopExpanded(true);
+    el.addEventListener("campaigns-open", handler);
+    return () => el.removeEventListener("campaigns-open", handler);
+  }, []);
+
   const openCampaign = campaigns.find((c) => c.id === openCampaignId) ?? null;
 
   // Auto-focus name field when revealed
@@ -348,14 +361,37 @@ export function CampaignsSidebar({
   if (desktopOnly) {
     return (
       <aside
-        className="flex flex-col w-full rounded-lg border border-gray-200 bg-white p-4"
+        ref={desktopPanelRef}
+        className="flex flex-col w-full rounded-lg border border-gray-200 bg-white"
         aria-label="Campaigns sidebar"
         data-testid="campaigns-sidebar"
       >
-        <h2 className="text-sm font-semibold text-gray-800 mb-3">
-          Campaigns{campaigns.length > 0 ? ` (${campaigns.length})` : ""}
-        </h2>
-        {innerContent}
+        {/* Collapsible header — collapsed by default on first cold load */}
+        <button
+          type="button"
+          onClick={() => setDesktopExpanded((v) => !v)}
+          aria-expanded={desktopExpanded}
+          data-testid="campaigns-desktop-toggle"
+          className="flex w-full items-start justify-between gap-2 px-4 py-3 text-left hover:bg-gray-50"
+        >
+          <span className="flex-1 min-w-0">
+            <span className="block text-sm font-semibold text-gray-800">
+              Campaigns{campaigns.length > 0 ? ` (${campaigns.length})` : ""}
+            </span>
+            <span
+              className="block text-[10px] text-gray-400 mt-0.5"
+              data-testid="campaigns-subtitle"
+            >
+              Save + reopen a grid — pick up where you left off
+            </span>
+          </span>
+          <span className="text-gray-400 text-xs shrink-0 mt-0.5">{desktopExpanded ? "▲" : "▼"}</span>
+        </button>
+        {desktopExpanded && (
+          <div className="border-t border-gray-100 p-4">
+            {innerContent}
+          </div>
+        )}
       </aside>
     );
   }
@@ -372,7 +408,7 @@ export function CampaignsSidebar({
         >
           <span>
             Campaigns{campaigns.length > 0 ? ` (${campaigns.length})` : ""}{" "}
-            <span className="font-normal text-gray-400 text-xs">— save &amp; reuse grids</span>
+            <span className="font-normal text-gray-400 text-xs" data-testid="campaigns-subtitle">— save + reopen a grid</span>
           </span>
           <span className="text-gray-400">{mobileExpanded ? "▲" : "▼"}</span>
         </button>
@@ -394,9 +430,12 @@ export function CampaignsSidebar({
         aria-label="Campaigns sidebar"
         data-testid="campaigns-sidebar"
       >
-        <h2 className="text-sm font-semibold text-gray-800 mb-3">
+        <h2 className="text-sm font-semibold text-gray-800">
           Campaigns{campaigns.length > 0 ? ` (${campaigns.length})` : ""}
         </h2>
+        <p className="text-[10px] text-gray-400 mb-3 mt-0.5" data-testid="campaigns-subtitle">
+          Save + reopen a grid — pick up where you left off
+        </p>
         {innerContent}
       </aside>
 

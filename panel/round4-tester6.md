@@ -1,13 +1,41 @@
+# Jules — Round 4 (Content & community marketer, 50/50 desktop+mobile)
+
+**Prior concern (R3, I held at 8):** the three collapsed setup panels weren't visual equals
+— the UTM Spec / Allowed Values panel had a blue/indigo border tint, sat ~12px lower,
+rendered shorter, and had an inline (not right-aligned) chevron. I said "make all three
+genuinely identical and I'm back to 9."
+
+**Did they fix it? YES — verified with computed styles (devtools).** All three collapsed
+`<aside>` cards on cold load are now byte-identical:
+- Border: all `lab(91.62 ...)` = `border-gray-200` neutral grey. The blue/indigo tint is GONE.
+- Border width: all `1px`; background: all `rgb(255,255,255)` white.
+- Top offset: all `top:493` — baseline aligned, no more 12px drop.
+- Height: all `73px` — no more short/broken render.
+- className identical: `flex flex-col w-full rounded-lg border border-gray-200 bg-white`.
+- Header `justify-content: space-between` on all three → chevron right-aligned in every one.
+They read as true identical peers now. My cap is cleared.
+
+**Cold open:** Headline "Clean campaign links in a grid" + "Build and tag a whole batch of
+30+ campaign links at once... export a clean CSV. No login — nothing leaves your browser."
+Instantly legible. The "All clean / we catch near-duplicates like spring_sale vs Spring-Sale
+— they split one campaign into two in GA4" rollup is a great cold demo of the why.
+
+**Exercised:** Applied a preset, built a row → generated
+`...?utm_source=newsletter&utm_medium=email&utm_campaign=spring_sale_2026`. Copy button put
+the full link on the clipboard (read it back — works). Export CSV present. Auto-fix + diff
+present. Expanded/collapsed all three setup panels — smooth. Mobile (375px) stacks into clean
+cards, no h-scroll, demo banner up top. Zero console errors throughout.
+
+1. **Clarity: Y** — understood it in well under 30s. Headline + subhead + no-login line nail it.
+2. **Value: Y** — I juggle links across X, LinkedIn, Mastodon and Buffer daily and hate
+   logging in for a small job. Per-platform presets + bulk grid + no account = bookmark
+   material. Today I hand-type UTMs or paste into Google's clunky single-link builder; this
+   beats both for batches.
+3. **Advocacy: 9** — I'd bring this up unprompted in a marketing Discord. The panel-parity
+   nit that held me at 8 is genuinely fixed. Not a 10 only because a 10 for me means I've
+   used it across a few real campaigns and trusted the CSV export into GA4 over time — that's
+   earned with mileage, not a defect. Nothing on screen confuses me anymore.
+
 ```json
-{"name":"Jules","clarity":"Yes","value":"Yes","advocacy":10,"priorConcernsAddressed":"all","top_issues":["Nit only: the SHARE box is bordered but the surrounding toolbar still has many medium-weight buttons (Auto-fix naming, Paste & Audit, QR codes, Import/Export) — lots to scan before I hit Share on a small screen"],"loved":["The two share actions are now ONE bordered SHARE group: 'Copy share link' with caption 'Frozen snapshot — no server' above the emphasized blue 'Create shared workspace' with 'Live, synced via secret link' — the captions disambiguate so I no longer have to read fine print twice","'+ Add row' is the single emphasized blue primary; Auto-fix/Paste/QR are clearly secondary accent outlines — toolbar hierarchy finally reads at a glance","X/Twitter + Mastodon presets still present and the trigger 'Presets — fill source/medium in one click' is right above the grid on mobile"]}
+{"name":"Jules","clarity":"Y","value":"Y","advocacy":9,"why":"Prior R3 cap fully fixed — all three collapsed setup panels now byte-identical (border-gray-200, white bg, top:493, height:73, right-aligned chevron, verified via computed styles). No-login bulk UTM grid with per-platform presets is exactly my daily pain; copy/export work, zero console errors, clean mobile. Not a 10 only because that needs real-campaign mileage, not because of any defect."}
 ```
-
-# Round 4 — Tester 6 (Jules, content & community marketer, 375px mobile)
-
-**Prior concern — all addressed.** My one round-2 nit was the two share paths reading too close together. FIXED, and well. They're now inside a single bordered "SHARE" card: "Copy share link" (caption: *Frozen snapshot — no server*) on top, the emphasized blue "Create shared workspace" (caption: *Live, synced via secret link*) below. The captions do the explaining, so a first-timer doesn't have to parse two near-identical button labels — exactly the consolidation I wanted. Copy fired and flipped to "✓ Copied ✓" (clipboard read blocked in test env; verified visually). Toolbar restyle landed too: "+ Add row" is the lone solid-blue primary, everything else is a lighter accent outline — clean hierarchy.
-
-**Clarity — Yes.** Same strong cold open: "Clean UTM links for your whole campaign — in one grid… no login, nothing leaves your browser." Friend pitch unchanged and still instant.
-
-**Value — Yes.** Beats my drifting Notion table. Presets cover my two channels (X, Mastodon), the grid does my weekly tagging in a few taps, and the share split is now obvious: snapshot link vs live synced workspace.
-
-**Advocacy — 10.** The last thing holding me at 9 is gone and the fix is crafted, not bolted on. No occlusion, no horizontal scroll (docW=vw=375), zero console errors. I'd bring this up unprompted in my marketing Discord. Only lingering nit: the toolbar still stacks a lot of secondary buttons above Share, so on mobile it's a bit of a scroll-and-scan — not a blocker.

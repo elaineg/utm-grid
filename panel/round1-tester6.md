@@ -1,50 +1,26 @@
-{"name":"Jules","clarity":"Yes","value":"Yes","advocacy":"8","prior_concerns_addressed":"n/a for round 1"}
+# Jules — Content & community marketer
 
-# Jules — Content & community marketer, 50/50 desktop+mobile
+**Context:** I tag campaign links across X, LinkedIn, Mastodon and Buffer daily, and I bail the instant something wants a login for a 5-minute job. Today I keep UTM conventions in a Notion table and hand-build links (or Google's old one-at-a-time URL builder). My real burn: `Spring-Sale` vs `spring_sale` splitting one campaign into two in GA4.
 
-## What I did
-Cold-opened on desktop. Headline "Clean campaign links in a grid" + "No login — nothing
-leaves your browser" — I got it in ~10 seconds. Opened Tools ▾, found Channel Presets:
-built-in presets for **X/Twitter, Mastodon, Paid Social–LinkedIn, Organic Social, Email,
-Google/CPC** — literally my exact platform mix. Applied LinkedIn (→ source=linkedin,
-medium=paid_social), set "New rows use → X/Twitter" so adding a row pre-fills
-source=twitter/medium=social. That's my daily bulk workflow, done in clicks.
-Then the round trip: saved a campaign "Jules Q3 Launch" on a desktop context, opened
-"Move to another device", exported (Download .json AND Copy code both work, 1.3KB bundle),
-then on a FRESH 375px mobile context imported it. Preview showed "1 added · 0 updated ·
-0 skipped — Campaigns: 1 added 'Jules Q3 Launch'", hit Confirm import → "merged", reloaded,
-campaign persisted ("Campaigns (1)"). Full bookmark-and-carry loop works on phone.
+## Re-check of my prior complaints (I scored this an 8 last time)
+- **"Presets buried two hops behind Tools ▾ → Channel Presets → expand" — FIXED.** Presets are now a visible chip row above the grid on cold load: Email, Paid Social–LinkedIn, Google/CPC, Organic Social, **X / Twitter**, **Mastodon**, + Save preset…, with a "New rows use [preset]" selector. The exact thing I asked for. This is the single change that moves me off an 8.
+- **"Crowded toolbar, Audit/Launch-Check/Rules blur" — partly addressed.** Toolbar is cleaner (Add row, Auto-fix, QR codes, Import/Export, Tools/Share/Rules). "Audit URLs / Run Launch Check" overlap is gone from the front; "Rules" still sits next to the new lint rollup, slight conceptual overlap but no longer confusing.
 
-## What worked
-- Presets are THE feature for me. Per-platform, one-click, plus a custom "Save preset…".
-- "Move to another device" copy is reassuring exactly where I'm twitchy: "This is your own
-  local data — nothing is uploaded" and "This manual move is free and always will be." It
-  never made me think about a login. Clearly no-account.
-- Import is a MERGE with a non-destructive preview ("we never overwrite your saved
-  campaigns") — I trust pasting a code from my laptop into my phone now.
-- Mobile is real responsive cards, no horizontal scroll, the modal stacks cleanly at 375px.
-- Auto-fix + the "splits a campaign into two in your analytics" framing nails the real pain.
+## 1. Clarity — YES
+~10 seconds. Headline "Clean campaign links in a grid" + subtitle naming "the casing and spacing that splits a campaign into two in your analytics" is literally my bug. "No login — nothing leaves your browser" sealed it. I'd tell a friend: "No-signup bulk UTM builder that runs in your browser and catches the casing mistakes that double-count campaigns in GA4."
 
-## What confused/annoyed me
-- The presets live behind Tools ▾ → "Channel Presets", which then expands a separate
-  "Presets — fill source/medium" panel above the grid. Two hops to reach the thing I came
-  for. On a bookmarked tool I'd want presets visible by default, not buried in a menu.
-- "Save preset…" — I clicked it expecting a quick name prompt; it wasn't obvious what got
-  captured. Minor, but the preset-creation moment is less polished than apply.
-- The toolbar is crowded (Tools/Share/Rules dropdowns + 5 buttons). As a medium-tech user
-  I had to hunt; "Audit URLs" vs "Run Launch Check" vs "Rules" blurred together.
+## 2. Value — YES
+Beats my Notion + manual-link habit. Presets one-click fill source/medium, grid does 30+ at once, Copy gives the full tagged URL (verified on clipboard), Export CSV is right there. Lint+auto-fix is the upgrade Google's builder never had. Mobile (375px) is real responsive cards with a big Copy URL button — usable on my phone, which is half my day. Weekly-use bookmark for me.
 
-## Bug / artifact
-No real bug. Note: "Copy code" copied fine in-app (button enabled, bundle present); reading
-clipboard back was blocked in my headless test env — copy verified visually, not a regression.
+## BURIED-CHECK — found all three on my own, unprompted:
+- **Auto-fix diff panel — YES.** Hit Auto-fix → "Auto-fixed 4 cells" panel, each change as `Row 2 · utm_source: "LinkedIn" → "linkedin"` (old struck through, arrow, new). **Undo** in the panel AND toolbar — verified it reverts (`linkedin` → `LinkedIn`). Fixed cells glow green in the grid. This is the trust-maker: it shows its work instead of silently rewriting my links.
+- **Lint rollup — YES.** Always visible. Flipped "All clean ✓" → "**5 issues found — jump to first ↓**" the moment I typed messy data, back to "All clean ✓" after auto-fix. Jump-to-first is exactly right for 30 rows.
+- **Cold "what we catch" demo — YES.** "We catch near-duplicates like `spring_sale` vs `Spring-Sale` — they split one campaign into two in GA4." On cold load (desktop + mobile); correctly disappeared once I added real rows.
+- **Three setup panels:** collapsed, plain subtitles. Naming Template = "STRUCTURE of utm_campaign — segments + separator," Allowed Values = "allowed values per UTM field," and it states "Different from Allowed Values." Bounded jargon, distinction spelled out.
 
-## Single thing most holding back my score
-**Discoverability of presets.** The one feature that makes me bookmark this is two menu-hops
-deep. Surface platform presets on first load (a visible row of platform chips above the grid)
-and I'm at a 9 — I'd post about it unprompted. Right now an 8: I love it, but I'd have to tell
-a friend "click Tools, then Channel Presets, then expand the panel," and that caveat is what
-keeps it from a clean recommend.
+## 3. Advocacy — 9/10
+Now I'd bring it up unprompted in my marketing Discord. Prior blocker (hidden presets) is fixed, and the before→after diff with undo is what makes me trust it on 40 rows. Off a 10 only because: Naming-Template vs Allowed-Values is two concepts that take one pass to separate, and I couldn't tell at a glance whether presets/rules persist across sessions without explicitly saving a named preset. Minor; neither stops the recommend.
 
 ```json
-{"tester": 6, "round": 1, "clarity": "Yes", "value": "Yes", "advocacy": 8, "topComplaints": ["The killer feature (X/Twitter/LinkedIn/Mastodon presets) is hidden two hops deep behind Tools ▾ → Channel Presets → expand panel, not visible on cold landing", "Toolbar is crowded — 'Audit URLs' vs 'Run Launch Check' vs 'Rules' blur together for a medium-tech user"], "priorConcernsAddressed": "n/a"}
+{"tester": 6, "round": 1, "clarity": "Yes", "value": "Yes", "advocacy": 9, "topComplaints": ["Naming-Template vs Allowed-Values are two concepts that take one pass to separate", "unclear at a glance whether presets/rules persist across sessions without explicitly saving"], "priorConcernsAddressed": "some"}
 ```

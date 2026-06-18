@@ -1,14 +1,36 @@
+# Dana — Round 4 (Demand-gen marketer)
+
+**Prior verdict (R3): 9/10, HELD.** This round shipped a further visual fix: the UTM Spec
+panel collapsed state is now pixel-identical to the other two panels.
+
+## Re-check of my own prior concerns
+- **Panel equality (my lingering nit): CONFIRMED FIXED.** Measured all three collapsed cards —
+  Campaign Naming Template / Campaigns / UTM Spec all read height 73px, width 400px, same top
+  (493px), same 1px border, 8px radius, 0 padding. True equal-weight peers now; no
+  "afterthought" panel.
+- **One-scroll value: NO REGRESSION.** Hero "Clean campaign links in a grid" + subhead naming
+  the casing/spacing-splits-a-campaign-in-GA4 pain + "No login — nothing leaves your browser" +
+  live grid + presets + lint rollup all above the fold on my MacBook.
+
+## Fresh pass
+1. **Clarity — Y.** Cold, I knew exactly what it is and that it's for me: a batch UTM builder
+   that auto-cleans the casing/spacing that splits a campaign in analytics. The cold "We catch
+   near-duplicates like spring_sale vs Spring-Sale — they split one campaign into two in GA4"
+   demo nails the why instantly.
+2. **Value — Y.** Today I hand-build 30+ tagged links in a Google Sheet with CONCATENATE every
+   Thursday and eyeball for stray caps (the exact thing that bites me in GA4). This does the
+   grid AND catches the casing I miss. Lint fired instantly ("1 issue found — jump to first",
+   inline "Fix this value"), flipped to "All clean ✓" the moment the row was valid. Auto-fix
+   showed a readable before→after diff (utm_medium: "Spring Sale" → "spring_sale") with Undo.
+   Copy gave the exact generated URL; Export CSV downloaded utm-grid.csv. Beats my sheet.
+3. **Advocacy — 9. HELD.** No regression, and the panel-equality nit that kept me off 10 last
+   round is now fixed. Still a 9 (not 10) honestly because the cross-row near-dup catch — the
+   single most screenshot-worthy thing — lives only as the cold demo line, not front-and-center
+   in the actual build flow. That polish ceiling, not a flaw, is what holds the leap to "I bring
+   it up unprompted to every marketer I know."
+
+Team Workspace DB error in this local env was ignored per instructions (test-env limitation).
+
 ```json
-{"name":"Dana","clarity":"Yes","value":"Yes","advocacy":9,"priorConcernsAddressed":"all","top_issues":["'Copy all URLs' floats alone on the far right OUTSIDE the SHARE box while 'Copy share link' lives INSIDE it — two copy-ish actions split across the toolbar made me look twice about which copies the links vs. the link.","Banner stack is down to three collapsed rows (Launch Check, Presets, Bulk Edit) — better, but still a strip of accordion noise between the clean toolbar and the table."],"loved":["'+ Add row' is now a solid filled blue button while everything else is outlined — the one thing I'm supposed to do is unmistakable in one glance. Exactly the primary-action emphasis I wanted.","The SHARE group finally disambiguates the two share modes: 'Copy share link — Frozen snapshot, no server' vs 'Create shared workspace — Live, synced via secret link'. My round-3 muddy-distinction gripe is gone.","Grid header (BASE URL row) sits ~632px, fully above my 800px fold; hero -> toolbar -> 3 collapsed banners -> editable grid is a clean cold open."]}
+{"name":"Dana","clarity":"Y","value":"Y","advocacy":9,"why":"Panel-equality fix confirmed — all 3 collapsed cards now pixel-identical (73x400px, same border/radius/top); no regression to one-scroll value. Lint fires instantly, auto-fix before/after diff + Undo is clean, Copy and CSV export both work, beats my Thursday Google Sheet. Held at 9: cross-row near-dup detection is still just a cold demo line rather than surfaced in the build flow, which caps the leap to 10.","priorConcernsAddressed":"all"}
 ```
-Round-3 nits, point by point:
-
-1) "Five collapsed banner rows stacking between toolbar and grid" — IMPROVED. Now three collapsed rows (Launch Check, Presets, Bulk Edit); Campaign Naming + Allowed Values dropped below the grid. Still a strip of noise but materially shorter, and the grid clears the fold.
-
-2) "Share concept unclear" — FIXED. Both share actions live in one bordered SHARE box with sublabels: "Frozen snapshot — no server" vs "Live, synced via secret link." I instantly get which is a static link and which is a live team page.
-
-Clarity: Yes. Hero + subhead nail what/who in 2s; "+ Add row" primary emphasis makes the first move obvious.
-
-Value: Yes, unchanged. Auto-fix casing + presets for my weekly channels + Export CSV / Copy all URLs still beats my HubSpot+spreadsheet grind.
-
-Advocacy: 9. Both my dings went the right way. Held off 10 only by the split copy-link actions (one in SHARE, one floating right) and the three-row accordion strip. Tighten those and it's a 10.

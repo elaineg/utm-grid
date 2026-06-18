@@ -228,7 +228,7 @@ test("AUTOFIX spot-check: Facebook -> Auto-fix naming -> utm_source=facebook in 
   await cell(page, "utm_medium", 1).fill("paid_social");
   await cell(page, "utm_campaign", 1).fill("spring");
 
-  await page.locator('[data-testid="auto-fix-naming-btn"]').click();
+  await page.locator('[data-testid="autofix-button"]').click();
 
   // utm_source should be lowercased to "facebook"
   await expect(cell(page, "utm_source", 1)).toHaveValue("facebook");

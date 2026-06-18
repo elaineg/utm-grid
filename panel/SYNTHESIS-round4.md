@@ -1,138 +1,79 @@
-# UTM Grid — Panel Synthesis, Round 4
+# utm-grid — Panel SYNTHESIS round 4 (convergence: UTM Spec panel pixel-symmetry fix)
 
-New feature panelled: a **named Campaigns library** — save the whole grid (+ lint settings)
-under a name, reusable sidebar, Open / Duplicate / Delete, all localStorage. Round 3 had
-exited at 9/10 after the client-side share link, with Elena the sole structural out-of-ICP
-holdout. This round the fully-passing count **DROPPED to 2/10** — the library introduced new
-friction (and two contradictory bug reports the builder must resolve) that knocked seven
-previously-9 in-ICP testers down to 8.
+Tested COLD against local production server http://localhost:3219. DELTA roster per the
+round-4 plan: re-spawned the FULL in-audience 5 as a final convergence + regression check on
+the shared-surface change — **Jules** (the lone gating miss, had to clear 9) plus **Tomás,
+Wen, Dana, Sam** (had to HOLD at 9). Out-of-audience floors carried from round 3, non-gating,
+NOT re-spawned: Marcus 9, Aisha 8 (value N profile-driven), Priya 8, Elena 8, Rob 6.
+(This overwrites a stale round-4 synthesis from a prior unrelated Campaigns-library run on the
+same path.)
 
-## Score table (round 4)
-Pass = advocacy ≥ 9 AND clarity = Yes AND value = Yes.
+## Round-4 fix shipped & verified
+**UTM Spec / Allowed Values panel collapsed state made pixel-identical to the other two setup
+panels — LANDED & WORKED.** The round-3 gating defect (this panel was the visual odd-one-out:
+faint blue/indigo border tint, ~12px lower + shorter, inline chevron) is fully resolved. The
+fix was independently confirmed cold by ALL FIVE in-audience testers via devtools computed
+styles, with matching numbers across testers:
+- border: now neutral grey `border-gray-200` / white bg on all three (blue/indigo tint GONE)
+- baseline: all three share `top:493`, no ~12px offset
+- height: all three `73px`, no short render
+- chevron: header `justify-content: space-between` → right-aligned on all three
+- Jules measured byte-identical className `flex flex-col w-full rounded-lg border border-gray-200 bg-white`
 
-| # | Persona | Role | Clarity | Value | Advocacy | Pass? | note |
-|---|---------|------|---------|-------|----------|-------|------|
-| 1 | Priya | Sr backend eng | Yes | Yes | 8 | ❌ | Dup/Del row vs campaign naming collision; wants Fix-all |
-| 2 | Marcus | Frontend eng | Yes | Yes | 6 | ❌ | Duplicate "broken" (dups a row, count stays 1) + buttons overlap URL cell |
-| 3 | Wen | Marketing data analyst | Yes | Yes | 9 | ✅ | full pass; only nits = local-only + no Fix-all |
-| 4 | Tomás | Ops analyst | Yes | Yes | 8 | ❌ | "Clean all" label flinch (saw it as lint-only); wants rename/CSV-save |
-| 5 | Dana | Demand-gen marketer | Yes | Yes | 8 | ❌ | "Clean all" wipes grid w/ NO confirm; no rename/search; local-only |
-| 6 | Jules | Content/community mktr | Yes | Yes | 8 | ❌ | preset Apply needs a selected row; mobile grid side-scroll |
-| 7 | Aisha | Product designer | Yes | Yes | 8 | ❌ | silent overwrite on "Save as new" name collision; hover-gated actions; pointer lost on reload |
-| 8 | Rob | Brand designer | Yes | Yes | 8 | ❌ | Duplicate loads unsaved draft (3-step clone), not a copy card; lint no auto-fix |
-| 9 | Elena | Eng manager | Yes | **No** | 6 | ❌ | structural out-of-ICP — local-only ≠ team standardization; value=No (unfixable) |
-| 10 | Sam | Product manager | Yes | Yes | 9 | ✅ | full pass; only nit = hover-gated mobile card actions |
+All three setup panels (Campaigns / Naming Template / UTM Spec) now read as identical
+equal-weight peers on cold load. The asymmetry that walked across panels in rounds 2→3 is
+closed; it did not move to a fourth surface.
 
-**Fully passing: 2/10** (Wen, Sam). Exit bar 9/10 — **NOT MET**. Regressions: none reported
-(core grid/lint/CSV/share all still pass for every tester); the drop is new-feature friction.
+## Score table
 
-## Complaints grouped by cause
+| Tester | Audience | Clarity | Value | Adv | Note |
+|--------|----------|---------|-------|-----|------|
+| Jules  | IN  | Y | Y | 9 | **CLEARED 8→9.** Prior cap fully fixed — three panels byte-identical via computed styles (border-gray-200, white bg, top:493, h73, right-aligned chevron). No-login bulk UTM grid w/ per-platform presets = his daily pain; Copy wrote full URL to clipboard, Export present, clean mobile 375px, 0 console errors. Not a 10 only for needing real-campaign mileage (non-defect) |
+| Tomás  | IN  | Y | Y | 9 | **HELD.** Re-measured all 3 panels pixel-identical, no regression. CSV round-trip byte-clean under torture (leading zeros, unicode, embedded quotes/commas, RFC-4180 + UTF-8 BOM); auto-fix diff + Undo + always-visible lint all work. Capped at 9 only by footer-only privacy placement (placement nit) |
+| Wen    | IN  | Y | Y | 9 | **HELD.** No regression: auto-fix diff w/ per-cell strikethrough+Undo, always-on GA4-split lint ("5 issues"→"All clean ✓"), byte-clean CSV round-trip under a torture file, 0 console errors. Confirmed 3 panels byte-identical computed styles. Capped at 9 by unchanged import-dialog/collapsed-panel learnability (polish, not capability) |
+| Dana   | IN  | Y | Y | 9 | **HELD.** One-scroll value intact; lint fires instantly + "Fix this value", auto-fix before→after diff w/ Undo, Copy exact URL, Export CSV. Measured all 3 panels pixel-identical (h73/w400/top493). Capped at 9 only by cross-row near-dup detection living in the cold demo line, not yet in the build flow (polish ceiling) |
+| Sam    | IN  | Y | Y | 9 | **HELD.** Mobile 375px no regression (scrollWidth==clientWidth==375, diff wraps, no truncation), Export clean CSV, auto-fix diff + Undo. Measured all 3 panels identical (h73/w400/border1/radius8). Capped at 9 by single device-local grid (Team Workspace would close it; unprovisioned — NOT down-scored per caveat) |
+| Marcus | OUT | Y | Y | 9 | CARRIED from round 3 (out-of-audience, non-gating) |
+| Aisha  | OUT | Y | N | 8 | CARRIED from round 3 (value N profile-driven — rarely builds UTMs; non-gating) |
+| Priya  | OUT | Y | Y | 8 | CARRIED from round 1/2 (out-of-audience, non-gating) |
+| Elena  | OUT | Y | Y | 8 | CARRIED from round 2 (out-of-audience, non-gating) |
+| Rob    | OUT | Y | (marginal) | 6 | CARRIED from round 1 (out-of-audience, non-gating) |
 
-**A. Duplicate control confusion / reads as broken — RECURS (real, top priority).**
-Marcus (6), Rob (8), Priya (8) all hit it; Elena conflated the two on a skim. Marcus & Rob
-report clicking a campaign card's Duplicate does NOT add a second library entry (count stays
-1); Priya & Elena report a naming collision between a grid-row "Dup" button and the campaign
-"Duplicate". This is the single biggest advocacy drag and the cause of the contradiction below.
+## In-audience-at-bar count: 5/5 (was 4/5 round 3, 3/5 round 2, 4/5 round 1)
 
-**B. "Clean all" label + no-confirmation fear — RECURS (real).** Dana (8), Tomás (8), Elena
-(6) all flinched. Dana reports it wipes a populated grid with NO confirm (data-loss); Tomás
-& Elena read the *label* as "clear the grid" but believe it only applies lint. Contradiction
-below. Even in the benign reading, the label causes a flinch in 3 personas.
+Jules 9, Tomás 9, Wen 9, Dana 9, Sam 9 — ALL FIVE in-audience marketers at 9+.
+Bar requires all 5 in-audience at 9+. **MET.**
 
-**C. Card actions hover-gated / invisible on mobile — RECURS (real).** Sam (9, his only nit),
-Aisha (8). Open/Duplicate/Delete are revealed only on hover (desktop) / tap (touch), with no
-chevron or "···" affordance, and Aisha saw it applied inconsistently (new cards hid them,
-old cards showed them). Sam: "first glance looks like the actions don't exist on phone."
+## Did Jules clear 9? YES (8→9 — the gating panel-symmetry defect is fixed, confirmed via byte-identical computed styles). Did the four hold? YES — Tomás/Wen/Dana/Sam all HELD at 9 with NO regression.
 
-**D. Silent overwrite on "Save as new…" name collision — single-persona (Aisha), but a
-data-loss safety issue.** Aisha (8) typed an existing name into "Save as new…" and it
-silently merged into the existing campaign with no "Replace existing?" confirm and no second
-entry. Only Aisha exercised the collision path, but it is a quiet data-loss hole and the
-overwrite-confirm copy the feature should have is simply absent — treat as real.
+## Regression check
+NO functional or judgment regression. Across the five testers, re-verified against deliberately
+adversarial inputs: auto-fix before→after diff with per-cell strikethrough + real Undo, the
+always-visible lint rollup (caught seeded casing near-dupes / GA4-split risks, reset to
+"All clean ✓"), CSV round-trip (RFC-4180 + UTF-8 BOM, byte-identical re-import incl.
+leading-zero / unicode / embedded-quote / embedded-comma, no invisible transforms),
+Copy-to-clipboard (full URL read back), CSV Export, and mobile diff/grid at 375px
+(scrollWidth==clientWidth, no truncation) — ALL still work, 0 console errors. The round-4
+shared-surface visual change introduced no regression.
 
-**E. Active-campaign pointer lost on reload — single-persona (Aisha).** After reload the grid
-persisted but the "In: <name>" chip reverted to "Unsaved grid", breaking the accumulation
-illusion. One tester, but cheap and on-theme to fix.
+## Residual defects
+NONE gating. The only remaining caps are out-of-scope wishes / polish ceilings that hold
+testers AT 9 (not below), already in backlog:
+- Footer-only privacy claim — Tomás wants it near Import where he pastes company data (placement nit).
+- Import-dialog / collapsed-panel first-open learnability — Wen (polish, not a new capability).
+- Cross-row near-dup detection surfaced only as the cold demo line, not inside the build flow — Dana.
+- Single device-local grid; a shared Team Workspace (unprovisioned in this env) would close it — Sam.
 
-**F. Row action buttons overlap the Generated URL cell (CSS) — RECURS (real).** Marcus (6),
-Dana (8). With a long base URL the row Copy/Dup/Del buttons render on top of the gen-URL text
-("...launchCopy Dup"). Cosmetic but it's the first thing a frontend/design eye catches.
+## Lone-tester-false-negative check
+Not applicable in the gating direction — there is no in-audience miss this round (5/5). The
+positive convergence is corroborated: the panel-symmetry fix was independently measured by all
+five testers with matching computed-style numbers (border color, top offset, height, chevron
+alignment). The agreement topology is 5-agree, not 1-vs-majority.
 
-**G. Preset Apply needs a row selected — single-persona (Jules).** Preset chips do nothing
-until a row is clicked; Jules expected a bulk tool to fill all/new rows. One tester.
+## Verdict: SHIP
 
-**H. Local-only library, no cross-device/team sync — RECURS, but largely structural ceiling.**
-Wen (9), Dana (8), Elena (No). Named as the reason Wen/Dana won't go to 10 and the reason
-Elena's value stays No. This is the documented out-of-scope sync lever (Auth.js/Turso) — not
-a blocker for the 9/10 bar, and the wrong thing to chase this iteration.
-
-**I. No rename / search / description on campaigns — RECURS (mild).** Dana, Tomás. Needed to
-scale to ~52 campaigns/year; not a current 8→9 blocker on its own.
-
-**J. No bulk "Fix all" lint — RECURS (mild).** Priya, Wen, Rob. Per-cell Fix is tedious on a
-large import; quality-of-life, not an 8→9 blocker alone.
-
-**K. Mobile grid side-scroll — single-persona, pre-existing (Jules).** Carried nit from R2/R3,
-not a regression.
-
-**L. Structural out-of-ICP (Elena).** EM who never builds UTMs; value=No regardless of product
-work. Excluded from the convertible set.
-
-## ⚠ Two CONTRADICTIONS the builder MUST resolve by checking actual behavior
-
-1. **Duplicate.** Marcus & Rob report a campaign card's Duplicate does NOT create a second
-   library entry — it duplicates a grid ROW / loads an unsaved draft (count stays at 1).
-   Wen, Dana, Jules, Elena, Sam report Duplicate correctly creates a "<name> copy" entry with
-   the header count incrementing (1→2). Likely cause: a grid-row "Dup" button sits adjacent to
-   the campaign "Duplicate" and testers confused the two (Priya & Elena explicitly report
-   conflating them). Builder: determine which button each tester actually clicked, confirm the
-   campaign Duplicate genuinely makes a copy card, and DISAMBIGUATE the two controls so no one
-   can click the wrong one (relabel/move the row button; visually separate the card actions).
-
-2. **Clean all.** Dana reports "Clean all" wipes a populated grid with NO confirmation
-   (data-loss). Tomás reports it only applies lint fixes with a "No cells needed fixing" toast
-   (Sam saw "Cleaned 3 cells" + Undo). Builder: determine the real behavior. If it clears the
-   grid → add a confirm + rename to something unambiguous. If it only lints → rename to
-   "Fix all"/"Clean naming" + tooltip so the label stops reading as "clear the grid."
-
-## Prioritized fix list (ranked by 8→9 conversions unlocked)
-
-Convertible set (Elena excluded — structural value=No, won't reach Yes): **Priya, Marcus,
-Tomás, Dana, Jules, Aisha, Rob** must all convert to 9, with Wen + Sam carrying. Realistic
-ceiling = **9/10**. Every fix below is in-scope, client-side, $0.
-
-**P0 — resolve the two contradictions; these gate the most conversions.**
-- **Fix A — Duplicate disambiguation (unlocks Marcus 6→, Rob 8→, Priya 8→; de-risks Elena's
-  skim).** Resolve contradiction 1: ensure campaign Duplicate makes a "<name> copy" card with
-  count++, and relabel/separate the adjacent grid-row "Dup" so it cannot be mistaken for it.
-  Biggest single lever — touches 3 convertibles incl. the only 6.
-- **Fix B — "Clean all" safety + label (unlocks Dana 8→, Tomás 8→; de-risks Elena).** Resolve
-  contradiction 2: if it can wipe the grid, add a confirm; rename so the label is unambiguous.
-
-**P1 — recurring friction blocking the remaining convertibles.**
-- **Fix C — persistent card actions / mobile affordance (unlocks Aisha 8→ in part; secures
-  Sam's carry, his only nit).** Always-show Open/Duplicate/Delete or add a "···" overflow;
-  remove hover-gating inconsistency.
-- **Fix D — overwrite confirm on "Save as new…" name collision (unlocks Aisha 8→).** Add a
-  "Replace existing '<name>'?" confirm or auto-suffix; close the silent data-loss path.
-- **Fix F — row buttons overlap Generated URL cell CSS (unlocks Marcus 6→ with Fix A; helps
-  Dana).** Fixed-width actions column or URL truncation.
-- **Fix G — preset Apply without a selected row (unlocks Jules 8→ with mobile note).** Make
-  presets fill all/new rows, or surface the "select a row first" requirement clearly.
-
-**P2 — polish / future, not gating the 9/10 bar.**
-- Fix E — restore the active-campaign "In: <name>" pointer across reload (Aisha nice-to-have).
-- Fix J — bulk "Fix all" lint (Priya/Wen/Rob QoL).
-- Fix I — rename/search/description on campaigns (Dana/Tomás, scale).
-- Fix K — mobile grid stacked card view (Jules, pre-existing).
-- Fix H — cross-device/team sync (local-only): the documented out-of-scope Auth.js/Turso
-  lever; do NOT chase this iteration. It caps Wen/Dana at 9 (still a pass) and keeps Elena at
-  value=No (structural). Exclude from the 9/10 path.
-
-## Exit decision
-**9/10 NOT MET (2/10 this round).** The Campaigns library is well-received in concept (every
-in-ICP tester calls it the return-visit hook) but shipped with friction that dropped seven
-9s to 8 and one to 6. No regressions. Path to the 9/10 ceiling: ship P0 (resolve both
-contradictions) + P1 (persistent actions, overwrite confirm, CSS overlap, preset apply), then
-re-panel. Elena stays the documented structural value=No holdout — exclude her; 9/10 is the
-target, not 10/10.
+The audience-weighted bar — all 5 in-audience marketers (Jules, Tomás, Wen, Dana, Sam) advocate
+at 9+ — is MET. Trajectory across the arc: 4/5 → 3/5 → 4/5 → **5/5**. The lone gating miss
+(Jules at 8, the UTM Spec panel asymmetry) is resolved and confirmed via byte-identical computed
+styles; the four sentinels held at 9 with no regression. All remaining items are non-gating
+backlog polish. Promote the current local build to production.

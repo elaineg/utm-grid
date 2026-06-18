@@ -374,8 +374,13 @@ test("Saving campaign preserves naming template; Open restores it", async ({
   ]);
   await checkEnforceTemplate(page);
 
-  // Save as campaign — the sidebar is always visible at desktop widths (no toggle needed).
-  // Use the stable data-testid for the save button.
+  // Open the campaigns panel (collapsed by default) before interacting with inner controls.
+  const campaignsToggle = page.locator('[data-testid="campaigns-desktop-toggle"]');
+  if ((await campaignsToggle.getAttribute("aria-expanded")) !== "true") {
+    await campaignsToggle.click();
+  }
+
+  // Save as campaign — use the stable data-testid for the save button.
   const saveBtn = page.locator('[data-testid="save-as-campaign-btn"]');
   await saveBtn.click();
   // The inline name input appears after clicking save
@@ -411,8 +416,13 @@ test("Saving campaign preserves naming template; Open restores it", async ({
     await uncheckEnforceTemplate(page);
   }
 
-  // Open the saved campaign — campaigns sidebar is visible at desktop (no toggle click needed).
-  // The dirty-grid guard uses window.confirm (native browser dialog).
+  // Reopen the campaigns panel after reload (collapsed by default).
+  const campaignsToggleAfterReload = page.locator('[data-testid="campaigns-desktop-toggle"]');
+  if ((await campaignsToggleAfterReload.getAttribute("aria-expanded")) !== "true") {
+    await campaignsToggleAfterReload.click();
+  }
+
+  // Open the saved campaign — the dirty-grid guard uses window.confirm (native browser dialog).
   // Set up a dialog listener to ACCEPT it before clicking Open.
   page.on("dialog", (dialog) => {
     // Accept any "Open ... will be replaced" confirm dialog

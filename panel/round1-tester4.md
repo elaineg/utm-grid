@@ -1,24 +1,22 @@
-```json
-{"name":"Tomás","clarity":"Yes","value":"Yes","advocacy":"8","prior_concerns_addressed":"n/a for round 1"}
-```
+# Tomás — Operations analyst
 
-**Who I am:** Ops analyst, Excel power user, Edge on a locked-down corporate laptop (no installs). I build tagged links in a spreadsheet today and I'm paranoid about pasting company data into random web tools.
+Cold open on corporate-laptop viewport. In-audience: I build tagged ops-campaign links in Excel today.
 
-**What I did:** Cold-opened. Typed messy data the way a real sheet has it ("Newsletter ", "E Mail", "Spring Sale 2026!"), hit Auto-fix. Exported CSV, re-imported it. Saved a campaign, then exercised the new Tools ▾ → "Move to another device": copied the code, opened a FRESH browser (my "home laptop"), pasted, previewed, merged. Re-imported the same code to check for duplicates.
+## 1. Clarity — YES
+Headline "Clean campaign links in a grid" + sub "Build and tag a whole batch of 30+ campaign links at once — and auto-fix the casing and spacing that splits a campaign into two in your analytics, then export a clean CSV." nailed it in <15s. "No login — nothing leaves your browser" is exactly the line that gets a tool past my IT-blocked, data-wary brain. I'd tell a friend: "spreadsheet for batch-building UTM links that catches the casing/spacing mistakes that fragment your GA4 reports, runs entirely in the browser, exports CSV."
 
-**What worked (and won me over):**
-- 30-sec clarity is real. "Clean campaign links in a grid" + "drops straight into your sheet" + "No login — nothing leaves your browser" told me what it is and that it respects my data. I'd tell a coworker: "browser UTM builder that round-trips CSV with Excel and never phones home."
-- Auto-fix is the trust-builder. Cleaned "E Mail"→`e_mail`, killed the trailing space, highlighted the 3 changed cells green, and gave an **Auto-fixed 3 cells — Undo** toast. It tells me what it touched and lets me revert — the opposite of "mangling my data."
-- **CSV round-trip is exact.** Export → re-import returned my row byte-for-byte ("https://acme.com/Spring Sale", space and all). Import opens a "Map CSV columns" dialog that PRE-MAPPED my headers correctly and made me pick Append vs "Replace — wipe current grid", with "you can Undo immediately." No silent overwrite. This is the whole reason I'd use it over my sheet's CONCATENATE.
-- **Move to another device:** the privacy story lands. "This is your own local data — nothing is uploaded... this bundle just carries the secret links back," and import says "we never overwrite your saved campaigns." The fresh-window preview showed a real diff — "1 added · 0 updated · 0 skipped — Q3 Ops Launch" — before I committed. Re-importing the same code correctly showed "0 added · 1 skipped" (no duplicate). Code is base64'd JSON, so I decoded it and saw it isn't doing anything sneaky. Zero console errors every step. I'd actually use this to move work→home.
+## 2. Value — YES
+Today I hand-build these in Excel with CONCAT formulas and eyeball casing — duplicates like Spring-Sale vs spring_sale split one campaign across two analytics rows and I only find out after the campaign runs. This catches that BEFORE export. The CSV round-trip is the make-or-break for me and it PASSED hard: I imported a file with a comma inside a quoted field ("Q3 Launch, EMEA"), accented values (Boletín, Operación Niño), and a comma in content — every one came back byte-perfect, re-quoted correctly, and exported as UTF-8 with a BOM so Excel won't garble the accents. It did NOT silently rewrite my raw casing on import; it flagged it and left the value alone. That's the trust I needed.
 
-**What annoyed / mild friction:**
-- Export code is a wall of base64. I trust it because I decoded it; a less-technical teammate sees gibberish and gets nervous. A one-line "what's in this code" summary would help.
-- "Save as campaign" needs a name + an extra Save click — I expected one click.
-- It's clearly built for many rows; with one row the "in a grid" value is understated. Fine for me.
+## BURIED-FEATURE CHECK — found all three unaided
+- Auto-fix DIFF: YES, found it. After Auto-fix a panel "Auto-fixed 3 cells" listed each change per row/field as strikethrough-before → bold-after (e.g. utm_source "News Letter " → "news_letter"), fixed cells turned green in the grid, and there's an Undo right in the panel AND in the toolbar. As the guy terrified of mangled data, this diff is exactly what flips auto-fix from scary to safe.
+- Lint rollup: YES. Always-visible, went "All clean ✓" → "6 issues found — jump to first ↓" as I added/imported messy data; per-cell yellow highlights name the exact offending value ("Contains uppercase letters — use lowercase only (current: 'LinkedIn')") with a "Fix this value" link.
+- Cold "what we catch" demo: YES. "We catch near-duplicates like spring_sale vs Spring-Sale — they split one campaign into two in GA4" sits next to the rollup when empty and vanished the moment I had real rows. Clean.
+- Three setup panels: collapsed, plain subtitles, and they explicitly disambiguate the two that overlap — Naming Template says "Different from Allowed Values." "taxonomy" is mild jargon but fine for a UTM user.
 
-**Single thing holding back the score:** It's still my word against the marketing that "nothing leaves your browser." As a wary corporate user I'd want proof I can hand IT/security — a verifiable "0 network requests" claim or an explicit "works fully offline" note. Until I can give security a reason it's safe, I'd quietly use it myself but hesitate to push it company-wide. That caps me at 8, not 9.
+## 3. Advocacy — 8/10
+This earns a real 8, not a polite 7. The diff+undo and the lossless, accent-safe, properly-quoted CSV round-trip are precisely the trust signals that move me from "wary of pasting company data into a random site" to "I'd run my ops batch through this." The import modal's "Either way you can Undo immediately after importing" is a genuinely reassuring touch. Copy-row also works (clipboard got the full tagged URL). What holds it back from 9–10: (1) it's still a random site to my security brain — "nothing leaves your browser" is claimed but I'd want it more prominent / a one-line way to verify it's truly offline before I paste a real campaign list; (2) "UTM Spec / Allowed Values" + "taxonomy" + "STRUCTURE of utm_campaign — segments + separator" is a lot of near-synonymous vocabulary to absorb at once. Fix the trust-verifiability nudge and I bring this up unprompted in our ops channel.
 
 ```json
-{"tester": 4, "round": 1, "clarity": "Yes", "value": "Yes", "advocacy": 8, "topComplaints": ["Can't prove to IT/security that 'nothing leaves your browser' — no verifiable claim or offline note", "Export code is opaque base64; non-technical teammates won't trust pasting/importing it"], "priorConcernsAddressed": "n/a"}
+{"tester": 4, "round": 1, "clarity": "Yes", "value": "Yes", "advocacy": 8, "topComplaints": ["'nothing leaves your browser' is claimed but not verifiable enough to fully calm a data-wary corporate user before pasting real campaign data", "overlapping vocabulary across setup panels (Allowed Values / taxonomy / Naming Template structure) is dense on first read"], "priorConcernsAddressed": "n/a"}
 ```

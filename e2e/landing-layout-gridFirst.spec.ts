@@ -520,6 +520,107 @@ test("homepage SSR returns 200 and zero React hydration errors", async ({
   await ctx.close();
 });
 
+// ── Naming Template panel cold-collapse symmetry (P0 round-2 fix) ──
+// Asserts that on cold load (empty localStorage) the Naming Template panel
+// is collapsed (aria-expanded=false) AND has no teal highlight border,
+// matching Campaigns and UTM Spec collapsed appearance exactly.
+
+test("(f-naming-cold) Naming Template panel is collapsed + not teal-highlighted after hydration on cold load", async ({
+  browser,
+}) => {
+  // Strictly fresh context — empty localStorage, cold visit
+  const ctx = await browser.newContext({
+    viewport: { width: 1280, height: 800 },
+    storageState: { cookies: [], origins: [] },
+  });
+  const page = await ctx.newPage();
+  await page.goto(BASE_URL);
+  await page.waitForLoadState("networkidle");
+  // Extra tick to let any hydration effects settle
+  await page.waitForTimeout(500);
+
+  // The desktop toggle button must exist and be collapsed
+  const toggle = page.locator('[data-testid="naming-template-toggle"]');
+  await expect(toggle).toBeVisible({ timeout: 5000 });
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+
+  // The panel aside must NOT have a teal border class (no border-teal-200)
+  const panel = page.locator('[data-testid="naming-template-panel"]');
+  await expect(panel).toBeVisible({ timeout: 3000 });
+  const panelClass = await panel.getAttribute("class");
+  expect(
+    panelClass,
+    `Naming Template panel has teal border on cold load: "${panelClass}"`
+  ).not.toContain("teal");
+
+  // Symmetry check: Campaigns desktop toggle also collapsed
+  const campaignsToggle = page.locator('[data-testid="campaigns-desktop-toggle"]');
+  await expect(campaignsToggle).toHaveAttribute("aria-expanded", "false");
+  // Campaigns panel must also not have teal
+  const campaignsSidebar = page.locator('[data-testid="campaigns-sidebar"]');
+  const campaignsClass = await campaignsSidebar.getAttribute("class");
+  expect(campaignsClass).not.toContain("teal");
+
+  // User-action expand still works: click toggle → expanded=true
+  await toggle.click();
+  await expect(toggle).toHaveAttribute("aria-expanded", "true");
+  // Clicking again → collapsed
+  await toggle.click();
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+
+  await ctx.close();
+});
+
+test("(f-naming-seeded) Naming Template panel stays COLLAPSED after hydration even with stored segments", async ({
+  browser,
+}) => {
+  // Simulate a returning user who has a saved template with segments
+  const ctx = await browser.newContext({
+    viewport: { width: 1280, height: 800 },
+    storageState: { cookies: [], origins: [] },
+  });
+  const page = await ctx.newPage();
+  await page.goto(BASE_URL);
+
+  // Seed localStorage with a template that has segments (the "returning user" path)
+  await page.evaluate(() => {
+    window.localStorage.setItem(
+      "utm-grid:naming-template",
+      JSON.stringify({
+        segments: [
+          { name: "quarter", allowedTokens: [] },
+          { name: "channel", allowedTokens: ["email", "paidsocial"] },
+        ],
+        separator: "_",
+        enforceTemplate: false,
+      })
+    );
+  });
+
+  // Reload — this is the path that previously re-expanded the panel
+  await page.reload();
+  await page.waitForLoadState("networkidle");
+  await page.waitForTimeout(500);
+
+  // Panel must be COLLAPSED even with stored segments
+  const toggle = page.locator('[data-testid="naming-template-toggle"]');
+  await expect(toggle).toBeVisible({ timeout: 5000 });
+  await expect(
+    toggle,
+    "Naming Template panel must stay collapsed after hydration even with stored segments"
+  ).toHaveAttribute("aria-expanded", "false");
+
+  // Panel must not have teal border
+  const panel = page.locator('[data-testid="naming-template-panel"]');
+  const panelClass = await panel.getAttribute("class");
+  expect(
+    panelClass,
+    `Naming Template panel has teal border after hydration with stored segments: "${panelClass}"`
+  ).not.toContain("teal");
+
+  await ctx.close();
+});
+
 // ── Regression guard: generate URL still works after this layout pass ──
 
 test("regression: generate URL from grid still works (core grid flow not broken by layout pass)", async ({

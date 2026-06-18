@@ -109,6 +109,14 @@ interface UndoEntry {
   label: string;
 }
 
+// ── L1: Auto-fix before→after diff entry ─────────────────────────────────────
+interface AutofixDiffEntry {
+  rowIndex: number; // 1-based row number in the grid
+  field: string;    // UTM field name (e.g. "utm_campaign")
+  before: string;   // value before fix
+  after: string;    // value after fix
+}
+
 // ── Toast ─────────────────────────────────────────────────────────────────────
 interface Toast {
   id: number;
@@ -297,6 +305,14 @@ export function UtmGrid({
 
   // Flash state: rowId:field → "green" for brief cell highlight
   const [flashCells, setFlashCells] = useState<Set<string>>(new Set());
+
+  // ── L1: Auto-fix before→after diff panel ─────────────────────────────────
+  // Set by cleanAll() after applying the fix; cleared on next edit or dismiss.
+  const [autofixDiff, setAutofixDiff] = useState<AutofixDiffEntry[] | null>(null);
+  const [autofixDiffNone, setAutofixDiffNone] = useState(false); // "Nothing to fix" state
+
+  // ── L2: Lint-catch-demo dismissal (cold-only "what we catch" line) ──────
+  const [catchDemoDismissed, setCatchDemoDismissed] = useState(false);
 
   // Undo stack (in-memory only)
   const undoStack = useRef<UndoEntry[]>([]);
@@ -635,6 +651,9 @@ export function UtmGrid({
     if (presetFreshRows.has(rowId)) {
       setPresetFreshRows((prev) => { const n = new Set(prev); n.delete(rowId); return n; });
     }
+    // L1: clear the autofix diff panel on any manual cell edit
+    if (autofixDiff !== null) setAutofixDiff(null);
+    if (autofixDiffNone) setAutofixDiffNone(false);
   };
 
   const fixCell = (rowId: string, field: UtmField, currentValue: string) => {
@@ -654,19 +673,35 @@ export function UtmGrid({
   // normalizeAllRows, which requires spec context not currently threaded into normalize.ts.
   const cleanAll = () => {
     const { rows: cleaned, count } = normalizeAllRows(rows, settings);
-    if (count === 0) { showToast("Nothing to fix — all cells are clean."); return; }
-    pushUndo("Auto-fix naming", rows);
-    setRows(cleaned);
-    const keys: string[] = [];
+    if (count === 0) {
+      // L1: Show "Nothing to fix" message in the diff panel area (D7 — no silent no-op)
+      setAutofixDiff(null);
+      setAutofixDiffNone(true);
+      return;
+    }
+    // L1: Build before→after diff BEFORE applying so we can capture original values
+    const diffEntries: AutofixDiffEntry[] = [];
     for (let i = 0; i < rows.length; i++) {
       if (cleaned[i] !== rows[i]) {
         for (const f of UTM_FIELDS) {
-          if (cleaned[i][f] !== rows[i][f]) keys.push(`${rows[i].id}:${f}`);
+          if (cleaned[i][f] !== rows[i][f]) {
+            diffEntries.push({
+              rowIndex: i + 1,
+              field: f,
+              before: rows[i][f],
+              after: cleaned[i][f],
+            });
+          }
         }
       }
     }
+    pushUndo("Auto-fix naming", rows);
+    setRows(cleaned);
+    const keys = diffEntries.map((d) => `${rows[d.rowIndex - 1]?.id ?? ""}:${d.field}`).filter(Boolean);
     flashCellKeys(keys);
-    showToast(`Auto-fixed ${count} cell${count === 1 ? "" : "s"} — Undo`, { undoLabel: "Undo", durationMs: 5000 });
+    // L1: Show the diff panel (clears any previous "nothing to fix" state)
+    setAutofixDiffNone(false);
+    setAutofixDiff(diffEntries);
   };
 
   const addRow = () => {
@@ -708,6 +743,25 @@ export function UtmGrid({
   const gridIsEmpty = rows.every(
     (r) => !r.baseUrl.trim() && UTM_FIELDS.every((f) => !r[f].trim())
   );
+
+  // L2: "Example state" = grid looks like the seeded cold-open example (no real user data).
+  // The cold "what we catch" demo shows ONLY in this state.
+  // True when: (a) no real warnings AND (b) rows match the EXAMPLE_ROW signature OR grid is empty.
+  // "Match" = exactly one row whose baseUrl/source/medium/campaign = example values (ignoring id).
+  const isExampleState = useMemo(() => {
+    if (warnings.size > 0) return false;
+    if (gridIsEmpty) return true;
+    if (rows.length === 1) {
+      const r = rows[0];
+      return (
+        r.baseUrl === EXAMPLE_ROW.baseUrl &&
+        r.utm_source === EXAMPLE_ROW.utm_source &&
+        r.utm_medium === EXAMPLE_ROW.utm_medium &&
+        r.utm_campaign === EXAMPLE_ROW.utm_campaign
+      );
+    }
+    return false;
+  }, [rows, warnings, gridIsEmpty]);
 
   // ── P2: Preset fresh rows — rows that just had a preset applied but not yet touched.
   // On a fresh preset row, empty required fields show a muted hint instead of a red error.
@@ -1733,7 +1787,12 @@ export function UtmGrid({
       if (testid) {
         const el = document.querySelector(`[data-testid="${testid}"]`) ??
                    document.querySelector(`[aria-label*="${panel === "campaigns" ? "Campaigns" : ""}"]`);
-        if (el) el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          // Dispatch custom events so collapsible panels expand when navigated to from the Tools menu
+          if (panel === "campaigns") el.dispatchEvent(new CustomEvent("campaigns-open"));
+          if (panel === "template") el.dispatchEvent(new CustomEvent("naming-template-open"));
+        }
       }
     }
     setToolsMenuOpen(false);
@@ -1858,7 +1917,8 @@ export function UtmGrid({
           type="button"
           onClick={cleanAll}
           title="Lowercase + normalize all flagged cells"
-          data-testid="auto-fix-naming-btn"
+          data-testid="autofix-button"
+          aria-label="Auto-fix all naming issues"
           className="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-500 hover:bg-gray-50 whitespace-nowrap"
         >
           Auto-fix
@@ -2675,6 +2735,160 @@ export function UtmGrid({
         <MyWorkspacesPanel />
       )}
 
+      {/* ── L1: Auto-fix before→after diff panel ─────────────────────────────────
+          Renders directly above the grid (normal page flow, full-width, never a sidebar).
+          Shows after Auto-fix is clicked; dismissed on next edit or manual ×.
+          Reuses existing undo() — no second undo system. */}
+      {(autofixDiff !== null || autofixDiffNone) && (
+        <div
+          data-testid="autofix-diff-panel"
+          className="rounded-lg border border-gray-200 bg-white w-full overflow-hidden"
+          role="region"
+          aria-label="Auto-fix results"
+        >
+          {/* Panel header */}
+          <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-200 bg-gray-50">
+            <div className="flex items-center gap-3 min-w-0">
+              <span className="text-xs font-semibold text-gray-700">
+                {autofixDiffNone
+                  ? "Nothing to fix — all cells are clean"
+                  : `Auto-fixed ${autofixDiff!.length} cell${autofixDiff!.length === 1 ? "" : "s"}`}
+              </span>
+              {autofixDiff !== null && autofixDiff.length > 0 && (
+                <button
+                  type="button"
+                  data-testid="autofix-diff-undo"
+                  onClick={() => { undo(); setAutofixDiff(null); setAutofixDiffNone(false); }}
+                  className="shrink-0 rounded border border-gray-300 px-2.5 py-0.5 text-xs font-medium text-gray-600 hover:bg-gray-100"
+                >
+                  Undo
+                </button>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => { setAutofixDiff(null); setAutofixDiffNone(false); }}
+              aria-label="Dismiss auto-fix results"
+              className="shrink-0 ml-3 text-gray-400 hover:text-gray-600 text-sm leading-none"
+            >
+              ×
+            </button>
+          </div>
+          {/* Diff list — scrollable if many changes */}
+          {autofixDiff !== null && autofixDiff.length > 0 && (
+            <ul
+              className="divide-y divide-gray-100 max-h-48 overflow-y-auto px-0"
+              aria-label="Changed cells"
+            >
+              {autofixDiff.map((entry, idx) => (
+                <li
+                  key={idx}
+                  data-testid="autofix-diff-row"
+                  className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 px-4 py-1.5 text-xs font-mono"
+                >
+                  <span className="shrink-0 text-gray-500 min-w-[3.5rem]">Row {entry.rowIndex}</span>
+                  <span className="shrink-0 text-gray-500">·</span>
+                  <span className="shrink-0 text-gray-600 font-medium">{entry.field}:</span>
+                  <span className="text-gray-400 line-through break-all">&quot;{entry.before}&quot;</span>
+                  <span className="text-gray-400 shrink-0">→</span>
+                  <span className="text-gray-800 font-semibold break-all">&quot;{entry.after}&quot;</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
+      {/* ── L2: Lint roll-up + cold "what we catch" demo ──────────────────────
+          Always visible in the grid header area. Not a new above-grid banner —
+          a quiet utility strip. Shows rollup count + jump-to-first on issues,
+          or "All clean ✓" + cold demo in the example state.
+          Per optional-ui-gated-on-data-presence: the demo vanishes when there are
+          real warnings (never competes with live lint). */}
+      {(() => {
+        // Compute total warning count (unique cell keys with non-empty warnings)
+        let totalWarnings = 0;
+        for (const ws of warnings.values()) {
+          if (ws.length > 0) totalWarnings++;
+        }
+        // Find the first flagged cell for "jump-to-first"
+        // warningKey format: "rowId field" (space-separated, see lint.ts warningKey())
+        const jumpToFirst = () => {
+          for (const [key, ws] of warnings) {
+            if (!ws?.length) continue;
+            // key = "rowId field" (space-separated)
+            const spaceIdx = key.lastIndexOf(" ");
+            const rowId = key.slice(0, spaceIdx);
+            const field = key.slice(spaceIdx + 1);
+            // P1 fix: locate the input by stable data-cell-id (set on every editable input in both
+            // table and card views). Prefer the first VISIBLE one so we scroll to the rendered view.
+            const allMatching = document.querySelectorAll<HTMLElement>(`[data-cell-id="${rowId}-${field}"]`);
+            // Pick the first element that is actually visible (not hidden by a display:none ancestor)
+            let target: HTMLElement | null = null;
+            for (const el of allMatching) {
+              if (el.offsetParent !== null) { target = el; break; }
+            }
+            if (!target && allMatching.length > 0) {
+              // No visible match — fall back to the first in DOM order
+              target = allMatching[0];
+            }
+            if (target) {
+              target.scrollIntoView({ block: "center" });
+              // Defer focus so the button-click's own focus doesn't clobber it
+              setTimeout(() => target!.focus(), 0);
+            }
+            break;
+          }
+        };
+        const showDemo = isExampleState && !catchDemoDismissed && !isWorkspaceMode;
+        return (
+          <div className="flex items-center flex-wrap gap-x-3 gap-y-1 px-1 py-1 min-h-[28px]">
+            {totalWarnings === 0 ? (
+              <span
+                data-testid="lint-rollup"
+                className="text-xs font-medium text-green-700"
+                role="status"
+                aria-live="polite"
+              >
+                All clean ✓
+              </span>
+            ) : (
+              <button
+                type="button"
+                data-testid="lint-rollup"
+                onClick={jumpToFirst}
+                className="text-xs font-medium text-amber-700 hover:underline"
+                aria-live="polite"
+                role="status"
+              >
+                {totalWarnings} issue{totalWarnings === 1 ? "" : "s"} found — jump to first ↓
+              </button>
+            )}
+            {showDemo && (
+              <span
+                data-testid="lint-catch-demo"
+                className="flex items-center gap-1.5 text-[11px] text-gray-400"
+              >
+                <span>
+                  We catch near-duplicates like{" "}
+                  <span className="font-mono text-gray-600">spring_sale</span> vs{" "}
+                  <span className="font-mono text-gray-600">Spring-Sale</span>{" "}
+                  — they split one campaign into two in GA4.
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setCatchDemoDismissed(true)}
+                  aria-label="Dismiss hint"
+                  className="shrink-0 text-gray-300 hover:text-gray-500 text-xs leading-none"
+                >
+                  ×
+                </button>
+              </span>
+            )}
+          </div>
+        );
+      })()}
+
       {/* Main layout: grid full-width (panels rendered BELOW the grid, not beside it).
           Fix 2(a): at ≥1280px the right-rail sidebar was permanently squeezing the editable
           grid to ~958px, causing sticky Generated-URL/Actions columns to overlap utm_term/
@@ -2919,6 +3133,7 @@ export function UtmGrid({
                             list={!isPreview ? datalistId : undefined}
                             readOnly={isPreview}
                             disabled={isPreview}
+                            data-cell-id={`${row.id}-${field}`}
                             className={`w-full rounded-md border pl-2 pr-7 py-1.5 font-mono text-xs transition-colors duration-300 ${
                               isPreview
                                 ? "border-gray-200 bg-slate-100 text-gray-400 cursor-not-allowed focus:outline-none"
@@ -3330,6 +3545,7 @@ export function UtmGrid({
                           list={!isPreview ? datalistId : undefined}
                           readOnly={isPreview}
                           disabled={isPreview}
+                          data-cell-id={`${row.id}-${field}`}
                           className={`w-full rounded-md border px-3 py-3 font-mono text-sm transition-colors duration-300 min-h-[44px] ${
                             isPreview
                               ? "border-gray-200 bg-slate-100 text-gray-400 cursor-not-allowed focus:outline-none"
@@ -3537,6 +3753,7 @@ export function UtmGrid({
                           list={!isPreview ? datalistId : undefined}
                           readOnly={isPreview}
                           disabled={isPreview}
+                          data-cell-id={`${row.id}-${field}`}
                           className={`w-full rounded-md border px-3 py-3 font-mono text-sm transition-colors duration-300 min-h-[44px] ${
                             isPreview
                               ? "border-gray-200 bg-slate-100 text-gray-400 cursor-not-allowed focus:outline-none"

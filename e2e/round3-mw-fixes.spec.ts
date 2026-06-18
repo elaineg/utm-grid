@@ -312,7 +312,7 @@ test('R3-4a: Auto-fix naming: "Launch Day!" → "launch_day" (strips trailing pu
   await page.waitForLoadState("networkidle");
 
   // Find and click the Auto-fix button (previously "Auto-fix naming", now "Auto-fix")
-  const autoFixBtn = page.locator('[data-testid="auto-fix-naming-btn"]').first();
+  const autoFixBtn = page.locator('[data-testid="autofix-button"]').first();
   await expect(autoFixBtn).toBeVisible({ timeout: 10_000 });
   await autoFixBtn.click();
   await page.waitForTimeout(500);
@@ -369,7 +369,7 @@ test("R3-4b: Auto-fix does NOT mangle already-valid lowercase values", async ({
   await page.reload();
   await page.waitForLoadState("networkidle");
 
-  const autoFixBtn = page.locator('[data-testid="auto-fix-naming-btn"]').first();
+  const autoFixBtn = page.locator('[data-testid="autofix-button"]').first();
   await expect(autoFixBtn).toBeVisible({ timeout: 10_000 });
   await autoFixBtn.click();
   await page.waitForTimeout(500);

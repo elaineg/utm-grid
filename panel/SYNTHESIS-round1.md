@@ -1,55 +1,88 @@
-# UTM Grid — Panel SYNTHESIS Round 1 (cross-device "Move to another device" feature)
+# utm-grid — Panel SYNTHESIS round 1 (NEW add-feature run: AUTO-FIX TRUST + PROACTIVE LINT)
 
-**Headline: 1/10 pass the bar (Wen 9). But 9/10 are clarity=Yes ∧ value=Yes — the entire
-gap is advocacy stuck at 7–8, not comprehension or value.** Prior PASSED run (20260614-143711)
-got this SAME roster to 9/10 (Priya9 Marcus10 Wen9 Dana10 Jules9 Aisha9 Rob9 Sam10 Elena9,
-holdout Tomás8). So the drop is a REAL regression the new feature introduced, not a hard ceiling.
+Tested COLD against local production server http://localhost:3219. Full fresh 10-persona
+re-spawn (carried scores from prior runs are not durable; this overwrites a stale
+prior-run round-1 synthesis on the same path). This run's feature: visible before→after
+auto-fix DIFF panel (+undo), always-visible cross-row lint rollup with jump-to-first +
+cold-only "what we catch" demo, and three setup panels collapsed-by-default with
+plain-language subtitles. Built to break the ROUND-8 cap on in-audience marketers.
 
 ## Score table
-| Tester | role | clarity | value | advocacy | pass? | single blocker |
-|--------|------|---------|-------|----------|-------|----------------|
-| Priya  | backend eng | Yes | Yes | 7 | no | Tools ▾ = ~8-feature junk drawer, overkill for occasional use |
-| Marcus | frontend eng | Yes | Yes | 8 | no | **ACTIONS col 3rd per-row icon CLIPPED off right edge @1280px (CSS bug)** |
-| Wen    | mktg data analyst | Yes | Yes | **9** | **YES** | wants "show raw JSON" of export; Move buried under Tools (expected Share) |
-| Tomás  | ops analyst | Yes | Yes | 8 | no | can't prove "0 network" to IT; opaque base64 code |
-| Dana   | demand-gen mktr | Yes | Yes | 8 | no | headline frames as CSV-cleanup not bulk-builder; Move buried in 9-item menu |
-| Jules  | content mktr | Yes | Yes | 8 | no | presets (her killer feature) buried two menu-hops deep |
-| Aisha  | product designer | Yes | **No** | 8 | no | **Copy-code shows NO visible confirmation (only faint tint) — feature-under-review craft nit**; value=No is persona-fit (rarely builds UTMs), she gave value=Yes/9 LAST run so recoverable |
-| Rob    | freelance designer | Yes | Yes | 7 | no | recurrence (vitamin for occasional use); import adds to library but doesn't load into grid |
-| Elena  | eng manager | Yes | Yes | 8 | no | Tools ▾ is an 8-item junk drawer; team-standardization value buried |
-| Sam    | PM | Yes | Yes | 8 | no | it's manual transfer not auto-sync (the teased credential-blocked account feature) |
 
-**The new feature itself works flawlessly** — every tester ran the export→import round-trip,
-confirmed the non-destructive merge preview ("X added · Y updated · Z skipped"), idempotent
-re-import, garbage rejection, and ZERO network (Priya/Wen/Tomás verified the network tab).
-No functional bugs. The damage is craft + menu density.
+| Tester | Audience | Clarity | Value | Adv | One-line note |
+|--------|----------|---------|-------|-----|---------------|
+| Wen    | IN  | Y | Y | 9 | Diff+real Undo makes 30+ link bulk transform trustable; nit: export doesn't nudge the auto-fixed version |
+| Tomás  | IN  | Y | Y | 8 | Lossless CSV round-trip + non-mangling lint earns trust; held at 8 by unverifiable "nothing leaves your browser" + dense panel vocabulary |
+| Dana   | IN  | Y | Y | 9 | All three prior gripes resolved (diff, early lint, panel jargon); nit: Allowed Values vs Naming Template still a second read |
+| Jules  | IN  | Y | Y | 9 | Presets now visible chip row (prior cap fixed); diff is the trust-maker; nit: persistence unclear |
+| Sam    | IN  | Y | Y | 9 | All three prior gripes fixed; lint fires on ONE messy row now; nit: mobile 375px truncates diff after-value + url cell |
+| Priya  | OUT | Y | Y | 8 | Beats hand-editing query strings; held by non-CLI keyboard flow + single-purpose scope |
+| Marcus | OUT | Y | Y | 8 | Diff panel is the killer feature; flags Naming Template ships EXPANDED while others collapsed (inconsistent default) |
+| Aisha  | OUT | Y | N | 8 | Craft holds (WHY-not-what lint copy, elegant diff); held by post-Undo "required" intermediate state + asymmetric panel default + run-on subhead |
+| Rob    | OUT | Y | (marginal) | 6 | Out-of-audience low-volume; overkill for 2–4 links but nothing broke; would forward to a marketer |
+| Elena  | OUT | Y | (marginal) | 7 | Out-of-audience 30s skim; team-standardization value still missing from landing copy |
 
-## Grouped causes of advocacy < 9
-1. **DOMINANT — Tools ▾ menu is now a "junk drawer" (8–9 items); killer features buried.**
-   Elena, Dana, Jules, Priya, Wen (5 testers). The Move feature was the tipping point that
-   pushed the menu over the legibility line. This is the recurring menu/landing-density long
-   pole re-exposed by a new feature (friction: added-feature-buried-panel-surfaces-not-function).
-   FIX without re-adding any above-grid banner: group the menu into labeled sections.
-2. **Copy-code confirmation weak/absent** (Aisha, the craft judge, on the feature under review)
-   + known P3 (button has no accessible name). When the async clipboard write is blocked the
-   green "Code copied!" cue never fires (friction: copy-confirmation-survives-tick-rerender).
-3. **ACTIONS column 3rd per-row icon clipped @1280px** (Marcus) — real CSS bug
-   (friction: readonly-wide-column / container-resize family).
-4. **Trust of the opaque base64 export** (Wen, Tomás) — want to see what's inside / verifiable
-   offline. Cheap fold: a "view contents" disclosure + an explicit "works offline, 0 requests" line.
-5. **Structural / persona-bound (NOT chased — would distort the ICP):** Sam wants AUTO account
-   sync (credential-blocked, RESEND pending — manual is the intentional on-ramp, teased);
-   Rob/Priya occasional-use recurrence. These were 9/9/10 last run on craft alone, so the
-   menu+craft fixes should recover them without chasing the structural asks.
+## In-audience-at-bar count: 4/5
 
-## Round-2 fix plan (targeted, in-scope, NO above-grid banner)
-- FIX-1 (Aisha + P3): make the persistent Copy-code button's green "Code copied!" cue fire
-  RELIABLY even when navigator.clipboard is blocked (optimistic flip + select-the-textarea
-  fallback with a "press ⌘C" hint), aria-live, real accessible name.
-- FIX-2 (Marcus): fix the ACTIONS column / 3rd per-row icon clipping at the right edge @1280px.
-- FIX-3 (Elena/Dana/Jules/Priya/Wen): de-densify Tools ▾ into labeled groups (e.g. Build /
-  Govern / Transfer) so it reads organized not a junk drawer; keep grid-first landing, no banner.
-- LOW-COST FOLDS: "view contents / show JSON" disclosure on export (Wen, Tomás); "click Open
-  to load it into the grid" hint after import (Rob); minor subhead tweak so the bulk-builder
-  value reads before the CSV-cleanup framing (Dana).
-- Re-test: ALL 10 (FIX-3 touches a global surface; only Wen passed and her surface is touched).
+Wen 9, Dana 9, Jules 9, Sam 9 — at bar. Tomás 8 — the lone in-audience miss.
+Out-of-audience (Priya, Marcus, Aisha, Rob, Elena) recorded but do NOT gate.
+
+## Added-feature-buried status: PASS (found cold by all 10)
+
+Every tester, in-audience and out, found the auto-fix before→after diff panel (with working
+Undo), the always-visible cross-row lint rollup, and the cold-only "what we catch" demo on
+their own without being told. Multiple testers independently verified Undo genuinely restores
+the exact original values (not just a UI toggle) and that the cold demo disappears once real
+data exists. The trust/legibility work is discoverable — the core risk of this run is retired.
+
+## Defects mapped to testers
+
+P1 — **Naming Template panel ships EXPANDED on cold load (inconsistent default).** The
+feature spec says all three setup panels collapse by default; Naming Template renders
+expanded+highlighted while Campaigns and Allowed Values / UTM Spec stay collapsed.
+Cited by: Marcus, Aisha. (Direct miss against this run's own feature spec — fix it.)
+
+P2 — **"Allowed Values" vs "Campaign Naming Template" vs "UTM Spec" still read as
+near-overlapping on first pass.** Subtitles help and the "Different from Allowed Values"
+disambiguation is noticed, but cold users still need a second read to tell them apart.
+Cited by: Dana, Tomás, Jules, Elena. (Most-cited in-audience friction — the residual of
+the original "overlapping jargon" complaint.)
+
+P2 — **Mobile (375px) truncates the diff after-value ("newsle…") and the generated_url
+cell.** Diff is the trust feature; truncating the after-value undercuts trust on phone.
+Cited by: Sam (the one thing keeping him off 10).
+
+P3 — **Export doesn't default to / nudge the auto-fixed version** — easy to export the
+still-dirty grid after fixing. Cited by: Wen.
+
+P3 — **Post-Undo intermediate "required" state feels jarring.** Cited by: Aisha.
+
+P3 — **Run-on subhead.** Cited by: Aisha, (Elena landing-copy adjacent).
+
+OUT-OF-AUDIENCE-ONLY (do not gate, noted): team-standardization value missing from landing
+(Elena); single-purpose scope / non-CLI flow (Priya); low-volume overkill (Rob).
+
+## Lone-tester-false-negative check
+
+No tester reported the feature broken or non-functional. The opposite: all 10 confirmed it
+works, several with verified Undo round-trips and screenshot evidence. No harness-artifact
+flag needed this round.
+
+## Prioritized fix plan for next round
+
+1. **(P1) Collapse the Campaign Naming Template panel by default** to match Campaigns and
+   Allowed Values — this is a direct miss against the run's own feature spec and is the
+   cheapest, highest-confidence fix (Marcus, Aisha). Likely nudges both out-of-audience
+   craft scores and reinforces the "panels no longer jargon" win.
+2. **(P2) Disambiguate the three panel names/subtitles further** so a cold user separates
+   Naming Template / Allowed Values / Campaigns in one pass — this is the single most-cited
+   in-audience residual friction (Dana, Tomás, Jules, Elena) and is plausibly what holds
+   Tomás at 8.
+3. **(P2) Fix mobile diff/url truncation at 375px** so the before→after after-value is fully
+   legible on phone (Sam — his only blocker to 10; mobile-heavy in-audience PMs/marketers).
+4. **(P3) Nudge export toward the auto-fixed grid** (Wen) and smooth the post-Undo state
+   (Aisha) if cheap.
+
+The bar (in-audience marketers at 9+) is at 4/5. The one miss (Tomás, 8) is held by panel
+vocabulary (P2) and an unverifiable privacy claim, not by the new diff/lint trust work —
+which he explicitly praised. Fix #1 and #2 above target exactly Tomás's stated blocker.

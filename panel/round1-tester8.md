@@ -1,54 +1,19 @@
-{"name":"Rob","clarity":"Yes","value":"Yes","advocacy":"7","prior_concerns_addressed":"n/a for round 1"}
+# Rob — Brand/visual designer (freelance, OUT-OF-AUDIENCE)
 
-# Rob — freelance brand/visual designer, desktop, medium tech
+**1. Clarity — YES.** Headline "Clean campaign links in a grid" + the subline "Build and tag a whole batch of 30+ campaign links at once — and auto-fix the casing and spacing that splits a campaign into two in your analytics, then export a clean CSV" told me exactly what it is in ~10s. "No login — nothing leaves your browser" is reassuring. I'd tell a friend: "It's a spreadsheet for building UTM links in bulk, it catches typos that split your data in GA4, and you export a CSV." The "what we catch: spring_sale vs Spring-Sale splits one campaign into two in GA4" demo line nailed the *why* instantly.
 
-## What I did
-Cold-opened, read the hero, then worked it: filled two client-promo rows, hit **Auto-fix**
-(normalized "Newsletter"→newsletter, "Summer Sale 2026"→summer_sale_2026, flashed the 3 changed
-cells green, threw an "Auto-fixed 3 cells — Undo" toast), saved the grid as a campaign
-"ClientAcme — Summer", exported CSV, then ran the full **Move to another device** round-trip:
-Copy code on device A → pasted into a CLEAN second browser (device B) → Preview import → Confirm.
+**2. Value — MARGINAL (honest, given I'm out-of-audience).** Today I hand-type maybe 2–4 tagged links a campaign, or copy a query string from the last one and tweak it — takes me 4 minutes, no tool. For *me* this is overkill: opening it, picking presets, filling cells is about the same effort as editing one URL by hand. BUT the value is real and obvious for anyone doing 30+ at once — the auto-fix + lint genuinely beats eyeballing casing across rows. If a client ever handed me a batch, I'd reach for this. It's just not my weekly grind.
 
-## 1. CLARITY — Yes
-Got it in ~10s. "Clean campaign links in a grid" + subhead about casing/spacing splitting a
-campaign in two in analytics + "export a clean CSV that drops straight into your sheet" told me
-exactly what it is and who it's for. The "No login — nothing leaves your browser" line is a plus.
-Nothing confused me.
+**3. Advocacy — 6/10.** Solid, fast, no-signup, does what it says. Loses points only because for *my* low-volume use it doesn't save meaningful time over the address bar — and a 6 reflects that I wouldn't bring it up unprompted, but I'd happily send it to a marketer friend who lives in UTMs. Nothing confused or broke me.
 
-## 2. VALUE — Yes (for the core flow)
-Today I hand-type query strings or copy an old link and swap words, always telling myself "I
-could do this in Photoshop... err, by hand in 4 minutes." Reality: by hand I fat-finger casing.
-Auto-fix instantly killed the casing-split I can't catch by eye, with Undo so I trust it, and the
-CSV came out with a BOM + clean generated_url column — opens straight in Excel to forward a
-client. For a *batch* that genuinely beats hand-typing. Zero console errors throughout.
+## BURIED-FEATURE CHECK — all three found UNAIDED:
+- **Auto-fix diff panel: FOUND.** Clicked "Auto-fix" in the top toolbar (always visible). It popped an "Auto-fixed 2 cells" panel showing `Row 2 · utm_medium: ~~"Newsletter"~~ → "newsletter"` style before→after with strikethrough + arrow, fixed cells highlighted green, and BOTH a toolbar "Undo" and an in-panel "Undo". Tested Undo — it correctly reverted to "Newsletter". 
+- **Cross-row lint rollup: FOUND.** Always-visible line above the grid: "All clean ✓" on open, flipped to "3 issues found — jump to first ↓" after messy input, dropped to "1 issue found" after auto-fix (the unfixable invalid base URL correctly left for me). Per-cell warnings ("Contains uppercase letters — use lowercase only") with "Fix this value" links.
+- **Cold "what we catch" demo: FOUND + behaves correctly.** The spring_sale vs Spring-Sale example shows on a fresh/empty grid with an × to dismiss, and it disappeared on its own once I added a real second row of data.
+- **Three setup panels: FOUND**, collapsed by default at the bottom with plain-language subtitles (Campaign Naming Template = "STRUCTURE of utm_campaign"; UTM Spec/Allowed Values = "your taxonomy"; Campaigns = "reopen a past batch").
 
-## The new "Move to another device" feature — honest take
-It works flawlessly. Export gave a 1432-char code via "Copy code" (clipboard read worked in my
-test env); on a clean device the **Preview** showed "1 added · 0 updated · 0 skipped — Campaigns:
-1 added 'ClientAcme — Summer'", Confirm merged it, end-state read "Import complete! Your setup has
-been merged." The reassurance "We merge into what's already here — we never overwrite your saved
-campaigns" is exactly what I'd want before pasting a code. Solid engineering.
-BUT for ME it's a **vitamin, not a painkiller.** I tag links occasionally and live in Figma/PS,
-not here — I won't accumulate a per-client campaign library worth carrying between my laptop and
-desktop. The "Coming soon: accounts sync automatically" note basically concedes this manual
-export/import is the clunky interim. Great for a daily UTM-heavy marketer; for occasional-me it's
-a button I clicked once out of curiosity.
-Minor nit: import adds the campaign to the *library* but doesn't load it into the active grid — I
-briefly expected my two rows to appear; a "imported — click Open to load it" hint would help.
-
-## 3. ADVOCACY — 7/10
-Well-built, clear, and the move feature round-trips perfectly. But my honest comparison is "I tag
-links twice a month and could hand-type a string in 4 minutes." Auto-fix + clean CSV beats that
-for a batch, earning real points — yet it's not weekly for me, and the headline new feature solves
-a cross-device problem occasional-me doesn't have. I'd mention it to a marketer friend who lives in
-UTMs, not bring it up unprompted to designer peers. A real 7, not a polite one.
-
-## Single thing most holding back the score
-**Recurrence for my persona, not quality.** Nothing's broken — the app is good. It's that the new
-cross-device move targets the heavy daily user, and for an occasional link-tagger like me there's
-no habit loop. Make the *occasional* user's single session feel indispensable (the auto-fix/CSV
-payoff) over chasing cross-device power-user depth, and I'd push it higher.
+CSV export verified: clean, lowercased post-autofix, includes a ready generated_url column + Excel BOM. No console errors anywhere. (Team Workspace not tested — DB not provisioned locally, per caveat.)
 
 ```json
-{"tester": 8, "round": 1, "clarity": "Yes", "value": "Yes", "advocacy": 7, "topComplaints": ["'Move to another device' is a vitamin for an occasional link-tagger — I won't build a campaign library worth carrying between machines; it targets daily power users", "Import adds a campaign to the library but doesn't load it into the active grid; momentarily expected my rows to appear — a 'click Open to load it' hint would help"], "priorConcernsAddressed": "n/a"}
+{"tester": 8, "round": 1, "clarity": "Yes", "value": "Marginal", "advocacy": 6, "topComplaints": ["For low-volume taggers like me it's no faster than editing one URL in the address bar", "Out-of-audience: I tag links occasionally, not 30 at a time, so no weekly habit forms"], "priorConcernsAddressed": "n/a"}
 ```

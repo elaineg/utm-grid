@@ -1,26 +1,85 @@
-# UTM Grid — Panel SYNTHESIS Round 2 (cross-device feature; craft/IA fix pass)
+# utm-grid — Panel SYNTHESIS round 2 (delta-retest: panel-naming + cold-collapse fixes)
 
-**6/10 pass the bar, up from 1/10.** The Tools-menu de-densification + craft fixes worked.
+Tested COLD against local production server http://localhost:3219. DELTA roster per the
+round-2 plan: full in-audience sentinel set (Tomás, Wen, Dana, Jules, Sam) + the
+out-of-audience panel-jargon citers (Aisha, Marcus, Elena). Priya (8) and Rob (6) carried
+from round 1 (out-of-audience, unaffected by these shared-surface changes — not re-spawned).
+(This overwrites a stale round-2 synthesis from a prior unrelated run on the same path.)
 
-## Score table (Δ vs round 1)
-| Tester | clarity | value | advocacy | pass? | note |
-|--------|---------|-------|----------|-------|------|
-| Wen    | Yes | Yes | **10** (↑9) | YES | "Show what's inside" JSON + offline claim resolved both gaps |
-| Tomás  | Yes | Yes | **9** (↑8) | YES | offline-zero-network line + JSON view → can show IT |
-| Dana   | Yes | Yes | **9** (↑8) | YES | subhead now leads with bulk value |
-| Aisha  | Yes | Yes | **9** (↑8) | YES | copy-cue fix resolved her blocker; value back to Yes |
-| Elena  | Yes | Yes | **9** (↑8) | YES | "GOVERN CONVENTIONS" label surfaced team value |
-| Sam    | Yes | Yes | **9** (↑8) | YES | reliable copy + clean mobile menu |
-| Priya  | Yes | Yes | 8 (↑7) | no | menu grouping fixed; wants a "just the grid" landing (governance cards too present for occasional use) |
-| Marcus | Yes | Yes | **7 (↓8)** | no | **REAL CSS bug: ACTIONS cell now has 4 icons; the trash icon is clipped ~12px past the cell edge @1280px (174px content in 162px cell)** |
-| Jules  | Yes | Yes | 8 | no | wants platform preset chips on COLD LOAD (or auto-expand presets on first visit); menu-surfacing didn't touch her landing-chips ask |
-| Rob    | Yes | Yes | 8 | no | self-described personal recurrence ("a me-problem, not an app defect"); concrete post-import gap WAS fixed |
+## Round-2 fixes shipped & verified
+1. Setup-panel subtitles (job-led, distinct) — **LANDED & WORKED.** All 8 re-spawned testers
+   read the three panels as distinct in one pass; the "shape, not the list" disambiguation of
+   Naming Template vs Allowed Values is explicitly credited by Tomás, Dana, Elena.
+2. Naming Template collapsed-by-default on cold load — **DID NOT FULLY LAND.** SSR markup
+   renders `aria-expanded="false"`, but the live hydrated cold page (localStorage cleared)
+   re-shows Naming Template expanded + teal-highlighted while the other two stay collapsed —
+   the same asymmetry round-1 flagged. The hydration re-expand the fix was meant to remove is
+   still effectively present, and the teal border + extra header description line remain.
+   Cited independently by SIX testers: Tomás, Wen, Dana, Jules, Aisha, Marcus, Elena.
+3. Mobile diff wrap at 375px — **LANDED & WORKED.** Sam verified after-values
+   ("spring_sale_2026_mega_newsletter_campaign_blast", "newsletter_weekly_digest_promo")
+   render in full, no truncation; `whiteSpace:normal`, no "newsle…".
 
-## Holdout analysis → round-3 plan
-- **Marcus (must-fix, definite +1):** FIX-2 widened ACTIONS 148→160 but a 4th per-row icon (duplicate) was added; trash now clips ~12px. Widen ACTIONS to fit all 4 icons (~+18-20px, taken from the Generated-URL slab) so every icon is fully visible at 1280px with no cell/page overflow. Zero regression risk; flips Marcus 7→9.
-- **Priya (de-densify landing):** she sees "three persistent governance cards around a one-row grid" and wants a "just the grid" default. Aisha (R1) also flagged "home side-cards duplicating Tools/Rules entry points." Collapse/remove any persistent landing cards that DUPLICATE the menu entries so the cold landing is grid-first with the launchers, nothing more. Reinforces Elena/Dana's clean-landing approval (low regression risk — removing clutter).
-- **Jules (surface presets, low-density):** her ask (chips on cold load) conflicts with grid-first / the "no above-grid banner" rule and risks regressing Dana (friction: optional-ui-gated... an always-on above-grid element regressed Dana 9→8 before). LOWER-RISK alternative she herself offered: auto-expand the Presets bar on a FIRST-EVER visit only (empty grid anyway), and/or make Tools ▾ → Channel Presets open straight to apply-able chips (cut her "three hops" to one). Try that, not landing chips.
-- **Rob (structural):** occasional user by his own account; gave 9 in the prior PASS, so re-test after polish but treat as the allowed 1 miss if he holds at 8.
+## Score table
 
-## Bar math
-Need 9/10. The 6 passers hold (carry Wen/Tomás/Aisha/Sam — surfaces untouched; sentinel-retest Dana/Elena since the landing changes). Flipping Marcus + Priya + Jules → 9/10 with Rob as the allowed miss. Re-test R3: Marcus, Priya, Jules, Rob + sentinels Dana, Elena.
+| Tester | Audience | Clarity | Value | Adv | Note |
+|--------|----------|---------|-------|-----|------|
+| Wen    | IN  | Y | Y | 9 | HELD. Diff+lint+Undo work, no functional regression; subtitles an improvement. Capped by un-shipped collapse (cosmetic) + standing export-doesn't-nudge-autofix nit |
+| Dana   | IN  | Y | Y | 9 | HELD. Prior Naming-vs-Allowed confusion RESOLVED by subtitles. Capped by un-shipped collapse + Generated URL column truncates with no full-string preview before Copy |
+| Sam    | IN  | Y | Y | 9 | HELD. Mobile diff truncation FIXED & verified at 375px. Residual: mobile generated-URL cell still ellipsis-truncates (has Copy → nice-to-have) |
+| Tomás  | IN  | Y | Y | 8 | DID NOT CLEAR. Subtitles fixed the jargon overlap he cited; held by Naming Template still expanded on cold load + footer-only privacy claim |
+| Jules  | IN  | Y | Y | 8 | REGRESSED 9→8. Persistence + jargon addressed, but the un-shipped collapse makes the 3 panels feel "weighted not equal" + residual Naming-vs-Allowed body-copy read |
+| Aisha  | OUT | Y | N | 8 | Post-Undo state + subtitles genuinely fixed; headline complaint (cold-load panel asymmetry) NOT fixed + run-on subhead |
+| Marcus | OUT | Y | Y | 8 | Collapse STATE now consistent (all aria-expanded=false cold), but Naming Template keeps 2px teal border + extra description line → still visual odd-one-out. Drop the teal → 9 |
+| Elena  | OUT | Y | Y | 8 | Lifted 7→8: subtitles legible on 30s skim. Held by team-standardization value still missing from landing copy + expanded-on-load Naming Template |
+| Priya  | OUT | Y | Y | 8 | CARRIED from round 1 (unaffected) |
+| Rob    | OUT | Y | (marginal) | 6 | CARRIED from round 1 (unaffected) |
+
+## In-audience-at-bar count: 3/5 (was 4/5 in round 1)
+
+Wen 9, Dana 9, Sam 9 — at bar. Tomás 8 (did not clear), Jules 8 (REGRESSED from 9).
+Bar requires all 5 in-audience at 9+. **NOT MET.**
+
+## Did Tomás clear? NO (held at 8). Did the four prior-9 marketers hold? 3 of 4 — Wen, Dana,
+Sam held at 9; **Jules regressed 9→8.**
+
+## Regression check
+No FUNCTIONAL regression: the auto-fix before→after diff, real Undo, lint rollup, CSV
+round-trip, Copy-to-clipboard, and mobile stacking all still work (multiple verified). The
+ONE regression is judgment, not function: Jules dropped a point because the un-shipped
+cold-collapse leaves the three setup panels visually unequal, which she reads as the tool
+weighting one panel over the others.
+
+## Defect mapped to testers (the single gating issue)
+
+P0 (gating) — **Naming Template panel still presents as expanded + teal-highlighted on cold
+load**, breaking the symmetry of the three setup panels. Round-2 fix #1 was claimed shipped
+but did not land in the hydrated client view (SSR is collapsed; a hydration path re-expands /
+the panel retains its expanded-style teal border + extra description line). This is the root
+cause of BOTH in-audience misses (Tomás 8, Jules 8) and caps all three out-of-audience testers
+at 8. Cited by 6 of 8 re-spawned testers. Concrete fix: (a) ensure the panel stays collapsed
+after hydration on cold load, AND (b) drop the teal-600 highlight border + the extra collapsed-
+header description line so Naming Template matches the two plain 1px-grey siblings (Marcus's
+precise diagnosis).
+
+## Lower-priority residuals (non-gating, log to backlog)
+- Export CSV doesn't nudge to auto-fix when open lint issues remain (Wen — standing P3).
+- Generated URL column truncates with no full-string preview before Copy (Dana; Sam mobile).
+- Team-standardization value missing from landing copy (Elena — out-of-audience).
+- Run-on subhead (Aisha — out-of-audience).
+
+## Lone-tester-false-negative check
+N/A. The gating defect is reported by SIX of eight testers (majority), and the SSR-vs-hydrated
+discrepancy is independently corroborated (Marcus pinned it to the teal border + extra header
+line). This is a real product defect, not a harness artifact — the lesson does not apply.
+
+## Verdict: FIX-THEN-RETEST
+
+The bar (in-audience 5/5 at 9+) is NOT met — round 2 went 4/5 → 3/5 because the highest-
+confidence round-2 fix (collapse Naming Template on cold load) did not actually land, and it
+both held Tomás at 8 and regressed Jules 9→8. The subtitle and mobile-wrap fixes DID land and
+worked. ONE targeted fix remains: make the Naming Template panel truly symmetric on cold load —
+stay collapsed after hydration AND remove the teal highlight border + extra description line so
+it matches the other two panels (Marcus's exact diagnosis). This directly targets all four
+sub-9 testers (Tomás, Jules in-audience; Aisha, Marcus, Elena cite the same). Re-spawn Tomás +
+Jules (gating) and Marcus/Aisha (confirm the visual fix) next round.

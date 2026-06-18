@@ -1,17 +1,40 @@
+# Round 4 — Wen (Marketing data analyst) — REGRESSION SENTINEL, HOLD CHECK
+
+**Clarity: Yes.** Cold, the H1 + subhead ("Clean campaign links in a grid" / "auto-fix the
+casing and spacing that splits a campaign into two in your analytics, then export a clean
+CSV") tells me in 10s it's for analytics owners like me. The always-on "We catch
+near-duplicates like spring_sale vs Spring-Sale — they split one campaign into two in GA4"
+demo line nails who it's for.
+
+**Value: Yes.** Today I babysit this in Sheets with LOWER()/TRIM() and still miss near-dupes
+until they fork a campaign in GA4. This catches them up front, names the exact split risk,
+and — critically for me — round-trips CSV byte-clean.
+
+## Prior concern re-check (my round-3 cap was learnability; core had to NOT regress)
+- **Auto-fix diff: HELD.** "Auto-fixed 3 cells" with per-cell strikethrough before→after
+  ("Newsletter"→"newsletter", "Email"→"email", "Spring-Sale"→"spring_sale") + Undo. Fixed
+  cells highlighted green. Nothing transformed invisibly.
+- **Lint rollup: HELD.** Seeded a casing near-dup → "5 issues found — jump to first" naming
+  '"newsletter" vs "Newsletter" — these will split campaign data in GA4'. Back to "All clean ✓"
+  after fix. Always visible.
+- **CSV round-trip: HELD — byte-clean.** Torture import (leading zeros 00789/00042/leading0007,
+  unicode créme_brûlée/日本語/Größe, embedded quote `"size ""XL"""`, embedded comma `"sale, big"`)
+  all round-tripped EXACTLY. Leading zeros NOT coerced, unicode intact, RFC-4180 quote escaping
+  correct, no silent casing change on import (only when I clicked Auto-fix). generated_url column
+  percent-encoded correctly while raw UTM columns stay human-readable. BOM on export (Excel-safe,
+  deliberate). 0 console errors.
+- **Three setup panels visual fix: CONFIRMED.** Computed styles of all three collapsed cards are
+  byte-identical (border 0px, radius 0, transparent bg, 73px h, 1232px w). UTM Spec panel now a
+  true equal peer — no teal border anywhere but the QR toolbar button. The shipped pixel fix is real.
+
+**Advocacy: 9.** Holding. No regression to lint, diff, or CSV round-trip — all three held under a
+deliberately nasty test. The visual fix is genuine polish (panels read as equal peers now) but
+adds no new capability, so it doesn't move me past 9. Still capped by the same prior, unchanged
+thing: the dual-purpose Import dialog + several collapsed panels take a beat to learn cold —
+not a defect, just not "frictionless on first open," which is what a 10 needs.
+
+(Did not score Team Workspace — known to need a DB absent in this local env.)
+
 ```json
-{"name":"Wen","clarity":"Yes","value":"Yes","advocacy":9,"priorConcernsAddressed":"all","top_issues":["Import is a two-step confirm modal ('Cancel' / 'Import 2 rows') — correct and reviewable, but it intercepts everything until dismissed, so batch-import-then-auto-fix costs one extra click; minor flow tax, not a defect","Surface is still feature-rich: even with the calmer toolbar, a brand-new user has many panels (Launch Check, Presets, Bulk Edit, Campaign Naming Template, Allowed values) to take in before touching the grid"],"loved":["Toolbar wrap is GONE — at 1440 all controls sit in one ~222–236px band: ONE blue '+ Add row' primary, Auto-fix naming kept amber emphasis (lint stays loud), Import/Paste&Audit/Export/QR/Copy-all demoted to compact neutral buttons, two share actions folded into one bordered SHARE group. Demotion buried nothing","Mobile cell editing FIXED — at 375px each row is a stacked card with full-width labeled fields (BASE URL, UTM_SOURCE*, UTM_MEDIUM*, UTM_CAMPAIGN*…); no more hunting for an unreachable cell, and Add row/Auto-fix/Import/Export all stay visible","CSV in/out still first-class & lossless — import confirm shows row count, auto-fix fires toast+Undo (Google→google, CPC→cpc, Summer Sale→summer_sale; facebook/social untouched), export keeps BOM + snake_case headers + generated_url. 0 console errors across import/autofix/export"]}
+{"name":"Wen","clarity":"Y","value":"Y","advocacy":9,"why":"No regression: auto-fix before/after diff, always-on GA4-split lint, and byte-clean CSV round-trip (leading zeros, unicode, embedded quotes/commas, no invisible transforms) all held under a torture test; 0 console errors. The shipped fix (UTM Spec collapsed panel now pixel-identical to the other two) is confirmed via byte-identical computed styles. Holding at 9, not 10, because import-dialog + collapsed-panel learnability is unchanged from prior — polish, not a new capability."}
 ```
-
-Re-test of my two round-3 off-10 nits — BOTH verified live, FIXED.
-
-TOOLBAR WRAP / SPRAWL — FIXED. At 1440 the controls no longer wrap to two rows. Measured button tops: +Add row 233, Auto-fix naming 231, Import CSV 236, Paste&Audit 233, Export CSV 236, QR 222, Copy all 226 — one band. Clear hierarchy now: single blue primary, amber Auto-fix keeps lint prominent, rest compact, share folded into one SHARE box. Reads as a grid tool, not a button wall.
-
-MOBILE CELL EDITING — FIXED. At 375 the grid switches to a stacked card per row with full-width labeled inputs for every field. The "couldn't reach a cell" problem is gone; BASE URL / UTM_SOURCE / etc. are directly tappable.
-
-SENTINEL (did demoting/compacting hurt CSV/lint discoverability?) — NO. Import CSV, Export CSV and Auto-fix naming are all still obvious and one click; Import even gained a "Import 2 rows" confirm. Export still emits BOM + snake_case + generated_url and round-trips clean.
-
-CLARITY: Yes — H1 "Clean UTM links for your whole campaign — in one grid." + "Auto-fix messy casing and typos before they split your Google Analytics" answers what+who in seconds; calmer toolbar makes the grid the focal point.
-
-VALUE: Yes — beats my Sheets LOWER/SUBSTITUTE + dbt post-hoc casing catch; reversible one-click pre-launch transform with visible Undo.
-
-ADVOCACY: 9 (held). Both prior nits resolved with no regression to CSV or lint. Not a 10 only because the surface is feature-dense for a first-timer and the import-confirm modal is a (small, defensible) extra step. I'd still drop this in our analytics Slack unprompted.

@@ -1,1 +1,3 @@
-2026-06-14 (run 20260614-143711-daily) — PASSED at round 3. Grid-first landing-layout pass. 9/10 testers at advocacy>=9 with clarity=Yes & value=Yes (Priya9 Marcus10 Wen9 Dana10 Jules9 Aisha9 Rob9 Sam10 Elena9; holdout Tomas8 = deliberately-deferred clean-on-import feature). Live https://utm-grid.vercel.app commit 594a49a.
+PASSED — run 20260617-221031-daily (AUTO-FIX TRUST + PROACTIVE LINT deepen)
+Round 4 convergence: in-audience marketers 5/5 at advocacy 9+ (Jules cleared 8→9; Tomás/Wen/Dana/Sam held at 9). Trajectory 4/5 → 3/5 → 4/5 → 5/5.
+Feature found cold by all 10 (added-feature-buried retired R1). Audience-weighted bar (in-audience marketers ≥9). See panel/SYNTHESIS-round1..4.md.

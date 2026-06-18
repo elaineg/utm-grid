@@ -399,42 +399,42 @@ export function UtmSpecPanel({
   if (desktopOnly) {
     const headerLabel = workspaceMode
       ? "Shared UTM taxonomy"
-      : "Allowed values";
+      : "UTM Spec / Allowed Values";
     const subText = workspaceMode
       ? "Synced to this workspace — your team's shared allowed values, enforced on every cell."
-      : "Define allowed values per field — catch typos before they split your analytics. Saved on this device.";
+      : "Block bad values — set which sources, mediums, and campaigns are allowed";
     return (
       <aside
         ref={panelRef}
-        className="w-full rounded-lg border border-violet-100 bg-white p-3 mt-3"
+        className="flex flex-col w-full rounded-lg border border-gray-200 bg-white"
         aria-label="UTM Spec panel"
         data-testid="utm-spec-panel"
       >
-        <div className="flex items-center justify-between mb-1">
-          <button
-            type="button"
-            onClick={() => setExpanded((v) => !v)}
-            className="flex items-center gap-1.5 text-sm font-semibold text-gray-800"
-            aria-expanded={expanded}
-            data-testid="utm-spec-toggle"
-          >
-            <span>{headerLabel}</span>
-            <span className="text-gray-400 text-xs">{expanded ? "▲" : "▼"}</span>
-          </button>
-          {syncStatusNode}
-        </div>
-        {!expanded && (
-          <p className="text-[11px] text-gray-400 leading-relaxed">
-            {subText}
-          </p>
-        )}
-        {expanded && (
-          <>
-            <p className="text-[11px] text-gray-400 mb-2 leading-relaxed">
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="flex w-full items-start justify-between gap-2 px-4 py-3 text-left hover:bg-gray-50"
+          aria-expanded={expanded}
+          data-testid="utm-spec-toggle"
+        >
+          <span className="flex-1 min-w-0">
+            <span className="block text-sm font-semibold text-gray-800 leading-tight">
+              {headerLabel}
+            </span>
+            <span
+              className="block text-[10px] text-gray-400 leading-snug mt-0.5"
+              data-testid="utm-spec-subtitle"
+            >
               {subText}
-            </p>
+            </span>
+            {syncStatusNode}
+          </span>
+          <span className="text-gray-400 text-xs shrink-0 mt-0.5">{expanded ? "▲" : "▼"}</span>
+        </button>
+        {expanded && (
+          <div className="border-t border-gray-100 p-4">
             {innerContent}
-          </>
+          </div>
         )}
       </aside>
     );
@@ -443,22 +443,22 @@ export function UtmSpecPanel({
   if (mobileOnly) {
     const mobileSubText = workspaceMode
       ? "Synced to this workspace — your team’s shared allowed values, enforced on every cell."
-      : "Your team’s allowed values — enforced on every cell. Saved on this device.";
+      : "Block bad values — set which sources, mediums, and campaigns are allowed";
     const mobileHeaderHint = workspaceMode
       ? "— synced to this workspace"
-      : "— catch typos before they split your analytics";
+      : "— allowed values per UTM field";
     return (
       <>
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
-          className="flex w-full items-center justify-between rounded-lg border border-violet-100 bg-white px-4 py-2.5 text-sm font-medium text-gray-700"
+          className="flex w-full items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700"
           aria-expanded={expanded}
           data-testid="utm-spec-mobile-toggle"
         >
           <span className="flex items-center gap-2 flex-wrap">
             <span>
-              {workspaceMode ? "Shared UTM taxonomy" : "Allowed values"}{" "}
+              {workspaceMode ? "Shared UTM taxonomy" : "UTM Spec / Allowed Values"}{" "}
               <span className="font-normal text-gray-400 text-xs">{mobileHeaderHint}</span>
             </span>
             {syncStatusNode}
@@ -468,10 +468,10 @@ export function UtmSpecPanel({
         {expanded && (
           <div
             ref={panelRef as React.RefObject<HTMLDivElement>}
-            className="rounded-b-lg border border-t-0 border-violet-100 bg-white p-4"
+            className="rounded-b-lg border border-t-0 border-gray-200 bg-white p-4"
             data-testid="utm-spec-panel"
           >
-            <p className="text-[11px] text-gray-400 mb-3 leading-relaxed">
+            <p className="text-[11px] text-gray-400 mb-3 leading-relaxed" data-testid="utm-spec-subtitle">
               {mobileSubText}
             </p>
             {innerContent}

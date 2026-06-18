@@ -362,7 +362,7 @@ test("R2-5: Auto-fix naming lowercases ALL utm_* fields uniformly (utm_source, u
   await page.waitForLoadState("networkidle");
 
   // Find and click the Auto-fix naming button
-  const autoFixBtn = page.locator('[data-testid="auto-fix-naming-btn"]').first();
+  const autoFixBtn = page.locator('[data-testid="autofix-button"]').first();
 
   // If testid not found, try by text
   const autoFixByText = page.getByText("Auto-fix naming").first();

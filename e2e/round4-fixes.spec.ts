@@ -270,7 +270,7 @@ test("E2-1b: 'Auto-fix naming' is present as a muted ghost control (P3-B de-weig
   await page.goto("/");
   await page.waitForLoadState("networkidle");
 
-  const autoFixBtn = page.locator('[data-testid="auto-fix-naming-btn"]');
+  const autoFixBtn = page.locator('[data-testid="autofix-button"]');
   await expect(autoFixBtn).toBeVisible({ timeout: 5_000 });
 
   // P3-B: Auto-fix de-weighted to ghost/muted (border-gray) so + Add row is the sole accent.

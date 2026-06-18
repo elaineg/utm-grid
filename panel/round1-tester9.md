@@ -1,46 +1,23 @@
+# Elena — Engineering manager, 30-second budget, re-test
+
+**What I did:** Re-opened cold on my laptop between meetings. Re-checked my two prior gripes first, then dirtied a value to see the new auto-fix/lint behavior, then forced 30s of normal skimming.
+
+### Re-check of my prior complaints
+- **"Tools ▾ is an 8-item junk drawer"** — MOSTLY FIXED. Tools is now grouped under headers (BUILD & REUSE / GOVERN CONVENTIONS / IMPORT & MOVE) with one-line subtitles, and Import/Export/QR are promoted onto the main toolbar instead of buried inside. It reads like an organized menu now, not a dump. Still a longish list, but I can scan it.
+- **"Team-standardization value is buried, not on the landing"** — NOT FIXED. Landing copy is still purely individual ("Build and tag a whole batch… export a clean CSV"). No word about keeping a team consistent / shared style guide. My report asked whether to *standardize the team* on it, and I still can't answer that from the landing in 30s.
+
+### 30-second fresh read
+1. **Clarity — YES.** Headline + "casing and spacing that splits a campaign into two in your analytics" + "No login — nothing leaves your browser" = instant. Best line on the page.
+2. **Value — Marginal for me, Yes for my report.** I don't build UTMs daily, so I won't open it twice a week. The paid-social/email person who asked clearly would; it beats their spreadsheet on the exact GA4-split pain.
+3. **Advocacy — 7.** Honest 7, not a polite one. Holds it back: I'm out-of-audience so I won't raise it unprompted, and the ONE thing that would let me confidently say "yes, standardize on it" — a visible team/consistency benefit on the landing — still isn't there. The core tool is genuinely an 8-9 for an in-audience user.
+
+### Buried-check (found on my own, untold?)
+- **Auto-fix + before→after DIFF: FOUND.** Hit Auto-fix on a messy field, got a clear panel: `utm_source: " Spring Sale " → "spring_sale"` with strikethrough + an Undo button (and Undo also appears in the toolbar). Clearest part of the app.
+- **Cross-row lint rollup: FOUND.** "All clean ✓" flipped to "1 issue found — jump to first ↓" with per-cell "2 warnings · Fix this value." Always visible, right where my eye landed.
+- **Cold "what we catch" demo: FOUND.** On load: "We catch near-duplicates like spring_sale vs Spring-Sale — they split one campaign into two in GA4," and it disappeared once data was dirty.
+
+All three discoverable without being told. No console errors. (Team Workspace not tested — DB not in this env; not held against it.)
+
 ```json
-{"name":"Elena","clarity":"Yes","value":"Yes","advocacy":"8","prior_concerns_addressed":"n/a for round 1"}
-```
-
-## Elena — Engineering manager, 30-second budget, skimmed on phone (375px)
-
-**What I did:** Opened it cold on my phone between meetings. Read the headline, glanced at
-the toolbar, peeked into "Tools ▾" because my report mentioned a "move between devices"
-thing, then confirmed the example link actually generates.
-
-### Re-check of what I griped about before
-- **"Cold open shows empty fields, I can't see it WORKS in 5s"** — FIXED. It now lands with a
-  filled example row (acme.com/spring-sale, newsletter/email/spring_sale_2026) and the live
-  generated URL `…?utm_source=newsletter&utm_medium=email&utm_campaign=spring_sale_2026` is
-  right there. Even after I cleared storage it re-seeded the example. This was my #1 ask and
-  it's done — "messy in → clean tagged link out" is now legible on my phone without scrolling.
-
-### What worked (30-second test passes)
-- Headline "Clean campaign links in a grid" + subhead about "casing and spacing that splits a
-  campaign into two in your analytics" names the exact pain my team screws up. Instant.
-- "No login — nothing leaves your browser" is the line that makes it recommendable — setup-free
-  is my entire bar. I'd forward it to my report without a second thought.
-- Phone layout is a clean vertical stack, fully usable one-handed.
-- **The new "Move to another device — export / import your setup" is at the BOTTOM of Tools ▾,
-  tucked away. It does NOT clutter the landing — I only found it by hunting. Correct call;
-  zero in the way of the core value.**
-
-### What annoyed me
-- Tools ▾ is a junk drawer: 8 items (Channel Presets, Bulk edit, UTM Spec, Naming Template,
-  Campaigns library, Download QR codes, Run Launch Check, Move to another device). Collapsed
-  it's fine for a skim, but it smells like a tool accreting features.
-- Three dropdowns (Tools / Share / Rules) on a tiny toolbar is one more than I want to parse;
-  I can't tell at a glance what's in "Rules" vs "Tools."
-
-**Bug:** None. Live URL generates correctly, no console errors, clean re-seed. Copy fired
-cleanly (clipboard read blocked in my test env, not an app issue).
-
-**SINGLE thing holding back the score (8, not 9):** The core "clean one link, copy it" is now
-an instant yes. But my report asked whether to *standardize the team* on it, and that depends
-on the team features (shared style guide, consistent naming across 8 reports) — which are
-buried in dropdowns I won't open between meetings. Put the ONE team benefit ("keep everyone's
-UTMs consistent — shareable style guide, no login") in a sentence on the landing and this is a
-9 I'd raise unprompted in a staff meeting.
-```json
-{"tester": 9, "round": 1, "clarity": "Yes", "value": "Yes", "advocacy": 8, "topComplaints": ["Tools ▾ is an 8-item junk drawer that smells like feature accretion", "Team-standardization value (style guide, consistent naming across reports) is buried in dropdowns, not visible on landing"], "priorConcernsAddressed": "all"}
+{"tester": 9, "round": 2, "clarity": "Yes", "value": "Marginal", "advocacy": 7, "topComplaints": ["Team-standardization value still absent from landing — can't tell in 30s whether to standardize my team on it", "Out-of-audience: I don't build UTMs, so I'd only endorse when asked, never unprompted"], "priorConcernsAddressed": "some"}
 ```

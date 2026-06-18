@@ -1,44 +1,50 @@
-{"name":"Marcus","clarity":"Yes","value":"Yes","advocacy":"8","prior_concerns_addressed":"n/a for round 1"}
+# Marcus — Frontend engineer
 
-# Marcus — Frontend engineer, 2yr (desktop Chrome, devtools open)
+Ran cold at 1280px, devtools open, 0 console errors across the session.
 
-## What I did
-Cold-opened, read above the fold, then ran my real launch task: tagged two announcement
-links in the grid (twitter/social and newsletter/email, both utm_campaign=product_launch),
-watched the Generated URL build live, saved them as a campaign ("Launch Q2"). Then exercised
-the NEW Tools ▾ → Move to another device: copied the code (1395-char base64 bundle, clipboard
-verified — read 1395 chars), opened a fresh incognito context, pasted into the Import side,
-hit Preview import, reviewed the diff, Confirmed.
+## 1. Clarity — YES
+H1 "Clean campaign links in a grid" + the subline "Build and tag a whole batch of
+30+ campaign links at once — and auto-fix the casing and spacing that splits a
+campaign into two in your analytics, then export a clean CSV" told me exactly what
+this is and who it's for in ~10s. "No login — nothing leaves your browser" sealed it.
+I'd tell a teammate: "batch UTM builder that lints your tags and one-click fixes the
+casing/spacing junk that fragments campaigns in GA4, then exports CSV — no signup."
 
-## What worked (genuinely well)
-- **Clarity is instant.** H1 "Clean campaign links in a grid" + subhead about casing/spacing
-  "that splits a campaign into two in your analytics" nailed my pain. "No login — nothing
-  leaves your browser" killed my usual hesitation. One-line pitch to a teammate: "spreadsheet-
-  style bulk UTM builder, lints as you type, CSV in/out, no account."
-- **Core flow beats hand-editing query params.** Generated URL was correct and live:
-  `...?utm_source=twitter&utm_medium=social&utm_campaign=product_launch&utm_content=hero_tweet`.
-  Per-row Copy + QR is a nice touch. Genuinely saves the fiddly by-hand work I do today.
-- **The Move feature is well thought out.** Export/Import split panel, honest microcopy
-  ("This is your own local data — nothing is uploaded", "we merge... we never overwrite your
-  saved campaigns"). The killer detail: **Preview import shows a real dry-run diff** — "1 added
-  · 0 updated · 0 skipped — Campaigns: 1 added — 'Launch Q2'" — BEFORE I commit. That's exactly
-  what makes me trust a merge into existing data. End state: "✓ Import complete! Your setup has
-  been merged," campaign restored as "Launch Q2 · 2 links · saved just now." Zero console errors
-  in either context. I'd actually use the .json export as a poor-man's backup.
+## 2. Value — YES
+Today I hand-edit query params in a scratchpad / Notion and copy-paste, and I always
+fat-finger a "Spring Sale" vs "spring_sale" split that I only notice weeks later in
+GA. The diff panel is the killer feature: I typed "Spring Sale 2026", hit Auto-fix,
+and got a literal before→after audit — `Row 2 · utm_campaign: "Spring Sale 2026" →
+"spring_sale_2026"` (3 cells), with Undo right there. Verified Undo restores the
+exact original string. The always-on rollup flipping "6 issues found" (with jump-to)
+→ "All clean ✓" is the trust signal I need before I ship links. Presets (Email, X,
+Mastodon) save the source/medium busywork. This genuinely beats my by-hand workflow.
 
-## What annoyed / craft nits (I notice CSS instantly)
-- **The ACTIONS column is clipped at 1280px.** The third per-row icon button's border runs off
-  the right edge of the table — visibly cut. Small, but first thing my eye caught; reads as
-  unfinished on the flagship desktop width.
-- Grid input cells are narrow and truncate values ("https://acme.co", "product_la", "hero_twee").
-  Functional, but with this much horizontal room at 1280 it feels cramped — want wider URL/
-  campaign columns.
-- Move dialog footer: "Coming soon: optional accounts sync your setup automatically." Honest, but
-  quietly admits today's cross-device story is a manual copy-paste chore — fine as a backup,
-  mild as true multi-device.
+## BURIED-FEATURE CHECK — found all 3 unprompted
+- Auto-fix DIFF panel: FOUND on my own. "Auto-fixed 3 cells" panel, strike-through
+  before → bold after per row/field, dismiss [x], and Undo. Round-trips correctly.
+- Cross-row lint rollup: FOUND. Always-visible "All clean ✓" / "N issues found" with
+  jump-to-first; updated live as I dirtied data.
+- Cold "what we catch" demo: FOUND. "We catch near-duplicates like spring_sale vs
+  Spring-Sale — they split one campaign into two in GA4" with an x to dismiss.
 
-## Single thing most holding back the score
-The clipped ACTIONS column at desktop width. One-line overflow fix, but as a frontend engineer
-it's the polish gap that stops me dropping the link in team Slack with "this is clean" — a
-designer's first reaction will be "that button's cut off." Fix that + the cramped columns and
-this is a 9 I'd share unprompted.
+## NITS (didn't downscore much)
+- The "three setup panels collapsed by default" claim is only partial: the Campaign
+  Naming Template panel renders EXPANDED on cold load (blue-highlighted, full body
+  text). Campaigns + UTM Spec are collapsed-with-subtitle. Inconsistent — pick one.
+- Two buttons both labeled "Undo" (toolbar + diff panel) is mildly ambiguous; they do
+  the same thing but I had to think for a second.
+- Cold load already had a sample row pre-filled, so I didn't see a truly empty grid.
+- Did not test Team Workspace (DB not provisioned locally — per instructions).
+
+## 3. Advocacy — 8/10
+The diff-panel + undo + live lint rollup combo is legitimately better than my manual
+flow and I'd drop this in our launch-prep Slack channel today. Not a 9 because: the
+inconsistent panel-collapse default reads slightly unfinished to an eye that notices
+janky CSS, and I'd want to confirm the lint catches more edge cases (uppercase in
+base URL, trailing slashes, encoded spaces) before I tell the whole team to trust the
+auto-fix blindly. Polish those and it's a 9.
+
+```json
+{"tester": 2, "round": 1, "clarity": "Yes", "value": "Yes", "advocacy": 8, "topComplaints": ["Naming Template panel renders expanded on cold load while the other two are collapsed — inconsistent default", "Two separate buttons both labeled 'Undo' (toolbar + diff panel) is briefly ambiguous"], "priorConcernsAddressed": "n/a"}
+```

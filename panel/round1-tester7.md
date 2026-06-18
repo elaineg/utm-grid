@@ -1,33 +1,51 @@
-```json
-{"name":"Aisha","clarity":"Yes","value":"No","advocacy":"8","prior_concerns_addressed":"some"}
-```
+# Aisha — Product designer
 
-# Tester 7 — Aisha (Product designer) — re-test
+Cold open, desktop 1280px. A teammate shared this; I don't build UTMs often, so I judge
+craft: empty state, copy tone, lint affordances, the auto-fix DIFF, the cross-row rollup.
+I re-checked my standing nits (run-on subhead, duplicated side-card entry points) too.
 
-I judge craft. I re-checked my two prior complaints first, then re-answered fresh and exercised the new "Move to another device" feature hard.
+## Buried-feature check (found WITHOUT being told?)
+- Auto-fix DIFF panel: FOUND. Toolbar "Auto-fix" → "Auto-fixed 3 cells" panel; each line
+  reads `Row 2 · utm_source: "​ Newsletter ​" → "newsletter"` with old value struck through,
+  new in bold quotes, plus Undo + an × dismiss. Fixed cells flash green in the grid. Clean.
+- Cross-row lint ROLLUP: FOUND. Top line flips live between "All clean ✓" (green) and
+  "5 issues found — jump to first ↓" (amber) as I dirty/clean cells. Good affordance.
+- Cold "what we catch" demo: FOUND. On an empty grid it shows "We catch near-duplicates like
+  spring_sale vs Spring-Sale — they split one campaign into two in GA4" with a dismiss ×, and
+  it correctly vanishes the moment I type real data. A genuinely considered empty state.
 
-## Prior concerns — re-checked
-- **Hero H1 was a run-on explainer** → PARTIALLY. The headline is now a tight "Clean campaign links in a grid" (good). But the *subhead* underneath is still one long run-on — "Auto-fix the casing and spacing that splits a campaign into two in your analytics, and export a clean CSV that drops straight into your sheet." It reads like a promoted tooltip. The jargon just moved down a line; it didn't get shorter.
-- **Home side-cards duplicate Tools/Rules entry points** → NOT ADDRESSED. Naming Template / Campaigns / Allowed values cards still reach the same dialogs as Tools ▾ / Rules ▾. Two doors to the same room remains.
-
-## New feature — "Move to another device" (the part I was asked to judge)
-This is the considered part. Empty state (opened with NOTHING saved) is graceful: Download/Copy greyed out, "Nothing saved yet — create a campaign, preset, or workspace first, then come back to move it." Two-column EXPORT/IMPORT split is balanced. Copy tone is honest and on-brand: "your own local data — nothing is uploaded… this bundle just carries the secret links back" and "We merge into what's already here — we never overwrite your saved campaigns." The "Coming soon: optional accounts sync… this manual move is free and always will be" footnote sets roadmap expectations like someone who thought about it.
-Error state nailed it: junk code → red "That doesn't look like a UTM Grid setup code. Your saved data is unchanged." That second sentence is the safety net I look for. Merge summary is clear — blue "What will be merged: 0 added · 0 updated · 1 skipped / Campaigns: 1 skipped" + Confirm/Cancel — and it correctly SKIPPED my identical re-import instead of duping. That dedupe restraint is real craft.
-
-## Craft nits in the new feature
-- **Copy code has no text confirmation.** After click the label stays "Copy code" — only a faint blue tint, no "Copied ✓". For a copy action that's too quiet; I wasn't sure it fired. (Clipboard read was blocked in my test env — copy verified visually, clipboard read blocked in test env — so I treat the copy itself as working.)
-- Export summary just says "1 campaign" — I'd want a one-line manifest (campaigns / presets / workspaces / allowed-values) so I know exactly what I'm carrying.
-- The panel is a touch wordy — long paragraphs around what is ultimately two buttons + a textarea.
+## Prior nits — re-checked
+- Run-on subhead → STILL PARTIALLY. H1 is tight; the subhead is still one long explainer
+  sentence reading like a promoted tooltip.
+- Setup panels: the three collapsed panels (Naming Template / Campaigns / Allowed Values)
+  now carry plain-language subtitles that disambiguate "structure" vs "allowed values" —
+  good copy. But Naming Template ships EXPANDED + teal-highlighted while the other two stay
+  collapsed; the asymmetric cold layout reads slightly unfinished.
 
 ## 1. Clarity — Yes
-Pitch in one breath: bulk UTM builder that lints as you type and exports a clean CSV. Headers (UTM_SOURCE*, GENERATED URL) and the required * markers carry it. Only the run-on subhead reads off.
+One breath: "Bulk UTM builder — paste a batch of campaign links into a grid, it lints the
+casing/spacing/duplicates that secretly split one campaign into two in GA4, one-click
+auto-fixes them, exports clean CSV, no login." H1 + the GA4-pain subhead landed it well
+under 30s. Required * markers and column headers carry the grid.
 
-## 2. Value — No (for me)
-I'm a designer; I build a few UTMs a year and have no "today" tool for this — a teammate shared it. So it doesn't save ME time. My growth teammates would get real value, and the cross-device move is a thoughtful answer to "set up on my laptop, now I'm on the studio iMac." Judged against MY workflow, though: No.
+## 2. Value — No (for ME)
+I build a handful of UTMs a year and have no "today" tool — a teammate shared it, so it
+doesn't save ME time. For my growth teammates it clearly beats a spreadsheet: the cross-row
+"newsletter vs Newsletter — will split campaign data in GA4" warning is something a sheet
+never surfaces, and auto-fix + undo beats hand-cleaning. Judged against MY workflow: No.
 
 ## 3. Advocacy — 8/10
-The new feature is the best-crafted thing in the app — empty/error/merge states are all considered. Held from 9 by: (1) the silent "Copy code" confirmation breaks the considered illusion in the exact feature I was judging — make it an explicit "Copied ✓"; (2) my two prior nits (run-on subhead, duplicated side-cards) are still only partly resolved; (3) it's not a tool I personally use weekly.
+The craft holds, which is the only reason I'd pass it on. Praise: lint copy explains the WHY
+not just the what; the diff uses strikethrough + arrow glyphs instead of clumsy before/after
+labels; Undo fires a toast ("Undid: Auto-fix naming") and recalculates the rollup live;
+everything is reversible (row delete also gets a "Row deleted — Undo" toast). Held from 9 by:
+(1) after Undo, row 2 briefly flips siblings to "utm_medium is required / utm_campaign is
+required" — logically correct but a jarring intermediate state a first-timer reads as
+breakage; (2) the asymmetric panel default (one expanded, two collapsed); (3) the still-run-on
+subhead. Fix those and it's a 9 I'd raise unprompted.
+
+(Copy verified visually; clipboard read blocked in test env — not counted against the tool.)
 
 ```json
-{"tester": 7, "round": 1, "clarity": "Yes", "value": "No", "advocacy": 8, "topComplaints": ["'Copy code' gives no text confirmation — label stays 'Copy code', only a faint blue tint; expected 'Copied ✓' in the very feature I was asked to judge", "Hero subhead is still a run-on explainer reading like a promoted tooltip; and home side-cards still duplicate Tools/Rules entry points"], "priorConcernsAddressed": "some"}
+{"tester": 7, "round": 1, "clarity": "Yes", "value": "No", "advocacy": 8, "topComplaints": ["After Undo, sibling fields flip to 'required' errors — correct but jarring intermediate state for a first-timer", "Naming Template panel ships expanded+highlighted while the other two stay collapsed — asymmetric, slightly unfinished cold layout; subhead still a run-on"], "priorConcernsAddressed": "some"}
 ```

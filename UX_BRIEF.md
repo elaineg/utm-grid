@@ -627,3 +627,94 @@ without opening any menu or selecting any row; clicking it reveals branded bulk-
 color + logo controls) below the toolbar. At 375px the button sits in the wrapped toolbar and its
 panel stacks full-width below the grid with ≥44px targets, no horizontal scroll, no sticky/overlay
 occlusion.
+
+## 9. THIS PASS — Trustworthy, legible linting (auto-fix diff · proactive cross-row lint · panel disclosure)
+
+> The round-8 single-most-cited in-audience cap (Dana/Wen/Tomás/Sam, advocacy 8). The lint
+> engine math + grid behavior are UNCHANGED — these are LEGIBILITY + TRUST surfaces over the
+> existing `cleanAll()` / `fixCell()` / `lintRows()` / Undo. Same visual language as the rest of
+> the app (Inter, cool neutral grays, the single accent for primary actions, **amber** — not red —
+> for warnings, hairline dividers, square cells; honors D3 panels-below-grid, D5 copy/confirm-in-place,
+> D7 no silent dead buttons). No restyle, no new look, no new infra — 100% client-side.
+
+**L1 — Auto-fix shows a before→after DIFF, apply-then-show-with-Undo (the trust decision).**
+*Decision & one-line justification:* **apply-then-show-the-diff-with-Undo**, NOT preview-then-apply
+— keep the existing one-click whole-grid fix (a 30-link batch fixed in one click is the value), then
+make it auditable: a diff panel + the EXISTING Undo lets the marketer verify every change and revert
+the whole batch in one click. Preview-gating would add a click and a decision to every fix without
+adding trust they don't already get from "review + Undo."
+- On clicking the toolbar **Auto-fix** (which already computes the changed-cell keys in `cleanAll()`),
+  render a **diff panel** as a full-width stacked strip directly above the grid (per D3 — never a
+  sidebar, never an overlay). Header: **"Auto-fixed N cells"** + a single **Undo** button (reuses the
+  existing `pushUndo("Auto-fix naming")` / `undo()` path — do NOT add a second undo system) + a quiet
+  **Dismiss** (×).
+- Body: a **scannable list, one line per changed cell**, each reading
+  **`Row {n} · {field}: "{before}" → "{after}"`** (e.g. `Row 3 · utm_campaign: "Spring-Sale" → "spring_sale"`).
+  The before is muted/struck, the `→` is a hairline arrow, the after is in the accent/ink color. The
+  list scrolls inside the panel (max-height) so 30+ changes stay reviewable without pushing the grid
+  far down. Group nothing fancy — a flat, dense, monospace-value list reads fastest for scanning.
+- The affected cells still flash briefly (existing behavior, keep it) so the eye connects the diff
+  line to the cell.
+- **Per-cell "Fix" parity:** the per-cell `fixCell` (and the spec "Fix to <nearest>") also shows its
+  ONE change as a brief inline confirmation reading the same `"{before}" → "{after}"` shape (it already
+  pushes Undo), so the two fix paths read consistently. The full diff panel is the batch surface.
+- Empty case (D7): clicking Auto-fix on a clean grid shows the existing **"Nothing to fix — all cells
+  are clean"** message and **no diff panel** (never a blank panel).
+- Mobile 375px: the diff panel stacks full-width above the grid, lines wrap/ellipsize with no
+  horizontal scroll; Undo + Dismiss are ≥44px targets; no sticky/overlay occlusion.
+
+**L2 — Proactive cross-row lint: always-visible roll-up + cold "what we catch" demo.**
+The signature GA4-splitting catch must be legible in 5 seconds, before a second conflicting row exists.
+- **Lint roll-up indicator** lives in the grid header strip (NOT a new above-grid banner — it sits in
+  the existing header row, quiet). It reads, derived live from the existing `warnings` map:
+  - **"All clean ✓"** in a muted/positive tone when there are zero warnings, OR
+  - **"{N} issues found"** in **amber** when N>0; clicking it scrolls to the FIRST flagged cell
+    (jump-to-first). Keep the wording "issues"/"inconsistencies" plain — no jargon.
+- **Cold "what we catch" micro-demo** (the differentiator, legible without typing a duplicate): when
+  the grid is in its seeded clean/empty example state (the `didSeedExample` condition), the roll-up
+  shows ONE quiet inline line beside the "All clean ✓":
+  **"We catch near-duplicates like `spring_sale` vs `Spring-Sale` — they split one campaign into two in GA4."**
+  It is muted, single-line, dismissible (×), and **vanishes the instant the grid has any real warning
+  or any non-example edit** (cites `optional-ui-gated-on-data-presence-vanishes-for-empty-case` — it is
+  present ONLY in the empty/example state, the safe shape; it never competes with live lint and never
+  becomes a persistent above-grid banner for returning users). It is a copy line in/under the header,
+  NOT a full-width card — the grid stays the hero (P3-B must not regress).
+- Mobile 375px: the roll-up sits in the card-view header area; the demo line wraps to ≤2 lines, no
+  horizontal scroll, no sticky/overlay occlusion.
+
+**L3 — Plain-language labels + collapsed-by-default disclosure of the three setup panels.**
+The three near-identically-named governance panels read as overlapping jargon cold (Dana/Sam/Aisha/Rob).
+NO functionality removed or merged — labeling + a one-line "what this is" subtitle + collapsed-by-default
+(they already open one-at-a-time from Tools ▾ per D3/D11; this just makes each self-explanatory):
+- **Naming Template** — panel title + subtitle **"The STRUCTURE of utm_campaign — segments + separator."**
+- **UTM Spec / Allowed Values** — title + subtitle **"The ALLOWED VALUES for each UTM field (your taxonomy)."**
+- **Campaigns** — title + subtitle **"Your saved grids — reopen a past batch."**
+  The subtitle is a tiny muted line directly under each panel's heading (uppercase micro-label feel
+  matches the house language). The Tools ▾ menu sub-captions (D11: "utm_campaign structure" / "allowed
+  values" / "saved grids library") already exist — keep them aligned with these subtitles so the menu
+  and the opened panel tell the same story. Each panel stays collapsed until opened; one open at a time.
+- Goal-met test: a cold tester opening any of the three can say in one sentence what it does without
+  confusing it with the other two.
+
+**Discoverability guard (added-feature-buried lesson):** none of L1/L2/L3 is buried. The Auto-fix
+button and the lint roll-up are in the always-visible grid header/toolbar on cold load (no menu, no
+selection); the panel subtitles are visible the moment a panel opens. The cold "what we catch" demo is
+visible on the empty/example landing without any action.
+
+## 10. 5-second check addendum (this pass)
+On a cold open of `/` at 1280px with empty localStorage, above the fold the visitor now ALSO sees:
+the **"All clean ✓"** lint roll-up beside the grid header AND the one-line **"we catch `spring_sale`
+vs `Spring-Sale` — they split your campaign in GA4"** micro-demo — so the signature differentiator is
+legible in 5 seconds. Typing a messy value flips the roll-up to amber "N issues found"; one **Auto-fix**
+click then shows the scannable before→after diff with Undo. (Grid stays the hero; no new full-width banner.)
+
+## 11. Builder notes — data-testids for discoverability/validation checks
+Add these stable `data-testid`s so the verifier/panel can assert discoverability cold:
+- `lint-rollup` — the always-visible roll-up indicator (text = "All clean ✓" or "N issues found").
+- `lint-catch-demo` — the cold "what we catch" micro-demo line (present only in empty/example state).
+- `autofix-button` — the toolbar Auto-fix button (already present; ensure the testid).
+- `autofix-diff-panel` — the before→after diff panel container.
+- `autofix-diff-row` — each per-cell diff line (one per changed cell; carries before/after text).
+- `autofix-diff-undo` — the Undo control inside the diff panel.
+- `panel-subtitle` (or `naming-template-subtitle` / `utm-spec-subtitle` / `campaigns-subtitle`) — the
+  plain-language "what this is" line under each of the three setup panels' headings.

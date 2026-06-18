@@ -28,8 +28,19 @@ import { expect, test, type Page } from "@playwright/test";
 const cell = (page: Page, field: string, rowNum: number) =>
   page.getByLabel(`${field} row ${rowNum}`, { exact: true }).first();
 
+/** Open the campaigns sidebar panel if it is currently collapsed (desktop variant). */
+async function openCampaignsPanel(page: Page) {
+  const toggle = page.locator('[data-testid="campaigns-desktop-toggle"]');
+  // Only click if the panel is collapsed (aria-expanded="false")
+  const expanded = await toggle.getAttribute("aria-expanded");
+  if (expanded !== "true") {
+    await toggle.click();
+  }
+}
+
 /** Save current grid under a campaign name via the sidebar. */
 async function saveAsCampaign(page: Page, name: string) {
+  await openCampaignsPanel(page);
   await page.locator('[data-testid="save-as-campaign-btn"]').click();
   const input = page.locator('[data-testid="campaign-name-input"]');
   await expect(input).toBeVisible();
@@ -45,6 +56,7 @@ const campaignRow = (page: Page, name: string) =>
 
 /** Click the "Open" action button for a named campaign (hover-visible action cluster). */
 async function openCampaign(page: Page, name: string) {
+  await openCampaignsPanel(page);
   const row = campaignRow(page, name);
   await row.hover();
   await row.getByRole("button", { name: "Open" }).click();
@@ -52,6 +64,7 @@ async function openCampaign(page: Page, name: string) {
 
 /** Click the "Duplicate campaign" action button for a named campaign. */
 async function duplicateCampaign(page: Page, name: string) {
+  await openCampaignsPanel(page);
   const row = campaignRow(page, name);
   // Actions are always visible (no hover-gating), but hover is harmless
   await row.hover();
@@ -60,6 +73,7 @@ async function duplicateCampaign(page: Page, name: string) {
 
 /** Click the "Delete campaign" action button for a named campaign. */
 async function deleteCampaignBtn(page: Page, name: string) {
+  await openCampaignsPanel(page);
   const row = campaignRow(page, name);
   await row.hover();
   await row.getByRole("button", { name: "Delete campaign" }).click();
@@ -78,6 +92,9 @@ test("first visit (empty localStorage) shows empty-state hint and no campaigns",
 
   // Campaigns sidebar is visible
   await expect(page.locator('[data-testid="campaigns-sidebar"]')).toBeVisible();
+
+  // Open the panel (collapsed by default) to access the inner list
+  await openCampaignsPanel(page);
 
   // The campaigns list shows the empty-state paragraph
   const list = page.locator('[data-testid="campaigns-list"]');
@@ -122,6 +139,7 @@ test("save 2-row campaign → listed with 2 links → reload → Open restores r
   // Reload the page
   await page.reload();
   await page.waitForLoadState("networkidle");
+  await openCampaignsPanel(page);
 
   // The campaign is still in the list
   await expect(campaignRow(page, "Black Friday")).toBeVisible();
@@ -344,6 +362,7 @@ test("Duplicate creates '<name> copy'; Delete removes it; both persist across re
   // Reload and verify persistence
   await page.reload();
   await page.waitForLoadState("networkidle");
+  await openCampaignsPanel(page);
 
   await expect(campaignRow(page, "Black Friday")).toBeVisible();
   await expect(campaignRow(page, "Black Friday copy")).toHaveCount(0);
@@ -884,7 +903,7 @@ test("Auto-fix naming normalizes flagged cells, does not clear grid, shows toast
   await cell(page, "utm_campaign", 1).fill("spring");
 
   // The Auto-fix button must be present (previously "Auto-fix naming", now "Auto-fix")
-  const autoFixBtn = page.locator('[data-testid="auto-fix-naming-btn"]');
+  const autoFixBtn = page.locator('[data-testid="autofix-button"]');
   await expect(autoFixBtn).toBeVisible();
 
   // Click it
@@ -984,6 +1003,7 @@ test("Duplicate campaign creates '<name> copy' library card, count increments by
 
 /** Click the Rename action button for a named campaign. */
 async function clickRenameBtn(page: Page, name: string) {
+  await openCampaignsPanel(page);
   const row = campaignRow(page, name);
   await row.getByRole("button", { name: "Rename" }).click();
 }
@@ -1029,6 +1049,7 @@ test("RENAME: basic rename updates card name in place, preserves link count, per
   // Verify persistence across reload
   await page.reload();
   await page.waitForLoadState("networkidle");
+  await openCampaignsPanel(page);
   await expect(campaignRow(page, "BF 2026")).toBeVisible();
   await expect(campaignRow(page, "BF 2026")).toContainText("2 links");
   await expect(campaignRow(page, "Black Friday")).toHaveCount(0);
@@ -1345,6 +1366,9 @@ test("FILTER: absent/no-op with 0 campaigns (empty state shows hint, not filter)
   const page = await ctx.newPage();
   await page.goto("/");
   await page.waitForLoadState("networkidle");
+
+  // Open the campaigns panel to access inner controls (collapsed by default).
+  await openCampaignsPanel(page);
 
   // Filter input must NOT be present with 0 campaigns
   const filterInput = page.locator('[data-testid="campaigns-filter"]');

@@ -28,21 +28,14 @@ export function NamingTemplatePanel({
   enforceTemplate,
   onEnforceTemplateChange,
 }: NamingTemplatePanelProps) {
-  // SSR-safe: start collapsed (template.segments is SSR default = []).
-  // Auto-expand once segments hydrate from localStorage or are added.
-  const hasSegments = template.segments.length > 0;
-  // P1 fix: start expanded on cold open if segments exist on FIRST render
-  // (handles both the SSR→client hydration case and the normal already-expanded case).
+  // Always start collapsed — consistent with Campaigns and UTM Spec panels.
+  // Panel auto-expands only on explicit user actions:
+  //   • addSegment() calls setExpanded(true) inline
+  //   • the "naming-template-open" custom event from the lint-bar (below)
+  // We do NOT auto-expand on hydration from localStorage: a returning user who stored
+  // segments should still see all three setup panels collapsed on load so the grid
+  // is the first thing they see. They can open the panel if they want to edit it.
   const [expanded, setExpanded] = useState(false);
-
-  // Auto-expand when segments hydrate (false→true on first client render with stored data)
-  // or when the first segment is added by the user.
-  // Also auto-expand on cold open if enforceTemplate is on — signals setup intent.
-  useEffect(() => {
-    if (hasSegments || enforceTemplate) setExpanded(true);
-    // Never auto-collapse — respect user's manual collapse.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasSegments, enforceTemplate]);
 
   // Custom event: open via lint-bar "N off-template" indicator
   const panelRef = useRef<HTMLElement | null>(null);
@@ -375,32 +368,24 @@ export function NamingTemplatePanel({
     </div>
   );
 
-  // ── Structure-blocks icon (⊞) ─────────────────────────────────────────────
-  const StructureIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" className="w-3.5 h-3.5 shrink-0">
-      <rect x="1" y="1" width="6" height="6" rx="1.2" />
-      <rect x="9" y="1" width="6" height="6" rx="1.2" />
-      <rect x="1" y="9" width="6" height="6" rx="1.2" />
-      <rect x="9" y="9" width="6" height="6" rx="1.2" />
-    </svg>
-  );
-
   // ── Shared panel header ───────────────────────────────────────────────────
   const panelHeader = (testId: string) => (
     <button
       type="button"
       onClick={() => setExpanded((v) => !v)}
-      className="flex w-full items-start gap-2 text-left"
+      className="flex w-full items-start justify-between gap-2 px-4 py-3 text-left hover:bg-gray-50"
       aria-expanded={expanded}
       data-testid={testId}
     >
-      <span className="mt-0.5 text-teal-600"><StructureIcon /></span>
       <span className="flex-1 min-w-0">
-        <span className="block text-sm font-semibold text-teal-900 leading-tight">
+        <span className="block text-sm font-semibold text-gray-800 leading-tight">
           Campaign Naming Template
         </span>
-        <span className="block text-[10px] text-teal-600 leading-snug mt-0.5">
-          Define your campaign-name structure — its parts and their order
+        <span
+          className="block text-[10px] text-gray-400 leading-snug mt-0.5"
+          data-testid="naming-template-subtitle"
+        >
+          Build consistent campaign names — define parts like quarter_channel_audience
         </span>
       </span>
       <span className="text-gray-400 text-xs shrink-0 mt-0.5">{expanded ? "▲" : "▼"}</span>
@@ -410,9 +395,10 @@ export function NamingTemplatePanel({
   // ── Panel description ─────────────────────────────────────────────────────
   const panelDescription = (
     <p className="text-[11px] text-gray-500 mb-2 leading-relaxed">
-      Defines the STRUCTURE of utm_campaign — its parts and their order (e.g.{" "}
-      <span className="font-mono text-teal-700">quarter_channel_audience</span>).{" "}
-      <span className="font-medium text-teal-700">Different from Allowed Values, which sets allowed field values.</span>{" "}
+      Add named parts (e.g. quarter, channel, audience) and they join into a campaign name like{" "}
+      <span className="font-mono text-teal-700">quarter_channel_audience</span>.{" "}
+      Turn on enforce to flag any row that doesn&apos;t match the shape.{" "}
+      <span className="font-medium text-teal-700">Different from Allowed Values — that panel sets the list of valid values, this one sets the shape.</span>{" "}
       Saved on this device.
     </p>
   );
@@ -423,19 +409,13 @@ export function NamingTemplatePanel({
     return (
       <aside
         ref={panelRef}
-        className="w-full rounded-lg border-2 border-teal-200 bg-teal-50/40 p-3"
+        className="flex flex-col w-full rounded-lg border border-gray-200 bg-white"
         aria-label="Campaign Naming Template panel"
         data-testid="naming-template-panel"
       >
         {panelHeader("naming-template-toggle")}
-        {!expanded && (
-          <p className="text-[11px] text-teal-700 mt-1.5 leading-relaxed">
-            Define parts like quarter, channel, audience — then enforce them on every row.
-            <span className="ml-1 font-medium text-teal-600">Different from Allowed Values.</span>
-          </p>
-        )}
         {expanded && (
-          <div className="mt-2">
+          <div className="border-t border-gray-100 p-4">
             {panelDescription}
             {innerContent}
           </div>
@@ -449,26 +429,23 @@ export function NamingTemplatePanel({
   if (mobileOnly) {
     return (
       <>
-        <div
-          className="flex w-full items-start justify-between gap-2 rounded-lg border-2 border-teal-200 bg-teal-50/40 px-4 py-3 cursor-pointer"
+        <button
+          type="button"
           onClick={() => setExpanded((v) => !v)}
-          role="button"
+          className="flex w-full items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700"
           aria-expanded={expanded}
           data-testid="naming-template-mobile-toggle"
-          tabIndex={0}
-          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setExpanded((v) => !v); } }}
         >
-          <span className="mt-0.5 text-teal-600 shrink-0"><StructureIcon /></span>
-          <span className="flex-1 min-w-0">
-            <span className="block text-sm font-semibold text-teal-900">Campaign Naming Template</span>
-            <span className="block text-[10px] text-teal-600 mt-0.5">Define your campaign-name structure — its parts and their order</span>
+          <span>
+            Campaign Naming Template{" "}
+            <span className="font-normal text-gray-400 text-xs" data-testid="naming-template-subtitle">— define parts like quarter_channel_audience</span>
           </span>
-          <span className="text-gray-400 shrink-0 mt-0.5">{expanded ? "▲" : "▼"}</span>
-        </div>
+          <span className="text-gray-400 shrink-0">{expanded ? "▲" : "▼"}</span>
+        </button>
         {expanded && (
           <div
             ref={panelRef as React.RefObject<HTMLDivElement>}
-            className="rounded-b-lg border-2 border-t-0 border-teal-200 bg-teal-50/20 p-4"
+            className="rounded-b-lg border border-t-0 border-gray-200 bg-white p-4"
             data-testid="naming-template-panel"
           >
             {panelDescription}
